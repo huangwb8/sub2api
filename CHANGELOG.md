@@ -11,6 +11,7 @@
 - 新增了 `docs/plans/2026-04-13-user-self-service-subscription.md`：沉淀普通用户自助订阅闭环的实现计划、测试入口与验收步骤。
 - 新增了 `docs/plans/2026-04-13-release-automation-and-docker-publish.md`：沉淀版本驱动 release、Docker 镜像自动补发和本地验证流程的实施计划。
 - 新增了 `tools/verify-release-automation.sh` 与 `make verify-release-automation`：用于本地校验版本文件、发布 workflows 与部署文档是否保持一致。
+- 新增了 `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md`：面向仓库维护者，逐步说明如何在 GitHub 仓库里配置 Secrets、Variables、Actions 权限和发布流程。
 
 ### Changed（变更）
 

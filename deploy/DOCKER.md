@@ -74,6 +74,9 @@ volumes:
 
 Sub2API publishes Docker images from the GitHub release pipeline, using `backend/cmd/server/VERSION` as the version source.
 
+If you need a step-by-step GitHub repository setup guide, read:
+- `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md`
+
 ### Related Workflows
 
 - `create-release.yml`: reads `backend/cmd/server/VERSION`, creates the annotated release tag, and triggers the main release job

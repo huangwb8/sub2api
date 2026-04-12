@@ -31,6 +31,9 @@ This directory contains files for deploying Sub2API on Linux servers.
 
 Sub2API now uses `backend/cmd/server/VERSION` as the release version source for GitHub release automation and Docker image publishing.
 
+Step-by-step GitHub repository setup tutorial:
+- `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md`
+
 ### Workflows
 
 | Workflow | Purpose |
