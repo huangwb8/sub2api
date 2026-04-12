@@ -127,6 +127,8 @@ deploy/docker-compose.override.yml
 .gocache/
 vite.config.js
 docs/*
+!docs/plans/
+!docs/plans/*.md
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 .serena/
@@ -134,4 +136,3 @@ docs/*
 frontend/coverage/
 aicodex
 output/
-

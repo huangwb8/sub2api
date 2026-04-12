@@ -27,6 +27,39 @@ This directory contains files for deploying Sub2API on Linux servers.
 
 ---
 
+## Release Automation
+
+Sub2API now uses `backend/cmd/server/VERSION` as the release version source for GitHub release automation and Docker image publishing.
+
+### Workflows
+
+| Workflow | Purpose |
+|----------|---------|
+| `check-version-sync.yml` | Checks whether `backend/cmd/server/VERSION`, the latest GitHub release, and `CHANGELOG.md` are aligned |
+| `create-release.yml` | Reads `backend/cmd/server/VERSION`, generates an annotated Git tag, and triggers the existing tag-based release pipeline |
+| `release.yml` | Existing main release pipeline: builds artifacts with GoReleaser and publishes release assets/images on tag push |
+| `publish-release-images.yml` | Automatically backfills or repairs missing Docker image tags for the latest GitHub release |
+
+### Recommended Release Flow
+
+1. Update `backend/cmd/server/VERSION`
+2. Update `CHANGELOG.md` with either a versioned section or releasable `[Unreleased]` content
+3. Run `make verify-release-automation`
+4. Trigger `create-release.yml`
+5. Wait for `release.yml` to finish publishing the release artifacts
+6. Let `publish-release-images.yml` backfill any missing Docker tags automatically, or run it manually for a specific release tag
+
+### Required Repository Configuration
+
+- `secrets.DOCKERHUB_USERNAME`: Docker Hub username
+- `secrets.DOCKERHUB_TOKEN`: Docker Hub access token
+- `vars.DOCKERHUB_REPOSITORY`: optional full Docker Hub repository name, for example `weishaw/sub2api`
+- `vars.DOCKERHUB_NAMESPACE`: optional namespace fallback when `DOCKERHUB_REPOSITORY` is not set
+
+If Docker Hub variables or secrets are absent, `publish-release-images.yml` still publishes to GitHub Container Registry and skips Docker Hub safely.
+
+---
+
 ## Docker Deployment (Recommended)
 
 ### Method 1: One-Click Deployment (Recommended)
@@ -204,6 +237,19 @@ docker compose up -d
 # Remove all data (caution!)
 docker compose down -v
 ```
+
+### Release Automation Health Check
+
+Before changing release workflows or deployment docs, run:
+
+```bash
+make verify-release-automation
+```
+
+This validates:
+- `backend/cmd/server/VERSION` is semver-compatible
+- required GitHub Actions workflows exist
+- deployment docs still mention the automated release/image pipeline
 
 ### Environment Variables
 

@@ -9,17 +9,22 @@
 ### Added（新增）
 
 - 新增了 `docs/plans/2026-04-13-user-self-service-subscription.md`：沉淀普通用户自助订阅闭环的实现计划、测试入口与验收步骤。
+- 新增了 `docs/plans/2026-04-13-release-automation-and-docker-publish.md`：沉淀版本驱动 release、Docker 镜像自动补发和本地验证流程的实施计划。
+- 新增了 `tools/verify-release-automation.sh` 与 `make verify-release-automation`：用于本地校验版本文件、发布 workflows 与部署文档是否保持一致。
 
 ### Changed（变更）
 
 - 调整了内置支付的订阅商品暴露规则：仅激活且为订阅计费类型的分组可作为自助订阅套餐对外出售。
 - 优化了用户支付等待页的状态恢复：当第三方 webhook 延迟或丢失时，会主动触发订单核验以尽快补齐订阅/充值到账。
 - 更新了 `docs/PAYMENT.md` 与 `docs/PAYMENT_CN.md`：同步内置支付现已支持普通用户自助购买与续费订阅套餐。
+- 更新了 `deploy/README.md` 与 `deploy/DOCKER.md`：补充 `backend/cmd/server/VERSION` 作为发布版本源、`create-release.yml`/`publish-release-images.yml` 的职责和仓库变量配置说明。
+- 调整了 `.gitignore` 对文档目录的规则：放行 `docs/plans/*.md`，确保发布与实施计划文档可以纳入版本控制。
 
 ### Fixed（修复）
 
 - 修复了无效分组套餐仍可能出现在购买页的问题：表现是停用分组或非订阅分组套餐会被错误展示，修复方式是补充服务端校验与过滤。
 - 修复了支付成功但 webhook 未及时到达时用户可能长时间卡在等待页的问题：修复方式是在前端等待态增加订单主动核验恢复。
+- 修复了发布流程缺少版本同步与镜像补发兜底的问题：通过新增 `check-version-sync.yml`、`create-release.yml` 和 `publish-release-images.yml`，补齐版本校验、tag 驱动发布和 Docker 镜像自动补发链路。
 
 ## [0.1.0] - 2026-04-13
 

@@ -1,0 +1,150 @@
+name: Create Release Tag
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-release-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Extract version from backend/cmd/server/VERSION
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="$(tr -d '[:space:]' < backend/cmd/server/VERSION)"
+          if [[ -z "${VERSION}" ]]; then
+            echo "::error::backend/cmd/server/VERSION is empty"
+            exit 1
+          fi
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::backend/cmd/server/VERSION is not semver-compatible: ${VERSION}"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether tag already exists
+        id: existing_tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already exists."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} does not exist yet."
+          fi
+
+      - name: Generate release notes from CHANGELOG.md
+        if: ${{ steps.existing_tag.outputs.exists != 'true' }}
+        id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+
+          version = os.environ["VERSION"]
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+
+          exact_pattern = re.compile(
+              rf"^## \[{re.escape(version)}\](?: - .+)?\n(?P<body>.*?)(?=^## \[|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
+          unreleased_pattern = re.compile(
+              r"^## \[Unreleased\]\n(?P<body>.*?)(?=^## \[|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
+
+          def cleanup(block: str) -> str:
+              lines = [line.rstrip() for line in block.strip().splitlines()]
+              while lines and not lines[0].strip():
+                  lines.pop(0)
+              while lines and not lines[-1].strip():
+                  lines.pop()
+              return "\n".join(lines).strip()
+
+          exact = exact_pattern.search(changelog)
+          if exact:
+              notes = cleanup(exact.group("body"))
+              source = "versioned"
+          else:
+              unreleased = unreleased_pattern.search(changelog)
+              notes = cleanup(unreleased.group("body")) if unreleased else ""
+              source = "unreleased"
+
+          if not notes:
+              print(
+                  "::error::CHANGELOG.md has no release notes for the target version and [Unreleased] is empty.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          pathlib.Path("release_notes.md").write_text(notes + "\n", encoding="utf-8")
+          tag_message = f"Release v{version}\n\n{notes}\n"
+          pathlib.Path("tag_message.txt").write_text(tag_message, encoding="utf-8")
+
+          out = pathlib.Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a", encoding="utf-8") as fh:
+              fh.write(f"source={source}\n")
+          PY
+
+      - name: Create annotated tag
+        if: ${{ steps.existing_tag.outputs.exists != 'true' }}
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -F tag_message.txt
+
+      - name: Push tag
+        if: ${{ steps.existing_tag.outputs.exists != 'true' }}
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: git push origin "${TAG}"
+
+      - name: Write workflow summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          TAG_EXISTS: ${{ steps.existing_tag.outputs.exists }}
+          NOTES_SOURCE: ${{ steps.notes.outputs.source }}
+        shell: bash
+        run: |
+          {
+            echo '## Create Release Tag'
+            echo ""
+            echo "- VERSION file: \`${VERSION}\`"
+            echo "- Target tag: \`${TAG}\`"
+            if [[ "${TAG_EXISTS}" == "true" ]]; then
+              echo "- Result: skipped because the tag already exists."
+            else
+              echo "- Result: annotated tag pushed successfully."
+              echo "- Release notes source: \`${NOTES_SOURCE}\`"
+              echo "- Next step: the existing \`release.yml\` workflow will run on the tag push and publish artifacts/images."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

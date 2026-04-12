@@ -70,6 +70,31 @@ volumes:
 - `x.y` - Latest patch of minor version
 - `x` - Latest minor of major version
 
+## Automated Publishing
+
+Sub2API publishes Docker images from the GitHub release pipeline, using `backend/cmd/server/VERSION` as the version source.
+
+### Related Workflows
+
+- `create-release.yml`: reads `backend/cmd/server/VERSION`, creates the annotated release tag, and triggers the main release job
+- `release.yml`: builds release artifacts and publishes the primary image set
+- `publish-release-images.yml`: re-checks the latest GitHub release and backfills missing image tags automatically
+
+### Registries
+
+- Docker Hub: `weishaw/sub2api`
+- GitHub Container Registry: `ghcr.io/<owner>/sub2api`
+
+### Expected Maintenance Flow
+
+1. Update `backend/cmd/server/VERSION`
+2. Update `CHANGELOG.md`
+3. Run `make verify-release-automation`
+4. Trigger `create-release.yml`
+5. Use `publish-release-images.yml` only when you need to backfill or repair image tags
+
+If Docker Hub credentials are not configured, the automation continues to publish to GitHub Container Registry and skips Docker Hub gracefully.
+
 ## Links
 
 - [GitHub Repository](https://github.com/weishaw/sub2api)

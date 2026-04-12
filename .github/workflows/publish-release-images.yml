@@ -1,0 +1,320 @@
+name: Publish Release Images
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Optional release tag to rebuild (for example: v0.1.111)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-release-images
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve release target
+        id: release
+        uses: actions/github-script@v8
+        env:
+          REQUESTED_TAG: ${{ github.event.inputs.tag }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const requestedTag = process.env.REQUESTED_TAG?.trim();
+
+            try {
+              const release = requestedTag
+                ? (await github.rest.repos.getReleaseByTag({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    tag: requestedTag,
+                  })).data
+                : (await github.rest.repos.getLatestRelease({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                  })).data;
+
+              core.setOutput('found', 'true');
+              core.setOutput('tag', release.tag_name);
+              core.setOutput('url', release.html_url);
+              core.setOutput('published_at', release.published_at || '');
+              core.info(`Release selected for image publishing: ${release.tag_name}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.setOutput('found', 'false');
+                core.setOutput('tag', '');
+                core.setOutput('url', '');
+                core.setOutput('published_at', '');
+                core.info('No eligible GitHub release found for image publishing.');
+                return;
+              }
+
+              throw error;
+            }
+
+      - name: Skip when no release is available
+        if: ${{ steps.release.outputs.found != 'true' }}
+        run: echo 'No published GitHub release found. Nothing to publish.'
+
+      - name: Checkout selected release tag
+        if: ${{ steps.release.outputs.found == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Capture source revision
+        if: ${{ steps.release.outputs.found == 'true' }}
+        id: source
+        shell: bash
+        run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve image repositories
+        if: ${{ steps.release.outputs.found == 'true' }}
+        id: images
+        shell: bash
+        env:
+          DOCKERHUB_REPOSITORY: ${{ vars.DOCKERHUB_REPOSITORY }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          owner_lower="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          ghcr_image="ghcr.io/${owner_lower}/${repo_name}"
+
+          dockerhub_image="${DOCKERHUB_REPOSITORY}"
+          if [[ -z "${dockerhub_image}" && -n "${DOCKERHUB_NAMESPACE}" ]]; then
+            dockerhub_image="${DOCKERHUB_NAMESPACE}/${repo_name}"
+          fi
+          if [[ -z "${dockerhub_image}" && -n "${DOCKERHUB_USERNAME}" ]]; then
+            dockerhub_image="${DOCKERHUB_USERNAME}/${repo_name}"
+          fi
+
+          dockerhub_status="disabled"
+          if [[ -n "${dockerhub_image}" ]]; then
+            if [[ -n "${DOCKERHUB_USERNAME}" && -n "${DOCKERHUB_TOKEN}" ]]; then
+              dockerhub_status="enabled"
+            else
+              dockerhub_status="missing_credentials"
+            fi
+          fi
+
+          {
+            echo "owner_lower=${owner_lower}"
+            echo "ghcr_image=${ghcr_image}"
+            echo "dockerhub_image=${dockerhub_image}"
+            echo "dockerhub_status=${dockerhub_status}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ steps.release.outputs.found == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: ${{ steps.images.outputs.dockerhub_status == 'enabled' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Derive image tags
+        if: ${{ steps.release.outputs.found == 'true' }}
+        id: tags
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          GHCR_IMAGE: ${{ steps.images.outputs.ghcr_image }}
+          DOCKERHUB_IMAGE: ${{ steps.images.outputs.dockerhub_image }}
+          DOCKERHUB_STATUS: ${{ steps.images.outputs.dockerhub_status }}
+        run: |
+          set -euo pipefail
+
+          version="${RELEASE_TAG#v}"
+          stable="true"
+          if [[ "${version}" == *-* ]]; then
+            stable="false"
+          fi
+
+          mapfile -t version_parts < <(VERSION="${version}" python3 <<'PY'
+          import os
+          import re
+
+          version = os.environ["VERSION"]
+          match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version)
+          if not match:
+              raise SystemExit("invalid semver version")
+          print(match.group(1))
+          print(match.group(2))
+          print(match.group(3))
+          PY
+          )
+          major="${version_parts[0]}"
+          minor="${version_parts[1]}"
+
+          tags_file="$(mktemp)"
+          refs_file="$(mktemp)"
+
+          add_registry_tags() {
+            local image="$1"
+            [[ -n "${image}" ]] || return 0
+
+            printf '%s:%s\n' "${image}" "${version}" >> "${tags_file}"
+            printf '%s:%s\n' "${image}" "${version}" >> "${refs_file}"
+
+            if [[ "${stable}" == "true" ]]; then
+              printf '%s:latest\n' "${image}" >> "${tags_file}"
+              printf '%s:%s.%s\n' "${image}" "${major}" "${minor}" >> "${tags_file}"
+              printf '%s:%s\n' "${image}" "${major}" >> "${tags_file}"
+
+              printf '%s:latest\n' "${image}" >> "${refs_file}"
+              printf '%s:%s.%s\n' "${image}" "${major}" "${minor}" >> "${refs_file}"
+              printf '%s:%s\n' "${image}" "${major}" >> "${refs_file}"
+            fi
+          }
+
+          add_registry_tags "${GHCR_IMAGE}"
+          if [[ "${DOCKERHUB_STATUS}" == "enabled" ]]; then
+            add_registry_tags "${DOCKERHUB_IMAGE}"
+          fi
+
+          {
+            echo "version=${version}"
+            echo "stable=${stable}"
+            echo "tags<<EOF"
+            sort -u "${tags_file}"
+            echo "EOF"
+            echo "required_refs<<EOF"
+            sort -u "${refs_file}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Probe container registries
+        if: ${{ steps.release.outputs.found == 'true' }}
+        id: probe
+        shell: bash
+        env:
+          REQUIRED_REFS: ${{ steps.tags.outputs.required_refs }}
+        run: |
+          set -euo pipefail
+
+          should_build="false"
+          missing_refs=()
+
+          while IFS= read -r ref; do
+            [[ -n "${ref}" ]] || continue
+            if docker manifest inspect "${ref}" >/dev/null 2>&1; then
+              echo "Found ${ref}"
+            else
+              echo "Missing ${ref}"
+              missing_refs+=("${ref}")
+              should_build="true"
+            fi
+          done <<< "${REQUIRED_REFS}"
+
+          echo "should_build=${should_build}" >> "$GITHUB_OUTPUT"
+          if [[ ${#missing_refs[@]} -eq 0 ]]; then
+            echo "missing_refs=none" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "missing_refs<<EOF"
+              printf '%s\n' "${missing_refs[@]}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when all image tags already exist
+        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build != 'true' }}
+        run: echo "All required image tags already exist for ${{ steps.release.outputs.tag }}."
+
+      - name: Set up QEMU
+        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build == 'true' }}
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build == 'true' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push release images
+        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build == 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.source.outputs.revision }}
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
+            org.opencontainers.image.url=${{ steps.release.outputs.url }}
+          build-args: |
+            VERSION=${{ steps.tags.outputs.version }}
+            COMMIT=${{ steps.source.outputs.revision }}
+            DATE=${{ steps.release.outputs.published_at }}
+          cache-from: type=gha,scope=publish-release-images
+          cache-to: type=gha,mode=max,scope=publish-release-images
+
+      - name: Write workflow summary
+        if: always()
+        shell: bash
+        env:
+          RELEASE_FOUND: ${{ steps.release.outputs.found }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_URL: ${{ steps.release.outputs.url }}
+          RELEASE_VERSION: ${{ steps.tags.outputs.version }}
+          SOURCE_REVISION: ${{ steps.source.outputs.revision }}
+          GHCR_IMAGE: ${{ steps.images.outputs.ghcr_image }}
+          DOCKERHUB_IMAGE: ${{ steps.images.outputs.dockerhub_image }}
+          DOCKERHUB_STATUS: ${{ steps.images.outputs.dockerhub_status }}
+          STABLE: ${{ steps.tags.outputs.stable }}
+          SHOULD_BUILD: ${{ steps.probe.outputs.should_build }}
+          MISSING_REFS: ${{ steps.probe.outputs.missing_refs }}
+        run: |
+          {
+            echo '## Release Image Publish Summary'
+            if [[ "${RELEASE_FOUND}" != 'true' ]]; then
+              echo '- No eligible GitHub release found.'
+              exit 0
+            fi
+
+            echo "- Release tag: \`${RELEASE_TAG}\`"
+            echo "- Release URL: ${RELEASE_URL}"
+            echo "- Release version: \`${RELEASE_VERSION}\`"
+            echo "- Source revision: \`${SOURCE_REVISION}\`"
+            echo "- GHCR image: \`${GHCR_IMAGE}\`"
+            if [[ -n "${DOCKERHUB_IMAGE}" ]]; then
+              echo "- Docker Hub image: \`${DOCKERHUB_IMAGE}\` (${DOCKERHUB_STATUS})"
+            else
+              echo '- Docker Hub image: not configured'
+            fi
+            echo "- Stable release: \`${STABLE}\`"
+
+            if [[ "${SHOULD_BUILD}" == 'true' ]]; then
+              echo "- Action: built and pushed missing image tags"
+              echo "- Missing refs before publish:"
+              while IFS= read -r ref; do
+                [[ -n "${ref}" ]] || continue
+                echo "  - ${ref}"
+              done <<< "${MISSING_REFS}"
+            else
+              echo '- Action: skipped because all required image tags already exist.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

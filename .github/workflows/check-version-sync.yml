@@ -1,0 +1,241 @@
+name: Check Version Sync
+
+on:
+  pull_request:
+    paths:
+      - 'backend/cmd/server/VERSION'
+      - 'CHANGELOG.md'
+      - '.github/workflows/check-version-sync.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/cmd/server/VERSION'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from backend/cmd/server/VERSION
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="$(tr -d '[:space:]' < backend/cmd/server/VERSION)"
+          if [[ -z "${VERSION}" ]]; then
+            echo "::error::backend/cmd/server/VERSION is empty"
+            exit 1
+          fi
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::backend/cmd/server/VERSION is not semver-compatible: ${VERSION}"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest GitHub release
+        id: latest_release
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const { data } = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+
+              core.setOutput('found', 'true');
+              core.setOutput('version', data.tag_name.replace(/^v/, ''));
+              core.setOutput('tag', data.tag_name);
+              core.setOutput('url', data.html_url);
+              core.info(`Latest release detected: ${data.tag_name}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.setOutput('found', 'false');
+                core.setOutput('version', '0.0.0');
+                core.setOutput('tag', '');
+                core.setOutput('url', '');
+                core.info('No published GitHub release found.');
+                return;
+              }
+
+              throw error;
+            }
+
+      - name: Evaluate changelog coverage
+        id: changelog
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 <<'PY'
+          import os
+          import pathlib
+          import re
+
+          version = os.environ["VERSION"]
+          content = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+
+          exact_pattern = re.compile(
+              rf"^## \[{re.escape(version)}\](?: - .+)?\n(?P<body>.*?)(?=^## \[|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
+          unreleased_pattern = re.compile(
+              r"^## \[Unreleased\]\n(?P<body>.*?)(?=^## \[|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
+
+          def has_meaningful_content(block: str) -> bool:
+              for line in block.splitlines():
+                  stripped = line.strip()
+                  if not stripped:
+                      continue
+                  if stripped.startswith("### "):
+                      continue
+                  if stripped.startswith("---"):
+                      continue
+                  return True
+              return False
+
+          exact_match = exact_pattern.search(content)
+          unreleased_match = unreleased_pattern.search(content)
+
+          exact = bool(exact_match and has_meaningful_content(exact_match.group("body")))
+          unreleased = bool(
+              unreleased_match and has_meaningful_content(unreleased_match.group("body"))
+          )
+
+          out = pathlib.Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a", encoding="utf-8") as fh:
+              fh.write(f"exact={'true' if exact else 'false'}\n")
+              fh.write(f"unreleased={'true' if unreleased else 'false'}\n")
+              if exact:
+                  fh.write("coverage=versioned\n")
+                  fh.write(f"message=CHANGELOG.md already contains a release section for {version}\n")
+              elif unreleased:
+                  fh.write("coverage=unreleased\n")
+                  fh.write(
+                      "message=CHANGELOG.md has unreleased entries and can be used for the next release notes\n"
+                  )
+              else:
+                  fh.write("coverage=missing\n")
+                  fh.write(
+                      "message=CHANGELOG.md has no matching version section and [Unreleased] has no releasable content\n"
+                  )
+          PY
+
+      - name: Compare version state
+        id: compare
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          LATEST_FOUND: ${{ steps.latest_release.outputs.found }}
+          LATEST_VERSION: ${{ steps.latest_release.outputs.version }}
+        run: |
+          python3 <<'PY'
+          import os
+          import pathlib
+          import re
+
+          def parse_semver(value: str):
+              match = re.match(
+                  r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$",
+                  value,
+              )
+              if not match:
+                  raise ValueError(f"invalid semver: {value}")
+              major, minor, patch, prerelease = match.groups()
+              return (int(major), int(minor), int(patch), prerelease)
+
+          def compare(a: str, b: str) -> int:
+              pa = parse_semver(a)
+              pb = parse_semver(b)
+              if pa[:3] != pb[:3]:
+                  return (pa[:3] > pb[:3]) - (pa[:3] < pb[:3])
+              if pa[3] == pb[3]:
+                  return 0
+              if pa[3] is None:
+                  return 1
+              if pb[3] is None:
+                  return -1
+              return (pa[3] > pb[3]) - (pa[3] < pb[3])
+
+          version = os.environ["VERSION"]
+          latest_found = os.environ["LATEST_FOUND"] == "true"
+          latest_version = os.environ["LATEST_VERSION"]
+
+          if not latest_found:
+              status = "no_release"
+              message = f"No published GitHub release found. VERSION file is {version}."
+          else:
+              order = compare(version, latest_version)
+              if order == 0:
+                  status = "synced"
+                  message = f"VERSION file matches the latest release: {version}."
+              elif order > 0:
+                  status = "needs_release"
+                  message = (
+                      f"VERSION file ({version}) is ahead of the latest release ({latest_version}). "
+                      "You can run create-release.yml."
+                  )
+              else:
+                  status = "behind_release"
+                  message = (
+                      f"VERSION file ({version}) is behind the latest release ({latest_version}). "
+                      "Check whether the version file needs to be updated."
+                  )
+
+          out = pathlib.Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a", encoding="utf-8") as fh:
+              fh.write(f"status={status}\n")
+              fh.write(f"message={message}\n")
+          PY
+
+      - name: Write workflow summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          LATEST_FOUND: ${{ steps.latest_release.outputs.found }}
+          LATEST_TAG: ${{ steps.latest_release.outputs.tag }}
+          LATEST_URL: ${{ steps.latest_release.outputs.url }}
+          STATUS: ${{ steps.compare.outputs.status }}
+          STATUS_MESSAGE: ${{ steps.compare.outputs.message }}
+          CHANGELOG_COVERAGE: ${{ steps.changelog.outputs.coverage }}
+          CHANGELOG_MESSAGE: ${{ steps.changelog.outputs.message }}
+        shell: bash
+        run: |
+          {
+            echo '## Version Sync Check'
+            echo ""
+            echo "- VERSION file: \`${VERSION}\`"
+            echo "- Expected tag: \`${TAG}\`"
+            if [[ "${LATEST_FOUND}" == "true" ]]; then
+              echo "- Latest GitHub release: \`${LATEST_TAG}\`"
+              echo "- Latest release URL: ${LATEST_URL}"
+            else
+              echo "- Latest GitHub release: not found"
+            fi
+            echo "- Version status: \`${STATUS}\`"
+            echo "- Version detail: ${STATUS_MESSAGE}"
+            echo "- Changelog coverage: \`${CHANGELOG_COVERAGE}\`"
+            echo "- Changelog detail: ${CHANGELOG_MESSAGE}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail when changelog coverage is missing
+        if: ${{ steps.changelog.outputs.coverage == 'missing' }}
+        run: |
+          echo "::error::CHANGELOG.md has neither a matching version section nor releasable [Unreleased] content."
+          exit 1
