@@ -152,8 +152,12 @@ const paidOrder = ref<PaymentOrder | null>(null)
 // Terminal outcome: null = still active, 'success' | 'cancelled' | 'expired'
 const outcome = ref<'success' | 'cancelled' | 'expired' | null>(null)
 
+const pendingRecoveryIntervalMs = 9_000
+
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let recoveryInFlight = false
+let lastRecoveryAt = -pendingRecoveryIntervalMs
 
 const isAlipay = computed(() => props.paymentType.includes('alipay'))
 const isWxpay = computed(() => props.paymentType.includes('wxpay'))
@@ -205,8 +209,14 @@ async function renderQR() {
 
 async function pollStatus() {
   if (!props.orderId || outcome.value) return
-  const order = await paymentStore.pollOrderStatus(props.orderId)
+  let order = await paymentStore.pollOrderStatus(props.orderId)
   if (!order) return
+  if ((order.status === 'PENDING' || order.status === 'EXPIRED') && order.out_trade_no) {
+    const recovered = await tryRecoverPendingOrder(order)
+    if (recovered) {
+      order = recovered
+    }
+  }
   if (order.status === 'COMPLETED' || order.status === 'PAID') {
     cleanup()
     paidOrder.value = order
@@ -218,6 +228,23 @@ async function pollStatus() {
   } else if (order.status === 'EXPIRED' || order.status === 'FAILED') {
     cleanup()
     outcome.value = 'expired'
+  }
+}
+
+async function tryRecoverPendingOrder(order: PaymentOrder): Promise<PaymentOrder | null> {
+  if (recoveryInFlight || !order.out_trade_no) return null
+  const now = Date.now()
+  if (now - lastRecoveryAt < pendingRecoveryIntervalMs) return null
+
+  recoveryInFlight = true
+  lastRecoveryAt = now
+  try {
+    const result = await paymentAPI.verifyOrder(order.out_trade_no)
+    return result.data
+  } catch {
+    return null
+  } finally {
+    recoveryInFlight = false
   }
 }
 

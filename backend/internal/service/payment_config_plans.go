@@ -70,10 +70,23 @@ func (s *PaymentConfigService) ListPlans(ctx context.Context) ([]*dbent.Subscrip
 }
 
 func (s *PaymentConfigService) ListPlansForSale(ctx context.Context) ([]*dbent.SubscriptionPlan, error) {
-	return s.entClient.SubscriptionPlan.Query().Where(subscriptionplan.ForSaleEQ(true)).Order(subscriptionplan.BySortOrder()).All(ctx)
+	groupIDs, err := s.listSellableSubscriptionGroupIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(groupIDs) == 0 {
+		return []*dbent.SubscriptionPlan{}, nil
+	}
+	return s.entClient.SubscriptionPlan.Query().
+		Where(subscriptionplan.ForSaleEQ(true), subscriptionplan.GroupIDIn(groupIDs...)).
+		Order(subscriptionplan.BySortOrder()).
+		All(ctx)
 }
 
 func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanRequest) (*dbent.SubscriptionPlan, error) {
+	if err := s.validatePlanGroup(ctx, req.GroupID); err != nil {
+		return nil, err
+	}
 	b := s.entClient.SubscriptionPlan.Create().
 		SetGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
 		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(req.ValidityUnit).
@@ -88,6 +101,11 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 // UpdatePlan updates a subscription plan by ID (patch semantics).
 // NOTE: This function exceeds 30 lines due to per-field nil-check patch update boilerplate.
 func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req UpdatePlanRequest) (*dbent.SubscriptionPlan, error) {
+	if req.GroupID != nil {
+		if err := s.validatePlanGroup(ctx, *req.GroupID); err != nil {
+			return nil, err
+		}
+	}
 	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
 	if req.GroupID != nil {
 		u.SetGroupID(*req.GroupID)
@@ -144,4 +162,35 @@ func (s *PaymentConfigService) GetPlan(ctx context.Context, id int64) (*dbent.Su
 		return nil, infraerrors.NotFound("PLAN_NOT_FOUND", "subscription plan not found")
 	}
 	return plan, nil
+}
+
+func (s *PaymentConfigService) listSellableSubscriptionGroupIDs(ctx context.Context) ([]int64, error) {
+	groups, err := s.entClient.Group.Query().
+		Where(
+			group.StatusEQ(StatusActive),
+			group.SubscriptionTypeEQ(SubscriptionTypeSubscription),
+		).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query sellable plan groups: %w", err)
+	}
+	ids := make([]int64, 0, len(groups))
+	for _, grp := range groups {
+		ids = append(ids, grp.ID)
+	}
+	return ids, nil
+}
+
+func (s *PaymentConfigService) validatePlanGroup(ctx context.Context, groupID int64) error {
+	grp, err := s.entClient.Group.Get(ctx, groupID)
+	if err != nil {
+		return infraerrors.NotFound("PLAN_GROUP_NOT_FOUND", "subscription plan group not found")
+	}
+	if grp.Status != StatusActive {
+		return infraerrors.BadRequest("PLAN_GROUP_INACTIVE", "subscription plan group must be active")
+	}
+	if grp.SubscriptionType != SubscriptionTypeSubscription {
+		return infraerrors.BadRequest("PLAN_GROUP_NOT_SUBSCRIPTION", "subscription plan group must use subscription billing")
+	}
+	return nil
 }
