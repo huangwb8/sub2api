@@ -1,7 +1,7 @@
 <!--
-  BenszResearch 自定义首页参考代码
-  用法：将本文件内容整体复制到后台“首页内容”配置框中。
-  设计目标：纯 HTML + CSS、无脚本依赖、可直接通过 sub2api 的 v-html 首页渲染。
+  BenszResearch 主页
+  技术：纯 HTML + CSS，无 JS 依赖，兼容 sub2api v-html 渲染。
+  用法：将本文件内容整体复制到后台「首页内容」配置框中。
 -->
 <style>
   .bensz-home,
@@ -10,52 +10,50 @@
   }
 
   .bensz-home {
-    --bg: #07111a;
-    --bg-soft: #0c1a27;
-    --panel: rgba(9, 19, 31, 0.74);
-    --panel-strong: rgba(12, 26, 39, 0.92);
-    --line: rgba(141, 215, 255, 0.16);
-    --text: #f5efe7;
-    --muted: #a7b8c9;
-    --accent: #9de3d5;
-    --accent-strong: #f0a44b;
-    --accent-deep: #60b5ff;
-    --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+    --bg:           #06101a;
+    --panel:        rgba(8, 18, 30, 0.72);
+    --panel-deep:   rgba(10, 22, 36, 0.90);
+    --text:         #f4eee6;
+    --muted:        #8da2b6;
+    --dim:          #4e6880;
+    --accent:       #9de3d5;   /* teal   */
+    --warm:         #f0a44b;   /* amber  */
+    --blue:         #60b5ff;   /* blue   */
+    --shadow:       0 28px 72px rgba(0, 0, 0, 0.45);
     position: relative;
     overflow: hidden;
     min-height: 100vh;
-    padding: 28px clamp(18px, 4vw, 52px) 42px;
+    padding: 28px clamp(18px, 4vw, 56px) 52px;
     color: var(--text);
     background:
-      radial-gradient(circle at 15% 18%, rgba(96, 181, 255, 0.18), transparent 30%),
-      radial-gradient(circle at 82% 14%, rgba(240, 164, 75, 0.14), transparent 24%),
-      radial-gradient(circle at 70% 72%, rgba(157, 227, 213, 0.12), transparent 28%),
-      linear-gradient(145deg, #07111a 0%, #0d1926 45%, #081018 100%);
-    font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      radial-gradient(ellipse 60% 40% at 12% 15%, rgba(96,181,255,.15), transparent),
+      radial-gradient(ellipse 50% 36% at 90%  8%, rgba(240,164,75,.11), transparent),
+      radial-gradient(ellipse 55% 38% at 62% 80%, rgba(157,227,213,.09), transparent),
+      linear-gradient(160deg, #05101a 0%, #091620 55%, #050d16 100%);
+    font-family: "Avenir Next","Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
     isolation: isolate;
   }
 
+  /* Grid overlay */
   .bensz-home::before {
     content: "";
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 88%);
+      linear-gradient(rgba(255,255,255,.032) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.032) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.88), transparent 78%);
     pointer-events: none;
-    opacity: 0.5;
     z-index: 0;
   }
 
+  /* Vignette */
   .bensz-home::after {
     content: "";
     position: absolute;
     inset: 0;
-    background:
-      linear-gradient(120deg, rgba(255, 255, 255, 0.055), transparent 35%),
-      radial-gradient(circle at center, transparent 0, rgba(3, 7, 12, 0.38) 72%);
+    background: radial-gradient(ellipse at 50% 20%, transparent, rgba(3,7,13,.36) 85%);
     pointer-events: none;
     z-index: 0;
   }
@@ -63,23 +61,23 @@
   .bensz-home__shell {
     position: relative;
     z-index: 1;
-    max-width: 1280px;
+    max-width: 1300px;
     margin: 0 auto;
   }
 
+  /* ── Topbar ──────────────────────────────── */
   .bensz-home__topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 28px;
+    margin-bottom: 34px;
   }
 
   .bensz-home__brand {
     display: inline-flex;
     align-items: center;
     gap: 14px;
-    min-width: 0;
   }
 
   .bensz-home__seal {
@@ -87,149 +85,211 @@
     place-items: center;
     width: 48px;
     height: 48px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 16px;
-    background:
-      linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)),
-      rgba(255, 255, 255, 0.04);
+    border-radius: 15px;
+    border: 1px solid rgba(157,227,213,.22);
+    background: linear-gradient(145deg, rgba(157,227,213,.14), rgba(96,181,255,.07));
     color: var(--accent);
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 8px 22px rgba(0,0,0,.22);
     backdrop-filter: blur(16px);
-  }
-
-  .bensz-home__brand-meta {
-    min-width: 0;
   }
 
   .bensz-home__brand-name {
     display: block;
     font-size: 15px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text);
   }
 
   .bensz-home__brand-sub {
     display: block;
     margin-top: 3px;
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    color: var(--dim);
+    font-size: 11.5px;
+    letter-spacing: .05em;
   }
 
-  .bensz-home__chip {
+  .bensz-home__status {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 18px;
+    border: 1px solid rgba(157,227,213,.15);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #d8e4ef;
+    background: rgba(157,227,213,.05);
+    color: var(--accent);
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: .08em;
     backdrop-filter: blur(12px);
   }
 
-  .bensz-home__chip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-    box-shadow: 0 0 14px rgba(157, 227, 213, 0.8);
+  .bensz-home__status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(157,227,213,.72);
     animation: benszPulse 2.8s ease-in-out infinite;
   }
 
+  /* ── Hero ────────────────────────────────── */
   .bensz-home__hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
-    gap: 28px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(310px, .85fr);
+    gap: 22px;
     align-items: stretch;
   }
 
+  /* Main card */
   .bensz-home__main {
     position: relative;
-    padding: clamp(28px, 5vw, 52px);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 30px;
+    padding: clamp(32px, 5vw, 58px);
+    border: 1px solid rgba(255,255,255,.075);
+    border-radius: 28px;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+      linear-gradient(168deg, rgba(255,255,255,.048), rgba(255,255,255,.016)),
       var(--panel);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
   }
 
+  /* Inner border shimmer */
   .bensz-home__main::before {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.14), transparent 28%, rgba(157, 227, 213, 0.18));
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
+    background: linear-gradient(145deg, rgba(255,255,255,.11), transparent 30%, rgba(157,227,213,.14));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
   }
 
+  /* Ambient warm glow top-right */
+  .bensz-home__main::after {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(240,164,75,.07), transparent 68%);
+    pointer-events: none;
+  }
+
   .bensz-home__eyebrow {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
-    color: #d8c0a3;
-    font-size: 12px;
+    margin-bottom: 22px;
+    color: rgba(240,164,75,.82);
+    font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: .2em;
     text-transform: uppercase;
   }
 
   .bensz-home__eyebrow::before {
     content: "";
     display: inline-block;
-    width: 38px;
+    width: 30px;
     height: 1px;
-    background: linear-gradient(90deg, rgba(240, 164, 75, 0.14), rgba(240, 164, 75, 0.9));
+    background: linear-gradient(90deg, transparent, rgba(240,164,75,.75));
   }
 
   .bensz-home__title {
+    position: relative;
     margin: 0;
-    max-width: 10ch;
-    color: #f8f2eb;
-    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(3rem, 7vw, 6.2rem);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
+    max-width: 13ch;
+    font-family: "Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    font-size: clamp(2.8rem, 6.2vw, 5.6rem);
+    line-height: .95;
+    letter-spacing: -.04em;
+    color: #f8f1e8;
     text-wrap: balance;
   }
 
-  .bensz-home__title-accent {
+  .bensz-home__title-line2 {
     display: block;
-    color: #8ac7ff;
+    color: var(--blue);
+    margin-top: .04em;
   }
 
   .bensz-home__lead {
-    max-width: 62ch;
-    margin: 24px 0 0;
+    position: relative;
+    max-width: 58ch;
+    margin: 26px 0 0;
     color: var(--muted);
-    font-size: clamp(1rem, 2vw, 1.16rem);
-    line-height: 1.85;
+    font-size: clamp(.96rem, 1.8vw, 1.1rem);
+    line-height: 1.9;
   }
 
+  /* Model badges */
+  .bensz-home__models {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 26px;
+  }
+
+  .bensz-home__models-label {
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .bensz-home__model-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    border: 1px solid;
+  }
+
+  .bensz-home__model-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .7;
+  }
+
+  .bensz-home__model-badge--claude  { color: #e8a85a; border-color: rgba(232,168,90,.28);  background: rgba(232,168,90,.07);  }
+  .bensz-home__model-badge--gpt     { color: #75d8c4; border-color: rgba(117,216,196,.28); background: rgba(117,216,196,.07); }
+  .bensz-home__model-badge--gemini  { color: #7fb8f1; border-color: rgba(127,184,241,.28); background: rgba(127,184,241,.07); }
+  .bensz-home__model-badge--deepseek{ color: #a78cfa; border-color: rgba(167,140,250,.28); background: rgba(167,140,250,.07); }
+
+  .bensz-home__model-badge--more {
+    color: var(--dim);
+    border-color: rgba(78,104,128,.22);
+    background: rgba(255,255,255,.03);
+  }
+  .bensz-home__model-badge--more::before { display: none; }
+
+  /* Actions */
   .bensz-home__actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
-    margin-top: 30px;
+    gap: 14px;
+    margin-top: 34px;
   }
 
   .bensz-home__cta {
@@ -237,96 +297,90 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    min-height: 54px;
-    padding: 0 22px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 52px;
+    padding: 0 26px;
     border-radius: 999px;
-    color: #081018;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: .03em;
     text-decoration: none;
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease,
-      border-color 180ms ease,
-      background 180ms ease;
+    border: 1px solid transparent;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
   }
 
   .bensz-home__cta--primary {
-    background: linear-gradient(135deg, #f6dbc0 0%, #f0a44b 100%);
-    box-shadow: 0 18px 38px rgba(240, 164, 75, 0.26);
+    background: linear-gradient(135deg, #f7dec8 0%, #f0a44b 42%, #e8913a 100%);
+    color: #1a0d00;
+    box-shadow: 0 16px 38px rgba(240,164,75,.28), inset 0 1px 0 rgba(255,255,255,.28);
+  }
+  .bensz-home__cta--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 46px rgba(240,164,75,.38);
   }
 
   .bensz-home__cta--secondary {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255,255,255,.05);
     color: var(--text);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255,255,255,.12);
   }
-
-  .bensz-home__cta:hover {
-    transform: translateY(-2px);
-  }
-
-  .bensz-home__cta--primary:hover {
-    box-shadow: 0 24px 44px rgba(240, 164, 75, 0.34);
-  }
-
   .bensz-home__cta--secondary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(157, 227, 213, 0.4);
+    background: rgba(255,255,255,.09);
+    border-color: rgba(157,227,213,.32);
+    transform: translateY(-2px);
   }
 
   .bensz-home__microcopy {
     width: 100%;
-    margin-top: 2px;
-    color: #7d91a7;
+    color: var(--dim);
     font-size: 12px;
-    letter-spacing: 0.02em;
+    letter-spacing: .02em;
   }
 
+  /* Stats */
   .bensz-home__stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 28px;
+    gap: 12px;
+    margin-top: 34px;
   }
 
   .bensz-home__stat {
     padding: 18px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 18px;
+    background: rgba(255,255,255,.032);
+    backdrop-filter: blur(8px);
   }
 
   .bensz-home__stat-value {
     display: block;
-    color: #f5efe7;
-    font-size: clamp(1.3rem, 3vw, 1.8rem);
+    color: var(--text);
+    font-size: 13px;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: .01em;
+    line-height: 1.2;
   }
 
   .bensz-home__stat-label {
     display: block;
     margin-top: 7px;
-    color: #8da2b6;
-    font-size: 12px;
-    line-height: 1.6;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    color: var(--dim);
+    font-size: 11.5px;
+    line-height: 1.65;
+    letter-spacing: .03em;
   }
 
+  /* ── Side Panel ──────────────────────────── */
   .bensz-home__side {
     position: relative;
     display: grid;
-    gap: 18px;
-    padding: clamp(22px, 4vw, 28px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 30px;
+    gap: 20px;
+    padding: clamp(24px, 4vw, 32px);
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 28px;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
-      var(--panel-strong);
+      linear-gradient(175deg, rgba(255,255,255,.04), rgba(255,255,255,.014)),
+      var(--panel-deep);
     box-shadow: var(--shadow);
     overflow: hidden;
   }
@@ -334,14 +388,12 @@
   .bensz-home__side::before {
     content: "";
     position: absolute;
-    width: 320px;
-    height: 320px;
-    right: -70px;
-    top: -90px;
-    border-radius: 999px;
-    background:
-      radial-gradient(circle at center, rgba(157, 227, 213, 0.22), transparent 52%),
-      radial-gradient(circle at center, rgba(240, 164, 75, 0.16), transparent 66%);
+    width: 300px;
+    height: 300px;
+    right: -65px;
+    top: -80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(157,227,213,.13), rgba(96,181,255,.08), transparent 62%);
     pointer-events: none;
   }
 
@@ -351,56 +403,93 @@
   }
 
   .bensz-home__side-label {
-    color: #7fb8f1;
-    font-size: 12px;
+    color: var(--blue);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: .16em;
     text-transform: uppercase;
   }
 
   .bensz-home__side-title {
     margin: 10px 0 0;
-    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    font-family: "Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    font-size: clamp(1.5rem, 3.4vw, 2.15rem);
+    line-height: 1.08;
+    letter-spacing: -.03em;
+    color: #ede6dc;
   }
 
+  /* Orbit */
   .bensz-home__orbit {
     position: relative;
-    min-height: 240px;
-    border-radius: 28px;
+    height: 260px;
+    border-radius: 22px;
     background:
-      radial-gradient(circle at center, rgba(96, 181, 255, 0.12), transparent 36%),
-      rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+      radial-gradient(circle at center, rgba(96,181,255,.1), transparent 42%),
+      rgba(255,255,255,.022);
+    border: 1px solid rgba(255,255,255,.065);
     overflow: hidden;
   }
 
-  .bensz-home__orbit-ring,
-  .bensz-home__orbit-ring::before,
-  .bensz-home__orbit-ring::after {
+  /* Three separate ring divs — each can animate independently */
+  .bensz-home__orbit-ring {
     position: absolute;
-    inset: 50%;
-    border: 1px solid rgba(141, 215, 255, 0.18);
-    border-radius: 999px;
-    content: "";
-    transform: translate(-50%, -50%);
+    border-radius: 50%;
   }
 
-  .bensz-home__orbit-ring {
+  .bensz-home__orbit-ring--inner {
     width: 110px;
     height: 110px;
+    left: calc(50% - 55px);
+    top: calc(50% - 55px);
+    border: 1px dashed rgba(157,227,213,.28);
+    animation: benszSpin 28s linear infinite;
   }
 
-  .bensz-home__orbit-ring::before {
+  .bensz-home__orbit-ring--mid {
     width: 176px;
     height: 176px;
+    left: calc(50% - 88px);
+    top: calc(50% - 88px);
+    border: 1px dashed rgba(141,215,255,.16);
+    animation: benszSpinR 42s linear infinite;
   }
 
-  .bensz-home__orbit-ring::after {
+  .bensz-home__orbit-ring--outer {
     width: 248px;
     height: 248px;
+    left: calc(50% - 124px);
+    top: calc(50% - 124px);
+    border: 1px solid rgba(141,215,255,.07);
+  }
+
+  /* Orbiting dots — anchored to ring radius via transform-origin */
+  .bensz-home__orbit-dot {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* Dot on inner ring (r=55px), orbits with same speed as inner ring */
+  .bensz-home__orbit-dot--a {
+    top:  calc(50% - 55px - 3.5px);
+    left: calc(50% - 3.5px);
+    transform-origin: 3.5px 58.5px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(157,227,213,.75);
+    animation: benszSpin 28s linear infinite;
+  }
+
+  /* Dot on mid ring (r=88px), counter-spin with mid ring */
+  .bensz-home__orbit-dot--b {
+    top:  calc(50% - 88px - 3.5px);
+    left: calc(50% - 3.5px);
+    transform-origin: 3.5px 91.5px;
+    background: var(--warm);
+    box-shadow: 0 0 8px rgba(240,164,75,.65);
+    animation: benszSpinR 42s linear infinite;
   }
 
   .bensz-home__orbit-core {
@@ -409,363 +498,413 @@
     top: 50%;
     display: grid;
     place-items: center;
-    width: 86px;
-    height: 86px;
-    border-radius: 999px;
-    background: linear-gradient(145deg, rgba(157, 227, 213, 0.92), rgba(96, 181, 255, 0.82));
-    color: #07111a;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, rgba(157,227,213,.9), rgba(96,181,255,.82));
+    color: #051018;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .1em;
     transform: translate(-50%, -50%);
     box-shadow:
-      0 0 0 14px rgba(157, 227, 213, 0.06),
-      0 20px 40px rgba(96, 181, 255, 0.22);
+      0 0 0 12px rgba(157,227,213,.07),
+      0 0 0 26px rgba(157,227,213,.032),
+      0 18px 38px rgba(96,181,255,.24);
   }
 
   .bensz-home__node {
     position: absolute;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255,255,255,.09);
     border-radius: 999px;
-    background: rgba(7, 17, 26, 0.78);
-    color: #e9f4ff;
-    font-size: 12px;
+    background: rgba(5,13,23,.84);
+    color: #deeaf6;
+    font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    letter-spacing: .04em;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.28);
+    white-space: nowrap;
   }
 
   .bensz-home__node::before {
     content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .bensz-home__node--agent {
-    top: 32px;
-    left: 22px;
-  }
+  .bensz-home__node--agent   { top: 22px; left: 16px; }
+  .bensz-home__node--agent::before   { background: var(--accent); box-shadow: 0 0 6px rgba(157,227,213,.6); }
 
-  .bensz-home__node--writing {
-    right: 18px;
-    top: 98px;
-  }
+  .bensz-home__node--writing { right: 12px; top: 106px; }
+  .bensz-home__node--writing::before { background: var(--warm);   box-shadow: 0 0 6px rgba(240,164,75,.6);  }
 
-  .bensz-home__node--research {
-    left: 68px;
-    bottom: 28px;
-  }
+  .bensz-home__node--research { left: 52px; bottom: 20px; }
+  .bensz-home__node--research::before { background: var(--blue);  box-shadow: 0 0 6px rgba(96,181,255,.6);  }
 
+  /* Pillar notes */
   .bensz-home__notes {
     position: relative;
     z-index: 1;
     display: grid;
-    gap: 12px;
+    gap: 0;
   }
 
   .bensz-home__note {
     display: grid;
-    grid-template-columns: 104px 1fr;
+    grid-template-columns: 76px 1fr;
     gap: 14px;
     align-items: start;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px 0;
+    border-top: 1px solid rgba(255,255,255,.066);
   }
 
   .bensz-home__note:first-child {
     padding-top: 0;
-    border-top: 0;
+    border-top: none;
   }
 
   .bensz-home__note-kicker {
-    color: #7d91a7;
-    font-size: 12px;
+    color: var(--dim);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: .16em;
     text-transform: uppercase;
+    padding-top: 2px;
   }
 
   .bensz-home__note-copy {
-    color: #dce6ef;
-    font-size: 14px;
+    color: #c8d8e6;
+    font-size: 13.5px;
     line-height: 1.75;
   }
 
-  .bensz-home__topics {
+  /* ── Platform Pillars ────────────────────── */
+  .bensz-home__pillars {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
     margin-top: 22px;
   }
 
-  .bensz-home__topic {
+  .bensz-home__pillar {
     position: relative;
-    padding: 22px 22px 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.04);
+    padding: 28px 24px 30px;
+    border: 1px solid rgba(255,255,255,.065);
+    border-radius: 22px;
+    background: rgba(255,255,255,.032);
     backdrop-filter: blur(10px);
-    transition:
-      transform 180ms ease,
-      border-color 180ms ease,
-      background 180ms ease;
+    overflow: hidden;
+    transition: transform 180ms ease, background 180ms ease;
   }
 
-  .bensz-home__topic:hover {
+  .bensz-home__pillar:hover {
     transform: translateY(-4px);
-    border-color: rgba(157, 227, 213, 0.28);
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255,255,255,.052);
   }
 
-  .bensz-home__topic-index {
+  /* Colored bottom accent per pillar */
+  .bensz-home__pillar:nth-child(1) { border-bottom: 2px solid rgba(96,181,255,.32);  }
+  .bensz-home__pillar:nth-child(2) { border-bottom: 2px solid rgba(157,227,213,.32); }
+  .bensz-home__pillar:nth-child(3) { border-bottom: 2px solid rgba(240,164,75,.32);  }
+
+  /* Ambient hover glow */
+  .bensz-home__pillar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+  .bensz-home__pillar:hover::after { opacity: 1; }
+  .bensz-home__pillar:nth-child(1)::after { background: radial-gradient(circle at 80% 10%, rgba(96,181,255,.07), transparent 60%); }
+  .bensz-home__pillar:nth-child(2)::after { background: radial-gradient(circle at 80% 10%, rgba(157,227,213,.07), transparent 60%); }
+  .bensz-home__pillar:nth-child(3)::after { background: radial-gradient(circle at 80% 10%, rgba(240,164,75,.07), transparent 60%); }
+
+  .bensz-home__pillar-tag {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    background: linear-gradient(145deg, rgba(157, 227, 213, 0.18), rgba(96, 181, 255, 0.2));
-    color: #f6dbc0;
-    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10.5px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    border: 1px solid;
   }
+  .bensz-home__pillar:nth-child(1) .bensz-home__pillar-tag { color: var(--blue);  border-color: rgba(96,181,255,.26);  background: rgba(96,181,255,.08);  }
+  .bensz-home__pillar:nth-child(2) .bensz-home__pillar-tag { color: var(--accent);border-color: rgba(157,227,213,.26); background: rgba(157,227,213,.08); }
+  .bensz-home__pillar:nth-child(3) .bensz-home__pillar-tag { color: var(--warm);  border-color: rgba(240,164,75,.26);  background: rgba(240,164,75,.08);  }
 
-  .bensz-home__topic-title {
+  .bensz-home__pillar-title {
+    position: relative;
     margin: 18px 0 10px;
-    color: #f6f1ea;
-    font-size: 1.15rem;
+    color: #eee5d9;
+    font-size: 1.06rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -.02em;
+    line-height: 1.3;
   }
 
-  .bensz-home__topic-copy {
+  .bensz-home__pillar-copy {
+    position: relative;
     margin: 0;
     color: var(--muted);
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 13.5px;
+    line-height: 1.85;
   }
 
+  /* ── Footer ──────────────────────────────── */
   .bensz-home__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-top: 20px;
+    margin-top: 26px;
     padding-top: 22px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    color: #7d91a7;
+    border-top: 1px solid rgba(255,255,255,.065);
+    color: var(--dim);
     font-size: 12px;
-    letter-spacing: 0.04em;
+    letter-spacing: .04em;
   }
 
-  .bensz-home__footer strong {
-    color: #dce6ef;
-    font-weight: 700;
+  .bensz-home__footer-links {
+    display: flex;
+    align-items: center;
+    gap: 22px;
   }
 
+  .bensz-home__footer-links a {
+    color: var(--dim);
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+
+  .bensz-home__footer-links a:hover {
+    color: var(--muted);
+  }
+
+  /* ── Keyframes ───────────────────────────── */
   @keyframes benszPulse {
-    0%,
-    100% {
-      transform: scale(0.92);
-      opacity: 0.82;
-    }
-    50% {
-      transform: scale(1.12);
-      opacity: 1;
-    }
+    0%, 100% { transform: scale(.88); opacity: .8; }
+    50%       { transform: scale(1.14); opacity: 1; }
   }
 
-  @media (max-width: 1040px) {
-    .bensz-home__hero {
-      grid-template-columns: 1fr;
-    }
+  @keyframes benszSpin {
+    from { transform: rotate(0deg);    }
+    to   { transform: rotate(360deg);  }
+  }
 
-    .bensz-home__title {
-      max-width: none;
-    }
+  @keyframes benszSpinR {
+    from { transform: rotate(0deg);    }
+    to   { transform: rotate(-360deg); }
+  }
 
-    .bensz-home__topics {
-      grid-template-columns: 1fr;
-    }
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 1060px) {
+    .bensz-home__hero    { grid-template-columns: 1fr; }
+    .bensz-home__title   { max-width: none; }
+    .bensz-home__pillars { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 720px) {
     .bensz-home {
-      padding: 16px 14px 28px;
+      padding: 16px 14px 34px;
     }
 
-    .bensz-home__topbar,
-    .bensz-home__footer {
-      flex-direction: column;
-      align-items: flex-start;
+    .bensz-home__topbar {
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     .bensz-home__main,
     .bensz-home__side {
-      border-radius: 24px;
+      border-radius: 22px;
     }
 
     .bensz-home__stats {
       grid-template-columns: 1fr;
+      gap: 8px;
     }
 
     .bensz-home__note {
       grid-template-columns: 1fr;
-      gap: 6px;
+      gap: 4px;
     }
 
-    .bensz-home__node--agent {
-      top: 18px;
-      left: 12px;
+    .bensz-home__footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    .bensz-home__node--writing {
-      right: 10px;
-      top: 112px;
-    }
-
-    .bensz-home__node--research {
-      left: 20px;
-      bottom: 18px;
-    }
+    .bensz-home__node--agent   { top: 16px; left: 12px; }
+    .bensz-home__node--writing { right: 8px; top: 110px; }
+    .bensz-home__node--research { left: 18px; bottom: 16px; }
   }
 </style>
 
-<section class="bensz-home" aria-label="BenszResearch 首页">
+<section class="bensz-home" aria-label="BenszResearch 平台首页">
   <div class="bensz-home__shell">
+
+    <!-- Topbar -->
     <div class="bensz-home__topbar">
       <div class="bensz-home__brand">
         <div class="bensz-home__seal" aria-hidden="true">BR</div>
-        <div class="bensz-home__brand-meta">
+        <div>
           <span class="bensz-home__brand-name">BenszResearch</span>
-          <span class="bensz-home__brand-sub">Research-native AI Website</span>
+          <span class="bensz-home__brand-sub">AI 工具链 · 研究内容平台</span>
         </div>
       </div>
-      <div class="bensz-home__chip">
-        <span class="bensz-home__chip-dot" aria-hidden="true"></span>
-        AI for Builders, Writers, Researchers
+      <div class="bensz-home__status">
+        <span class="bensz-home__status-dot" aria-hidden="true"></span>
+        服务在线
       </div>
     </div>
 
+    <!-- Hero -->
     <div class="bensz-home__hero">
+
+      <!-- Main card -->
       <article class="bensz-home__main">
-        <div class="bensz-home__eyebrow">Signal / Launchpad / Frontier</div>
+        <div class="bensz-home__eyebrow">For Builders · Writers · Researchers</div>
         <h1 class="bensz-home__title">
-          Build the next
-          <span class="bensz-home__title-accent">research workflow.</span>
+          研究级 AI
+          <span class="bensz-home__title-line2">基础设施</span>
         </h1>
         <p class="bensz-home__lead">
-          <strong>BenszResearch</strong> 是一个围绕
-          <strong>AI Agent 开发</strong>、
-          <strong>AI 辅助科研写作</strong> 与
-          <strong>前沿 AI 研究</strong>
-          展开的内容与实践平台。这里既关注方法论，也强调真正可复用的工程落地，帮助你把灵感变成系统，把研究变成可发布成果。
+          BenszResearch 为研究者、开发者与学术写作者提供统一多模型 API 接入，配合
+          AI Agent 工程化方法论与科研写作增强体系，构建从基础工具到系统认知的完整生产力栈。
         </p>
 
+        <!-- Available models -->
+        <div class="bensz-home__models" aria-label="支持的 AI 模型">
+          <span class="bensz-home__models-label">接入模型</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--claude">Claude</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--gpt">GPT-4o</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--gemini">Gemini</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--deepseek">DeepSeek</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--more">+ 更多</span>
+        </div>
+
+        <!-- CTAs -->
         <div class="bensz-home__actions">
           <a class="bensz-home__cta bensz-home__cta--primary" href="/dashboard">
-            进入控制台
-            <span aria-hidden="true">↗</span>
+            进入控制台 ↗
           </a>
           <a class="bensz-home__cta bensz-home__cta--secondary" href="/login">
-            登录 / 开始使用
+            登录 / 注册
           </a>
           <div class="bensz-home__microcopy">
-            若尚未登录，点击控制台入口后会根据平台权限流程自动跳转。
+            未登录时点击控制台，平台将自动引导完成认证流程
           </div>
         </div>
 
-        <div class="bensz-home__stats" aria-label="BenszResearch 方向摘要">
+        <!-- Value props -->
+        <div class="bensz-home__stats" aria-label="核心价值">
           <div class="bensz-home__stat">
-            <span class="bensz-home__stat-value">01</span>
-            <span class="bensz-home__stat-label">Agent Engineering 与工具链实践</span>
+            <span class="bensz-home__stat-value">多模型统一接入</span>
+            <span class="bensz-home__stat-label">单一 API Key，直连主流大模型</span>
           </div>
           <div class="bensz-home__stat">
-            <span class="bensz-home__stat-value">02</span>
-            <span class="bensz-home__stat-label">科研写作流程增强与交付提效</span>
+            <span class="bensz-home__stat-value">精确按量计费</span>
+            <span class="bensz-home__stat-label">透明用量追踪，无隐性收费</span>
           </div>
           <div class="bensz-home__stat">
-            <span class="bensz-home__stat-value">03</span>
-            <span class="bensz-home__stat-label">前沿模型、方法与实验趋势追踪</span>
+            <span class="bensz-home__stat-value">工程 + 科研双轨</span>
+            <span class="bensz-home__stat-label">AI 工程化与研究写作并行赋能</span>
           </div>
         </div>
       </article>
 
-      <aside class="bensz-home__side" aria-label="BenszResearch 核心领域">
+      <!-- Side panel -->
+      <aside class="bensz-home__side" aria-label="平台三大支柱">
         <div class="bensz-home__side-head">
-          <div class="bensz-home__side-label">Core Constellation</div>
-          <h2 class="bensz-home__side-title">Three pillars, one operating system.</h2>
+          <div class="bensz-home__side-label">Platform Core</div>
+          <h2 class="bensz-home__side-title">One key.<br>Everything you need.</h2>
         </div>
 
+        <!-- Animated orbit visualization -->
         <div class="bensz-home__orbit" aria-hidden="true">
-          <div class="bensz-home__orbit-ring"></div>
-          <div class="bensz-home__orbit-core">Bensz</div>
-          <div class="bensz-home__node bensz-home__node--agent">AI Agent 开发</div>
-          <div class="bensz-home__node bensz-home__node--writing">科研写作增强</div>
-          <div class="bensz-home__node bensz-home__node--research">前沿 AI 研究</div>
+          <div class="bensz-home__orbit-ring bensz-home__orbit-ring--inner"></div>
+          <div class="bensz-home__orbit-ring bensz-home__orbit-ring--mid"></div>
+          <div class="bensz-home__orbit-ring bensz-home__orbit-ring--outer"></div>
+          <span class="bensz-home__orbit-dot bensz-home__orbit-dot--a"></span>
+          <span class="bensz-home__orbit-dot bensz-home__orbit-dot--b"></span>
+          <div class="bensz-home__orbit-core">BR</div>
+          <div class="bensz-home__node bensz-home__node--agent">Agent 工程</div>
+          <div class="bensz-home__node bensz-home__node--writing">科研写作 AI</div>
+          <div class="bensz-home__node bensz-home__node--research">前沿研究</div>
         </div>
 
+        <!-- Pillar notes -->
         <div class="bensz-home__notes">
           <div class="bensz-home__note">
             <div class="bensz-home__note-kicker">Build</div>
             <div class="bensz-home__note-copy">
-              从 agent workflow、prompt architecture 到自动化执行链路，聚焦真正可持续的 AI 工程化能力。
+              从 Agent 工作流、Prompt 架构到自动化执行链路，聚焦可持续交付的 AI 工程化能力。
             </div>
           </div>
           <div class="bensz-home__note">
             <div class="bensz-home__note-kicker">Write</div>
             <div class="bensz-home__note-copy">
-              将 AI 纳入选题、检索、写作、修订与结构化交付流程，让科研写作从“辅助”走向“协同生产”。
+              将 AI 纳入选题、检索、写作、修订与交付全流程，推动科研写作从"辅助"走向"协同"。
             </div>
           </div>
           <div class="bensz-home__note">
             <div class="bensz-home__note-kicker">Explore</div>
             <div class="bensz-home__note-copy">
-              持续关注模型能力边界、前沿论文和实验范式，帮助研究者与开发者把握下一波变化。
+              追踪模型能力边界与前沿论文，将碎片化信息整理为可理解、可复现的实践洞察。
             </div>
           </div>
         </div>
       </aside>
     </div>
 
-    <div class="bensz-home__topics" aria-label="BenszResearch 核心主题">
-      <article class="bensz-home__topic">
-        <div class="bensz-home__topic-index">A1</div>
-        <h3 class="bensz-home__topic-title">AI Agent 开发</h3>
-        <p class="bensz-home__topic-copy">
-          关注多代理协作、任务分解、上下文工程、工具调用与产品化部署，让 Agent 不只“能跑”，更要“能交付”。
+    <!-- Platform pillars -->
+    <div class="bensz-home__pillars" aria-label="平台核心功能">
+      <article class="bensz-home__pillar">
+        <div class="bensz-home__pillar-tag">Platform</div>
+        <h3 class="bensz-home__pillar-title">多模型 API 统一接入</h3>
+        <p class="bensz-home__pillar-copy">
+          通过单一 API Key 访问 Claude、GPT-4o、Gemini、DeepSeek 等主流大模型，智能负载调度与精确 Token 计费，开箱即用，无缝衔接现有工作流。
         </p>
       </article>
 
-      <article class="bensz-home__topic">
-        <div class="bensz-home__topic-index">A2</div>
-        <h3 class="bensz-home__topic-title">AI 辅助科研写作</h3>
-        <p class="bensz-home__topic-copy">
-          围绕文献调研、结构化写作、审稿回应、基金申请和学术表达优化，打造从资料到成稿的连续增强链路。
+      <article class="bensz-home__pillar">
+        <div class="bensz-home__pillar-tag">Agent</div>
+        <h3 class="bensz-home__pillar-title">AI Agent 工程化实践</h3>
+        <p class="bensz-home__pillar-copy">
+          从多代理协作、任务分解、上下文工程到工具链设计，提供真正可落地的 Agent 工程化方法论，帮助你把 AI 能力转化为可持续交付的系统。
         </p>
       </article>
 
-      <article class="bensz-home__topic">
-        <div class="bensz-home__topic-index">A3</div>
-        <h3 class="bensz-home__topic-title">前沿 AI 研究</h3>
-        <p class="bensz-home__topic-copy">
-          追踪最新模型、论文与实验方法，把碎片化前沿信息整理成可理解、可复现、可转化为实践的洞察。
+      <article class="bensz-home__pillar">
+        <div class="bensz-home__pillar-tag">Scholar</div>
+        <h3 class="bensz-home__pillar-title">AI 辅助科研写作增强</h3>
+        <p class="bensz-home__pillar-copy">
+          围绕文献调研、结构化写作、审稿回应与基金申请，构建 AI 深度介入的完整科研写作协同体系，让每个研究者都有一套高效的 AI 工作搭档。
         </p>
       </article>
     </div>
 
+    <!-- Footer -->
     <div class="bensz-home__footer">
-      <span>Custom homepage reference for sub2api home_content</span>
-      <span><strong>Tip:</strong> 如果你后续想更强品牌化，可以把文案中的 BenszResearch 继续替换为站点副标题与产品口号。</span>
+      <span>© 2026 BenszResearch. All rights reserved.</span>
+      <div class="bensz-home__footer-links">
+        <a href="/terms">服务条款</a>
+        <a href="/privacy">隐私政策</a>
+        <a href="/dashboard">控制台</a>
+      </div>
     </div>
+
   </div>
 </section>
