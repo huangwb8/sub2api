@@ -10,26 +10,26 @@
   }
 
   .bensz-home {
-    --bg:           #06101a;
-    --panel:        rgba(8, 18, 30, 0.72);
-    --panel-deep:   rgba(10, 22, 36, 0.90);
-    --text:         #f4eee6;
-    --muted:        #8da2b6;
-    --dim:          #4e6880;
-    --accent:       #9de3d5;   /* teal   */
+    --bg:           #f5f7fa;
+    --panel:        rgba(255,255,255,0.75);
+    --panel-deep:   rgba(255,255,255,0.92);
+    --text:         #111827;
+    --muted:        #6b7280;
+    --dim:          #9ca3af;
+    --accent:       #0d9488;   /* teal   */
     --warm:         #f0a44b;   /* amber  */
-    --blue:         #60b5ff;   /* blue   */
-    --shadow:       0 28px 72px rgba(0, 0, 0, 0.45);
+    --blue:         #3b82f6;   /* blue   */
+    --shadow:       0 28px 72px rgba(0, 0, 0, 0.10);
     position: relative;
     overflow: hidden;
     min-height: 100vh;
     padding: 28px clamp(18px, 4vw, 56px) 52px;
     color: var(--text);
     background:
-      radial-gradient(ellipse 60% 40% at 12% 15%, rgba(96,181,255,.15), transparent),
-      radial-gradient(ellipse 50% 36% at 90%  8%, rgba(240,164,75,.11), transparent),
-      radial-gradient(ellipse 55% 38% at 62% 80%, rgba(157,227,213,.09), transparent),
-      linear-gradient(160deg, #05101a 0%, #091620 55%, #050d16 100%);
+      radial-gradient(ellipse 60% 40% at 12% 15%, rgba(20,184,166,.13), transparent),
+      radial-gradient(ellipse 50% 36% at 90%  8%, rgba(240,164,75,.08), transparent),
+      radial-gradient(ellipse 55% 38% at 62% 80%, rgba(20,184,166,.09), transparent),
+      linear-gradient(160deg, #f8fafc 0%, #f0faf9 55%, #f5f7fa 100%);
     font-family: "Avenir Next","Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;
     isolation: isolate;
   }
@@ -40,10 +40,10 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(255,255,255,.032) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.032) 1px, transparent 1px);
+      linear-gradient(rgba(20,184,166,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,184,166,.04) 1px, transparent 1px);
     background-size: 72px 72px;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,.88), transparent 78%);
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.75), transparent 78%);
     pointer-events: none;
     z-index: 0;
   }
@@ -53,7 +53,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 20%, transparent, rgba(3,7,13,.36) 85%);
+    background: radial-gradient(ellipse at 50% 20%, transparent, rgba(220,240,238,.18) 85%);
     pointer-events: none;
     z-index: 0;
   }
@@ -86,13 +86,13 @@
     width: 48px;
     height: 48px;
     border-radius: 15px;
-    border: 1px solid rgba(157,227,213,.22);
-    background: linear-gradient(145deg, rgba(157,227,213,.14), rgba(96,181,255,.07));
+    border: 1px solid rgba(13,148,136,.22);
+    background: linear-gradient(145deg, rgba(13,148,136,.14), rgba(59,130,246,.07));
     color: var(--accent);
     font-size: 13px;
     font-weight: 900;
     letter-spacing: .06em;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 8px 22px rgba(0,0,0,.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 8px 22px rgba(0,0,0,.08);
     backdrop-filter: blur(16px);
   }
 
@@ -117,9 +117,9 @@
     align-items: center;
     gap: 8px;
     padding: 8px 18px;
-    border: 1px solid rgba(157,227,213,.15);
+    border: 1px solid rgba(13,148,136,.20);
     border-radius: 999px;
-    background: rgba(157,227,213,.05);
+    background: rgba(13,148,136,.07);
     color: var(--accent);
     font-size: 12px;
     font-weight: 600;
@@ -132,7 +132,7 @@
     height: 7px;
     border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 10px rgba(157,227,213,.72);
+    box-shadow: 0 0 10px rgba(13,148,136,.60);
     animation: benszPulse 2.8s ease-in-out infinite;
   }
 
@@ -148,10 +148,10 @@
   .bensz-home__main {
     position: relative;
     padding: clamp(32px, 5vw, 58px);
-    border: 1px solid rgba(255,255,255,.075);
+    border: 1px solid rgba(0,0,0,.07);
     border-radius: 28px;
     background:
-      linear-gradient(168deg, rgba(255,255,255,.048), rgba(255,255,255,.016)),
+      linear-gradient(168deg, rgba(255,255,255,.92), rgba(255,255,255,.72)),
       var(--panel);
     box-shadow: var(--shadow);
     backdrop-filter: blur(20px);
@@ -165,7 +165,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(145deg, rgba(255,255,255,.11), transparent 30%, rgba(157,227,213,.14));
+    background: linear-gradient(145deg, rgba(255,255,255,.95), transparent 30%, rgba(13,148,136,.10));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -181,7 +181,7 @@
     width: 220px;
     height: 220px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(240,164,75,.07), transparent 68%);
+    background: radial-gradient(circle, rgba(240,164,75,.09), transparent 68%);
     pointer-events: none;
   }
 
@@ -214,13 +214,13 @@
     font-size: clamp(2.8rem, 6.2vw, 5.6rem);
     line-height: .95;
     letter-spacing: -.04em;
-    color: #f8f1e8;
+    color: #111827;
     text-wrap: balance;
   }
 
   .bensz-home__title-line2 {
     display: block;
-    color: var(--blue);
+    color: var(--accent);
     margin-top: .04em;
   }
 
@@ -271,15 +271,16 @@
     opacity: .7;
   }
 
-  .bensz-home__model-badge--claude  { color: #e8a85a; border-color: rgba(232,168,90,.28);  background: rgba(232,168,90,.07);  }
-  .bensz-home__model-badge--gpt     { color: #75d8c4; border-color: rgba(117,216,196,.28); background: rgba(117,216,196,.07); }
-  .bensz-home__model-badge--gemini  { color: #7fb8f1; border-color: rgba(127,184,241,.28); background: rgba(127,184,241,.07); }
-  .bensz-home__model-badge--deepseek{ color: #a78cfa; border-color: rgba(167,140,250,.28); background: rgba(167,140,250,.07); }
+  .bensz-home__model-badge--codex   { color: #0d9488; border-color: rgba(13,148,136,.30);  background: rgba(13,148,136,.10); font-weight: 600; }
+  .bensz-home__model-badge--codex::before { background: #10b981; }
+
+  .bensz-home__model-badge--soon   { color: var(--dim); border-color: rgba(156,163,175,.20); background: rgba(0,0,0,.02); opacity: 0.55; }
+  .bensz-home__model-badge--soon::before { background: var(--dim); }
 
   .bensz-home__model-badge--more {
     color: var(--dim);
-    border-color: rgba(78,104,128,.22);
-    background: rgba(255,255,255,.03);
+    border-color: rgba(156,163,175,.30);
+    background: rgba(0,0,0,.03);
   }
   .bensz-home__model-badge--more::before { display: none; }
 
@@ -319,14 +320,15 @@
   }
 
   .bensz-home__cta--secondary {
-    background: rgba(255,255,255,.05);
-    color: var(--text);
-    border-color: rgba(255,255,255,.12);
+    background: rgba(13,148,136,.08);
+    color: #0d9488;
+    border-color: rgba(13,148,136,.32);
   }
   .bensz-home__cta--secondary:hover {
-    background: rgba(255,255,255,.09);
-    border-color: rgba(157,227,213,.32);
+    background: rgba(13,148,136,.14);
+    border-color: rgba(13,148,136,.55);
     transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(13,148,136,.15);
   }
 
   .bensz-home__microcopy {
@@ -346,9 +348,9 @@
 
   .bensz-home__stat {
     padding: 18px 16px;
-    border: 1px solid rgba(255,255,255,.065);
+    border: 1px solid rgba(0,0,0,.07);
     border-radius: 18px;
-    background: rgba(255,255,255,.032);
+    background: rgba(255,255,255,.65);
     backdrop-filter: blur(8px);
   }
 
@@ -376,10 +378,10 @@
     display: grid;
     gap: 20px;
     padding: clamp(24px, 4vw, 32px);
-    border: 1px solid rgba(255,255,255,.065);
+    border: 1px solid rgba(0,0,0,.07);
     border-radius: 28px;
     background:
-      linear-gradient(175deg, rgba(255,255,255,.04), rgba(255,255,255,.014)),
+      linear-gradient(175deg, rgba(255,255,255,.92), rgba(255,255,255,.78)),
       var(--panel-deep);
     box-shadow: var(--shadow);
     overflow: hidden;
@@ -393,7 +395,7 @@
     right: -65px;
     top: -80px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(157,227,213,.13), rgba(96,181,255,.08), transparent 62%);
+    background: radial-gradient(circle, rgba(13,148,136,.10), rgba(59,130,246,.06), transparent 62%);
     pointer-events: none;
   }
 
@@ -416,7 +418,7 @@
     font-size: clamp(1.5rem, 3.4vw, 2.15rem);
     line-height: 1.08;
     letter-spacing: -.03em;
-    color: #ede6dc;
+    color: #1f2937;
   }
 
   /* Orbit */
@@ -425,9 +427,9 @@
     height: 260px;
     border-radius: 22px;
     background:
-      radial-gradient(circle at center, rgba(96,181,255,.1), transparent 42%),
-      rgba(255,255,255,.022);
-    border: 1px solid rgba(255,255,255,.065);
+      radial-gradient(circle at center, rgba(13,148,136,.08), transparent 42%),
+      rgba(255,255,255,.6);
+    border: 1px solid rgba(0,0,0,.07);
     overflow: hidden;
   }
 
@@ -442,7 +444,7 @@
     height: 110px;
     left: calc(50% - 55px);
     top: calc(50% - 55px);
-    border: 1px dashed rgba(157,227,213,.28);
+    border: 1px dashed rgba(13,148,136,.30);
     animation: benszSpin 28s linear infinite;
   }
 
@@ -451,7 +453,7 @@
     height: 176px;
     left: calc(50% - 88px);
     top: calc(50% - 88px);
-    border: 1px dashed rgba(141,215,255,.16);
+    border: 1px dashed rgba(59,130,246,.18);
     animation: benszSpinR 42s linear infinite;
   }
 
@@ -460,7 +462,7 @@
     height: 248px;
     left: calc(50% - 124px);
     top: calc(50% - 124px);
-    border: 1px solid rgba(141,215,255,.07);
+    border: 1px solid rgba(59,130,246,.09);
   }
 
   /* Orbiting dots — anchored to ring radius via transform-origin */
@@ -478,7 +480,7 @@
     left: calc(50% - 3.5px);
     transform-origin: 3.5px 58.5px;
     background: var(--accent);
-    box-shadow: 0 0 8px rgba(157,227,213,.75);
+    box-shadow: 0 0 8px rgba(13,148,136,.70);
     animation: benszSpin 28s linear infinite;
   }
 
@@ -501,16 +503,16 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(145deg, rgba(157,227,213,.9), rgba(96,181,255,.82));
-    color: #051018;
+    background: linear-gradient(145deg, #0d9488, #2563eb);
+    color: #ffffff;
     font-size: 13px;
     font-weight: 900;
     letter-spacing: .1em;
     transform: translate(-50%, -50%);
     box-shadow:
-      0 0 0 12px rgba(157,227,213,.07),
-      0 0 0 26px rgba(157,227,213,.032),
-      0 18px 38px rgba(96,181,255,.24);
+      0 0 0 12px rgba(13,148,136,.07),
+      0 0 0 26px rgba(13,148,136,.032),
+      0 18px 38px rgba(13,148,136,.20);
   }
 
   .bensz-home__node {
@@ -519,15 +521,15 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    border: 1px solid rgba(255,255,255,.09);
+    border: 1px solid rgba(0,0,0,.09);
     border-radius: 999px;
-    background: rgba(5,13,23,.84);
-    color: #deeaf6;
+    background: rgba(255,255,255,.90);
+    color: #374151;
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: .04em;
     backdrop-filter: blur(12px);
-    box-shadow: 0 10px 28px rgba(0,0,0,.28);
+    box-shadow: 0 10px 28px rgba(0,0,0,.10);
     white-space: nowrap;
   }
 
@@ -540,13 +542,13 @@
   }
 
   .bensz-home__node--agent   { top: 22px; left: 16px; }
-  .bensz-home__node--agent::before   { background: var(--accent); box-shadow: 0 0 6px rgba(157,227,213,.6); }
+  .bensz-home__node--agent::before   { background: var(--accent); box-shadow: 0 0 6px rgba(13,148,136,.55); }
 
   .bensz-home__node--writing { right: 12px; top: 106px; }
-  .bensz-home__node--writing::before { background: var(--warm);   box-shadow: 0 0 6px rgba(240,164,75,.6);  }
+  .bensz-home__node--writing::before { background: var(--warm);   box-shadow: 0 0 6px rgba(240,164,75,.60); }
 
   .bensz-home__node--research { left: 52px; bottom: 20px; }
-  .bensz-home__node--research::before { background: var(--blue);  box-shadow: 0 0 6px rgba(96,181,255,.6);  }
+  .bensz-home__node--research::before { background: var(--blue);  box-shadow: 0 0 6px rgba(59,130,246,.55); }
 
   /* Pillar notes */
   .bensz-home__notes {
@@ -562,7 +564,7 @@
     gap: 14px;
     align-items: start;
     padding: 14px 0;
-    border-top: 1px solid rgba(255,255,255,.066);
+    border-top: 1px solid rgba(0,0,0,.08);
   }
 
   .bensz-home__note:first-child {
@@ -580,7 +582,7 @@
   }
 
   .bensz-home__note-copy {
-    color: #c8d8e6;
+    color: #374151;
     font-size: 13.5px;
     line-height: 1.75;
   }
@@ -596,9 +598,9 @@
   .bensz-home__pillar {
     position: relative;
     padding: 28px 24px 30px;
-    border: 1px solid rgba(255,255,255,.065);
+    border: 1px solid rgba(0,0,0,.07);
     border-radius: 22px;
-    background: rgba(255,255,255,.032);
+    background: rgba(255,255,255,.65);
     backdrop-filter: blur(10px);
     overflow: hidden;
     transition: transform 180ms ease, background 180ms ease;
@@ -606,13 +608,13 @@
 
   .bensz-home__pillar:hover {
     transform: translateY(-4px);
-    background: rgba(255,255,255,.052);
+    background: rgba(255,255,255,.88);
   }
 
   /* Colored bottom accent per pillar */
-  .bensz-home__pillar:nth-child(1) { border-bottom: 2px solid rgba(96,181,255,.32);  }
-  .bensz-home__pillar:nth-child(2) { border-bottom: 2px solid rgba(157,227,213,.32); }
-  .bensz-home__pillar:nth-child(3) { border-bottom: 2px solid rgba(240,164,75,.32);  }
+  .bensz-home__pillar:nth-child(1) { border-bottom: 2px solid rgba(59,130,246,.42);  }
+  .bensz-home__pillar:nth-child(2) { border-bottom: 2px solid rgba(13,148,136,.42); }
+  .bensz-home__pillar:nth-child(3) { border-bottom: 2px solid rgba(240,164,75,.42);  }
 
   /* Ambient hover glow */
   .bensz-home__pillar::after {
@@ -625,9 +627,9 @@
     transition: opacity 180ms ease;
   }
   .bensz-home__pillar:hover::after { opacity: 1; }
-  .bensz-home__pillar:nth-child(1)::after { background: radial-gradient(circle at 80% 10%, rgba(96,181,255,.07), transparent 60%); }
-  .bensz-home__pillar:nth-child(2)::after { background: radial-gradient(circle at 80% 10%, rgba(157,227,213,.07), transparent 60%); }
-  .bensz-home__pillar:nth-child(3)::after { background: radial-gradient(circle at 80% 10%, rgba(240,164,75,.07), transparent 60%); }
+  .bensz-home__pillar:nth-child(1)::after { background: radial-gradient(circle at 80% 10%, rgba(59,130,246,.06), transparent 60%); }
+  .bensz-home__pillar:nth-child(2)::after { background: radial-gradient(circle at 80% 10%, rgba(13,148,136,.06), transparent 60%); }
+  .bensz-home__pillar:nth-child(3)::after { background: radial-gradient(circle at 80% 10%, rgba(240,164,75,.06), transparent 60%); }
 
   .bensz-home__pillar-tag {
     display: inline-flex;
@@ -640,14 +642,14 @@
     text-transform: uppercase;
     border: 1px solid;
   }
-  .bensz-home__pillar:nth-child(1) .bensz-home__pillar-tag { color: var(--blue);  border-color: rgba(96,181,255,.26);  background: rgba(96,181,255,.08);  }
-  .bensz-home__pillar:nth-child(2) .bensz-home__pillar-tag { color: var(--accent);border-color: rgba(157,227,213,.26); background: rgba(157,227,213,.08); }
-  .bensz-home__pillar:nth-child(3) .bensz-home__pillar-tag { color: var(--warm);  border-color: rgba(240,164,75,.26);  background: rgba(240,164,75,.08);  }
+  .bensz-home__pillar:nth-child(1) .bensz-home__pillar-tag { color: #2563eb;  border-color: rgba(37,99,235,.24);   background: rgba(37,99,235,.07);   }
+  .bensz-home__pillar:nth-child(2) .bensz-home__pillar-tag { color: #0d9488;  border-color: rgba(13,148,136,.24);  background: rgba(13,148,136,.07);  }
+  .bensz-home__pillar:nth-child(3) .bensz-home__pillar-tag { color: #d97706;  border-color: rgba(217,119,6,.24);   background: rgba(217,119,6,.07);   }
 
   .bensz-home__pillar-title {
     position: relative;
     margin: 18px 0 10px;
-    color: #eee5d9;
+    color: #111827;
     font-size: 1.06rem;
     font-weight: 800;
     letter-spacing: -.02em;
@@ -670,7 +672,7 @@
     gap: 16px;
     margin-top: 26px;
     padding-top: 22px;
-    border-top: 1px solid rgba(255,255,255,.065);
+    border-top: 1px solid rgba(0,0,0,.08);
     color: var(--dim);
     font-size: 12px;
     letter-spacing: .04em;
@@ -788,11 +790,9 @@
         <!-- Available models -->
         <div class="bensz-home__models" aria-label="支持的 AI 模型">
           <span class="bensz-home__models-label">接入模型</span>
-          <span class="bensz-home__model-badge bensz-home__model-badge--claude">Claude</span>
-          <span class="bensz-home__model-badge bensz-home__model-badge--gpt">GPT-4o</span>
-          <span class="bensz-home__model-badge bensz-home__model-badge--gemini">Gemini</span>
-          <span class="bensz-home__model-badge bensz-home__model-badge--deepseek">DeepSeek</span>
-          <span class="bensz-home__model-badge bensz-home__model-badge--more">+ 更多</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--codex">GPT</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--soon" title="即将上线">Claude</span>
+          <span class="bensz-home__model-badge bensz-home__model-badge--soon" title="即将上线">Gemini</span>
         </div>
 
         <!-- CTAs -->
@@ -815,8 +815,8 @@
             <span class="bensz-home__stat-label">单一 API Key，直连主流大模型</span>
           </div>
           <div class="bensz-home__stat">
-            <span class="bensz-home__stat-value">精确按量计费</span>
-            <span class="bensz-home__stat-label">透明用量追踪，无隐性收费</span>
+            <span class="bensz-home__stat-value">订阅制使用</span>
+            <span class="bensz-home__stat-label">固定套餐，按需订阅，开箱即用</span>
           </div>
           <div class="bensz-home__stat">
             <span class="bensz-home__stat-value">工程 + 科研双轨</span>

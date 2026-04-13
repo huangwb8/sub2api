@@ -15,6 +15,14 @@ version=1.0.4
 
 # 日常
 
+---
+
+plans/2026-04-13-benszresearch-homepage-reference.html 优化： 
+
+- 不要用夜间模式； 用白天模式吧，就像sub2api里的默认首页那样； 默认首页的色调我也蛮喜欢的，你可以参考下。
+
+---
+
 plans/2026-04-13-benszresearch-homepage-reference.html 优化： 
 
 - 这是一个教大家怎么在CC Switch里用的图片，你插在首页里： https://chevereto.hwb0307.com/images/2026/04/13/iShot_2026-04-13_21.58.15.png
