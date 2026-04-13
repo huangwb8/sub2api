@@ -2390,6 +2390,20 @@
                   :placeholder="t('admin.settings.smtp.fromNamePlaceholder')"
                 />
               </div>
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.smtp.subscriptionNotificationEmail') }}
+                </label>
+                <input
+                  v-model="form.subscription_notification_email"
+                  type="email"
+                  class="input"
+                  :placeholder="t('admin.settings.smtp.subscriptionNotificationEmailPlaceholder')"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.smtp.subscriptionNotificationEmailHint') }}
+                </p>
+              </div>
             </div>
 
             <!-- Use TLS Toggle -->
@@ -2686,6 +2700,7 @@ const form = reactive<SettingsForm>({
   smtp_from_email: '',
   smtp_from_name: '',
   smtp_use_tls: true,
+  subscription_notification_email: '',
   // Cloudflare Turnstile
   turnstile_enabled: false,
   turnstile_site_key: '',
@@ -3100,6 +3115,7 @@ async function saveSettings() {
       smtp_from_email: form.smtp_from_email,
       smtp_from_name: form.smtp_from_name,
       smtp_use_tls: form.smtp_use_tls,
+      subscription_notification_email: form.subscription_notification_email,
       turnstile_enabled: form.turnstile_enabled,
       turnstile_site_key: form.turnstile_site_key,
       turnstile_secret_key: form.turnstile_secret_key || undefined,

@@ -13,6 +13,7 @@ import (
 const (
 	TaskTypeVerifyCode    = "verify_code"
 	TaskTypePasswordReset = "password_reset"
+	TaskTypeCustomEmail   = "custom_email"
 )
 
 // EmailTask 邮件发送任务
@@ -21,6 +22,8 @@ type EmailTask struct {
 	SiteName string
 	TaskType string // "verify_code" or "password_reset"
 	ResetURL string // Only used for password_reset task type
+	Subject  string // Only used for custom_email task type
+	Body     string // Only used for custom_email task type
 }
 
 // EmailQueueService 异步邮件队列服务
@@ -93,6 +96,12 @@ func (s *EmailQueueService) processTask(workerID int, task EmailTask) {
 		} else {
 			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent password reset to %s", workerID, task.Email)
 		}
+	case TaskTypeCustomEmail:
+		if err := s.emailService.SendEmail(ctx, task.Email, task.Subject, task.Body); err != nil {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d failed to send custom email to %s: %v", workerID, task.Email, err)
+		} else {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent custom email to %s", workerID, task.Email)
+		}
 	default:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d unknown task type: %s", workerID, task.TaskType)
 	}
@@ -127,6 +136,24 @@ func (s *EmailQueueService) EnqueuePasswordReset(email, siteName, resetURL strin
 	select {
 	case s.taskChan <- task:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued password reset task for %s", email)
+		return nil
+	default:
+		return fmt.Errorf("email queue is full")
+	}
+}
+
+// EnqueueCustomEmail 将自定义邮件任务加入队列
+func (s *EmailQueueService) EnqueueCustomEmail(email, subject, body string) error {
+	task := EmailTask{
+		Email:    email,
+		TaskType: TaskTypeCustomEmail,
+		Subject:  subject,
+		Body:     body,
+	}
+
+	select {
+	case s.taskChan <- task:
+		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued custom email task for %s", email)
 		return nil
 	default:
 		return fmt.Errorf("email queue is full")

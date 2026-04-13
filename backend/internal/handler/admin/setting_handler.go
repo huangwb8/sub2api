@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/mail"
 	"net/http"
 	"regexp"
 	"strings"
@@ -111,6 +112,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		SMTPFrom:                             settings.SMTPFrom,
 		SMTPFromName:                         settings.SMTPFromName,
 		SMTPUseTLS:                           settings.SMTPUseTLS,
+		SubscriptionNotificationEmail:        settings.SubscriptionNotificationEmail,
 		TurnstileEnabled:                     settings.TurnstileEnabled,
 		TurnstileSiteKey:                     settings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:         settings.TurnstileSecretKeyConfigured,
@@ -216,6 +218,7 @@ type UpdateSettingsRequest struct {
 	SMTPFrom     string `json:"smtp_from_email"`
 	SMTPFromName string `json:"smtp_from_name"`
 	SMTPUseTLS   bool   `json:"smtp_use_tls"`
+	SubscriptionNotificationEmail string `json:"subscription_notification_email"`
 
 	// Cloudflare Turnstile 设置
 	TurnstileEnabled   bool   `json:"turnstile_enabled"`
@@ -361,10 +364,18 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	req.SMTPPassword = strings.TrimSpace(req.SMTPPassword)
 	req.SMTPFrom = strings.TrimSpace(req.SMTPFrom)
 	req.SMTPFromName = strings.TrimSpace(req.SMTPFromName)
+	req.SubscriptionNotificationEmail = strings.TrimSpace(req.SubscriptionNotificationEmail)
 	if req.SMTPPort <= 0 {
 		req.SMTPPort = 587
 	}
 	req.DefaultSubscriptions = normalizeDefaultSubscriptions(req.DefaultSubscriptions)
+
+	if req.SubscriptionNotificationEmail != "" {
+		if _, err := mail.ParseAddress(req.SubscriptionNotificationEmail); err != nil {
+			response.BadRequest(c, "Invalid subscription notification email format")
+			return
+		}
+	}
 
 	// SMTP 配置保护：如果请求中 smtp_host 为空但数据库中已有配置，则保留已有 SMTP 配置
 	// 防止前端加载设置失败时空表单覆盖已保存的 SMTP 配置
@@ -782,6 +793,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SMTPFrom:                         req.SMTPFrom,
 		SMTPFromName:                     req.SMTPFromName,
 		SMTPUseTLS:                       req.SMTPUseTLS,
+		SubscriptionNotificationEmail:    req.SubscriptionNotificationEmail,
 		TurnstileEnabled:                 req.TurnstileEnabled,
 		TurnstileSiteKey:                 req.TurnstileSiteKey,
 		TurnstileSecretKey:               req.TurnstileSecretKey,
@@ -963,6 +975,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SMTPFrom:                             updatedSettings.SMTPFrom,
 		SMTPFromName:                         updatedSettings.SMTPFromName,
 		SMTPUseTLS:                           updatedSettings.SMTPUseTLS,
+		SubscriptionNotificationEmail:        updatedSettings.SubscriptionNotificationEmail,
 		TurnstileEnabled:                     updatedSettings.TurnstileEnabled,
 		TurnstileSiteKey:                     updatedSettings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:         updatedSettings.TurnstileSecretKeyConfigured,
@@ -1121,6 +1134,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.SMTPUseTLS != after.SMTPUseTLS {
 		changed = append(changed, "smtp_use_tls")
+	}
+	if before.SubscriptionNotificationEmail != after.SubscriptionNotificationEmail {
+		changed = append(changed, "subscription_notification_email")
 	}
 	if before.TurnstileEnabled != after.TurnstileEnabled {
 		changed = append(changed, "turnstile_enabled")

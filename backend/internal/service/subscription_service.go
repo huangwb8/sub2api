@@ -45,6 +45,9 @@ type SubscriptionService struct {
 	userSubRepo         UserSubscriptionRepository
 	billingCacheService *BillingCacheService
 	entClient           *dbent.Client
+	settingRepo         SettingRepository
+	userRepo            UserRepository
+	notificationEmailer SubscriptionNotificationEmailer
 
 	// L1 缓存：加速中间件热路径的订阅查询
 	subCacheL1     *ristretto.Cache
@@ -321,7 +324,12 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 	}
 
 	// 重新获取完整订阅信息（包含关联）
-	return s.userSubRepo.GetByID(ctx, sub.ID)
+	createdSub, err := s.userSubRepo.GetByID(ctx, sub.ID)
+	if err != nil {
+		return nil, err
+	}
+	s.notifyAdminsOfNewSubscription(ctx, createdSub)
+	return createdSub, nil
 }
 
 // BulkAssignSubscriptionInput 批量分配订阅输入

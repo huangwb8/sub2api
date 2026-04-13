@@ -93,6 +93,8 @@ const (
 	SettingKeySMTPFrom     = "smtp_from"      // 发件人地址
 	SettingKeySMTPFromName = "smtp_from_name" // 发件人名称
 	SettingKeySMTPUseTLS   = "smtp_use_tls"   // 是否使用TLS
+	// 管理员订阅通知邮箱；留空表示不发送订阅新增通知
+	SettingKeySubscriptionNotificationEmail = "subscription_notification_email"
 
 	// Cloudflare Turnstile 设置
 	SettingKeyTurnstileEnabled   = "turnstile_enabled"    // 是否启用 Turnstile 验证

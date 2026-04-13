@@ -4735,6 +4735,9 @@ export default {
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: '发件人名称',
         fromNamePlaceholder: 'Sub2API',
+        subscriptionNotificationEmail: '订阅通知邮箱',
+        subscriptionNotificationEmailPlaceholder: "admin{'@'}example.com",
+        subscriptionNotificationEmailHint: '仅当这里填写邮箱时，系统才会在新增用户订阅后发送管理员提醒；留空则不发送。',
         useTls: '使用 TLS',
         useTlsHint: '为 SMTP 连接启用 TLS 加密'
       },

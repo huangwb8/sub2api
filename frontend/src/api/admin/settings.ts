@@ -51,6 +51,7 @@ export interface SystemSettings {
   smtp_from_email: string
   smtp_from_name: string
   smtp_use_tls: boolean
+  subscription_notification_email: string
   // Cloudflare Turnstile settings
   turnstile_enabled: boolean
   turnstile_site_key: string
@@ -168,6 +169,7 @@ export interface UpdateSettingsRequest {
   smtp_from_email?: string
   smtp_from_name?: string
   smtp_use_tls?: boolean
+  subscription_notification_email?: string
   turnstile_enabled?: boolean
   turnstile_site_key?: string
   turnstile_secret_key?: string

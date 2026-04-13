@@ -4571,6 +4571,9 @@ export default {
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: 'From Name',
         fromNamePlaceholder: 'Sub2API',
+        subscriptionNotificationEmail: 'Subscription Notification Email',
+        subscriptionNotificationEmailPlaceholder: "admin{'@'}example.com",
+        subscriptionNotificationEmailHint: 'Notifications for newly created user subscriptions are sent only when this email is configured. Leave it empty to disable sending.',
         useTls: 'Use TLS',
         useTlsHint: 'Enable TLS encryption for SMTP connection'
       },
