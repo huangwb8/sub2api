@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/Wei-Shaw/sub2api/internal/payment"
 )
 
 func TestIsTradeNotExist(t *testing.T) {
@@ -98,9 +100,9 @@ func TestNewAlipay(t *testing.T) {
 			errSubstr: "privateKey",
 		},
 		{
-			name:    "nil config map returns error for appId",
-			config:  map[string]string{},
-			wantErr: true,
+			name:      "nil config map returns error for appId",
+			config:    map[string]string{},
+			wantErr:   true,
 			errSubstr: "appId",
 		},
 	}
@@ -128,5 +130,23 @@ func TestNewAlipay(t *testing.T) {
 				t.Errorf("instanceID = %q, want %q", got.instanceID, "test-instance")
 			}
 		})
+	}
+}
+
+func TestAlipaySupportedTypes_ShouldRegisterAlipay(t *testing.T) {
+	t.Parallel()
+
+	p, err := NewAlipay("test-instance", map[string]string{
+		"appId":      "2026000000000000",
+		"privateKey": "dummy-private-key",
+		"publicKey":  "dummy-public-key",
+	})
+	if err != nil {
+		t.Fatalf("NewAlipay() error = %v", err)
+	}
+
+	got := p.SupportedTypes()
+	if len(got) != 1 || got[0] != payment.TypeAlipay {
+		t.Fatalf("SupportedTypes() = %v, want [%s]", got, payment.TypeAlipay)
 	}
 }

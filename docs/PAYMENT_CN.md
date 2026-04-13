@@ -28,6 +28,8 @@ Sub2API 内置支付系统，支持用户自助充值，无需部署独立的支
 
 > 支付宝官方 / 微信官方与 EasyPay 可以共存。官方渠道直接对接 API，资金直达商户账户，手续费更低；EasyPay 通过第三方平台聚合，接入门槛更低。
 
+> 命名约定：用户下单、管理后台服务商实例配置以及 `/api/v1/payment/checkout-info` 返回的顶层支付方式统一使用 `alipay`、`wxpay`、`stripe`。`alipay_direct` / `wxpay_direct` 仅保留为历史兼容语义，不应再作为新的用户侧配置入口。
+
 > **EasyPay 推荐**：个人推荐 [ZPay](https://z-pay.cn/?uid=23808)（`https://z-pay.cn/?uid=23808`）作为 EasyPay 服务商（链接含 [Sub2ApiPay](https://github.com/touwaeriol/sub2apipay) 原作者 [@touwaeriol](https://github.com/touwaeriol) 的邀请码，介意可去掉）。ZPay 支持**个人用户**（无营业执照）每日 1 万元以内交易；拥有营业执照则无限额。支付渠道的安全性、稳定性及合规性请自行鉴别，本项目不对任何第三方支付服务商做担保或背书。
 
 ---
@@ -127,8 +129,8 @@ Sub2API 内置支付系统，支持用户自助充值，无需部署独立的支
 | **商户 API 私钥** | 商户 API 私钥（PEM 格式） | 是 |
 | **APIv3 密钥** | 32 位 APIv3 密钥 | 是 |
 | **微信支付公钥** | 微信支付公钥（PEM 格式） | 是 |
-| **微信支付公钥 ID** | 微信支付公钥 ID | 否 |
-| **商户证书序列号** | 商户证书序列号 | 否 |
+| **微信支付公钥 ID** | 微信支付公钥 ID | 是 |
+| **商户证书序列号** | 商户证书序列号 | 是 |
 
 ### Stripe
 
@@ -183,6 +185,8 @@ Sub2API 内置支付系统，支持用户自助充值，无需部署独立的支
 | **Stripe** | `https://your-domain.com/api/v1/payment/webhook/stripe` |
 
 > 将 `your-domain.com` 替换为你的实际域名。EasyPay / 支付宝 / 微信的回调地址在添加服务商时自动填入，无需手动配置。
+
+> 用户侧顶层支付方式始终显示为 `alipay`、`wxpay`、`stripe`。其中 Stripe 内部再决定 `card` / `alipay` / `wechat_pay` / `link` 等子方式，不会在 checkout-info 中额外暴露为独立顶层按钮。
 
 ### Stripe Webhook 设置
 

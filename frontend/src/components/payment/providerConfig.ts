@@ -37,7 +37,7 @@ export const PROVIDER_SUPPORTED_TYPES: Record<string, string[]> = {
 export const EASYPAY_PAYMENT_MODES = ['qrcode', 'popup'] as const
 
 /** Fixed display order for user-facing payment methods */
-export const METHOD_ORDER = ['alipay', 'alipay_direct', 'wxpay', 'wxpay_direct', 'stripe'] as const
+export const METHOD_ORDER = ['alipay', 'wxpay', 'stripe'] as const
 
 /** Payment mode constants */
 export const PAYMENT_MODE_QRCODE = 'qrcode'
@@ -87,8 +87,8 @@ export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
     { key: 'privateKey', label: '', sensitive: true },
     { key: 'apiV3Key', label: '', sensitive: true },
     { key: 'publicKey', label: '', sensitive: true },
-    { key: 'publicKeyId', label: '', sensitive: false, optional: true },
-    { key: 'certSerial', label: '', sensitive: false, optional: true },
+    { key: 'publicKeyId', label: '', sensitive: false },
+    { key: 'certSerial', label: '', sensitive: false },
   ],
   stripe: [
     { key: 'secretKey', label: '', sensitive: true },

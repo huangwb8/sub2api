@@ -257,3 +257,25 @@ func TestNewWxpay(t *testing.T) {
 		})
 	}
 }
+
+func TestWxpaySupportedTypes_ShouldRegisterWxpay(t *testing.T) {
+	t.Parallel()
+
+	p, err := NewWxpay("test-instance", map[string]string{
+		"appId":       "wx123",
+		"mchId":       "1900000000",
+		"privateKey":  "fake-private-key",
+		"apiV3Key":    "12345678901234567890123456789012",
+		"publicKey":   "fake-public-key",
+		"publicKeyId": "pub-key-id",
+		"certSerial":  "SERIAL123",
+	})
+	if err != nil {
+		t.Fatalf("NewWxpay() error = %v", err)
+	}
+
+	got := p.SupportedTypes()
+	if len(got) != 1 || got[0] != payment.TypeWxpay {
+		t.Fatalf("SupportedTypes() = %v, want [%s]", got, payment.TypeWxpay)
+	}
+}

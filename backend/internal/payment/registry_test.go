@@ -125,6 +125,32 @@ func TestRegistryGetProviderKeyKnownType(t *testing.T) {
 	}
 }
 
+func TestRegistryGetProviderKey_DirectProvidersUseCheckoutTypes(t *testing.T) {
+	t.Parallel()
+
+	r := NewRegistry()
+
+	r.Register(&mockProvider{name: "Wxpay", key: TypeWxpay, supportedTypes: []PaymentType{TypeWxpay}})
+	r.Register(&mockProvider{name: "Alipay", key: TypeAlipay, supportedTypes: []PaymentType{TypeAlipay}})
+	r.Register(&mockProvider{name: "Stripe", key: TypeStripe, supportedTypes: []PaymentType{TypeStripe}})
+
+	if key := r.GetProviderKey(TypeWxpay); key != TypeWxpay {
+		t.Fatalf("GetProviderKey(%s) = %q, want %q", TypeWxpay, key, TypeWxpay)
+	}
+	if key := r.GetProviderKey(TypeAlipay); key != TypeAlipay {
+		t.Fatalf("GetProviderKey(%s) = %q, want %q", TypeAlipay, key, TypeAlipay)
+	}
+	if key := r.GetProviderKey(TypeStripe); key != TypeStripe {
+		t.Fatalf("GetProviderKey(%s) = %q, want %q", TypeStripe, key, TypeStripe)
+	}
+	if key := r.GetProviderKey(TypeWxpayDirect); key != "" {
+		t.Fatalf("GetProviderKey(%s) = %q, want empty", TypeWxpayDirect, key)
+	}
+	if key := r.GetProviderKey(TypeAlipayDirect); key != "" {
+		t.Fatalf("GetProviderKey(%s) = %q, want empty", TypeAlipayDirect, key)
+	}
+}
+
 func TestRegistrySupportedTypes(t *testing.T) {
 	t.Parallel()
 	r := NewRegistry()

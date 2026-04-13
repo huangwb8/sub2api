@@ -28,6 +28,8 @@ Sub2API has a built-in payment system that enables user self-service top-up with
 
 > Alipay/WeChat Pay direct and EasyPay can coexist. Direct channels connect to payment APIs directly with lower fees; EasyPay aggregates through third-party platforms with easier setup.
 
+> Naming contract: user checkout, admin provider instances, and `/api/v1/payment/checkout-info` all use the same top-level payment methods: `alipay`, `wxpay`, and `stripe`. `alipay_direct` and `wxpay_direct` remain legacy compatibility terms only and should not be used as new user-facing configuration entries.
+
 > **EasyPay Recommendation**: [ZPay](https://z-pay.cn/?uid=23808) (`https://z-pay.cn/?uid=23808`) is recommended as an EasyPay provider (link contains the referral code of [Sub2ApiPay](https://github.com/touwaeriol/sub2apipay) original author [@touwaeriol](https://github.com/touwaeriol) — feel free to remove it). ZPay supports **individual users** (no business license required) with up to 10,000 CNY daily transactions; business-licensed accounts have no limit. Please evaluate the security, reliability, and compliance of any third-party payment provider on your own — this project does not endorse or guarantee any of them.
 
 ---
@@ -127,8 +129,8 @@ Direct integration with WeChat Pay APIv3. Supports Native QR code and H5 payment
 | **Merchant API Private Key** | Merchant API private key (PEM format) | Yes |
 | **APIv3 Key** | 32-byte APIv3 key | Yes |
 | **WeChat Pay Public Key** | WeChat Pay public key (PEM format) | Yes |
-| **WeChat Pay Public Key ID** | WeChat Pay public key ID | No |
-| **Certificate Serial Number** | Merchant certificate serial number | No |
+| **WeChat Pay Public Key ID** | WeChat Pay public key ID | Yes |
+| **Certificate Serial Number** | Merchant certificate serial number | Yes |
 
 ### Stripe
 
@@ -183,6 +185,8 @@ When adding a provider, the system auto-generates callback URLs from your site d
 | **Stripe** | `https://your-domain.com/api/v1/payment/webhook/stripe` |
 
 > Replace `your-domain.com` with your actual domain. For EasyPay / Alipay / WeChat Pay, the callback URL is auto-filled when adding the provider — no manual configuration needed.
+
+> The user-facing top-level checkout methods remain `alipay`, `wxpay`, and `stripe`. Stripe decides its internal `card` / `alipay` / `wechat_pay` / `link` sub-methods inside the provider flow and does not expose them as extra top-level checkout buttons.
 
 ### Stripe Webhook Setup
 
