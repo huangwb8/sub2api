@@ -6,6 +6,7 @@
 import { apiClient } from '../client'
 import type {
   DashboardStats,
+  DashboardRecommendationsResponse,
   TrendDataPoint,
   ModelStat,
   GroupStat,
@@ -22,6 +23,11 @@ import type {
  */
 export async function getStats(): Promise<DashboardStats> {
   const { data } = await apiClient.get<DashboardStats>('/admin/dashboard/stats')
+  return data
+}
+
+export async function getRecommendations(): Promise<DashboardRecommendationsResponse> {
+  const { data } = await apiClient.get<DashboardRecommendationsResponse>('/admin/dashboard/recommendations')
   return data
 }
 
@@ -317,6 +323,7 @@ export async function getBatchApiKeysUsage(
 
 export const dashboardAPI = {
   getStats,
+  getRecommendations,
   getRealtimeMetrics,
   getUsageTrend,
   getModelStats,

@@ -17,17 +17,23 @@ import (
 
 // DashboardHandler handles admin dashboard statistics
 type DashboardHandler struct {
-	dashboardService   *service.DashboardService
-	aggregationService *service.DashboardAggregationService
-	startTime          time.Time // Server start time for uptime calculation
+	dashboardService              *service.DashboardService
+	dashboardRecommendationService *service.DashboardRecommendationService
+	aggregationService            *service.DashboardAggregationService
+	startTime                     time.Time // Server start time for uptime calculation
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
-func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService) *DashboardHandler {
+func NewDashboardHandler(
+	dashboardService *service.DashboardService,
+	dashboardRecommendationService *service.DashboardRecommendationService,
+	aggregationService *service.DashboardAggregationService,
+) *DashboardHandler {
 	return &DashboardHandler{
-		dashboardService:   dashboardService,
-		aggregationService: aggregationService,
-		startTime:          time.Now(),
+		dashboardService:               dashboardService,
+		dashboardRecommendationService: dashboardRecommendationService,
+		aggregationService:             aggregationService,
+		startTime:                      time.Now(),
 	}
 }
 
@@ -126,6 +132,23 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		"stats_updated_at":    stats.StatsUpdatedAt,
 		"stats_stale":         stats.StatsStale,
 	})
+}
+
+// GetRecommendations handles getting admin account capacity recommendations.
+// GET /api/v1/admin/dashboard/recommendations
+func (h *DashboardHandler) GetRecommendations(c *gin.Context) {
+	if h.dashboardRecommendationService == nil {
+		response.InternalError(c, "Dashboard recommendation service not available")
+		return
+	}
+
+	recommendations, err := h.dashboardRecommendationService.GetCapacityRecommendations(c.Request.Context())
+	if err != nil {
+		response.Error(c, 500, "Failed to get dashboard recommendations")
+		return
+	}
+
+	response.Success(c, recommendations)
 }
 
 type DashboardAggregationBackfillRequest struct {

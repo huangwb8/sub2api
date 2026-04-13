@@ -204,6 +204,117 @@
           </div>
         </div>
 
+        <div class="card p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.dashboard.recommendations.title') }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.recommendations.description') }}
+              </p>
+            </div>
+            <div
+              v-if="recommendations"
+              class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
+            >
+              <span class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700">
+                {{ t('admin.dashboard.recommendations.groups', { count: recommendations.summary.group_count }) }}
+              </span>
+              <span class="rounded-full bg-amber-50 px-3 py-1 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                {{ t('admin.dashboard.recommendations.toAdd', { count: recommendations.summary.recommended_additional_accounts }) }}
+              </span>
+              <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300">
+                {{ t('admin.dashboard.recommendations.urgent', { count: recommendations.summary.urgent_group_count }) }}
+              </span>
+            </div>
+          </div>
+
+          <div v-if="recommendationsLoading" class="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
+          </div>
+          <div
+            v-else-if="recommendations && recommendations.items.length > 0"
+            class="mt-4 overflow-x-auto"
+          >
+            <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+              <thead>
+                <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.group') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.status') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.current') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.recommended') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.utilization') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.confidence') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.recommendations.reason') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                <tr v-for="item in recommendations.items.slice(0, 8)" :key="item.group_id" class="align-top">
+                  <td class="px-3 py-3">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ item.group_name }}</div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ item.platform }} · {{ item.recommended_account_type }}
+                    </div>
+                    <div
+                      v-if="item.plan_names.length > 0"
+                      class="mt-1 line-clamp-2 text-xs text-gray-400 dark:text-gray-500"
+                    >
+                      {{ item.plan_names.join(' / ') }}
+                    </div>
+                  </td>
+                  <td class="px-3 py-3">
+                    <span
+                      class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                      :class="recommendationStatusClass(item.status)"
+                    >
+                      {{ t(`admin.dashboard.recommendations.statusMap.${item.status}`) }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
+                    {{ item.current_schedulable_accounts }} / {{ item.current_total_accounts }}
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.recommendations.subscriptions', { count: item.metrics.active_subscriptions }) }}
+                    </div>
+                  </td>
+                  <td class="px-3 py-3">
+                    <div class="font-semibold text-gray-900 dark:text-white">
+                      {{ item.recommended_total_accounts }}
+                    </div>
+                    <div
+                      class="mt-1 text-xs"
+                      :class="item.recommended_additional_accounts > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'"
+                    >
+                      {{ item.recommended_additional_accounts > 0
+                        ? t('admin.dashboard.recommendations.addCount', { count: item.recommended_additional_accounts })
+                        : t('admin.dashboard.recommendations.noAction')
+                      }}
+                    </div>
+                  </td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
+                    {{ formatPercent(item.metrics.capacity_utilization) }}
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.recommendations.projectedCost', { amount: formatCost(item.metrics.projected_daily_cost) }) }}
+                    </div>
+                  </td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
+                    {{ formatPercent(item.confidence_score) }}
+                  </td>
+                  <td class="max-w-xs px-3 py-3 text-xs leading-5 text-gray-600 dark:text-gray-300">
+                    {{ item.reason }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div
+            v-else
+            class="mt-4 rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400"
+          >
+            {{ t('admin.dashboard.recommendations.empty') }}
+          </div>
+        </div>
+
         <!-- Charts Section -->
         <div class="space-y-6">
           <!-- Date Range Filter -->
@@ -290,6 +401,7 @@ const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
 import type {
   DashboardStats,
+  DashboardRecommendationsResponse,
   TrendDataPoint,
   ModelStat,
   UserUsageTrendPoint,
@@ -331,9 +443,11 @@ const router = useRouter()
 const stats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const chartsLoading = ref(false)
+const recommendationsLoading = ref(false)
 const userTrendLoading = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
+const recommendations = ref<DashboardRecommendationsResponse | null>(null)
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -543,6 +657,18 @@ const formatDuration = (ms: number): string => {
   return `${Math.round(ms)}ms`
 }
 
+const formatPercent = (value: number): string => `${Math.round(value * 100)}%`
+
+const recommendationStatusClass = (status: 'healthy' | 'watch' | 'action') => {
+  if (status === 'action') {
+    return 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300'
+  }
+  if (status === 'watch') {
+    return 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+  }
+  return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+}
+
 const goToUserUsage = (item: UserSpendingRankingItem) => {
   void router.push({
     path: '/admin/usage',
@@ -664,9 +790,22 @@ const loadUserSpendingRanking = async () => {
   }
 }
 
+const loadRecommendations = async () => {
+  recommendationsLoading.value = true
+  try {
+    recommendations.value = await adminAPI.dashboard.getRecommendations()
+  } catch (error) {
+    console.error('Error loading dashboard recommendations:', error)
+    recommendations.value = null
+  } finally {
+    recommendationsLoading.value = false
+  }
+}
+
 const loadDashboardStats = async () => {
   await Promise.all([
     loadDashboardSnapshot(true),
+    loadRecommendations(),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])
