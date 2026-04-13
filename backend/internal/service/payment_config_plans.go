@@ -87,9 +87,13 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	if err := s.validatePlanGroup(ctx, req.GroupID); err != nil {
 		return nil, err
 	}
+	validityUnit, err := normalizePlanValidityUnit(req.ValidityUnit)
+	if err != nil {
+		return nil, infraerrors.BadRequest("PLAN_VALIDITY_UNIT_INVALID", err.Error())
+	}
 	b := s.entClient.SubscriptionPlan.Create().
 		SetGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
-		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(req.ValidityUnit).
+		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(validityUnit).
 		SetFeatures(req.Features).SetProductName(req.ProductName).
 		SetForSale(req.ForSale).SetSortOrder(req.SortOrder)
 	if req.OriginalPrice != nil {
@@ -105,6 +109,13 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 		if err := s.validatePlanGroup(ctx, *req.GroupID); err != nil {
 			return nil, err
 		}
+	}
+	if req.ValidityUnit != nil {
+		validityUnit, err := normalizePlanValidityUnit(*req.ValidityUnit)
+		if err != nil {
+			return nil, infraerrors.BadRequest("PLAN_VALIDITY_UNIT_INVALID", err.Error())
+		}
+		req.ValidityUnit = &validityUnit
 	}
 	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
 	if req.GroupID != nil {

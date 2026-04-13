@@ -125,11 +125,12 @@ func TestPaymentConfigService_CreatePlan_RejectsInvalidGroups(t *testing.T) {
 		Description:  "valid-plan",
 		Price:        9.9,
 		ValidityDays: 30,
-		ValidityUnit: "day",
+		ValidityUnit: "days",
 		ForSale:      true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, activeSubGroup.ID, plan.GroupID)
+	require.Equal(t, planValidityUnitDay, plan.ValidityUnit)
 }
 
 func TestPaymentConfigService_UpdatePlan_RejectsInvalidGroupTransitions(t *testing.T) {
@@ -156,4 +157,19 @@ func TestPaymentConfigService_UpdatePlan_RejectsInvalidGroupTransitions(t *testi
 	require.NoError(t, err)
 	require.Equal(t, newName, updated.Name)
 	require.Equal(t, activeSubGroup.ID, updated.GroupID)
+}
+
+func TestPaymentConfigService_UpdatePlan_NormalizesPluralValidityUnit(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	activeSubGroup := mustCreatePlanGroup(t, ctx, client, "active-sub", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, activeSubGroup.ID, "valid-plan", true)
+
+	weeks := "weeks"
+	updated, err := svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{ValidityUnit: &weeks})
+	require.NoError(t, err)
+	require.Equal(t, planValidityUnitWeek, updated.ValidityUnit)
 }

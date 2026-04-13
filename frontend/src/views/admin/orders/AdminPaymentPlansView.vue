@@ -9,6 +9,10 @@
         <button @click="openPlanEdit(null)" class="btn btn-primary">{{ t('payment.admin.createPlan') }}</button>
       </div>
 
+      <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100">
+        {{ t('payment.admin.planManagementHint') }}
+      </div>
+
       <!-- Plans Table -->
       <DataTable :columns="planColumns" :data="plans" :loading="plansLoading">
         <template #cell-name="{ value, row }">
@@ -34,7 +38,7 @@
           </div>
         </template>
         <template #cell-validity_days="{ value, row }">
-          <span class="text-sm">{{ value }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}</span>
+          <span class="text-sm">{{ value }} {{ getValidityUnitLabel(row.validity_unit) }}</span>
         </template>
         <template #cell-for_sale="{ value, row }">
           <button
@@ -163,6 +167,7 @@ import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import { platformTextClass } from '@/utils/platformColors'
+import { normalizePlanValidityUnit, normalizeSubscriptionPlan, sortSubscriptionPlans } from '@/utils/subscriptionPlan'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -215,13 +220,14 @@ const showDeletePlanDialog = ref(false)
 const planSaving = ref(false)
 const editingPlan = ref<SubscriptionPlan | null>(null)
 const deletingPlanId = ref<number | null>(null)
-const planForm = reactive({ name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'days', for_sale: true, sort_order: 0 })
+const planForm = reactive({ name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'day', for_sale: true, sort_order: 0 })
 const planFeaturesText = ref('')
 
 const validityUnitOptions = computed(() => [
-  { value: 'days', label: t('payment.admin.days') },
-  { value: 'weeks', label: t('payment.admin.weeks') },
-  { value: 'months', label: t('payment.admin.months') },
+  { value: 'day', label: t('payment.admin.days') },
+  { value: 'week', label: t('payment.admin.weeks') },
+  { value: 'month', label: t('payment.admin.months') },
+  { value: 'year', label: t('payment.admin.years') },
 ])
 
 const planColumns = computed((): Column[] => [
@@ -238,29 +244,53 @@ const planColumns = computed((): Column[] => [
 async function loadPlans() {
   plansLoading.value = true
   try {
-    const res = await adminPaymentAPI.getPlans()
-    // Backend returns features as newline-separated string; parse to array
-    plans.value = (res.data || []).map((p: Omit<SubscriptionPlan, 'features'> & { features: string | string[] }) => ({
-      ...p,
-      features: typeof p.features === 'string'
-        ? p.features.split('\n').map((f: string) => f.trim()).filter(Boolean)
-        : (p.features || []),
-    }))
+    const loadedPlans = await adminPaymentAPI.getPlans()
+    plans.value = sortSubscriptionPlans((loadedPlans || []).map(plan => normalizeSubscriptionPlan(plan)))
   }
   catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
   finally { plansLoading.value = false }
 }
 
+function upsertPlan(plan: SubscriptionPlan) {
+  const normalized = normalizeSubscriptionPlan(plan)
+  const nextPlans = [...plans.value]
+  const existingIndex = nextPlans.findIndex(item => item.id === normalized.id)
+  if (existingIndex >= 0) {
+    nextPlans.splice(existingIndex, 1, normalized)
+  } else {
+    nextPlans.push(normalized)
+  }
+  plans.value = sortSubscriptionPlans(nextPlans)
+}
+
+function removePlan(id: number) {
+  plans.value = plans.value.filter(plan => plan.id !== id)
+}
+
 function openPlanEdit(plan: SubscriptionPlan | null) {
   editingPlan.value = plan
   if (plan) {
-    Object.assign(planForm, { name: plan.name, group_id: plan.group_id, description: plan.description, price: plan.price, original_price: plan.original_price || 0, validity_days: plan.validity_days, validity_unit: plan.validity_unit || 'days', for_sale: plan.for_sale, sort_order: plan.sort_order })
-    planFeaturesText.value = (plan.features || []).join('\n')
+    const normalizedPlan = normalizeSubscriptionPlan(plan)
+    Object.assign(planForm, { name: normalizedPlan.name, group_id: normalizedPlan.group_id, description: normalizedPlan.description, price: normalizedPlan.price, original_price: normalizedPlan.original_price || 0, validity_days: normalizedPlan.validity_days, validity_unit: normalizedPlan.validity_unit || 'day', for_sale: normalizedPlan.for_sale, sort_order: normalizedPlan.sort_order })
+    planFeaturesText.value = (normalizedPlan.features || []).join('\n')
   } else {
-    Object.assign(planForm, { name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'days', for_sale: true, sort_order: 0 })
+    Object.assign(planForm, { name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'day', for_sale: true, sort_order: 0 })
     planFeaturesText.value = ''
   }
   showPlanDialog.value = true
+}
+
+function getValidityUnitLabel(unit?: string | null): string {
+  switch (normalizePlanValidityUnit(unit)) {
+    case 'week':
+      return t('payment.admin.weeks')
+    case 'month':
+      return t('payment.admin.months')
+    case 'year':
+      return t('payment.admin.years')
+    default:
+      return t('payment.admin.days')
+  }
 }
 
 /** Build request payload with snake_case keys matching backend JSON tags */
@@ -283,10 +313,18 @@ function buildPlanPayload() {
 async function handleSavePlan() {
   planSaving.value = true
   try {
+    if (planForm.group_id <= 0) {
+      appStore.showError(t('payment.admin.selectGroup'))
+      return
+    }
     const data = buildPlanPayload()
-    if (editingPlan.value) { await adminPaymentAPI.updatePlan(editingPlan.value.id, data) }
-    else { await adminPaymentAPI.createPlan(data) }
-    appStore.showSuccess(t('common.saved')); showPlanDialog.value = false; loadPlans()
+    const savedPlan = editingPlan.value
+      ? await adminPaymentAPI.updatePlan(editingPlan.value.id, data)
+      : await adminPaymentAPI.createPlan(data)
+    upsertPlan(savedPlan)
+    appStore.showSuccess(t('common.saved'))
+    showPlanDialog.value = false
+    await loadPlans()
   } catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
   finally { planSaving.value = false }
 }
@@ -294,8 +332,8 @@ async function handleSavePlan() {
 /** Quick toggle for_sale from the list */
 async function toggleForSale(plan: SubscriptionPlan) {
   try {
-    await adminPaymentAPI.updatePlan(plan.id, { for_sale: !plan.for_sale })
-    plan.for_sale = !plan.for_sale
+    const updatedPlan = await adminPaymentAPI.updatePlan(plan.id, { for_sale: !plan.for_sale })
+    upsertPlan(updatedPlan)
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
   }
@@ -304,7 +342,13 @@ async function toggleForSale(plan: SubscriptionPlan) {
 function confirmDeletePlan(plan: SubscriptionPlan) { deletingPlanId.value = plan.id; showDeletePlanDialog.value = true }
 async function handleDeletePlan() {
   if (!deletingPlanId.value) return
-  try { await adminPaymentAPI.deletePlan(deletingPlanId.value); appStore.showSuccess(t('common.deleted')); showDeletePlanDialog.value = false; loadPlans() }
+  try {
+    await adminPaymentAPI.deletePlan(deletingPlanId.value)
+    removePlan(deletingPlanId.value)
+    appStore.showSuccess(t('common.deleted'))
+    showDeletePlanDialog.value = false
+    await loadPlans()
+  }
   catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
 }
 

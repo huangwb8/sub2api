@@ -131,18 +131,21 @@ export const adminPaymentAPI = {
   // ==================== Subscription Plans ====================
 
   /** Get all subscription plans */
-  getPlans() {
-    return apiClient.get<SubscriptionPlan[]>('/admin/payment/plans')
+  async getPlans() {
+    const { data } = await apiClient.get<SubscriptionPlan[]>('/admin/payment/plans')
+    return data
   },
 
   /** Create a subscription plan */
-  createPlan(data: Record<string, unknown>) {
-    return apiClient.post<SubscriptionPlan>('/admin/payment/plans', data)
+  async createPlan(data: Record<string, unknown>) {
+    const { data: plan } = await apiClient.post<SubscriptionPlan>('/admin/payment/plans', data)
+    return plan
   },
 
   /** Update a subscription plan */
-  updatePlan(id: number, data: Record<string, unknown>) {
-    return apiClient.put<SubscriptionPlan>(`/admin/payment/plans/${id}`, data)
+  async updatePlan(id: number, data: Record<string, unknown>) {
+    const { data: plan } = await apiClient.put<SubscriptionPlan>(`/admin/payment/plans/${id}`, data)
+    return plan
   },
 
   /** Delete a subscription plan */

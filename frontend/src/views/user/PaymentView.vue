@@ -275,6 +275,7 @@ import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
 import StripePaymentInline from '@/components/payment/StripePaymentInline.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
+import { normalizePlanValidityUnit } from '@/utils/subscriptionPlan'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -485,9 +486,10 @@ const renewalPlans = computed(() => {
 
 const planValiditySuffix = computed(() => {
   if (!selectedPlan.value) return ''
-  const u = selectedPlan.value.validity_unit || 'day'
+  const u = normalizePlanValidityUnit(selectedPlan.value.validity_unit)
   if (u === 'month') return t('payment.perMonth')
   if (u === 'year') return t('payment.perYear')
+  if (u === 'week') return `${selectedPlan.value.validity_days}${t('payment.admin.weeks')}`
   return `${selectedPlan.value.validity_days}${t('payment.days')}`
 })
 

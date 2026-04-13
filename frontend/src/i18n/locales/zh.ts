@@ -5593,6 +5593,7 @@ export default {
       price: '价格',
       validityDays: '有效期（天）',
       validityUnit: '有效期单位',
+      planManagementHint: '只有“上架中”的套餐才会出现在用户支付页；所选分组必须是启用状态且计费类型为订阅，用户才可以自行购买。',
       sortOrder: '排序',
       forSale: '上架状态',
       onSale: '上架',

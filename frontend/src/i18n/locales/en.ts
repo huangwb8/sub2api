@@ -5405,6 +5405,7 @@ export default {
       price: 'Price',
       validityDays: 'Validity (days)',
       validityUnit: 'Validity Unit',
+      planManagementHint: 'Only plans marked for sale appear on the user payment page. The selected group must stay active and use subscription billing for self-service purchase to work.',
       sortOrder: 'Sort Order',
       forSale: 'For Sale',
       onSale: 'On Sale',

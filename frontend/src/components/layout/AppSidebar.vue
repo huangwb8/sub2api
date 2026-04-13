@@ -655,6 +655,10 @@ const customMenuItemsForAdmin = computed(() => {
     .sort((a, b) => a.sort_order - b.sort_order)
 })
 
+const paymentNavigationEnabled = computed(() =>
+  adminSettingsStore.paymentEnabled || !!appStore.cachedPublicSettings?.payment_enabled
+)
+
 // Admin navigation items
 const adminNavItems = computed((): NavItem[] => {
   const baseItems: NavItem[] = [
@@ -671,7 +675,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/proxies', label: t('nav.proxies'), icon: ServerIcon },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
-    ...(adminSettingsStore.paymentEnabled
+    ...(paymentNavigationEnabled.value
       ? [
           {
             path: '/admin/orders',
@@ -693,6 +697,9 @@ const adminNavItems = computed((): NavItem[] => {
   if (authStore.isSimpleMode) {
     const filtered = baseItems.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
+    if (paymentNavigationEnabled.value) {
+      filtered.push({ path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon })
+    }
     filtered.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
     // Add admin custom menu items after settings
     for (const cm of customMenuItemsForAdmin.value) {
