@@ -3,6 +3,7 @@ package admin
 import (
 	"strconv"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -13,6 +14,38 @@ import (
 type PaymentHandler struct {
 	paymentService *service.PaymentService
 	configService  *service.PaymentConfigService
+}
+
+type subscriptionPlanResponse struct {
+	ID            int64    `json:"id"`
+	GroupID       int64    `json:"group_id"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Price         float64  `json:"price"`
+	OriginalPrice *float64 `json:"original_price,omitempty"`
+	ValidityDays  int      `json:"validity_days"`
+	ValidityUnit  string   `json:"validity_unit"`
+	Features      string   `json:"features"`
+	ProductName   string   `json:"product_name"`
+	ForSale       bool     `json:"for_sale"`
+	SortOrder     int      `json:"sort_order"`
+}
+
+func toSubscriptionPlanResponse(plan *dbent.SubscriptionPlan) subscriptionPlanResponse {
+	return subscriptionPlanResponse{
+		ID:            plan.ID,
+		GroupID:       plan.GroupID,
+		Name:          plan.Name,
+		Description:   plan.Description,
+		Price:         plan.Price,
+		OriginalPrice: plan.OriginalPrice,
+		ValidityDays:  plan.ValidityDays,
+		ValidityUnit:  plan.ValidityUnit,
+		Features:      plan.Features,
+		ProductName:   plan.ProductName,
+		ForSale:       plan.ForSale,
+		SortOrder:     plan.SortOrder,
+	}
 }
 
 // NewPaymentHandler creates a new admin PaymentHandler.
@@ -164,7 +197,11 @@ func (h *PaymentHandler) ListPlans(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, plans)
+	result := make([]subscriptionPlanResponse, 0, len(plans))
+	for _, plan := range plans {
+		result = append(result, toSubscriptionPlanResponse(plan))
+	}
+	response.Success(c, result)
 }
 
 // CreatePlan creates a new subscription plan.
@@ -180,7 +217,7 @@ func (h *PaymentHandler) CreatePlan(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Created(c, plan)
+	response.Created(c, toSubscriptionPlanResponse(plan))
 }
 
 // UpdatePlan updates an existing subscription plan.
@@ -200,7 +237,7 @@ func (h *PaymentHandler) UpdatePlan(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, plan)
+	response.Success(c, toSubscriptionPlanResponse(plan))
 }
 
 // DeletePlan deletes a subscription plan.
