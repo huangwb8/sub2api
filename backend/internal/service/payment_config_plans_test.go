@@ -133,6 +133,29 @@ func TestPaymentConfigService_CreatePlan_RejectsInvalidGroups(t *testing.T) {
 	require.Equal(t, planValidityUnitDay, plan.ValidityUnit)
 }
 
+func TestPaymentConfigService_CreatePlan_RejectsNonPositivePrice(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	activeSubGroup := mustCreatePlanGroup(t, ctx, client, "active-sub", StatusActive, SubscriptionTypeSubscription)
+
+	for _, price := range []float64{0, -9.9} {
+		_, err := svc.CreatePlan(ctx, CreatePlanRequest{
+			GroupID:      activeSubGroup.ID,
+			Name:         fmt.Sprintf("invalid-price-%v", price),
+			Description:  "invalid price",
+			Price:        price,
+			ValidityDays: 30,
+			ValidityUnit: "day",
+			ForSale:      true,
+		})
+		require.Error(t, err)
+		require.True(t, strings.Contains(err.Error(), "price") || strings.Contains(err.Error(), "价格"))
+	}
+}
+
 func TestPaymentConfigService_UpdatePlan_RejectsInvalidGroupTransitions(t *testing.T) {
 	t.Parallel()
 
@@ -172,4 +195,21 @@ func TestPaymentConfigService_UpdatePlan_NormalizesPluralValidityUnit(t *testing
 	updated, err := svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{ValidityUnit: &weeks})
 	require.NoError(t, err)
 	require.Equal(t, planValidityUnitWeek, updated.ValidityUnit)
+}
+
+func TestPaymentConfigService_UpdatePlan_RejectsNonPositivePrice(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	activeSubGroup := mustCreatePlanGroup(t, ctx, client, "active-sub", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, activeSubGroup.ID, "valid-plan", true)
+
+	for _, price := range []float64{0, -19.9} {
+		price := price
+		_, err := svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{Price: &price})
+		require.Error(t, err)
+		require.True(t, strings.Contains(err.Error(), "price") || strings.Contains(err.Error(), "价格"))
+	}
 }

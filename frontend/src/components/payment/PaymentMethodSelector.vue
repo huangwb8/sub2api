@@ -44,6 +44,10 @@ import alipayIcon from '@/assets/icons/alipay.svg'
 import wxpayIcon from '@/assets/icons/wxpay.svg'
 import stripeIcon from '@/assets/icons/stripe.svg'
 
+const balanceIcon = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="14" width="52" height="36" rx="10" fill="#16A34A"/><path d="M18 24h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="44" cy="32" r="7" fill="#DCFCE7"/><path d="M26 40h10" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>',
+)}`
+
 export interface PaymentMethodOption {
   type: string
   fee_rate: number
@@ -62,6 +66,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const METHOD_ICONS: Record<string, string> = {
+  balance: balanceIcon,
   alipay: alipayIcon,
   wxpay: wxpayIcon,
   stripe: stripeIcon,
@@ -83,6 +88,7 @@ function methodIcon(type: string): string {
 }
 
 function methodSelectedClass(type: string): string {
+  if (type === 'balance') return 'border-emerald-500 bg-emerald-50 text-gray-900 shadow-sm dark:bg-emerald-950 dark:text-gray-100'
   if (type.includes('alipay')) return 'border-[#02A9F1] bg-blue-50 text-gray-900 shadow-sm dark:bg-blue-950 dark:text-gray-100'
   if (type.includes('wxpay')) return 'border-[#09BB07] bg-green-50 text-gray-900 shadow-sm dark:bg-green-950 dark:text-gray-100'
   if (type === 'stripe') return 'border-[#676BE5] bg-indigo-50 text-gray-900 shadow-sm dark:bg-indigo-950 dark:text-gray-100'

@@ -87,6 +87,9 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	if err := s.validatePlanGroup(ctx, req.GroupID); err != nil {
 		return nil, err
 	}
+	if err := validatePlanPrice(req.Price); err != nil {
+		return nil, err
+	}
 	validityUnit, err := normalizePlanValidityUnit(req.ValidityUnit)
 	if err != nil {
 		return nil, infraerrors.BadRequest("PLAN_VALIDITY_UNIT_INVALID", err.Error())
@@ -107,6 +110,11 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req UpdatePlanRequest) (*dbent.SubscriptionPlan, error) {
 	if req.GroupID != nil {
 		if err := s.validatePlanGroup(ctx, *req.GroupID); err != nil {
+			return nil, err
+		}
+	}
+	if req.Price != nil {
+		if err := validatePlanPrice(*req.Price); err != nil {
 			return nil, err
 		}
 	}
@@ -202,6 +210,13 @@ func (s *PaymentConfigService) validatePlanGroup(ctx context.Context, groupID in
 	}
 	if grp.SubscriptionType != SubscriptionTypeSubscription {
 		return infraerrors.BadRequest("PLAN_GROUP_NOT_SUBSCRIPTION", "subscription plan group must use subscription billing")
+	}
+	return nil
+}
+
+func validatePlanPrice(price float64) error {
+	if price <= 0 {
+		return infraerrors.BadRequest("PLAN_PRICE_INVALID", "subscription plan price must be greater than 0")
 	}
 	return nil
 }

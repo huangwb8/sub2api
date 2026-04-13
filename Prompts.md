@@ -5,7 +5,7 @@
 - 发布新的release
 
 ```
-version=1.0.3
+version=1.0.4
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release 发布为一个release。然后，触发自动推送docker镜像的流程。
 ```
 

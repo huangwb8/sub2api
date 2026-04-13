@@ -145,7 +145,7 @@
                   </div>
                 </div>
               </div>
-              <div v-if="enabledMethods.length >= 1" class="card p-6">
+              <div v-if="subMethodOptions.length >= 1" class="card p-6">
                 <PaymentMethodSelector
                   :methods="subMethodOptions"
                   :selected="selectedMethod"
@@ -278,6 +278,7 @@ import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSele
 import { normalizePlanValidityUnit } from '@/utils/subscriptionPlan'
 
 const { t } = useI18n()
+const BALANCE_PAYMENT_METHOD = 'balance'
 const route = useRoute()
 const authStore = useAuthStore()
 const paymentStore = usePaymentStore()
@@ -285,6 +286,7 @@ const subscriptionStore = useSubscriptionStore()
 const appStore = useAppStore()
 
 const user = computed(() => authStore.user)
+const userBalance = computed(() => user.value?.balance ?? 0)
 const activeSubscriptions = computed(() => subscriptionStore.activeSubscriptions)
 
 function getDaysRemaining(expiresAt: string): number {
@@ -424,17 +426,44 @@ const canSubmit = computed(() =>
     && selectedLimit.value?.available !== false
 )
 
+function isBalancePaymentMethod(type: string): boolean {
+  return type === BALANCE_PAYMENT_METHOD
+}
+
+function balanceMethodAvailableForPlan(price: number): boolean {
+  return price > 0 && userBalance.value >= price
+}
+
+function selectFirstExternalMethod(amountForMethod = validAmount.value) {
+  const nextMethod = enabledMethods.value.find((method) => amountFitsMethod(amountForMethod, method))
+  if (nextMethod) {
+    selectedMethod.value = nextMethod
+  }
+}
+
 // Subscription-specific: method options based on plan price
 const subMethodOptions = computed<PaymentMethodOption[]>(() => {
   const planPrice = selectedPlan.value?.price ?? 0
-  return enabledMethods.value.map((type) => {
+  const methods: PaymentMethodOption[] = []
+
+  if (planPrice > 0) {
+    methods.push({
+      type: BALANCE_PAYMENT_METHOD,
+      fee_rate: 0,
+      available: balanceMethodAvailableForPlan(planPrice),
+    })
+  }
+
+  methods.push(...enabledMethods.value.map((type) => {
     const ml = checkout.value.methods[type]
     return {
       type,
       fee_rate: ml?.fee_rate ?? 0,
       available: ml?.available !== false && amountFitsMethod(planPrice, type),
     }
-  })
+  }))
+
+  return methods
 })
 
 const subFeeAmount = computed(() => {
@@ -451,21 +480,31 @@ const subTotalAmount = computed(() => {
 
 const canSubmitSubscription = computed(() =>
   selectedPlan.value !== null
-    && amountFitsMethod(selectedPlan.value.price, selectedMethod.value)
-    && selectedLimit.value?.available !== false
+    && (
+      isBalancePaymentMethod(selectedMethod.value)
+        ? balanceMethodAvailableForPlan(selectedPlan.value.price)
+        : amountFitsMethod(selectedPlan.value.price, selectedMethod.value) && selectedLimit.value?.available !== false
+    )
 )
 
 // Auto-switch to first available method when current selection can't handle the amount
 watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) => {
-  if (amt <= 0 || amountFitsMethod(amt, method)) return
+  if (amt <= 0 || isBalancePaymentMethod(method) || amountFitsMethod(amt, method)) return
   const available = enabledMethods.value.find((m) => amountFitsMethod(amt, m))
   if (available) selectedMethod.value = available
+})
+
+watch(() => activeTab.value, (tab) => {
+  if (tab === 'recharge' && isBalancePaymentMethod(selectedMethod.value)) {
+    selectFirstExternalMethod()
+  }
 })
 
 // Payment button class: follows selected payment method color
 const paymentButtonClass = computed(() => {
   const m = selectedMethod.value
   if (!m) return 'btn-primary'
+  if (m === BALANCE_PAYMENT_METHOD) return 'bg-emerald-600 text-white hover:bg-emerald-700'
   if (m.includes('alipay')) return 'btn-alipay'
   if (m.includes('wxpay')) return 'btn-wxpay'
   if (m === 'stripe') return 'btn-stripe'
@@ -496,6 +535,13 @@ const planValiditySuffix = computed(() => {
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
+  if (balanceMethodAvailableForPlan(plan.price)) {
+    selectedMethod.value = BALANCE_PAYMENT_METHOD
+    return
+  }
+  if (isBalancePaymentMethod(selectedMethod.value) || !amountFitsMethod(plan.price, selectedMethod.value)) {
+    selectFirstExternalMethod(plan.price)
+  }
 }
 
 function selectPlanFromModal(plan: SubscriptionPlan) {
@@ -503,6 +549,13 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
   renewGroupId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
+  if (balanceMethodAvailableForPlan(plan.price)) {
+    selectedMethod.value = BALANCE_PAYMENT_METHOD
+    return
+  }
+  if (isBalancePaymentMethod(selectedMethod.value) || !amountFitsMethod(plan.price, selectedMethod.value)) {
+    selectFirstExternalMethod(plan.price)
+  }
 }
 
 function closeRenewalModal() {
@@ -575,6 +628,13 @@ async function createOrder(orderAmount: number, orderType: string, planId?: numb
         orderType,
       }
       paymentPhase.value = 'paying'
+    } else if ((result.status === 'COMPLETED' || result.status === 'PAID') && selectedMethod.value === BALANCE_PAYMENT_METHOD) {
+      await authStore.refreshUser()
+      if (orderType === 'subscription') {
+        await subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
+      }
+      selectedPlan.value = null
+      appStore.showSuccess(orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success'))
     } else {
       errorMessage.value = t('payment.result.failed')
       appStore.showError(errorMessage.value)

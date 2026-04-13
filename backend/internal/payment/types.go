@@ -9,6 +9,7 @@ type PaymentType = string
 
 // Supported payment type constants.
 const (
+	TypeBalance      PaymentType = "balance"
 	TypeAlipay       PaymentType = "alipay"
 	TypeWxpay        PaymentType = "wxpay"
 	TypeAlipayDirect PaymentType = "alipay_direct"
@@ -82,6 +83,8 @@ func GetBasePaymentType(t string) string {
 	switch {
 	case t == TypeEasyPay:
 		return TypeEasyPay
+	case t == TypeBalance:
+		return TypeBalance
 	case t == TypeStripe || t == TypeCard || t == TypeLink:
 		return TypeStripe
 	case len(t) >= len(TypeAlipay) && t[:len(TypeAlipay)] == TypeAlipay:

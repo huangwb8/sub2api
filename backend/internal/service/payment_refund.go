@@ -91,6 +91,9 @@ func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float
 		rr = fmt.Sprintf("refund order:%d", o.ID)
 	}
 	p := &RefundPlan{OrderID: oid, Order: o, RefundAmount: amt, GatewayAmount: ga, Reason: rr, Force: force, DeductBalance: deduct, DeductionType: payment.DeductionTypeNone}
+	if o.OrderType == payment.OrderTypeSubscription && o.PaymentType == payment.TypeBalance {
+		p.BalanceToCredit = p.RefundAmount
+	}
 	if deduct {
 		if er := s.prepDeduct(ctx, o, p, force); er != nil {
 			return nil, er, nil
@@ -162,6 +165,14 @@ func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*Ref
 			p.SubDaysToDeduct = 0
 		}
 	}
+	if p.BalanceToCredit > 0 {
+		if err := s.userRepo.UpdateBalance(ctx, p.Order.UserID, p.BalanceToCredit); err != nil {
+			_ = s.RollbackRefund(ctx, p, err)
+			s.restoreStatus(ctx, p)
+			return nil, fmt.Errorf("credit refund balance: %w", err)
+		}
+		return s.markRefundOk(ctx, p)
+	}
 	if err := s.gwRefund(ctx, p); err != nil {
 		return s.handleGwFail(ctx, p, err)
 	}
@@ -217,7 +228,7 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	if err != nil {
 		return nil, fmt.Errorf("mark refund: %w", err)
 	}
-	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
+	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "balanceRefunded": p.BalanceToCredit, "force": p.Force})
 	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil
 }
 

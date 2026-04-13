@@ -5400,6 +5400,7 @@ export default {
     actualPay: '实付金额',
     createOrder: '确认支付',
     methods: {
+      balance: '余额支付',
       easypay: '易支付',
       alipay: '支付宝',
       wxpay: '微信支付',
@@ -5591,6 +5592,7 @@ export default {
       deletePlanConfirm: '确定要删除此套餐吗？',
       originalPrice: '原价',
       price: '价格',
+      planPriceMustBePositive: '套餐价格必须大于 0',
       validityDays: '有效期（天）',
       validityUnit: '有效期单位',
       planManagementHint: '只有“上架中”的套餐才会出现在用户支付页；所选分组必须是启用状态且计费类型为订阅，用户才可以自行购买。',

@@ -5212,6 +5212,7 @@ export default {
     actualPay: 'Actual Payment',
     createOrder: 'Confirm Payment',
     methods: {
+      balance: 'Wallet Balance',
       easypay: 'EasyPay',
       alipay: 'Alipay',
       wxpay: 'WeChat Pay',
@@ -5403,6 +5404,7 @@ export default {
       deletePlanConfirm: 'Are you sure you want to delete this plan?',
       originalPrice: 'Original Price',
       price: 'Price',
+      planPriceMustBePositive: 'Plan price must be greater than 0',
       validityDays: 'Validity (days)',
       validityUnit: 'Validity Unit',
       planManagementHint: 'Only plans marked for sale appear on the user payment page. The selected group must stay active and use subscription billing for self-service purchase to work.',

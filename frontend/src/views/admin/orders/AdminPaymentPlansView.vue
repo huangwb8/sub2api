@@ -107,7 +107,7 @@
 
         <div><label class="input-label">{{ t('payment.admin.planDescription') }}</label><textarea v-model="planForm.description" rows="2" class="input"></textarea></div>
         <div class="grid grid-cols-3 gap-4">
-          <div><label class="input-label">{{ t('payment.admin.price') }}</label><input v-model.number="planForm.price" type="number" step="0.01" min="0" class="input" required /></div>
+          <div><label class="input-label">{{ t('payment.admin.price') }}</label><input v-model.number="planForm.price" type="number" step="0.01" min="0.01" class="input" required /></div>
           <div><label class="input-label">{{ t('payment.admin.originalPrice') }}</label><input v-model.number="planForm.original_price" type="number" step="0.01" min="0" class="input" /></div>
           <div><label class="input-label">{{ t('payment.admin.sortOrder') }}</label><input v-model.number="planForm.sort_order" type="number" min="0" class="input" /></div>
         </div>
@@ -315,6 +315,10 @@ async function handleSavePlan() {
   try {
     if (planForm.group_id <= 0) {
       appStore.showError(t('payment.admin.selectGroup'))
+      return
+    }
+    if (!Number.isFinite(planForm.price) || planForm.price <= 0) {
+      appStore.showError(t('payment.admin.planPriceMustBePositive'))
       return
     }
     const data = buildPlanPayload()
