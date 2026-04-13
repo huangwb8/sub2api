@@ -15,6 +15,14 @@ version=1.0.4
 
 # 日常
 
+plans/2026-04-13-benszresearch-homepage-reference.html 优化： 
+
+- 这是一个教大家怎么在CC Switch里用的图片，你插在首页里： https://chevereto.hwb0307.com/images/2026/04/13/iShot_2026-04-13_21.58.15.png
+
+---
+
+plans/2026-04-13-benszresearch-homepage-reference.html优化： 目前这个主页的示例前端还是有点丑的。你不能仅是当一个示例做； 你要做得好。 我这是要给卖出去的；而且不能用示例的味道，要真正地按 BenszResearch 这个工作室的情况去做。 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
 ---
 
 如图， sub2api可以自定义首页内容。 我希望你帮我定义一个酷炫的前端首页，大致特性如下：
