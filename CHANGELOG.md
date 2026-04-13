@@ -8,6 +8,14 @@
 
 ### Added（新增）
 
+### Changed（变更）
+
+### Fixed（修复）
+
+## [1.0.0] - 2026-04-13
+
+### Added（新增）
+
 - 新增了 `docs/plans/2026-04-13-user-self-service-subscription.md`：沉淀普通用户自助订阅闭环的实现计划、测试入口与验收步骤。
 - 新增了 `docs/plans/2026-04-13-release-automation-and-docker-publish.md`：沉淀版本驱动 release、Docker 镜像自动补发和本地验证流程的实施计划。
 - 新增了 `tools/verify-release-automation.sh` 与 `make verify-release-automation`：用于本地校验版本文件、发布 workflows 与部署文档是否保持一致。
@@ -20,6 +28,7 @@
 - 更新了 `docs/PAYMENT.md` 与 `docs/PAYMENT_CN.md`：同步内置支付现已支持普通用户自助购买与续费订阅套餐。
 - 更新了 `deploy/README.md` 与 `deploy/DOCKER.md`：补充 `backend/cmd/server/VERSION` 作为发布版本源、`create-release.yml`/`publish-release-images.yml` 的职责和仓库变量配置说明。
 - 调整了 `.gitignore` 对文档目录的规则：放行 `docs/plans/*.md`，确保发布与实施计划文档可以纳入版本控制。
+- 更新了 `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md`：补充 Docker Hub Personal Access Token 的官方获取入口、逐步创建步骤与推荐权限说明。
 
 ### Fixed（修复）
 

@@ -2,6 +2,13 @@
 
 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
+- 发布新的release
+
+```
+version=1.0.0
+git-commit skill保存变更； 新增 tag 为 v{version}； git-publish-release 发布为一个release。然后，触发自动推送docker镜像的流程。
+```
+
 # 版本
 
 - 分叉： ad64190bec3605f97e9e1805a0118aaa51f22b08

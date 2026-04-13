@@ -84,6 +84,57 @@ Sub2API 默认一定会推 GHCR，即使你还没配置 Docker Hub。
 1. Docker Hub 用户名
 2. Docker Hub Access Token
 
+### 4.1 获取 Docker Hub Access Token
+
+根据 Docker 官方文档，当前推荐做法是使用 Docker Hub 的 Personal Access Token，而不是直接把账号密码放进 GitHub Secrets。
+
+官方文档：
+- https://docs.docker.com/docker-hub/access-tokens/
+
+按这个顺序操作：
+
+1. 打开 `https://app.docker.com/`
+2. 登录你的 Docker 账号
+3. 点击右上角头像
+4. 进入 `Account settings`
+5. 点击 `Personal access tokens`
+6. 点击 `Generate new token`
+7. 在描述里写一个容易识别的名字
+   - 推荐：`sub2api-github-actions`
+8. 选择过期时间
+   - 如果你想更稳一点，可以选一个相对长但可轮换的周期
+9. 设置访问权限
+   - 对这个仓库，推荐至少使用 `Read & Write`
+   - 原因：workflow 需要登录 Docker Hub 并推送镜像
+10. 点击 `Generate`
+11. 立刻复制 token 并保存在安全的密码管理器里
+
+注意：
+
+1. Docker 只会在创建成功的当下展示一次 token
+2. 关闭弹窗后，通常无法再次查看原文
+3. 如果你丢失了 token，正确做法是删除旧 token，再重新生成一个新的
+
+### 4.2 这个仓库推荐的 token 命名与权限
+
+推荐这样配：
+
+1. Token name：`sub2api-github-actions`
+2. Expiration：按你们团队的轮换周期来定
+3. Permission：`Read & Write`
+
+为什么不是更低权限：
+
+1. 只读权限不能推送镜像
+2. 这个仓库的 GitHub Actions 需要执行 `docker login` 和 `docker push`
+
+为什么不建议直接用密码：
+
+1. 官方推荐 PAT 替代密码
+2. 更容易单独吊销
+3. 更适合 CI/CD 自动化
+4. 开了 2FA 时，CLI/自动化场景通常也应使用 token
+
 然后进入 GitHub 仓库：
 
 1. 打开 `Settings`
@@ -97,7 +148,7 @@ Sub2API 默认一定会推 GHCR，即使你还没配置 Docker Hub。
 1. `DOCKERHUB_USERNAME`
    - Value：你的 Docker Hub 用户名
 2. `DOCKERHUB_TOKEN`
-   - Value：你的 Docker Hub Access Token
+   - Value：上一步刚生成并复制的 Docker Hub Personal Access Token
 
 建议：
 - 不要用 Docker Hub 登录密码，优先用 Access Token
