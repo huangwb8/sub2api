@@ -159,6 +159,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		DefaultConcurrency:                   settings.DefaultConcurrency,
 		DefaultBalance:                       settings.DefaultBalance,
 		DefaultSubscriptions:                 defaultSubscriptions,
+		SubscriptionCapacityTightness:        settings.SubscriptionCapacityTightness,
 		EnableModelFallback:                  settings.EnableModelFallback,
 		FallbackModelAnthropic:               settings.FallbackModelAnthropic,
 		FallbackModelOpenAI:                  settings.FallbackModelOpenAI,
@@ -272,9 +273,10 @@ type UpdateSettingsRequest struct {
 	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
 
 	// 默认配置
-	DefaultConcurrency   int                              `json:"default_concurrency"`
-	DefaultBalance       float64                          `json:"default_balance"`
-	DefaultSubscriptions []dto.DefaultSubscriptionSetting `json:"default_subscriptions"`
+	DefaultConcurrency            int                              `json:"default_concurrency"`
+	DefaultBalance                float64                          `json:"default_balance"`
+	DefaultSubscriptions          []dto.DefaultSubscriptionSetting `json:"default_subscriptions"`
+	SubscriptionCapacityTightness *int                             `json:"subscription_capacity_tightness"`
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -351,6 +353,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	if req.DefaultBalance < 0 {
 		req.DefaultBalance = 0
+	}
+	if req.SubscriptionCapacityTightness != nil {
+		if *req.SubscriptionCapacityTightness < 0 {
+			*req.SubscriptionCapacityTightness = 0
+		}
+		if *req.SubscriptionCapacityTightness > 100 {
+			*req.SubscriptionCapacityTightness = 100
+		}
 	}
 	// 通用表格配置：兼容旧客户端未传字段时保留当前值。
 	if req.TableDefaultPageSize <= 0 {
@@ -840,6 +850,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DefaultConcurrency:               req.DefaultConcurrency,
 		DefaultBalance:                   req.DefaultBalance,
 		DefaultSubscriptions:             defaultSubscriptions,
+		SubscriptionCapacityTightness: func() int {
+			if req.SubscriptionCapacityTightness != nil {
+				return *req.SubscriptionCapacityTightness
+			}
+			return previousSettings.SubscriptionCapacityTightness
+		}(),
 		EnableModelFallback:              req.EnableModelFallback,
 		FallbackModelAnthropic:           req.FallbackModelAnthropic,
 		FallbackModelOpenAI:              req.FallbackModelOpenAI,
@@ -1022,6 +1038,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DefaultConcurrency:                   updatedSettings.DefaultConcurrency,
 		DefaultBalance:                       updatedSettings.DefaultBalance,
 		DefaultSubscriptions:                 updatedDefaultSubscriptions,
+		SubscriptionCapacityTightness:        updatedSettings.SubscriptionCapacityTightness,
 		EnableModelFallback:                  updatedSettings.EnableModelFallback,
 		FallbackModelAnthropic:               updatedSettings.FallbackModelAnthropic,
 		FallbackModelOpenAI:                  updatedSettings.FallbackModelOpenAI,
@@ -1137,6 +1154,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.SubscriptionNotificationEmail != after.SubscriptionNotificationEmail {
 		changed = append(changed, "subscription_notification_email")
+	}
+	if before.SubscriptionCapacityTightness != after.SubscriptionCapacityTightness {
+		changed = append(changed, "subscription_capacity_tightness")
 	}
 	if before.TurnstileEnabled != after.TurnstileEnabled {
 		changed = append(changed, "turnstile_enabled")

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"math"
 	"strings"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 )
 
 // SubscriptionNotificationEmailer abstracts the async email sink used by subscription notifications.
@@ -20,6 +23,7 @@ type subscriptionCapacityHint struct {
 	ActiveAccounts      int64
 	AdditionalAccounts  int64
 	AccountTypeHint     string
+	PreferenceScore     int
 }
 
 // SetAdminNotificationDeps wires optional dependencies for admin notification delivery.
@@ -131,17 +135,44 @@ func (s *SubscriptionService) estimateSubscriptionCapacityHint(ctx context.Conte
 	hint := subscriptionCapacityHint{
 		ActiveSubscriptions: 1,
 		AccountTypeHint:     subscriptionAccountTypeHint(group),
+		PreferenceScore:     defaultSubscriptionCapacityTightness,
+	}
+	if s != nil && s.settingRepo != nil {
+		if raw, err := s.settingRepo.GetValue(ctx, SettingKeySubscriptionCapacityTightness); err == nil {
+			hint.PreferenceScore = parseSubscriptionCapacityTightness(raw)
+		}
 	}
 	if group != nil {
 		hint.TotalAccounts = group.AccountCount
 		hint.ActiveAccounts = group.ActiveAccountCount
 		hint.AccountTypeHint = subscriptionAccountTypeHint(group)
 	}
-	hint.AdditionalAccounts = estimateAdditionalAccounts(hint.ActiveSubscriptions, hint.ActiveAccounts)
+	if s != nil && s.entClient != nil && sub != nil {
+		now := time.Now().UTC()
+		activeSubscriptions, err := s.entClient.UserSubscription.Query().
+			Where(
+				usersubscription.GroupIDEQ(sub.GroupID),
+				usersubscription.StatusEQ(SubscriptionStatusActive),
+				usersubscription.ExpiresAtGT(now),
+			).
+			Count(ctx)
+		if err == nil && activeSubscriptions > 0 {
+			hint.ActiveSubscriptions = int64(activeSubscriptions)
+		}
+	}
+	profile := buildCapacityRecommendationPreferenceProfile(hint.PreferenceScore)
+	hint.AdditionalAccounts = estimateAdditionalAccounts(
+		hint.ActiveSubscriptions,
+		hint.ActiveAccounts,
+		profile,
+	)
 	return hint
 }
 
-func estimateAdditionalAccounts(activeSubscriptions, activeAccounts int64) int64 {
+func estimateAdditionalAccounts(
+	activeSubscriptions, activeAccounts int64,
+	profile capacityRecommendationPreferenceProfile,
+) int64 {
 	if activeSubscriptions <= 0 {
 		return 0
 	}
@@ -157,8 +188,15 @@ func estimateAdditionalAccounts(activeSubscriptions, activeAccounts int64) int64
 			targetSubscriptionsPerAccount = 1
 		}
 	}
+	adjustedTarget := int64(math.Ceil(float64(targetSubscriptionsPerAccount) * profile.EmailTargetMultiplier))
+	if adjustedTarget > targetSubscriptionsPerAccount+1 {
+		adjustedTarget = targetSubscriptionsPerAccount + 1
+	}
+	if adjustedTarget <= 0 {
+		adjustedTarget = 1
+	}
 
-	requiredAccounts := ceilDivInt64(activeSubscriptions, targetSubscriptionsPerAccount)
+	requiredAccounts := ceilDivInt64(activeSubscriptions, adjustedTarget)
 	if requiredAccounts <= activeAccounts {
 		return 0
 	}
@@ -278,6 +316,7 @@ func buildSubscriptionAdminNotificationBody(siteName string, sub *UserSubscripti
 <p><b>状态</b>: %s</p>
 <p><b>开始时间</b>: %s</p>
 <p><b>到期时间</b>: %s</p>
+<p><b>额度紧张度</b>: %d / 100</p>
 <p><b>补号建议</b>: %s</p>
 <p><b>推导依据</b>: 当前活跃订阅 %d 个，可调度账号 %d 个，分组总账号 %d 个。</p>
 `,
@@ -290,6 +329,7 @@ func buildSubscriptionAdminNotificationBody(siteName string, sub *UserSubscripti
 		escapeSubscriptionHTML(status),
 		escapeSubscriptionHTML(startsAt),
 		escapeSubscriptionHTML(expiresAt),
+		hint.PreferenceScore,
 		escapeSubscriptionHTML(suggestion),
 		hint.ActiveSubscriptions,
 		hint.ActiveAccounts,

@@ -1165,6 +1165,64 @@ export interface DashboardStats {
   tpm: number // 近5分钟平均每分钟Token数
 }
 
+export interface DashboardRecommendationBaseline {
+  platform: string
+  active_subscriptions_per_schedulable: number
+  active_users_per_schedulable: number
+  daily_cost_per_schedulable: number
+  activation_rate: number
+  avg_daily_cost_per_active_user: number
+}
+
+export interface DashboardRecommendationMetrics {
+  active_subscriptions: number
+  active_users_30d: number
+  activation_rate: number
+  blended_activation_rate: number
+  avg_daily_cost_30d: number
+  avg_daily_cost_per_active_user: number
+  blended_avg_daily_cost_per_active_user: number
+  growth_factor: number
+  projected_daily_cost: number
+  capacity_utilization: number
+  concurrency_utilization: number
+  sessions_utilization: number
+  rpm_utilization: number
+  expected_accounts_by_subscriptions: number
+  expected_accounts_by_active_users: number
+  expected_accounts_by_cost: number
+  platform_baseline: DashboardRecommendationBaseline
+}
+
+export interface DashboardRecommendationItem {
+  group_id: number
+  group_name: string
+  platform: GroupPlatform
+  plan_names: string[]
+  recommended_account_type: string
+  status: 'healthy' | 'watch' | 'action'
+  confidence_score: number
+  current_total_accounts: number
+  current_schedulable_accounts: number
+  recommended_total_accounts: number
+  recommended_additional_accounts: number
+  subscriber_headroom: number
+  reason: string
+  metrics: DashboardRecommendationMetrics
+}
+
+export interface DashboardRecommendationsResponse {
+  generated_at: string
+  lookback_days: number
+  summary: {
+    group_count: number
+    current_schedulable_accounts: number
+    recommended_additional_accounts: number
+    urgent_group_count: number
+  }
+  items: DashboardRecommendationItem[]
+}
+
 export interface UsageStatsResponse {
   period?: string
   total_requests: number

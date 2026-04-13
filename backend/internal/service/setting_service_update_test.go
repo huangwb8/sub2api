@@ -14,6 +14,7 @@ import (
 
 type settingUpdateRepoStub struct {
 	updates map[string]string
+	values  map[string]string
 }
 
 func (s *settingUpdateRepoStub) Get(ctx context.Context, key string) (*Setting, error) {
@@ -41,7 +42,11 @@ func (s *settingUpdateRepoStub) SetMultiple(ctx context.Context, settings map[st
 }
 
 func (s *settingUpdateRepoStub) GetAll(ctx context.Context) (map[string]string, error) {
-	panic("unexpected GetAll call")
+	result := make(map[string]string, len(s.values))
+	for k, v := range s.values {
+		result[k] = v
+	}
+	return result, nil
 }
 
 func (s *settingUpdateRepoStub) Delete(ctx context.Context, key string) error {
@@ -76,6 +81,7 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidGroup(t *testin
 	svc.SetDefaultSubscriptionGroupReader(groupReader)
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		SubscriptionCapacityTightness: 50,
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
 			{GroupID: 11, ValidityDays: 30},
 		},
@@ -91,6 +97,45 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidGroup(t *testin
 	require.Equal(t, []DefaultSubscriptionSetting{
 		{GroupID: 11, ValidityDays: 30},
 	}, got)
+	require.Equal(t, "50", repo.updates[SettingKeySubscriptionCapacityTightness])
+}
+
+func TestSettingService_UpdateSettings_StoresSubscriptionCapacityTightnessWithinRange(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		SubscriptionCapacityTightness: 135,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "100", repo.updates[SettingKeySubscriptionCapacityTightness])
+}
+
+func TestSettingService_UpdateSettings_StoresSubscriptionCapacityTightnessLowerBound(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		SubscriptionCapacityTightness: -15,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "0", repo.updates[SettingKeySubscriptionCapacityTightness])
+}
+
+func TestSettingService_GetAllSettings_DefaultSubscriptionCapacityTightnessFallback(t *testing.T) {
+	repo := &settingUpdateRepoStub{
+		values: map[string]string{},
+	}
+	svc := NewSettingService(repo, &config.Config{
+		Default: config.DefaultConfig{
+			UserConcurrency: 1,
+			UserBalance:     0,
+		},
+	})
+
+	settings, err := svc.GetAllSettings(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, defaultSubscriptionCapacityTightness, settings.SubscriptionCapacityTightness)
 }
 
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {

@@ -4,7 +4,9 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -161,4 +163,56 @@ func TestAssignSubscriptionDoesNotSendAdminNotificationWhenEmailNotConfigured(t 
 	require.NoError(t, err)
 	require.NotNil(t, sub)
 	require.Empty(t, emailer.calls)
+}
+
+func TestEstimateAdditionalAccountsRespectsCapacityTightness(t *testing.T) {
+	activeSubscriptions := int64(7)
+	activeAccounts := int64(2)
+
+	low := estimateAdditionalAccounts(
+		activeSubscriptions,
+		activeAccounts,
+		buildCapacityRecommendationPreferenceProfile(0),
+	)
+	high := estimateAdditionalAccounts(
+		activeSubscriptions,
+		activeAccounts,
+		buildCapacityRecommendationPreferenceProfile(100),
+	)
+
+	require.GreaterOrEqual(t, high, low)
+	require.Equal(t, int64(0), low)
+	require.Equal(t, int64(1), high)
+}
+
+func TestBuildSubscriptionAdminNotificationBodyIncludesCapacityTightness(t *testing.T) {
+	body := buildSubscriptionAdminNotificationBody(
+		"Sub2API",
+		&UserSubscription{
+			Status:    SubscriptionStatusActive,
+			StartsAt:  MaxExpiresAt.AddDate(-1, 0, 0),
+			ExpiresAt: MaxExpiresAt,
+			Notes:     "payment order 456",
+		},
+		&User{
+			Email:    "buyer@example.com",
+			Username: "buyer",
+		},
+		&Group{
+			Name:     "OpenAI Pro",
+			Platform: PlatformOpenAI,
+		},
+		subscriptionCapacityHint{
+			ActiveSubscriptions: 8,
+			ActiveAccounts:      3,
+			TotalAccounts:       4,
+			AdditionalAccounts:  1,
+			AccountTypeHint:     "OpenAI OAuth",
+			PreferenceScore:     80,
+		},
+	)
+
+	require.True(t, strings.Contains(body, "额度紧张度"))
+	require.True(t, strings.Contains(body, "80 / 100"))
+	require.True(t, strings.Contains(body, "建议补充 1 个 OpenAI OAuth 账号"))
 }

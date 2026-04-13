@@ -556,6 +556,9 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	// 默认配置
 	updates[SettingKeyDefaultConcurrency] = strconv.Itoa(settings.DefaultConcurrency)
 	updates[SettingKeyDefaultBalance] = strconv.FormatFloat(settings.DefaultBalance, 'f', 8, 64)
+	updates[SettingKeySubscriptionCapacityTightness] = strconv.Itoa(
+		clampInt(settings.SubscriptionCapacityTightness, minSubscriptionCapacityTightness, maxSubscriptionCapacityTightness),
+	)
 	defaultSubsJSON, err := json.Marshal(settings.DefaultSubscriptions)
 	if err != nil {
 		return fmt.Errorf("marshal default subscriptions: %w", err)
@@ -912,6 +915,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyDefaultConcurrency:               strconv.Itoa(s.cfg.Default.UserConcurrency),
 		SettingKeyDefaultBalance:                   strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
 		SettingKeyDefaultSubscriptions:             "[]",
+		SettingKeySubscriptionCapacityTightness:    strconv.Itoa(defaultSubscriptionCapacityTightness),
 		SettingKeySMTPPort:                         "587",
 		SettingKeySMTPUseTLS:                       "false",
 		SettingKeySubscriptionNotificationEmail:    "",
@@ -995,6 +999,9 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	} else {
 		result.DefaultConcurrency = s.cfg.Default.UserConcurrency
 	}
+	result.SubscriptionCapacityTightness = parseSubscriptionCapacityTightness(
+		settings[SettingKeySubscriptionCapacityTightness],
+	)
 
 	// 解析浮点数类型
 	if balance, err := strconv.ParseFloat(settings[SettingKeyDefaultBalance], 64); err == nil {

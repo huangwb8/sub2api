@@ -1493,6 +1493,42 @@
               </div>
             </div>
 
+            <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="max-w-2xl">
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.defaults.subscriptionCapacityTightness') }}
+                  </label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.defaults.subscriptionCapacityTightnessHint') }}
+                  </p>
+                </div>
+                <div class="w-full max-w-xs">
+                  <div class="mb-2 flex items-center gap-3">
+                    <input
+                      v-model.number="form.subscription_capacity_tightness"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      class="h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-200 dark:bg-dark-600"
+                    />
+                    <input
+                      v-model.number="form.subscription_capacity_tightness"
+                      type="number"
+                      min="0"
+                      max="100"
+                      class="input w-20 text-center"
+                    />
+                  </div>
+                  <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>{{ t('admin.settings.defaults.subscriptionCapacityTightnessLow') }}</span>
+                    <span>{{ t('admin.settings.defaults.subscriptionCapacityTightnessHigh') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
               <div class="mb-3 flex items-center justify-between">
                 <div>
@@ -2677,6 +2713,7 @@ const form = reactive<SettingsForm>({
   default_balance: 0,
   default_concurrency: 1,
   default_subscriptions: [],
+  subscription_capacity_tightness: 50,
   site_name: 'Sub2API',
   site_logo: '',
   site_subtitle: 'Subscription to API Conversion Platform',
@@ -3094,6 +3131,7 @@ async function saveSettings() {
       default_balance: form.default_balance,
       default_concurrency: form.default_concurrency,
       default_subscriptions: normalizedDefaultSubscriptions,
+      subscription_capacity_tightness: Math.min(100, Math.max(0, Math.round(Number(form.subscription_capacity_tightness) || 0))),
       site_name: form.site_name,
       site_logo: form.site_logo,
       site_subtitle: form.site_subtitle,

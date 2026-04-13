@@ -109,7 +109,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		return nil, err
 	}
 	dashboardAggregationService := service.ProvideDashboardAggregationService(dashboardAggregationRepository, timingWheelService, configConfig)
-	dashboardHandler := admin.NewDashboardHandler(dashboardService, dashboardAggregationService)
 	schedulerCache := repository.ProvideSchedulerCache(redisClient, configConfig)
 	accountRepository := repository.NewAccountRepository(client, db, schedulerCache)
 	proxyRepository := repository.NewProxyRepository(client, db)
@@ -158,6 +157,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	sessionLimitCache := repository.ProvideSessionLimitCache(redisClient, configConfig)
 	rpmCache := repository.NewRPMCache(redisClient)
 	groupCapacityService := service.NewGroupCapacityService(accountRepository, groupRepository, concurrencyService, sessionLimitCache, rpmCache)
+	dashboardRecommendationService := service.NewDashboardRecommendationService(db, client, groupCapacityService, settingRepository)
+	dashboardHandler := admin.NewDashboardHandler(dashboardService, dashboardRecommendationService, dashboardAggregationService)
 	groupHandler := admin.NewGroupHandler(adminService, dashboardService, groupCapacityService)
 	accountHandler := admin.NewAccountHandler(adminService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, rateLimitService, accountUsageService, accountTestService, concurrencyService, crsSyncService, sessionLimitCache, rpmCache, compositeTokenCacheInvalidator)
 	adminAnnouncementHandler := admin.NewAnnouncementHandler(announcementService)

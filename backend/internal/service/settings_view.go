@@ -75,6 +75,7 @@ type SystemSettings struct {
 	DefaultConcurrency   int
 	DefaultBalance       float64
 	DefaultSubscriptions []DefaultSubscriptionSetting
+	SubscriptionCapacityTightness int
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`

@@ -1016,6 +1016,30 @@ export default {
       spendShort: 'Spend',
       requestsShort: 'Req',
       tokensShort: 'Tok',
+      recommendations: {
+        title: 'Account Recommendations',
+        description: 'Uses the last 30 days of subscription behavior, live group pressure, and real-time capacity to suggest when to add more accounts.',
+        group: 'Group / Plan',
+        status: 'Status',
+        current: 'Current Accounts',
+        recommended: 'Recommended',
+        utilization: 'Utilization',
+        confidence: 'Confidence',
+        reason: 'Why',
+        groups: '{count} subscription groups assessed',
+        toAdd: '{count} account(s) suggested',
+        urgent: '{count} urgent group(s)',
+        subscriptions: '{count} active subscription(s)',
+        addCount: 'Add {count}',
+        noAction: 'No action needed',
+        projectedCost: 'Projected daily load ${amount}',
+        empty: 'No subscription groups are ready for recommendation yet.',
+        statusMap: {
+          healthy: 'Healthy',
+          watch: 'Watch',
+          action: 'Action'
+        }
+      },
       failedToLoad: 'Failed to load dashboard statistics'
     },
 
@@ -4321,6 +4345,10 @@ export default {
         defaultBalanceHint: 'Initial balance for new users',
         defaultConcurrency: 'Default Concurrency',
         defaultConcurrencyHint: 'Maximum concurrent requests for new users',
+        subscriptionCapacityTightness: 'Capacity Tightness',
+        subscriptionCapacityTightnessHint: 'Controls how conservative the system should be when recommending more upstream accounts. Higher values bias toward adding capacity earlier to reduce oversell risk; lower values bias toward cost restraint, while still keeping a safety floor.',
+        subscriptionCapacityTightnessLow: 'Cost-focused',
+        subscriptionCapacityTightnessHigh: 'Capacity-focused',
         defaultSubscriptions: 'Default Subscriptions',
         defaultSubscriptionsHint: 'Auto-assign these subscriptions when a new user is created or registered',
         addDefaultSubscription: 'Add Default Subscription',
