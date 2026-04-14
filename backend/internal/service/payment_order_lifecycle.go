@@ -237,16 +237,12 @@ func (s *PaymentService) ExpireTimedOutOrders(ctx context.Context) (int, error) 
 // Falls back to registry lookup if instance ID is missing (legacy orders).
 func (s *PaymentService) getOrderProvider(ctx context.Context, o *dbent.PaymentOrder) (payment.Provider, error) {
 	if o.ProviderInstanceID != nil && *o.ProviderInstanceID != "" {
-		instID, err := strconv.ParseInt(*o.ProviderInstanceID, 10, 64)
-		if err == nil {
-			cfg, err := s.loadBalancer.GetInstanceConfig(ctx, instID)
-			if err == nil {
-				providerKey := s.registry.GetProviderKey(o.PaymentType)
-				if providerKey == "" {
-					providerKey = o.PaymentType
-				}
-				p, err := provider.CreateProvider(providerKey, *o.ProviderInstanceID, cfg)
-				if err == nil {
+		inst, err := s.getOrderProviderInstance(ctx, o)
+		if err == nil && inst != nil {
+			cfg, cfgErr := s.loadBalancer.GetInstanceConfig(ctx, int64(inst.ID))
+			if cfgErr == nil {
+				p, pErr := provider.CreateProvider(inst.ProviderKey, *o.ProviderInstanceID, cfg)
+				if pErr == nil {
 					return p, nil
 				}
 			}

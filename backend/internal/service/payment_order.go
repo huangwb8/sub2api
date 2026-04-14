@@ -118,8 +118,10 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 	if err := s.checkPendingLimit(ctx, tx, req.UserID, cfg.MaxPendingOrders); err != nil {
 		return nil, err
 	}
-	if err := s.checkDailyLimit(ctx, tx, req.UserID, amount, cfg.DailyLimit); err != nil {
-		return nil, err
+	if req.OrderType == payment.OrderTypeBalance {
+		if err := s.checkDailyLimit(ctx, tx, req.UserID, amount, cfg.DailyLimit); err != nil {
+			return nil, err
+		}
 	}
 	tm := cfg.OrderTimeoutMin
 	if tm <= 0 {
@@ -190,6 +192,9 @@ func (s *PaymentService) checkDailyLimit(ctx context.Context, tx *dbent.Tx, user
 	}
 	var used float64
 	for _, o := range orders {
+		if o.OrderType != payment.OrderTypeBalance {
+			continue
+		}
 		used += o.Amount
 	}
 	if used+amount > limit {
@@ -199,19 +204,14 @@ func (s *PaymentService) checkDailyLimit(ctx context.Context, tx *dbent.Tx, user
 }
 
 func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan) (*CreateOrderResponse, error) {
-	s.EnsureProviders(ctx)
-	providerKey := s.registry.GetProviderKey(req.PaymentType)
-	if providerKey == "" {
-		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", fmt.Sprintf("payment method (%s) is not configured", req.PaymentType))
-	}
-	sel, err := s.loadBalancer.SelectInstance(ctx, providerKey, req.PaymentType, payment.Strategy(cfg.LoadBalanceStrategy), payAmount)
+	sel, err := s.loadBalancer.SelectInstance(ctx, req.PaymentType, cfg.EnabledTypes, payment.Strategy(cfg.LoadBalanceStrategy), payAmount)
 	if err != nil {
 		return nil, fmt.Errorf("select provider instance: %w", err)
 	}
 	if sel == nil {
 		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no available payment instance")
 	}
-	prov, err := provider.CreateProvider(providerKey, sel.InstanceID, sel.Config)
+	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
 		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", "payment method is temporarily unavailable")
 	}
@@ -219,7 +219,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	outTradeNo := order.OutTradeNo
 	pr, err := prov.CreatePayment(ctx, payment.CreatePaymentRequest{OrderID: outTradeNo, Amount: payAmountStr, PaymentType: req.PaymentType, Subject: subject, ClientIP: req.ClientIP, IsMobile: req.IsMobile, InstanceSubMethods: sel.SupportedTypes})
 	if err != nil {
-		slog.Error("[PaymentService] CreatePayment failed", "provider", providerKey, "instance", sel.InstanceID, "error", err)
+		slog.Error("[PaymentService] CreatePayment failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
 		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", fmt.Sprintf("payment gateway error: %s", err.Error()))
 	}
 	_, err = s.entClient.PaymentOrder.UpdateOneID(order.ID).SetNillablePaymentTradeNo(psNilIfEmpty(pr.TradeNo)).SetNillablePayURL(psNilIfEmpty(pr.PayURL)).SetNillableQrCode(psNilIfEmpty(pr.QRCode)).SetNillableProviderInstanceID(psNilIfEmpty(sel.InstanceID)).Save(ctx)
@@ -227,7 +227,20 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		return nil, fmt.Errorf("update order with payment details: %w", err)
 	}
 	s.writeAuditLog(ctx, order.ID, "ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{"amount": req.Amount, "paymentType": req.PaymentType, "orderType": req.OrderType})
-	return &CreateOrderResponse{OrderID: order.ID, Amount: order.Amount, PayAmount: payAmount, FeeRate: order.FeeRate, Status: OrderStatusPending, PaymentType: req.PaymentType, PayURL: pr.PayURL, QRCode: pr.QRCode, ClientSecret: pr.ClientSecret, ExpiresAt: order.ExpiresAt, PaymentMode: sel.PaymentMode}, nil
+	return &CreateOrderResponse{
+		OrderID:              order.ID,
+		Amount:               order.Amount,
+		PayAmount:            payAmount,
+		FeeRate:              order.FeeRate,
+		Status:               OrderStatusPending,
+		PaymentType:          req.PaymentType,
+		PayURL:               pr.PayURL,
+		QRCode:               pr.QRCode,
+		ClientSecret:         pr.ClientSecret,
+		StripePublishableKey: selectedStripePublishableKey(sel),
+		ExpiresAt:            order.ExpiresAt,
+		PaymentMode:          sel.PaymentMode,
+	}, nil
 }
 
 func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, amount float64) (*CreateOrderResponse, error) {
@@ -305,10 +318,6 @@ func (s *PaymentService) createBalanceSubscriptionOrderInTx(ctx context.Context,
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if err := s.checkDailyLimit(ctx, tx, req.UserID, amount, cfg.DailyLimit); err != nil {
-		return nil, err
-	}
-
 	affected, err := tx.User.Update().
 		Where(dbuser.IDEQ(req.UserID), dbuser.BalanceGTE(amount)).
 		AddBalance(-amount).
@@ -365,6 +374,13 @@ func (s *PaymentService) createBalanceSubscriptionOrderInTx(ctx context.Context,
 	})
 
 	return order, nil
+}
+
+func selectedStripePublishableKey(sel *payment.InstanceSelection) string {
+	if sel == nil || sel.ProviderKey != payment.TypeStripe || sel.Config == nil {
+		return ""
+	}
+	return strings.TrimSpace(sel.Config[payment.ConfigKeyPublishableKey])
 }
 
 func (s *PaymentService) buildPaymentSubject(plan *dbent.SubscriptionPlan, payAmountStr string, cfg *PaymentConfig) string {

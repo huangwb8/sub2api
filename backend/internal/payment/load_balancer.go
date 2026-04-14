@@ -35,7 +35,7 @@ type InstanceLimits map[string]ChannelLimits
 // LoadBalancer selects a provider instance for a given payment type.
 type LoadBalancer interface {
 	GetInstanceConfig(ctx context.Context, instanceID int64) (map[string]string, error)
-	SelectInstance(ctx context.Context, providerKey string, paymentType PaymentType, strategy Strategy, orderAmount float64) (*InstanceSelection, error)
+	SelectInstance(ctx context.Context, paymentType PaymentType, allowedProviderKeys []string, strategy Strategy, orderAmount float64) (*InstanceSelection, error)
 }
 
 // DefaultLoadBalancer implements LoadBalancer using database queries.
@@ -56,23 +56,22 @@ type instanceCandidate struct {
 	dailyUsed float64 // includes PENDING orders
 }
 
-// SelectInstance picks an enabled instance for the given provider key and payment type.
+// SelectInstance picks an enabled instance for the given payment type.
 //
 // Flow:
-//  1. Query all enabled instances for providerKey, filter by supported paymentType
+//  1. Query all enabled instances allowed by provider key whitelist, filter by supported paymentType
 //  2. Batch-query daily usage (PENDING + PAID + COMPLETED + RECHARGING) for all candidates
 //  3. Filter out instances where: single-min/max violated OR daily remaining < orderAmount
 //  4. Pick from survivors using the configured strategy (round-robin / least-amount)
-//  5. If all filtered out, fall back to full list (let the provider itself reject)
 func (lb *DefaultLoadBalancer) SelectInstance(
 	ctx context.Context,
-	providerKey string,
 	paymentType PaymentType,
+	allowedProviderKeys []string,
 	strategy Strategy,
 	orderAmount float64,
 ) (*InstanceSelection, error) {
 	// Step 1: query enabled instances matching payment type.
-	instances, err := lb.queryEnabledInstances(ctx, providerKey, paymentType)
+	instances, err := lb.queryEnabledInstances(ctx, paymentType, allowedProviderKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +82,10 @@ func (lb *DefaultLoadBalancer) SelectInstance(
 	// Step 3: filter by limits.
 	available := filterByLimits(candidates, paymentType, orderAmount)
 	if len(available) == 0 {
-		slog.Warn("all instances exceeded limits, using full candidate list",
-			"provider", providerKey, "payment_type", paymentType,
+		slog.Warn("all instances exceeded limits, rejecting order",
+			"payment_type", paymentType,
 			"order_amount", orderAmount, "count", len(candidates))
-		available = candidates
+		return nil, nil
 	}
 
 	// Step 4: pick by strategy.
@@ -94,31 +93,35 @@ func (lb *DefaultLoadBalancer) SelectInstance(
 	return lb.buildSelection(selected.inst)
 }
 
-// queryEnabledInstances returns enabled instances for providerKey that support paymentType.
+// queryEnabledInstances returns enabled instances that support paymentType.
 func (lb *DefaultLoadBalancer) queryEnabledInstances(
 	ctx context.Context,
-	providerKey string,
 	paymentType PaymentType,
+	allowedProviderKeys []string,
 ) ([]*dbent.PaymentProviderInstance, error) {
-	instances, err := lb.db.PaymentProviderInstance.Query().
-		Where(
-			paymentproviderinstance.ProviderKey(providerKey),
-			paymentproviderinstance.Enabled(true),
-		).
-		Order(dbent.Asc(paymentproviderinstance.FieldSortOrder)).
-		All(ctx)
+	query := lb.db.PaymentProviderInstance.Query().
+		Where(paymentproviderinstance.Enabled(true)).
+		Order(
+			dbent.Asc(paymentproviderinstance.FieldSortOrder),
+			dbent.Asc(paymentproviderinstance.FieldID),
+		)
+	if len(allowedProviderKeys) > 0 {
+		query = query.Where(paymentproviderinstance.ProviderKeyIn(allowedProviderKeys...))
+	}
+
+	instances, err := query.All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("query provider instances: %w", err)
 	}
 
 	var matched []*dbent.PaymentProviderInstance
 	for _, inst := range instances {
-		if paymentType == providerKey || InstanceSupportsType(inst.SupportedTypes, paymentType) {
+		if inst.ProviderKey == paymentType || InstanceSupportsType(inst.SupportedTypes, paymentType) {
 			matched = append(matched, inst)
 		}
 	}
 	if len(matched) == 0 {
-		return nil, fmt.Errorf("no enabled instance for provider %s type %s", providerKey, paymentType)
+		return nil, fmt.Errorf("no enabled instance for payment type %s", paymentType)
 	}
 	return matched, nil
 }
@@ -258,6 +261,7 @@ func (lb *DefaultLoadBalancer) buildSelection(selected *dbent.PaymentProviderIns
 
 	return &InstanceSelection{
 		InstanceID:     fmt.Sprintf("%d", selected.ID),
+		ProviderKey:    selected.ProviderKey,
 		Config:         config,
 		SupportedTypes: selected.SupportedTypes,
 		PaymentMode:    selected.PaymentMode,

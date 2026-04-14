@@ -194,8 +194,11 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 		return nil, fmt.Errorf("get payment config settings: %w", err)
 	}
 	cfg := s.parsePaymentConfig(vals)
-	// Load Stripe publishable key from the first enabled Stripe provider instance
-	cfg.StripePublishableKey = s.getStripePublishableKey(ctx)
+	// Expose a global Stripe publishable key only when all enabled Stripe
+	// instances share the same publishable key.
+	if len(cfg.EnabledTypes) == 0 || pcStringSliceContains(cfg.EnabledTypes, payment.TypeStripe) {
+		cfg.StripePublishableKey = s.getStripePublishableKey(ctx)
+	}
 	return cfg, nil
 }
 
@@ -231,6 +234,7 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 			}
 		}
 	}
+	cfg.EnabledTypes = normalizeEnabledProviderKeys(cfg.EnabledTypes)
 	return cfg
 }
 
@@ -240,15 +244,62 @@ func (s *PaymentConfigService) getStripePublishableKey(ctx context.Context) stri
 		Where(
 			paymentproviderinstance.EnabledEQ(true),
 			paymentproviderinstance.ProviderKeyEQ(payment.TypeStripe),
-		).Limit(1).All(ctx)
+		).Order(
+		dbent.Asc(paymentproviderinstance.FieldSortOrder),
+		dbent.Asc(paymentproviderinstance.FieldID),
+	).All(ctx)
 	if err != nil || len(instances) == 0 {
 		return ""
 	}
-	cfg, err := s.decryptConfig(instances[0].Config)
-	if err != nil || cfg == nil {
-		return ""
+
+	var key string
+	for _, inst := range instances {
+		cfg, decErr := s.decryptConfig(inst.Config)
+		if decErr != nil || cfg == nil {
+			continue
+		}
+		current := strings.TrimSpace(cfg[payment.ConfigKeyPublishableKey])
+		if current == "" {
+			continue
+		}
+		if key == "" {
+			key = current
+			continue
+		}
+		if current != key {
+			return ""
+		}
 	}
-	return cfg[payment.ConfigKeyPublishableKey]
+	return key
+}
+
+func pcStringSliceContains(items []string, target string) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeEnabledProviderKeys(items []string) []string {
+	if len(items) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(items))
+	normalized := make([]string, 0, len(items))
+	for _, item := range items {
+		key := strings.TrimSpace(payment.GetBasePaymentType(item))
+		if key == "" {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		normalized = append(normalized, key)
+	}
+	return normalized
 }
 
 // UpdatePaymentConfig updates the payment configuration settings.

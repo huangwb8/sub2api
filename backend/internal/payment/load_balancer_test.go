@@ -3,12 +3,56 @@
 package payment
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/enttest"
+
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	_ "modernc.org/sqlite"
 )
+
+func newLoadBalancerSQLite(t *testing.T) (*DefaultLoadBalancer, *dbent.Client) {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared&_fk=1", strings.NewReplacer("/", "_", " ", "_").Replace(t.Name()))
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		t.Fatalf("enable foreign keys: %v", err)
+	}
+
+	drv := entsql.OpenDB(dialect.SQLite, db)
+	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
+	t.Cleanup(func() { _ = client.Close() })
+
+	key := []byte("12345678901234567890123456789012")
+	return NewDefaultLoadBalancer(client, key), client
+}
+
+func mustEncryptConfig(t *testing.T, cfg map[string]string) string {
+	t.Helper()
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("marshal config: %v", err)
+	}
+	encrypted, err := Encrypt(string(data), []byte("12345678901234567890123456789012"))
+	if err != nil {
+		t.Fatalf("encrypt config: %v", err)
+	}
+	return encrypted
+}
 
 func TestInstanceSupportsType(t *testing.T) {
 	t.Parallel()
@@ -242,7 +286,7 @@ func TestFilterByLimits(t *testing.T) {
 			wantIDs:     nil,
 		},
 		{
-			name: "empty candidates returns empty",
+			name:        "empty candidates returns empty",
 			candidates:  nil,
 			paymentType: "alipay",
 			orderAmount: 10,
@@ -401,6 +445,79 @@ func TestGetInstanceChannelLimits(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefaultLoadBalancerSelectInstance(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns nil when all candidates exceed limits", func(t *testing.T) {
+		t.Parallel()
+		lb, client := newLoadBalancerSQLite(t)
+		ctx := context.Background()
+
+		_, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(TypeEasyPay).
+			SetName("easypay-1").
+			SetConfig("{}").
+			SetSupportedTypes(TypeAlipay).
+			SetEnabled(true).
+			SetLimits(`{"alipay":{"singleMax":10}}`).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create provider instance: %v", err)
+		}
+
+		sel, err := lb.SelectInstance(ctx, TypeAlipay, []string{TypeEasyPay}, StrategyRoundRobin, 20)
+		if err != nil {
+			t.Fatalf("SelectInstance() error = %v", err)
+		}
+		if sel != nil {
+			t.Fatalf("SelectInstance() = %+v, want nil when all instances exceed limits", sel)
+		}
+	})
+
+	t.Run("filters provider families by enabled whitelist", func(t *testing.T) {
+		t.Parallel()
+		lb, client := newLoadBalancerSQLite(t)
+		ctx := context.Background()
+
+		easypayCfg := mustEncryptConfig(t, map[string]string{"name": "easypay"})
+		alipayCfg := mustEncryptConfig(t, map[string]string{"name": "alipay"})
+
+		_, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(TypeEasyPay).
+			SetName("easypay-alipay").
+			SetConfig(easypayCfg).
+			SetSupportedTypes(TypeAlipay).
+			SetEnabled(true).
+			SetSortOrder(1).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create easypay instance: %v", err)
+		}
+		_, err = client.PaymentProviderInstance.Create().
+			SetProviderKey(TypeAlipay).
+			SetName("official-alipay").
+			SetConfig(alipayCfg).
+			SetSupportedTypes(TypeAlipay).
+			SetEnabled(true).
+			SetSortOrder(2).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create alipay instance: %v", err)
+		}
+
+		sel, err := lb.SelectInstance(ctx, TypeAlipay, []string{TypeAlipay}, StrategyRoundRobin, 10)
+		if err != nil {
+			t.Fatalf("SelectInstance() error = %v", err)
+		}
+		if sel == nil {
+			t.Fatal("SelectInstance() returned nil, want selected instance")
+		}
+		if sel.ProviderKey != TypeAlipay {
+			t.Fatalf("selected provider key = %s, want %s", sel.ProviderKey, TypeAlipay)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------

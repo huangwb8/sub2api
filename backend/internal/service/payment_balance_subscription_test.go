@@ -218,3 +218,61 @@ func TestPaymentService_ExecuteRefund_RecreditsBalanceForBalancePaidSubscription
 	_, err = svc.subscriptionSvc.GetActiveSubscription(ctx, user.ID, group.ID)
 	require.Error(t, err)
 }
+
+func TestPaymentService_CreateOrder_WithBalancePaymentBypassesDailyRechargeLimit(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentServiceSQLite(t)
+	ctx := context.Background()
+	settingRepo := svc.configService.settingRepo.(*paymentSettingRepoStub)
+	settingRepo.values[SettingDailyRechargeLimit] = "1"
+
+	user := mustCreatePaymentUser(t, ctx, client, 100)
+	group := mustCreatePlanGroup(t, ctx, client, "daily-limit-sub-group", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, group.ID, "daily-limit-plan", true)
+
+	resp, err := svc.CreateOrder(ctx, CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      plan.Price,
+		PaymentType: payment.TypeBalance,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      plan.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusCompleted, resp.Status)
+}
+
+func TestPaymentService_CheckDailyLimit_IgnoresSubscriptionOrders(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentServiceSQLite(t)
+	ctx := context.Background()
+	user := mustCreatePaymentUser(t, ctx, client, 100)
+
+	_, err := client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(999).
+		SetPayAmount(999).
+		SetFeeRate(0).
+		SetRechargeCode("PAY-sub-only").
+		SetOutTradeNo("sub2_subscription_only").
+		SetPaymentType(payment.TypeBalance).
+		SetPaymentTradeNo("trade-sub-only").
+		SetOrderType(payment.OrderTypeSubscription).
+		SetStatus(OrderStatusCompleted).
+		SetExpiresAt(time.Now()).
+		SetPaidAt(time.Now()).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("example.com").
+		Save(ctx)
+	require.NoError(t, err)
+
+	tx, err := client.Tx(ctx)
+	require.NoError(t, err)
+	defer func() { _ = tx.Rollback() }()
+
+	err = svc.checkDailyLimit(ctx, tx, user.ID, 10, 50)
+	require.NoError(t, err)
+}

@@ -19,6 +19,11 @@ func (s *PaymentConfigService) GetAvailableMethodLimits(ctx context.Context) (*M
 	if err != nil {
 		return nil, fmt.Errorf("query provider instances: %w", err)
 	}
+	cfg, err := s.GetPaymentConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get payment config: %w", err)
+	}
+	instances = pcFilterInstancesByProviderKeys(instances, cfg.EnabledTypes)
 	typeInstances := pcGroupByPaymentType(instances)
 	resp := &MethodLimitsResponse{
 		Methods: make(map[string]MethodLimits, len(typeInstances)),
@@ -29,6 +34,31 @@ func (s *PaymentConfigService) GetAvailableMethodLimits(ctx context.Context) (*M
 	}
 	resp.GlobalMin, resp.GlobalMax = pcComputeGlobalRange(resp.Methods)
 	return resp, nil
+}
+
+func pcFilterInstancesByProviderKeys(instances []*dbent.PaymentProviderInstance, enabledProviderKeys []string) []*dbent.PaymentProviderInstance {
+	normalizedKeys := normalizeEnabledProviderKeys(enabledProviderKeys)
+	if len(normalizedKeys) == 0 {
+		return instances
+	}
+	allowed := make(map[string]struct{}, len(normalizedKeys))
+	for _, key := range normalizedKeys {
+		if key == "" {
+			continue
+		}
+		allowed[key] = struct{}{}
+	}
+	if len(allowed) == 0 {
+		return instances
+	}
+
+	filtered := make([]*dbent.PaymentProviderInstance, 0, len(instances))
+	for _, inst := range instances {
+		if _, ok := allowed[inst.ProviderKey]; ok {
+			filtered = append(filtered, inst)
+		}
+	}
+	return filtered
 }
 
 // GetMethodLimits returns per-payment-type limits from enabled provider instances.

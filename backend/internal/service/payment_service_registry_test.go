@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 )
 
 type stubPaymentLoadBalancer struct {
@@ -15,7 +17,7 @@ func (s stubPaymentLoadBalancer) GetInstanceConfig(_ context.Context, instanceID
 	return s.configByInstance[instanceID], nil
 }
 
-func (s stubPaymentLoadBalancer) SelectInstance(_ context.Context, _ string, _ payment.PaymentType, _ payment.Strategy, _ float64) (*payment.InstanceSelection, error) {
+func (s stubPaymentLoadBalancer) SelectInstance(_ context.Context, _ payment.PaymentType, _ []string, _ payment.Strategy, _ float64) (*payment.InstanceSelection, error) {
 	return nil, nil
 }
 
@@ -101,4 +103,134 @@ func TestPaymentService_RefreshProviders_RegistersCheckoutTypes(t *testing.T) {
 	if key := svc.registry.GetProviderKey(payment.TypeAlipayDirect); key != "" {
 		t.Fatalf("GetProviderKey(%s) = %q, want empty", payment.TypeAlipayDirect, key)
 	}
+}
+
+func TestPaymentService_ResolveWebhookProviders(t *testing.T) {
+	t.Parallel()
+
+	t.Run("uses order's original instance when outTradeNo is known", func(t *testing.T) {
+		t.Parallel()
+		_, client := newPaymentConfigServiceSQLite(t)
+		ctx := context.Background()
+
+		first, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(payment.TypeStripe).
+			SetName("stripe-a").
+			SetConfig("ignored").
+			SetSupportedTypes(payment.TypeStripe).
+			SetEnabled(true).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create first stripe instance: %v", err)
+		}
+		second, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(payment.TypeStripe).
+			SetName("stripe-b").
+			SetConfig("ignored").
+			SetSupportedTypes(payment.TypeStripe).
+			SetEnabled(true).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create second stripe instance: %v", err)
+		}
+
+		_, err = client.PaymentOrder.Create().
+			SetUserID(1).
+			SetUserEmail("user@example.com").
+			SetUserName("user").
+			SetAmount(10).
+			SetPayAmount(10).
+			SetFeeRate(0).
+			SetRechargeCode("PAY-1").
+			SetOutTradeNo("sub2_known").
+			SetPaymentType(payment.TypeStripe).
+			SetPaymentTradeNo("").
+			SetOrderType(payment.OrderTypeBalance).
+			SetStatus(payment.OrderStatusPending).
+			SetProviderInstanceID(fmt.Sprintf("%d", second.ID)).
+			SetExpiresAt(nowForTest()).
+			SetClientIP("127.0.0.1").
+			SetSrcHost("example.com").
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create payment order: %v", err)
+		}
+
+		svc := &PaymentService{
+			entClient: client,
+			registry:  payment.NewRegistry(),
+			loadBalancer: stubPaymentLoadBalancer{
+				configByInstance: map[int64]map[string]string{
+					int64(first.ID):  {"secretKey": "sk_test_first"},
+					int64(second.ID): {"secretKey": "sk_test_second"},
+				},
+			},
+		}
+
+		providers, err := svc.ResolveWebhookProviders(ctx, payment.TypeStripe, "sub2_known")
+		if err != nil {
+			t.Fatalf("ResolveWebhookProviders() error = %v", err)
+		}
+		if len(providers) != 1 {
+			t.Fatalf("ResolveWebhookProviders() len = %d, want 1", len(providers))
+		}
+		if _, ok := providers[0].(*provider.Stripe); !ok {
+			t.Fatalf("expected stripe provider, got %T", providers[0])
+		}
+	})
+
+	t.Run("falls back to provider candidate list when order is unknown", func(t *testing.T) {
+		t.Parallel()
+		_, client := newPaymentConfigServiceSQLite(t)
+		ctx := context.Background()
+
+		first, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(payment.TypeStripe).
+			SetName("stripe-a").
+			SetConfig("ignored").
+			SetSupportedTypes(payment.TypeStripe).
+			SetEnabled(true).
+			SetSortOrder(2).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create first stripe instance: %v", err)
+		}
+		second, err := client.PaymentProviderInstance.Create().
+			SetProviderKey(payment.TypeStripe).
+			SetName("stripe-b").
+			SetConfig("ignored").
+			SetSupportedTypes(payment.TypeStripe).
+			SetEnabled(true).
+			SetSortOrder(1).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create second stripe instance: %v", err)
+		}
+
+		svc := &PaymentService{
+			entClient: client,
+			registry:  payment.NewRegistry(),
+			loadBalancer: stubPaymentLoadBalancer{
+				configByInstance: map[int64]map[string]string{
+					int64(first.ID):  {"secretKey": "sk_test_first"},
+					int64(second.ID): {"secretKey": "sk_test_second"},
+				},
+			},
+		}
+
+		providers, err := svc.ResolveWebhookProviders(ctx, payment.TypeStripe, "")
+		if err != nil {
+			t.Fatalf("ResolveWebhookProviders() error = %v", err)
+		}
+		if len(providers) != 2 {
+			t.Fatalf("ResolveWebhookProviders() len = %d, want 2", len(providers))
+		}
+		if _, ok := providers[0].(*provider.Stripe); !ok {
+			t.Fatalf("expected stripe provider, got %T", providers[0])
+		}
+	})
+}
+
+func nowForTest() time.Time {
+	return time.Now().Add(30 * time.Minute)
 }

@@ -159,6 +159,7 @@ export interface CreateOrderResult {
   pay_url?: string
   qr_code?: string
   client_secret?: string
+  stripe_publishable_key?: string
   pay_amount: number
   expires_at: string
   payment_mode?: string

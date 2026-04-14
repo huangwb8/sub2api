@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -298,4 +300,140 @@ func TestPcInstanceTypeLimits(t *testing.T) {
 			t.Fatal("expected ok=false for invalid JSON")
 		}
 	})
+}
+
+func TestPaymentConfigService_GetAvailableMethodLimits_RespectsEnabledProviderTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	_, client := newPaymentConfigServiceSQLite(t)
+	settingRepo := &paymentSettingRepoStub{
+		values: map[string]string{
+			SettingPaymentEnabled:      "true",
+			SettingEnabledPaymentTypes: payment.TypeStripe,
+		},
+	}
+	svc := NewPaymentConfigService(client, settingRepo, nil)
+
+	_, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeEasyPay).
+		SetName("easypay").
+		SetConfig("{}").
+		SetSupportedTypes("alipay,wxpay").
+		SetEnabled(true).
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create easypay instance: %v", err)
+	}
+	_, err = client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeStripe).
+		SetName("stripe").
+		SetConfig("{}").
+		SetSupportedTypes("card,alipay,wxpay,link").
+		SetEnabled(true).
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create stripe instance: %v", err)
+	}
+
+	resp, err := svc.GetAvailableMethodLimits(ctx)
+	if err != nil {
+		t.Fatalf("GetAvailableMethodLimits() error = %v", err)
+	}
+	if len(resp.Methods) != 1 {
+		t.Fatalf("methods len = %d, want 1", len(resp.Methods))
+	}
+	if _, ok := resp.Methods[payment.TypeStripe]; !ok {
+		t.Fatalf("methods should contain only stripe, got %+v", resp.Methods)
+	}
+}
+
+func TestPaymentConfigService_GetAvailableMethodLimits_NormalizesLegacyEnabledProviderTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	_, client := newPaymentConfigServiceSQLite(t)
+	settingRepo := &paymentSettingRepoStub{
+		values: map[string]string{
+			SettingPaymentEnabled:      "true",
+			SettingEnabledPaymentTypes: payment.TypeAlipayDirect,
+		},
+	}
+	svc := NewPaymentConfigService(client, settingRepo, nil)
+
+	_, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("official-alipay").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create alipay instance: %v", err)
+	}
+
+	resp, err := svc.GetAvailableMethodLimits(ctx)
+	if err != nil {
+		t.Fatalf("GetAvailableMethodLimits() error = %v", err)
+	}
+	if _, ok := resp.Methods[payment.TypeAlipay]; !ok {
+		t.Fatalf("methods should contain normalized alipay entry, got %+v", resp.Methods)
+	}
+}
+
+func TestPaymentConfigService_GetPaymentConfig_HidesAmbiguousStripePublishableKey(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	_, client := newPaymentConfigServiceSQLite(t)
+	settingRepo := &paymentSettingRepoStub{
+		values: map[string]string{
+			SettingPaymentEnabled:      "true",
+			SettingEnabledPaymentTypes: payment.TypeStripe,
+		},
+	}
+	svc := NewPaymentConfigService(client, settingRepo, []byte("12345678901234567890123456789012"))
+
+	makeConfig := func(pk string) string {
+		raw, err := json.Marshal(map[string]string{
+			payment.ConfigKeyPublishableKey: pk,
+		})
+		if err != nil {
+			t.Fatalf("marshal config: %v", err)
+		}
+		encrypted, err := payment.Encrypt(string(raw), []byte("12345678901234567890123456789012"))
+		if err != nil {
+			t.Fatalf("encrypt config: %v", err)
+		}
+		return encrypted
+	}
+
+	_, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeStripe).
+		SetName("stripe-a").
+		SetConfig(makeConfig("pk_live_a")).
+		SetSupportedTypes("card").
+		SetEnabled(true).
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create stripe-a instance: %v", err)
+	}
+	_, err = client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeStripe).
+		SetName("stripe-b").
+		SetConfig(makeConfig("pk_live_b")).
+		SetSupportedTypes("card").
+		SetEnabled(true).
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create stripe-b instance: %v", err)
+	}
+
+	cfg, err := svc.GetPaymentConfig(ctx)
+	if err != nil {
+		t.Fatalf("GetPaymentConfig() error = %v", err)
+	}
+	if cfg.StripePublishableKey != "" {
+		t.Fatalf("StripePublishableKey = %q, want empty for multi-account stripe", cfg.StripePublishableKey)
+	}
 }
