@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-04-14
+
 ### Added（新增）
 - 新增了 `plans/2026-04-14-api-gateway-growth-operations-playbook.md`：沉淀 Sub2API API 站从 10 人到 10 万用户的分阶段扩容教程，覆盖部署形态、服务器规格、安全基线、监控备份、专人维护与平台化演进建议。
 
