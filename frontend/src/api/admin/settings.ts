@@ -462,6 +462,35 @@ export interface BetaPolicySettings {
   rules: BetaPolicyRule[]
 }
 
+export interface WebSearchProviderConfig {
+  type: string
+  api_key?: string
+  api_key_configured: boolean
+  quota_limit: number | null
+  subscribed_at?: number | null
+  quota_used?: number
+  proxy_id: number | null
+  expires_at?: number | null
+}
+
+export interface WebSearchEmulationConfig {
+  enabled: boolean
+  providers: WebSearchProviderConfig[]
+}
+
+export interface WebSearchResultItem {
+  url: string
+  title: string
+  snippet: string
+  page_age?: string
+}
+
+export interface WebSearchTestResult {
+  provider: string
+  query: string
+  results: WebSearchResultItem[]
+}
+
 /**
  * Get beta policy settings
  * @returns Beta policy settings
@@ -486,6 +515,41 @@ export async function updateBetaPolicySettings(
   return data
 }
 
+export async function getWebSearchEmulationConfig(): Promise<WebSearchEmulationConfig> {
+  const { data } = await apiClient.get<WebSearchEmulationConfig>(
+    '/admin/settings/web-search-emulation'
+  )
+  return data
+}
+
+export async function updateWebSearchEmulationConfig(
+  settings: WebSearchEmulationConfig
+): Promise<WebSearchEmulationConfig> {
+  const { data } = await apiClient.put<WebSearchEmulationConfig>(
+    '/admin/settings/web-search-emulation',
+    settings
+  )
+  return data
+}
+
+export async function resetWebSearchUsage(payload: {
+  provider_type: string
+}): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>(
+    '/admin/settings/web-search-emulation/reset-usage',
+    payload
+  )
+  return data
+}
+
+export async function testWebSearchEmulation(query: string): Promise<WebSearchTestResult> {
+  const { data } = await apiClient.post<WebSearchTestResult>(
+    '/admin/settings/web-search-emulation/test',
+    { query }
+  )
+  return data
+}
+
 export const settingsAPI = {
   getSettings,
   updateSettings,
@@ -501,7 +565,11 @@ export const settingsAPI = {
   getRectifierSettings,
   updateRectifierSettings,
   getBetaPolicySettings,
-  updateBetaPolicySettings
+  updateBetaPolicySettings,
+  getWebSearchEmulationConfig,
+  updateWebSearchEmulationConfig,
+  resetWebSearchUsage,
+  testWebSearchEmulation
 }
 
 export default settingsAPI

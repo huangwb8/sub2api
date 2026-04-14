@@ -6,6 +6,21 @@
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-04-14
+
+### Added（新增）
+- 新增了 Anthropic API Key 场景的全局 `WebSearch` 模拟能力：后端增加搜索 provider 管理、代理绑定、配额统计与重置/测试接口，前端在管理员设置页新增独立配置卡片，默认关闭且仅在显式启用后生效。
+- 新增了 `backend/migrations/103_add_allow_user_refund.sql`：为支付服务商实例补充 `allow_user_refund` 字段，用于细粒度控制用户是否可对该通道订单发起自助退款。
+
+### Changed（变更）
+- 调整了支付服务商配置链路：管理端现在支持单独配置”允许用户自助退款”，并在关闭服务商退款能力时自动联动关闭用户自助退款，避免后台配置出现语义漂移。
+- 调整了网关启动时的 WebSearch 装配逻辑：只有在 provider、代理与配置都满足条件时才会构建搜索管理器，缺失代理映射的 provider 会被安全跳过，避免异常情况下静默直连。
+- 调整了系统邮件发送的网络超时控制：SMTP plain/TLS 连接都改为显式拨号超时与 IO 超时，提升异常网络环境下的可恢复性。
+
+### Fixed（修复）
+- 修复了支付退款治理”半同步”导致的前后端不一致问题：表现是 schema 已出现 `allow_user_refund` 概念，但 Ent 生成代码、迁移、退款校验与用户侧按钮显隐未完全打通；修复方式是补齐 schema/迁移/服务/路由/UI 全链路并重新生成 Ent 与 Wire 代码。
+- 修复了 WebSearch 新接入链路中的编译与依赖注入问题：表现是 `websearch_config.go` 缺少 `atomic` 导入、`wire` 依赖图存在重复/缺失 provider；修复方式是补齐 provider 包装层、改用稳定的 payment provider set，并重新生成 `wire_gen.go`。
+
 ## [1.0.7] - 2026-04-14
 
 ### Added（新增）

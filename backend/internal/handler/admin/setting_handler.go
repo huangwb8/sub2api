@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/mail"
 	"net/http"
+	"net/mail"
 	"regexp"
 	"strings"
 	"time"
@@ -212,13 +212,13 @@ type UpdateSettingsRequest struct {
 	TotpEnabled                      bool     `json:"totp_enabled"` // TOTP 双因素认证
 
 	// 邮件服务设置
-	SMTPHost     string `json:"smtp_host"`
-	SMTPPort     int    `json:"smtp_port"`
-	SMTPUsername string `json:"smtp_username"`
-	SMTPPassword string `json:"smtp_password"`
-	SMTPFrom     string `json:"smtp_from_email"`
-	SMTPFromName string `json:"smtp_from_name"`
-	SMTPUseTLS   bool   `json:"smtp_use_tls"`
+	SMTPHost                      string `json:"smtp_host"`
+	SMTPPort                      int    `json:"smtp_port"`
+	SMTPUsername                  string `json:"smtp_username"`
+	SMTPPassword                  string `json:"smtp_password"`
+	SMTPFrom                      string `json:"smtp_from_email"`
+	SMTPFromName                  string `json:"smtp_from_name"`
+	SMTPUseTLS                    bool   `json:"smtp_use_tls"`
 	SubscriptionNotificationEmail string `json:"subscription_notification_email"`
 
 	// Cloudflare Turnstile 设置
@@ -856,17 +856,17 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.SubscriptionCapacityTightness
 		}(),
-		EnableModelFallback:              req.EnableModelFallback,
-		FallbackModelAnthropic:           req.FallbackModelAnthropic,
-		FallbackModelOpenAI:              req.FallbackModelOpenAI,
-		FallbackModelGemini:              req.FallbackModelGemini,
-		FallbackModelAntigravity:         req.FallbackModelAntigravity,
-		EnableIdentityPatch:              req.EnableIdentityPatch,
-		IdentityPatchPrompt:              req.IdentityPatchPrompt,
-		MinClaudeCodeVersion:             req.MinClaudeCodeVersion,
-		MaxClaudeCodeVersion:             req.MaxClaudeCodeVersion,
-		AllowUngroupedKeyScheduling:      req.AllowUngroupedKeyScheduling,
-		BackendModeEnabled:               req.BackendModeEnabled,
+		EnableModelFallback:         req.EnableModelFallback,
+		FallbackModelAnthropic:      req.FallbackModelAnthropic,
+		FallbackModelOpenAI:         req.FallbackModelOpenAI,
+		FallbackModelGemini:         req.FallbackModelGemini,
+		FallbackModelAntigravity:    req.FallbackModelAntigravity,
+		EnableIdentityPatch:         req.EnableIdentityPatch,
+		IdentityPatchPrompt:         req.IdentityPatchPrompt,
+		MinClaudeCodeVersion:        req.MinClaudeCodeVersion,
+		MaxClaudeCodeVersion:        req.MaxClaudeCodeVersion,
+		AllowUngroupedKeyScheduling: req.AllowUngroupedKeyScheduling,
+		BackendModeEnabled:          req.BackendModeEnabled,
 		OpsMonitoringEnabled: func() bool {
 			if req.OpsMonitoringEnabled != nil {
 				return *req.OpsMonitoringEnabled
@@ -1882,4 +1882,69 @@ func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 		ThresholdCount:         updatedSettings.ThresholdCount,
 		ThresholdWindowMinutes: updatedSettings.ThresholdWindowMinutes,
 	})
+}
+
+func (h *SettingHandler) GetWebSearchEmulationConfig(c *gin.Context) {
+	cfg, err := h.settingService.GetWebSearchEmulationConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, service.PopulateWebSearchUsage(c.Request.Context(), cfg))
+}
+
+func (h *SettingHandler) UpdateWebSearchEmulationConfig(c *gin.Context) {
+	var cfg service.WebSearchEmulationConfig
+	if err := c.ShouldBindJSON(&cfg); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err := h.settingService.SaveWebSearchEmulationConfig(c.Request.Context(), &cfg); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	updated, err := h.settingService.GetWebSearchEmulationConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, service.PopulateWebSearchUsage(c.Request.Context(), updated))
+}
+
+func (h *SettingHandler) ResetWebSearchUsage(c *gin.Context) {
+	var req struct {
+		ProviderType string `json:"provider_type"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if strings.TrimSpace(req.ProviderType) == "" {
+		response.BadRequest(c, "provider_type is required")
+		return
+	}
+	if err := service.ResetWebSearchUsage(c.Request.Context(), req.ProviderType); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "usage reset"})
+}
+
+func (h *SettingHandler) TestWebSearchEmulation(c *gin.Context) {
+	var req struct {
+		Query string `json:"query"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if strings.TrimSpace(req.Query) == "" {
+		req.Query = "搜索今年世界大事件"
+	}
+	result, err := service.TestWebSearch(c.Request.Context(), req.Query)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }

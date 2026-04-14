@@ -389,11 +389,17 @@ func ProvideBackupService(
 	return svc
 }
 
-// ProvideSettingService wires SettingService with group reader for default subscription validation.
-func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupRepository, cfg *config.Config) *SettingService {
+// ProvideSettingService wires SettingService with group reader and proxy repository.
+func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupRepository, proxyRepo ProxyRepository, cfg *config.Config) *SettingService {
 	svc := NewSettingService(settingRepo, cfg)
 	svc.SetDefaultSubscriptionGroupReader(groupRepo)
+	svc.SetProxyRepository(proxyRepo)
 	return svc
+}
+
+// ProvideOAuthRefreshAPI wraps NewOAuthRefreshAPI so Wire does not need to reason about variadic arguments.
+func ProvideOAuthRefreshAPI(accountRepo AccountRepository, tokenCache GeminiTokenCache) *OAuthRefreshAPI {
+	return NewOAuthRefreshAPI(accountRepo, tokenCache)
 }
 
 // ProviderSet is the Wire provider set for all services
@@ -425,7 +431,7 @@ var ProviderSet = wire.NewSet(
 	NewCompositeTokenCacheInvalidator,
 	wire.Bind(new(TokenCacheInvalidator), new(*CompositeTokenCacheInvalidator)),
 	NewAntigravityOAuthService,
-	NewOAuthRefreshAPI,
+	ProvideOAuthRefreshAPI,
 	ProvideGeminiTokenProvider,
 	NewGeminiMessagesCompatService,
 	ProvideAntigravityTokenProvider,

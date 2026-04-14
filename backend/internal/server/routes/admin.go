@@ -408,6 +408,11 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		// Beta 策略配置
 		adminSettings.GET("/beta-policy", h.Admin.Setting.GetBetaPolicySettings)
 		adminSettings.PUT("/beta-policy", h.Admin.Setting.UpdateBetaPolicySettings)
+		// Anthropic API Key WebSearch 模拟
+		adminSettings.GET("/web-search-emulation", h.Admin.Setting.GetWebSearchEmulationConfig)
+		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)
+		adminSettings.POST("/web-search-emulation/reset-usage", h.Admin.Setting.ResetWebSearchUsage)
+		adminSettings.POST("/web-search-emulation/test", h.Admin.Setting.TestWebSearchEmulation)
 	}
 }
 

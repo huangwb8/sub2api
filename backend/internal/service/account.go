@@ -1169,6 +1169,35 @@ func (a *Account) IsAnthropicAPIKeyPassthroughEnabled() bool {
 	return ok && enabled
 }
 
+const (
+	WebSearchModeDefault  = "default"
+	WebSearchModeEnabled  = "enabled"
+	WebSearchModeDisabled = "disabled"
+)
+
+func (a *Account) GetWebSearchEmulationMode() string {
+	if a == nil || a.Platform != PlatformAnthropic || a.Type != AccountTypeAPIKey || a.Extra == nil {
+		return WebSearchModeDefault
+	}
+	raw := a.Extra["web_search_emulation"]
+	if enabled, ok := raw.(bool); ok {
+		if enabled {
+			return WebSearchModeEnabled
+		}
+		return WebSearchModeDefault
+	}
+	mode, ok := raw.(string)
+	if !ok {
+		return WebSearchModeDefault
+	}
+	switch mode {
+	case WebSearchModeEnabled, WebSearchModeDisabled:
+		return mode
+	default:
+		return WebSearchModeDefault
+	}
+}
+
 // IsCodexCLIOnlyEnabled 返回 OpenAI OAuth 账号是否启用“仅允许 Codex 官方客户端”。
 // 字段：accounts.extra.codex_cli_only。
 // 字段缺失或类型不正确时，按 false（关闭）处理。

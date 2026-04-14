@@ -1747,6 +1747,8 @@
             </div>
           </div>
         </div>
+
+        <WebSearchEmulationCard />
         </div><!-- /Tab: Gateway — Claude Code, Scheduling -->
 
         <!-- Tab: General -->
@@ -2586,6 +2588,7 @@ import PaymentProviderDialog from '@/components/payment/PaymentProviderDialog.vu
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Toggle from '@/components/common/Toggle.vue'
+import WebSearchEmulationCard from '@/components/admin/settings/WebSearchEmulationCard.vue'
 import ImageUpload from '@/components/common/ImageUpload.vue'
 import BackupSettings from '@/views/admin/BackupView.vue'
 import { useClipboard } from '@/composables/useClipboard'
@@ -3678,12 +3681,24 @@ async function handleSaveProvider(payload: Partial<ProviderInstance>) {
   }
 }
 
-async function handleToggleField(provider: ProviderInstance, field: 'enabled' | 'refund_enabled') {
-  const newValue = field === 'enabled' ? !provider.enabled : !provider.refund_enabled
+async function handleToggleField(provider: ProviderInstance, field: 'enabled' | 'refund_enabled' | 'allow_user_refund') {
+  let newValue: boolean
+  if (field === 'enabled') newValue = !provider.enabled
+  else if (field === 'refund_enabled') newValue = !provider.refund_enabled
+  else newValue = !provider.allow_user_refund
   try {
-    await adminAPI.payment.updateProvider(provider.id, { [field]: newValue })
+    const payload: Record<string, boolean> = { [field]: newValue }
+    if (field === 'refund_enabled' && !newValue) {
+      payload.allow_user_refund = false
+    }
+    await adminAPI.payment.updateProvider(provider.id, payload)
     if (field === 'enabled') provider.enabled = newValue
-    else provider.refund_enabled = newValue
+    else if (field === 'refund_enabled') {
+      provider.refund_enabled = newValue
+      if (!newValue) provider.allow_user_refund = false
+    } else {
+      provider.allow_user_refund = newValue
+    }
   } catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'), paymentErrorMap.value)) }
 }
 

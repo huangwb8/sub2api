@@ -101,11 +101,13 @@ type DefaultSubscriptionGroupReader interface {
 
 // SettingService 系统设置服务
 type SettingService struct {
-	settingRepo           SettingRepository
-	defaultSubGroupReader DefaultSubscriptionGroupReader
-	cfg                   *config.Config
-	onUpdate              func() // Callback when settings are updated (for cache invalidation)
-	version               string // Application version
+	settingRepo             SettingRepository
+	defaultSubGroupReader   DefaultSubscriptionGroupReader
+	proxyRepo               ProxyRepository
+	webSearchManagerBuilder WebSearchManagerBuilder
+	cfg                     *config.Config
+	onUpdate                func() // Callback when settings are updated (for cache invalidation)
+	version                 string // Application version
 }
 
 // NewSettingService 创建系统设置服务实例
@@ -119,6 +121,10 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
 func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
 	s.defaultSubGroupReader = reader
+}
+
+func (s *SettingService) SetProxyRepository(repo ProxyRepository) {
+	s.proxyRepo = repo
 }
 
 // GetAllSettings 获取所有系统设置

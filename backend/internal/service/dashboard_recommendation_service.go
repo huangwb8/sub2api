@@ -32,10 +32,10 @@ type DashboardRecommendationService struct {
 }
 
 type DashboardCapacityRecommendationResponse struct {
-	GeneratedAt  time.Time                                `json:"generated_at"`
-	LookbackDays int                                      `json:"lookback_days"`
-	Summary      DashboardCapacityRecommendationSummary   `json:"summary"`
-	Items        []DashboardGroupCapacityRecommendation   `json:"items"`
+	GeneratedAt  time.Time                              `json:"generated_at"`
+	LookbackDays int                                    `json:"lookback_days"`
+	Summary      DashboardCapacityRecommendationSummary `json:"summary"`
+	Items        []DashboardGroupCapacityRecommendation `json:"items"`
 }
 
 type DashboardCapacityRecommendationSummary struct {
@@ -46,79 +46,79 @@ type DashboardCapacityRecommendationSummary struct {
 }
 
 type DashboardGroupCapacityRecommendation struct {
-	GroupID                      int64                                         `json:"group_id"`
-	GroupName                    string                                        `json:"group_name"`
-	Platform                     string                                        `json:"platform"`
-	PlanNames                    []string                                      `json:"plan_names"`
-	RecommendedAccountType       string                                        `json:"recommended_account_type"`
-	Status                       string                                        `json:"status"`
-	ConfidenceScore              float64                                       `json:"confidence_score"`
-	CurrentTotalAccounts         int                                           `json:"current_total_accounts"`
-	CurrentSchedulableAccounts   int                                           `json:"current_schedulable_accounts"`
-	RecommendedTotalAccounts     int                                           `json:"recommended_total_accounts"`
-	RecommendedAdditionalAccounts int                                          `json:"recommended_additional_accounts"`
-	SubscriberHeadroom           int                                           `json:"subscriber_headroom"`
-	Reason                       string                                        `json:"reason"`
-	Metrics                      DashboardGroupCapacityRecommendationMetrics    `json:"metrics"`
+	GroupID                       int64                                       `json:"group_id"`
+	GroupName                     string                                      `json:"group_name"`
+	Platform                      string                                      `json:"platform"`
+	PlanNames                     []string                                    `json:"plan_names"`
+	RecommendedAccountType        string                                      `json:"recommended_account_type"`
+	Status                        string                                      `json:"status"`
+	ConfidenceScore               float64                                     `json:"confidence_score"`
+	CurrentTotalAccounts          int                                         `json:"current_total_accounts"`
+	CurrentSchedulableAccounts    int                                         `json:"current_schedulable_accounts"`
+	RecommendedTotalAccounts      int                                         `json:"recommended_total_accounts"`
+	RecommendedAdditionalAccounts int                                         `json:"recommended_additional_accounts"`
+	SubscriberHeadroom            int                                         `json:"subscriber_headroom"`
+	Reason                        string                                      `json:"reason"`
+	Metrics                       DashboardGroupCapacityRecommendationMetrics `json:"metrics"`
 }
 
 type DashboardGroupCapacityRecommendationMetrics struct {
-	ActiveSubscriptions              int                                `json:"active_subscriptions"`
-	ActiveUsers30d                   int                                `json:"active_users_30d"`
-	ActivationRate                   float64                            `json:"activation_rate"`
-	BlendedActivationRate            float64                            `json:"blended_activation_rate"`
-	AvgDailyCost30d                  float64                            `json:"avg_daily_cost_30d"`
-	AvgDailyCostPerActiveUser        float64                            `json:"avg_daily_cost_per_active_user"`
-	BlendedAvgDailyCostPerActiveUser float64                            `json:"blended_avg_daily_cost_per_active_user"`
-	GrowthFactor                     float64                            `json:"growth_factor"`
-	ProjectedDailyCost               float64                            `json:"projected_daily_cost"`
-	CapacityUtilization              float64                            `json:"capacity_utilization"`
-	ConcurrencyUtilization           float64                            `json:"concurrency_utilization"`
-	SessionsUtilization              float64                            `json:"sessions_utilization"`
-	RPMUtilization                   float64                            `json:"rpm_utilization"`
-	ExpectedAccountsBySubscriptions  int                                `json:"expected_accounts_by_subscriptions"`
-	ExpectedAccountsByActiveUsers    int                                `json:"expected_accounts_by_active_users"`
-	ExpectedAccountsByCost           int                                `json:"expected_accounts_by_cost"`
-	PlatformBaseline                 DashboardRecommendationBaseline    `json:"platform_baseline"`
+	ActiveSubscriptions              int                             `json:"active_subscriptions"`
+	ActiveUsers30d                   int                             `json:"active_users_30d"`
+	ActivationRate                   float64                         `json:"activation_rate"`
+	BlendedActivationRate            float64                         `json:"blended_activation_rate"`
+	AvgDailyCost30d                  float64                         `json:"avg_daily_cost_30d"`
+	AvgDailyCostPerActiveUser        float64                         `json:"avg_daily_cost_per_active_user"`
+	BlendedAvgDailyCostPerActiveUser float64                         `json:"blended_avg_daily_cost_per_active_user"`
+	GrowthFactor                     float64                         `json:"growth_factor"`
+	ProjectedDailyCost               float64                         `json:"projected_daily_cost"`
+	CapacityUtilization              float64                         `json:"capacity_utilization"`
+	ConcurrencyUtilization           float64                         `json:"concurrency_utilization"`
+	SessionsUtilization              float64                         `json:"sessions_utilization"`
+	RPMUtilization                   float64                         `json:"rpm_utilization"`
+	ExpectedAccountsBySubscriptions  int                             `json:"expected_accounts_by_subscriptions"`
+	ExpectedAccountsByActiveUsers    int                             `json:"expected_accounts_by_active_users"`
+	ExpectedAccountsByCost           int                             `json:"expected_accounts_by_cost"`
+	PlatformBaseline                 DashboardRecommendationBaseline `json:"platform_baseline"`
 }
 
 type DashboardRecommendationBaseline struct {
-	Platform                         string  `json:"platform"`
+	Platform                          string  `json:"platform"`
 	ActiveSubscriptionsPerSchedulable float64 `json:"active_subscriptions_per_schedulable"`
-	ActiveUsersPerSchedulable        float64 `json:"active_users_per_schedulable"`
-	DailyCostPerSchedulable          float64 `json:"daily_cost_per_schedulable"`
-	ActivationRate                   float64 `json:"activation_rate"`
-	AvgDailyCostPerActiveUser        float64 `json:"avg_daily_cost_per_active_user"`
+	ActiveUsersPerSchedulable         float64 `json:"active_users_per_schedulable"`
+	DailyCostPerSchedulable           float64 `json:"daily_cost_per_schedulable"`
+	ActivationRate                    float64 `json:"activation_rate"`
+	AvgDailyCostPerActiveUser         float64 `json:"avg_daily_cost_per_active_user"`
 }
 
 type dashboardRecommendationAggregateRow struct {
-	GroupID                 int64
-	ActiveSubscriptions     int
-	ActiveUsers30d          int
-	TotalActualCost30d      float64
-	TotalActualCost7d       float64
-	TotalActualCostPrev7d   float64
-	TotalAccounts           int
-	SchedulableAccounts     int
-	RecommendedAccountType  string
+	GroupID                int64
+	ActiveSubscriptions    int
+	ActiveUsers30d         int
+	TotalActualCost30d     float64
+	TotalActualCost7d      float64
+	TotalActualCostPrev7d  float64
+	TotalAccounts          int
+	SchedulableAccounts    int
+	RecommendedAccountType string
 }
 
 type dashboardRecommendationInput struct {
-	GroupID                   int64
-	GroupName                 string
-	Platform                  string
-	PlanNames                 []string
-	ActiveSubscriptions       int
-	ActiveUsers30d            int
-	AvgDailyCost30d           float64
-	AvgDailyCostPerActiveUser float64
-	CurrentTotalAccounts      int
+	GroupID                    int64
+	GroupName                  string
+	Platform                   string
+	PlanNames                  []string
+	ActiveSubscriptions        int
+	ActiveUsers30d             int
+	AvgDailyCost30d            float64
+	AvgDailyCostPerActiveUser  float64
+	CurrentTotalAccounts       int
 	CurrentSchedulableAccounts int
-	RecommendedAccountType    string
-	GrowthFactor              float64
-	ConcurrencyUtilization    float64
-	SessionsUtilization       float64
-	RPMUtilization            float64
+	RecommendedAccountType     string
+	GrowthFactor               float64
+	ConcurrencyUtilization     float64
+	SessionsUtilization        float64
+	RPMUtilization             float64
 }
 
 type dashboardRecommendationCapacity struct {
@@ -529,6 +529,7 @@ func computeDashboardGroupCapacityRecommendation(
 	globalBaseline DashboardRecommendationBaseline,
 	profile capacityRecommendationPreferenceProfile,
 ) DashboardGroupCapacityRecommendation {
+	recommendedAccountType := normalizeRecommendedAccountType(input.RecommendedAccountType)
 	baseline := mergeDashboardRecommendationBaseline(platformBaseline, globalBaseline, input.Platform)
 	utilization := maxFloat(input.ConcurrencyUtilization, input.SessionsUtilization, input.RPMUtilization)
 	activationRate := ratio(input.ActiveUsers30d, input.ActiveSubscriptions)
@@ -611,7 +612,7 @@ func computeDashboardGroupCapacityRecommendation(
 		GroupName:                     input.GroupName,
 		Platform:                      input.Platform,
 		PlanNames:                     input.PlanNames,
-		RecommendedAccountType:        input.RecommendedAccountType,
+		RecommendedAccountType:        recommendedAccountType,
 		Status:                        status,
 		ConfidenceScore:               confidenceScore,
 		CurrentTotalAccounts:          input.CurrentTotalAccounts,
@@ -620,7 +621,7 @@ func computeDashboardGroupCapacityRecommendation(
 		RecommendedAdditionalAccounts: recommendedAdditional,
 		SubscriberHeadroom:            subscriberHeadroom,
 		Reason: buildDashboardRecommendationReason(
-			input.RecommendedAccountType,
+			recommendedAccountType,
 			recommendedAdditional,
 			utilization,
 			input.ActiveSubscriptions,

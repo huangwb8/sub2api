@@ -3934,6 +3934,10 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		return nil, fmt.Errorf("parse request: empty request")
 	}
 
+	if account != nil && s.shouldEmulateWebSearch(ctx, account, parsed.Body) {
+		return s.handleWebSearchEmulation(ctx, c, account, parsed)
+	}
+
 	if account != nil && account.IsAnthropicAPIKeyPassthroughEnabled() {
 		passthroughBody := parsed.Body
 		passthroughModel := parsed.Model
