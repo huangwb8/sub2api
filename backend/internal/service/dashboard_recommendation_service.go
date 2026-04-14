@@ -20,7 +20,8 @@ const (
 	minActivationRate                   = 0.15
 	maxActivationRate                   = 1.0
 	minDailyCostPerActiveUser           = 0.05
-	minBaselinePerSchedulable           = 0.35
+	minCountBaselinePerSchedulable      = 1.0
+	minCostBaselinePerSchedulable       = 0.35
 )
 
 type DashboardRecommendationService struct {
@@ -475,24 +476,24 @@ func computeDashboardRecommendationBaselines(inputs []dashboardRecommendationInp
 
 	result := make(map[string]DashboardRecommendationBaseline, len(buckets))
 	for key, bucket := range buckets {
-		activeSubsPerSchedulable := minBaselinePerSchedulable
-		activeUsersPerSchedulable := minBaselinePerSchedulable
-		dailyCostPerSchedulable := minBaselinePerSchedulable
+		activeSubsPerSchedulable := minCountBaselinePerSchedulable
+		activeUsersPerSchedulable := minCountBaselinePerSchedulable
+		dailyCostPerSchedulable := minCostBaselinePerSchedulable
 		activationRate := minActivationRate
 		avgDailyCostPerActiveUser := minDailyCostPerActiveUser
 
 		if bucket.schedulableAccounts > 0 {
 			activeSubsPerSchedulable = maxFloat(
 				float64(bucket.activeSubs)/float64(bucket.schedulableAccounts),
-				minBaselinePerSchedulable,
+				minCountBaselinePerSchedulable,
 			)
 			activeUsersPerSchedulable = maxFloat(
 				float64(bucket.activeUsers)/float64(bucket.schedulableAccounts),
-				minBaselinePerSchedulable,
+				minCountBaselinePerSchedulable,
 			)
 			dailyCostPerSchedulable = maxFloat(
 				bucket.avgDailyCost/float64(bucket.schedulableAccounts),
-				minBaselinePerSchedulable,
+				minCostBaselinePerSchedulable,
 			)
 		}
 		if bucket.activeSubs > 0 {
@@ -660,15 +661,18 @@ func mergeDashboardRecommendationBaseline(
 	if baseline.Platform == "" {
 		baseline.Platform = platform
 	}
-	if baseline.ActiveSubscriptionsPerSchedulable <= 0 {
-		baseline.ActiveSubscriptionsPerSchedulable = 1
-	}
-	if baseline.ActiveUsersPerSchedulable <= 0 {
-		baseline.ActiveUsersPerSchedulable = 1
-	}
-	if baseline.DailyCostPerSchedulable <= 0 {
-		baseline.DailyCostPerSchedulable = 1
-	}
+	baseline.ActiveSubscriptionsPerSchedulable = maxFloat(
+		baseline.ActiveSubscriptionsPerSchedulable,
+		minCountBaselinePerSchedulable,
+	)
+	baseline.ActiveUsersPerSchedulable = maxFloat(
+		baseline.ActiveUsersPerSchedulable,
+		minCountBaselinePerSchedulable,
+	)
+	baseline.DailyCostPerSchedulable = maxFloat(
+		baseline.DailyCostPerSchedulable,
+		minCostBaselinePerSchedulable,
+	)
 	if baseline.ActivationRate <= 0 {
 		baseline.ActivationRate = minActivationRate
 	}

@@ -112,3 +112,44 @@ func TestComputeDashboardGroupCapacityRecommendation_Healthy(t *testing.T) {
 		t.Fatalf("recommended additional accounts = %d, want 0", got.RecommendedAdditionalAccounts)
 	}
 }
+
+func TestComputeDashboardGroupCapacityRecommendation_SmallGroupConvergesAfterScaling(t *testing.T) {
+	input := dashboardRecommendationInput{
+		GroupID:                    4,
+		GroupName:                  "GPT-Standard",
+		Platform:                   PlatformOpenAI,
+		PlanNames:                  []string{"GPT-Standard"},
+		ActiveSubscriptions:        2,
+		ActiveUsers30d:             2,
+		AvgDailyCost30d:            0.66,
+		AvgDailyCostPerActiveUser:  0.33,
+		CurrentTotalAccounts:       6,
+		CurrentSchedulableAccounts: 6,
+		RecommendedAccountType:     "oauth",
+		GrowthFactor:               1.15,
+		ConcurrencyUtilization:     0,
+		SessionsUtilization:        0,
+		RPMUtilization:             0,
+	}
+	lowBaseline := DashboardRecommendationBaseline{
+		Platform:                          PlatformOpenAI,
+		ActiveSubscriptionsPerSchedulable: 0.35,
+		ActiveUsersPerSchedulable:         0.35,
+		DailyCostPerSchedulable:           0.35,
+		ActivationRate:                    1,
+		AvgDailyCostPerActiveUser:         0.33,
+	}
+	profile := buildCapacityRecommendationPreferenceProfile(70)
+
+	got := computeDashboardGroupCapacityRecommendation(input, lowBaseline, lowBaseline, profile)
+
+	if got.Status != "watch" && got.Status != "healthy" {
+		t.Fatalf("status = %q, want watch or healthy", got.Status)
+	}
+	if got.RecommendedAdditionalAccounts != 0 {
+		t.Fatalf("recommended additional accounts = %d, want 0", got.RecommendedAdditionalAccounts)
+	}
+	if got.RecommendedTotalAccounts != input.CurrentSchedulableAccounts {
+		t.Fatalf("recommended total accounts = %d, want %d", got.RecommendedTotalAccounts, input.CurrentSchedulableAccounts)
+	}
+}
