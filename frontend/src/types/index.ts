@@ -1009,6 +1009,11 @@ export interface UsageLog {
   cache_read_cost: number
   total_cost: number
   actual_cost: number
+  charged_amount_cny?: number | null
+  fx_rate_usd_cny?: number | null
+  fx_rate_source?: string | null
+  fx_fetched_at?: string | null
+  fx_safety_margin?: number | null
   rate_multiplier: number
   billing_type: number
 

@@ -45,6 +45,9 @@
       </div>
 
       <!-- Type filter + Action buttons -->
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+        钱包余额统一按 CNY 记账；按量 usage 的人民币扣减会基于请求当时的汇率快照结算。
+      </div>
       <div class="flex items-center gap-3">
         <Select
           v-model="typeFilter"

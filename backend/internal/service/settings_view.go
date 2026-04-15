@@ -1,5 +1,7 @@
 package service
 
+import "time"
+
 type SystemSettings struct {
 	RegistrationEnabled              bool
 	EmailVerifyEnabled               bool
@@ -76,6 +78,14 @@ type SystemSettings struct {
 	DefaultBalance       float64
 	DefaultSubscriptions []DefaultSubscriptionSetting
 	SubscriptionCapacityTightness int
+	BillingFXEnabled              bool
+	BillingFXProvider             string
+	BillingFXFallbackRate         float64
+	BillingFXCacheTTLSeconds      int
+	BillingFXTimeoutMS            int
+	BillingFXSafetyMargin         float64
+	BillingFXLastSuccessRate      *float64
+	BillingFXLastSuccessAt        *time.Time
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`

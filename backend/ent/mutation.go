@@ -24870,6 +24870,14 @@ type UsageLogMutation struct {
 	addtotal_cost               *float64
 	actual_cost                 *float64
 	addactual_cost              *float64
+	charged_amount_cny          *float64
+	addcharged_amount_cny       *float64
+	fx_rate_usd_cny             *float64
+	addfx_rate_usd_cny          *float64
+	fx_rate_source              *string
+	fx_fetched_at               *time.Time
+	fx_safety_margin            *float64
+	addfx_safety_margin         *float64
 	rate_multiplier             *float64
 	addrate_multiplier          *float64
 	account_rate_multiplier     *float64
@@ -26267,6 +26275,314 @@ func (m *UsageLogMutation) ResetActualCost() {
 	m.addactual_cost = nil
 }
 
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (m *UsageLogMutation) SetChargedAmountCny(f float64) {
+	m.charged_amount_cny = &f
+	m.addcharged_amount_cny = nil
+}
+
+// ChargedAmountCny returns the value of the "charged_amount_cny" field in the mutation.
+func (m *UsageLogMutation) ChargedAmountCny() (r float64, exists bool) {
+	v := m.charged_amount_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChargedAmountCny returns the old "charged_amount_cny" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldChargedAmountCny(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChargedAmountCny is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChargedAmountCny requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChargedAmountCny: %w", err)
+	}
+	return oldValue.ChargedAmountCny, nil
+}
+
+// AddChargedAmountCny adds f to the "charged_amount_cny" field.
+func (m *UsageLogMutation) AddChargedAmountCny(f float64) {
+	if m.addcharged_amount_cny != nil {
+		*m.addcharged_amount_cny += f
+	} else {
+		m.addcharged_amount_cny = &f
+	}
+}
+
+// AddedChargedAmountCny returns the value that was added to the "charged_amount_cny" field in this mutation.
+func (m *UsageLogMutation) AddedChargedAmountCny() (r float64, exists bool) {
+	v := m.addcharged_amount_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (m *UsageLogMutation) ClearChargedAmountCny() {
+	m.charged_amount_cny = nil
+	m.addcharged_amount_cny = nil
+	m.clearedFields[usagelog.FieldChargedAmountCny] = struct{}{}
+}
+
+// ChargedAmountCnyCleared returns if the "charged_amount_cny" field was cleared in this mutation.
+func (m *UsageLogMutation) ChargedAmountCnyCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldChargedAmountCny]
+	return ok
+}
+
+// ResetChargedAmountCny resets all changes to the "charged_amount_cny" field.
+func (m *UsageLogMutation) ResetChargedAmountCny() {
+	m.charged_amount_cny = nil
+	m.addcharged_amount_cny = nil
+	delete(m.clearedFields, usagelog.FieldChargedAmountCny)
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (m *UsageLogMutation) SetFxRateUsdCny(f float64) {
+	m.fx_rate_usd_cny = &f
+	m.addfx_rate_usd_cny = nil
+}
+
+// FxRateUsdCny returns the value of the "fx_rate_usd_cny" field in the mutation.
+func (m *UsageLogMutation) FxRateUsdCny() (r float64, exists bool) {
+	v := m.fx_rate_usd_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFxRateUsdCny returns the old "fx_rate_usd_cny" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldFxRateUsdCny(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFxRateUsdCny is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFxRateUsdCny requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFxRateUsdCny: %w", err)
+	}
+	return oldValue.FxRateUsdCny, nil
+}
+
+// AddFxRateUsdCny adds f to the "fx_rate_usd_cny" field.
+func (m *UsageLogMutation) AddFxRateUsdCny(f float64) {
+	if m.addfx_rate_usd_cny != nil {
+		*m.addfx_rate_usd_cny += f
+	} else {
+		m.addfx_rate_usd_cny = &f
+	}
+}
+
+// AddedFxRateUsdCny returns the value that was added to the "fx_rate_usd_cny" field in this mutation.
+func (m *UsageLogMutation) AddedFxRateUsdCny() (r float64, exists bool) {
+	v := m.addfx_rate_usd_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (m *UsageLogMutation) ClearFxRateUsdCny() {
+	m.fx_rate_usd_cny = nil
+	m.addfx_rate_usd_cny = nil
+	m.clearedFields[usagelog.FieldFxRateUsdCny] = struct{}{}
+}
+
+// FxRateUsdCnyCleared returns if the "fx_rate_usd_cny" field was cleared in this mutation.
+func (m *UsageLogMutation) FxRateUsdCnyCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldFxRateUsdCny]
+	return ok
+}
+
+// ResetFxRateUsdCny resets all changes to the "fx_rate_usd_cny" field.
+func (m *UsageLogMutation) ResetFxRateUsdCny() {
+	m.fx_rate_usd_cny = nil
+	m.addfx_rate_usd_cny = nil
+	delete(m.clearedFields, usagelog.FieldFxRateUsdCny)
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (m *UsageLogMutation) SetFxRateSource(s string) {
+	m.fx_rate_source = &s
+}
+
+// FxRateSource returns the value of the "fx_rate_source" field in the mutation.
+func (m *UsageLogMutation) FxRateSource() (r string, exists bool) {
+	v := m.fx_rate_source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFxRateSource returns the old "fx_rate_source" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldFxRateSource(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFxRateSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFxRateSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFxRateSource: %w", err)
+	}
+	return oldValue.FxRateSource, nil
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (m *UsageLogMutation) ClearFxRateSource() {
+	m.fx_rate_source = nil
+	m.clearedFields[usagelog.FieldFxRateSource] = struct{}{}
+}
+
+// FxRateSourceCleared returns if the "fx_rate_source" field was cleared in this mutation.
+func (m *UsageLogMutation) FxRateSourceCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldFxRateSource]
+	return ok
+}
+
+// ResetFxRateSource resets all changes to the "fx_rate_source" field.
+func (m *UsageLogMutation) ResetFxRateSource() {
+	m.fx_rate_source = nil
+	delete(m.clearedFields, usagelog.FieldFxRateSource)
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (m *UsageLogMutation) SetFxFetchedAt(t time.Time) {
+	m.fx_fetched_at = &t
+}
+
+// FxFetchedAt returns the value of the "fx_fetched_at" field in the mutation.
+func (m *UsageLogMutation) FxFetchedAt() (r time.Time, exists bool) {
+	v := m.fx_fetched_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFxFetchedAt returns the old "fx_fetched_at" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldFxFetchedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFxFetchedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFxFetchedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFxFetchedAt: %w", err)
+	}
+	return oldValue.FxFetchedAt, nil
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (m *UsageLogMutation) ClearFxFetchedAt() {
+	m.fx_fetched_at = nil
+	m.clearedFields[usagelog.FieldFxFetchedAt] = struct{}{}
+}
+
+// FxFetchedAtCleared returns if the "fx_fetched_at" field was cleared in this mutation.
+func (m *UsageLogMutation) FxFetchedAtCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldFxFetchedAt]
+	return ok
+}
+
+// ResetFxFetchedAt resets all changes to the "fx_fetched_at" field.
+func (m *UsageLogMutation) ResetFxFetchedAt() {
+	m.fx_fetched_at = nil
+	delete(m.clearedFields, usagelog.FieldFxFetchedAt)
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (m *UsageLogMutation) SetFxSafetyMargin(f float64) {
+	m.fx_safety_margin = &f
+	m.addfx_safety_margin = nil
+}
+
+// FxSafetyMargin returns the value of the "fx_safety_margin" field in the mutation.
+func (m *UsageLogMutation) FxSafetyMargin() (r float64, exists bool) {
+	v := m.fx_safety_margin
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFxSafetyMargin returns the old "fx_safety_margin" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldFxSafetyMargin(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFxSafetyMargin is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFxSafetyMargin requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFxSafetyMargin: %w", err)
+	}
+	return oldValue.FxSafetyMargin, nil
+}
+
+// AddFxSafetyMargin adds f to the "fx_safety_margin" field.
+func (m *UsageLogMutation) AddFxSafetyMargin(f float64) {
+	if m.addfx_safety_margin != nil {
+		*m.addfx_safety_margin += f
+	} else {
+		m.addfx_safety_margin = &f
+	}
+}
+
+// AddedFxSafetyMargin returns the value that was added to the "fx_safety_margin" field in this mutation.
+func (m *UsageLogMutation) AddedFxSafetyMargin() (r float64, exists bool) {
+	v := m.addfx_safety_margin
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (m *UsageLogMutation) ClearFxSafetyMargin() {
+	m.fx_safety_margin = nil
+	m.addfx_safety_margin = nil
+	m.clearedFields[usagelog.FieldFxSafetyMargin] = struct{}{}
+}
+
+// FxSafetyMarginCleared returns if the "fx_safety_margin" field was cleared in this mutation.
+func (m *UsageLogMutation) FxSafetyMarginCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldFxSafetyMargin]
+	return ok
+}
+
+// ResetFxSafetyMargin resets all changes to the "fx_safety_margin" field.
+func (m *UsageLogMutation) ResetFxSafetyMargin() {
+	m.fx_safety_margin = nil
+	m.addfx_safety_margin = nil
+	delete(m.clearedFields, usagelog.FieldFxSafetyMargin)
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (m *UsageLogMutation) SetRateMultiplier(f float64) {
 	m.rate_multiplier = &f
@@ -27069,7 +27385,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 37)
+	fields := make([]string, 0, 42)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -27144,6 +27460,21 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.actual_cost != nil {
 		fields = append(fields, usagelog.FieldActualCost)
+	}
+	if m.charged_amount_cny != nil {
+		fields = append(fields, usagelog.FieldChargedAmountCny)
+	}
+	if m.fx_rate_usd_cny != nil {
+		fields = append(fields, usagelog.FieldFxRateUsdCny)
+	}
+	if m.fx_rate_source != nil {
+		fields = append(fields, usagelog.FieldFxRateSource)
+	}
+	if m.fx_fetched_at != nil {
+		fields = append(fields, usagelog.FieldFxFetchedAt)
+	}
+	if m.fx_safety_margin != nil {
+		fields = append(fields, usagelog.FieldFxSafetyMargin)
 	}
 	if m.rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
@@ -27239,6 +27570,16 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.TotalCost()
 	case usagelog.FieldActualCost:
 		return m.ActualCost()
+	case usagelog.FieldChargedAmountCny:
+		return m.ChargedAmountCny()
+	case usagelog.FieldFxRateUsdCny:
+		return m.FxRateUsdCny()
+	case usagelog.FieldFxRateSource:
+		return m.FxRateSource()
+	case usagelog.FieldFxFetchedAt:
+		return m.FxFetchedAt()
+	case usagelog.FieldFxSafetyMargin:
+		return m.FxSafetyMargin()
 	case usagelog.FieldRateMultiplier:
 		return m.RateMultiplier()
 	case usagelog.FieldAccountRateMultiplier:
@@ -27322,6 +27663,16 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTotalCost(ctx)
 	case usagelog.FieldActualCost:
 		return m.OldActualCost(ctx)
+	case usagelog.FieldChargedAmountCny:
+		return m.OldChargedAmountCny(ctx)
+	case usagelog.FieldFxRateUsdCny:
+		return m.OldFxRateUsdCny(ctx)
+	case usagelog.FieldFxRateSource:
+		return m.OldFxRateSource(ctx)
+	case usagelog.FieldFxFetchedAt:
+		return m.OldFxFetchedAt(ctx)
+	case usagelog.FieldFxSafetyMargin:
+		return m.OldFxSafetyMargin(ctx)
 	case usagelog.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
 	case usagelog.FieldAccountRateMultiplier:
@@ -27530,6 +27881,41 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActualCost(v)
 		return nil
+	case usagelog.FieldChargedAmountCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChargedAmountCny(v)
+		return nil
+	case usagelog.FieldFxRateUsdCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFxRateUsdCny(v)
+		return nil
+	case usagelog.FieldFxRateSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFxRateSource(v)
+		return nil
+	case usagelog.FieldFxFetchedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFxFetchedAt(v)
+		return nil
+	case usagelog.FieldFxSafetyMargin:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFxSafetyMargin(v)
+		return nil
 	case usagelog.FieldRateMultiplier:
 		v, ok := value.(float64)
 		if !ok {
@@ -27661,6 +28047,15 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addactual_cost != nil {
 		fields = append(fields, usagelog.FieldActualCost)
 	}
+	if m.addcharged_amount_cny != nil {
+		fields = append(fields, usagelog.FieldChargedAmountCny)
+	}
+	if m.addfx_rate_usd_cny != nil {
+		fields = append(fields, usagelog.FieldFxRateUsdCny)
+	}
+	if m.addfx_safety_margin != nil {
+		fields = append(fields, usagelog.FieldFxSafetyMargin)
+	}
 	if m.addrate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
 	}
@@ -27713,6 +28108,12 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedTotalCost()
 	case usagelog.FieldActualCost:
 		return m.AddedActualCost()
+	case usagelog.FieldChargedAmountCny:
+		return m.AddedChargedAmountCny()
+	case usagelog.FieldFxRateUsdCny:
+		return m.AddedFxRateUsdCny()
+	case usagelog.FieldFxSafetyMargin:
+		return m.AddedFxSafetyMargin()
 	case usagelog.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
 	case usagelog.FieldAccountRateMultiplier:
@@ -27825,6 +28226,27 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddActualCost(v)
 		return nil
+	case usagelog.FieldChargedAmountCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddChargedAmountCny(v)
+		return nil
+	case usagelog.FieldFxRateUsdCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFxRateUsdCny(v)
+		return nil
+	case usagelog.FieldFxSafetyMargin:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFxSafetyMargin(v)
+		return nil
 	case usagelog.FieldRateMultiplier:
 		v, ok := value.(float64)
 		if !ok {
@@ -27899,6 +28321,21 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldSubscriptionID) {
 		fields = append(fields, usagelog.FieldSubscriptionID)
 	}
+	if m.FieldCleared(usagelog.FieldChargedAmountCny) {
+		fields = append(fields, usagelog.FieldChargedAmountCny)
+	}
+	if m.FieldCleared(usagelog.FieldFxRateUsdCny) {
+		fields = append(fields, usagelog.FieldFxRateUsdCny)
+	}
+	if m.FieldCleared(usagelog.FieldFxRateSource) {
+		fields = append(fields, usagelog.FieldFxRateSource)
+	}
+	if m.FieldCleared(usagelog.FieldFxFetchedAt) {
+		fields = append(fields, usagelog.FieldFxFetchedAt)
+	}
+	if m.FieldCleared(usagelog.FieldFxSafetyMargin) {
+		fields = append(fields, usagelog.FieldFxSafetyMargin)
+	}
 	if m.FieldCleared(usagelog.FieldAccountRateMultiplier) {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
 	}
@@ -27954,6 +28391,21 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldSubscriptionID:
 		m.ClearSubscriptionID()
+		return nil
+	case usagelog.FieldChargedAmountCny:
+		m.ClearChargedAmountCny()
+		return nil
+	case usagelog.FieldFxRateUsdCny:
+		m.ClearFxRateUsdCny()
+		return nil
+	case usagelog.FieldFxRateSource:
+		m.ClearFxRateSource()
+		return nil
+	case usagelog.FieldFxFetchedAt:
+		m.ClearFxFetchedAt()
+		return nil
+	case usagelog.FieldFxSafetyMargin:
+		m.ClearFxSafetyMargin()
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ClearAccountRateMultiplier()
@@ -28055,6 +28507,21 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldActualCost:
 		m.ResetActualCost()
+		return nil
+	case usagelog.FieldChargedAmountCny:
+		m.ResetChargedAmountCny()
+		return nil
+	case usagelog.FieldFxRateUsdCny:
+		m.ResetFxRateUsdCny()
+		return nil
+	case usagelog.FieldFxRateSource:
+		m.ResetFxRateSource()
+		return nil
+	case usagelog.FieldFxFetchedAt:
+		m.ResetFxFetchedAt()
+		return nil
+	case usagelog.FieldFxSafetyMargin:
+		m.ResetFxSafetyMargin()
 		return nil
 	case usagelog.FieldRateMultiplier:
 		m.ResetRateMultiplier()

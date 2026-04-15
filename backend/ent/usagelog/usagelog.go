@@ -64,6 +64,16 @@ const (
 	FieldTotalCost = "total_cost"
 	// FieldActualCost holds the string denoting the actual_cost field in the database.
 	FieldActualCost = "actual_cost"
+	// FieldChargedAmountCny holds the string denoting the charged_amount_cny field in the database.
+	FieldChargedAmountCny = "charged_amount_cny"
+	// FieldFxRateUsdCny holds the string denoting the fx_rate_usd_cny field in the database.
+	FieldFxRateUsdCny = "fx_rate_usd_cny"
+	// FieldFxRateSource holds the string denoting the fx_rate_source field in the database.
+	FieldFxRateSource = "fx_rate_source"
+	// FieldFxFetchedAt holds the string denoting the fx_fetched_at field in the database.
+	FieldFxFetchedAt = "fx_fetched_at"
+	// FieldFxSafetyMargin holds the string denoting the fx_safety_margin field in the database.
+	FieldFxSafetyMargin = "fx_safety_margin"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
 	// FieldAccountRateMultiplier holds the string denoting the account_rate_multiplier field in the database.
@@ -165,6 +175,11 @@ var Columns = []string{
 	FieldCacheReadCost,
 	FieldTotalCost,
 	FieldActualCost,
+	FieldChargedAmountCny,
+	FieldFxRateUsdCny,
+	FieldFxRateSource,
+	FieldFxFetchedAt,
+	FieldFxSafetyMargin,
 	FieldRateMultiplier,
 	FieldAccountRateMultiplier,
 	FieldBillingType,
@@ -228,6 +243,8 @@ var (
 	DefaultTotalCost float64
 	// DefaultActualCost holds the default value on creation for the "actual_cost" field.
 	DefaultActualCost float64
+	// FxRateSourceValidator is a validator for the "fx_rate_source" field. It is called by the builders before save.
+	FxRateSourceValidator func(string) error
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
 	// DefaultBillingType holds the default value on creation for the "billing_type" field.
@@ -379,6 +396,31 @@ func ByTotalCost(opts ...sql.OrderTermOption) OrderOption {
 // ByActualCost orders the results by the actual_cost field.
 func ByActualCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActualCost, opts...).ToFunc()
+}
+
+// ByChargedAmountCny orders the results by the charged_amount_cny field.
+func ByChargedAmountCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChargedAmountCny, opts...).ToFunc()
+}
+
+// ByFxRateUsdCny orders the results by the fx_rate_usd_cny field.
+func ByFxRateUsdCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFxRateUsdCny, opts...).ToFunc()
+}
+
+// ByFxRateSource orders the results by the fx_rate_source field.
+func ByFxRateSource(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFxRateSource, opts...).ToFunc()
+}
+
+// ByFxFetchedAt orders the results by the fx_fetched_at field.
+func ByFxFetchedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFxFetchedAt, opts...).ToFunc()
+}
+
+// ByFxSafetyMargin orders the results by the fx_safety_margin field.
+func ByFxSafetyMargin(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFxSafetyMargin, opts...).ToFunc()
 }
 
 // ByRateMultiplier orders the results by the rate_multiplier field.

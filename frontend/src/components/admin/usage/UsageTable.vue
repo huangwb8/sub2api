@@ -154,6 +154,9 @@
                 </div>
               </div>
             </div>
+            <div v-if="row.charged_amount_cny != null" class="mt-0.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+              {{ formatUsageChargeAmount(row.charged_amount_cny, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }}
+            </div>
             <div v-if="row.account_rate_multiplier != null" class="mt-0.5 text-[11px] text-gray-400">
               A ${{ (row.total_cost * row.account_rate_multiplier).toFixed(6) }}
             </div>
@@ -317,6 +320,20 @@
             <span class="text-gray-400">{{ t('usage.userBilled') }}</span>
             <span class="font-semibold text-green-400">${{ tooltipData?.actual_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
+          <div v-if="tooltipData?.charged_amount_cny != null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">CNY</span>
+            <span class="font-semibold text-emerald-300">
+              {{ formatUsageChargeAmount(tooltipData?.charged_amount_cny, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }}
+            </span>
+          </div>
+          <div v-if="tooltipData?.fx_rate_usd_cny != null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">FX</span>
+            <span class="font-medium text-amber-300">1 USD = {{ formatFXRate(tooltipData?.fx_rate_usd_cny) }} CNY</span>
+          </div>
+          <div v-if="tooltipData?.fx_rate_source" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">FX Source</span>
+            <span class="font-medium text-white">{{ tooltipData.fx_rate_source }}</span>
+          </div>
           <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
             <span class="text-gray-400">{{ t('usage.accountBilled') }}</span>
             <span class="font-semibold text-green-400">
@@ -333,7 +350,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatDateTime, formatReasoningEffort } from '@/utils/format'
+import { formatDateTime, formatFXRate, formatReasoningEffort, formatUsageChargeAmount } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
 import { formatTokenPricePerMillion } from '@/utils/usagePricing'
 import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'

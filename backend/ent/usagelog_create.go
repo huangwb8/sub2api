@@ -337,6 +337,76 @@ func (_c *UsageLogCreate) SetNillableActualCost(v *float64) *UsageLogCreate {
 	return _c
 }
 
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (_c *UsageLogCreate) SetChargedAmountCny(v float64) *UsageLogCreate {
+	_c.mutation.SetChargedAmountCny(v)
+	return _c
+}
+
+// SetNillableChargedAmountCny sets the "charged_amount_cny" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableChargedAmountCny(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetChargedAmountCny(*v)
+	}
+	return _c
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (_c *UsageLogCreate) SetFxRateUsdCny(v float64) *UsageLogCreate {
+	_c.mutation.SetFxRateUsdCny(v)
+	return _c
+}
+
+// SetNillableFxRateUsdCny sets the "fx_rate_usd_cny" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFxRateUsdCny(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetFxRateUsdCny(*v)
+	}
+	return _c
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (_c *UsageLogCreate) SetFxRateSource(v string) *UsageLogCreate {
+	_c.mutation.SetFxRateSource(v)
+	return _c
+}
+
+// SetNillableFxRateSource sets the "fx_rate_source" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFxRateSource(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetFxRateSource(*v)
+	}
+	return _c
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (_c *UsageLogCreate) SetFxFetchedAt(v time.Time) *UsageLogCreate {
+	_c.mutation.SetFxFetchedAt(v)
+	return _c
+}
+
+// SetNillableFxFetchedAt sets the "fx_fetched_at" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFxFetchedAt(v *time.Time) *UsageLogCreate {
+	if v != nil {
+		_c.SetFxFetchedAt(*v)
+	}
+	return _c
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (_c *UsageLogCreate) SetFxSafetyMargin(v float64) *UsageLogCreate {
+	_c.mutation.SetFxSafetyMargin(v)
+	return _c
+}
+
+// SetNillableFxSafetyMargin sets the "fx_safety_margin" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFxSafetyMargin(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetFxSafetyMargin(*v)
+	}
+	return _c
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_c *UsageLogCreate) SetRateMultiplier(v float64) *UsageLogCreate {
 	_c.mutation.SetRateMultiplier(v)
@@ -727,6 +797,11 @@ func (_c *UsageLogCreate) check() error {
 	if _, ok := _c.mutation.ActualCost(); !ok {
 		return &ValidationError{Name: "actual_cost", err: errors.New(`ent: missing required field "UsageLog.actual_cost"`)}
 	}
+	if v, ok := _c.mutation.FxRateSource(); ok {
+		if err := usagelog.FxRateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "fx_rate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.fx_rate_source": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.rate_multiplier"`)}
 	}
@@ -875,6 +950,26 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ActualCost(); ok {
 		_spec.SetField(usagelog.FieldActualCost, field.TypeFloat64, value)
 		_node.ActualCost = value
+	}
+	if value, ok := _c.mutation.ChargedAmountCny(); ok {
+		_spec.SetField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
+		_node.ChargedAmountCny = &value
+	}
+	if value, ok := _c.mutation.FxRateUsdCny(); ok {
+		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
+		_node.FxRateUsdCny = &value
+	}
+	if value, ok := _c.mutation.FxRateSource(); ok {
+		_spec.SetField(usagelog.FieldFxRateSource, field.TypeString, value)
+		_node.FxRateSource = &value
+	}
+	if value, ok := _c.mutation.FxFetchedAt(); ok {
+		_spec.SetField(usagelog.FieldFxFetchedAt, field.TypeTime, value)
+		_node.FxFetchedAt = &value
+	}
+	if value, ok := _c.mutation.FxSafetyMargin(); ok {
+		_spec.SetField(usagelog.FieldFxSafetyMargin, field.TypeFloat64, value)
+		_node.FxSafetyMargin = &value
 	}
 	if value, ok := _c.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1484,6 +1579,114 @@ func (u *UsageLogUpsert) UpdateActualCost() *UsageLogUpsert {
 // AddActualCost adds v to the "actual_cost" field.
 func (u *UsageLogUpsert) AddActualCost(v float64) *UsageLogUpsert {
 	u.Add(usagelog.FieldActualCost, v)
+	return u
+}
+
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (u *UsageLogUpsert) SetChargedAmountCny(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldChargedAmountCny, v)
+	return u
+}
+
+// UpdateChargedAmountCny sets the "charged_amount_cny" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateChargedAmountCny() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldChargedAmountCny)
+	return u
+}
+
+// AddChargedAmountCny adds v to the "charged_amount_cny" field.
+func (u *UsageLogUpsert) AddChargedAmountCny(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldChargedAmountCny, v)
+	return u
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (u *UsageLogUpsert) ClearChargedAmountCny() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldChargedAmountCny)
+	return u
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsert) SetFxRateUsdCny(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldFxRateUsdCny, v)
+	return u
+}
+
+// UpdateFxRateUsdCny sets the "fx_rate_usd_cny" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFxRateUsdCny() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFxRateUsdCny)
+	return u
+}
+
+// AddFxRateUsdCny adds v to the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsert) AddFxRateUsdCny(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldFxRateUsdCny, v)
+	return u
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsert) ClearFxRateUsdCny() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFxRateUsdCny)
+	return u
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (u *UsageLogUpsert) SetFxRateSource(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldFxRateSource, v)
+	return u
+}
+
+// UpdateFxRateSource sets the "fx_rate_source" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFxRateSource() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFxRateSource)
+	return u
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (u *UsageLogUpsert) ClearFxRateSource() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFxRateSource)
+	return u
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (u *UsageLogUpsert) SetFxFetchedAt(v time.Time) *UsageLogUpsert {
+	u.Set(usagelog.FieldFxFetchedAt, v)
+	return u
+}
+
+// UpdateFxFetchedAt sets the "fx_fetched_at" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFxFetchedAt() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFxFetchedAt)
+	return u
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (u *UsageLogUpsert) ClearFxFetchedAt() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFxFetchedAt)
+	return u
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (u *UsageLogUpsert) SetFxSafetyMargin(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldFxSafetyMargin, v)
+	return u
+}
+
+// UpdateFxSafetyMargin sets the "fx_safety_margin" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFxSafetyMargin() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFxSafetyMargin)
+	return u
+}
+
+// AddFxSafetyMargin adds v to the "fx_safety_margin" field.
+func (u *UsageLogUpsert) AddFxSafetyMargin(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldFxSafetyMargin, v)
+	return u
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (u *UsageLogUpsert) ClearFxSafetyMargin() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFxSafetyMargin)
 	return u
 }
 
@@ -2230,6 +2433,132 @@ func (u *UsageLogUpsertOne) AddActualCost(v float64) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateActualCost() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (u *UsageLogUpsertOne) SetChargedAmountCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetChargedAmountCny(v)
+	})
+}
+
+// AddChargedAmountCny adds v to the "charged_amount_cny" field.
+func (u *UsageLogUpsertOne) AddChargedAmountCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddChargedAmountCny(v)
+	})
+}
+
+// UpdateChargedAmountCny sets the "charged_amount_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateChargedAmountCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateChargedAmountCny()
+	})
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (u *UsageLogUpsertOne) ClearChargedAmountCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearChargedAmountCny()
+	})
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertOne) SetFxRateUsdCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxRateUsdCny(v)
+	})
+}
+
+// AddFxRateUsdCny adds v to the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertOne) AddFxRateUsdCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFxRateUsdCny(v)
+	})
+}
+
+// UpdateFxRateUsdCny sets the "fx_rate_usd_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFxRateUsdCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxRateUsdCny()
+	})
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertOne) ClearFxRateUsdCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxRateUsdCny()
+	})
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (u *UsageLogUpsertOne) SetFxRateSource(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxRateSource(v)
+	})
+}
+
+// UpdateFxRateSource sets the "fx_rate_source" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFxRateSource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxRateSource()
+	})
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (u *UsageLogUpsertOne) ClearFxRateSource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxRateSource()
+	})
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (u *UsageLogUpsertOne) SetFxFetchedAt(v time.Time) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxFetchedAt(v)
+	})
+}
+
+// UpdateFxFetchedAt sets the "fx_fetched_at" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFxFetchedAt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxFetchedAt()
+	})
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (u *UsageLogUpsertOne) ClearFxFetchedAt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxFetchedAt()
+	})
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (u *UsageLogUpsertOne) SetFxSafetyMargin(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxSafetyMargin(v)
+	})
+}
+
+// AddFxSafetyMargin adds v to the "fx_safety_margin" field.
+func (u *UsageLogUpsertOne) AddFxSafetyMargin(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFxSafetyMargin(v)
+	})
+}
+
+// UpdateFxSafetyMargin sets the "fx_safety_margin" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFxSafetyMargin() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxSafetyMargin()
+	})
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (u *UsageLogUpsertOne) ClearFxSafetyMargin() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxSafetyMargin()
 	})
 }
 
@@ -3176,6 +3505,132 @@ func (u *UsageLogUpsertBulk) AddActualCost(v float64) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateActualCost() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (u *UsageLogUpsertBulk) SetChargedAmountCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetChargedAmountCny(v)
+	})
+}
+
+// AddChargedAmountCny adds v to the "charged_amount_cny" field.
+func (u *UsageLogUpsertBulk) AddChargedAmountCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddChargedAmountCny(v)
+	})
+}
+
+// UpdateChargedAmountCny sets the "charged_amount_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateChargedAmountCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateChargedAmountCny()
+	})
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (u *UsageLogUpsertBulk) ClearChargedAmountCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearChargedAmountCny()
+	})
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertBulk) SetFxRateUsdCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxRateUsdCny(v)
+	})
+}
+
+// AddFxRateUsdCny adds v to the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertBulk) AddFxRateUsdCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFxRateUsdCny(v)
+	})
+}
+
+// UpdateFxRateUsdCny sets the "fx_rate_usd_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFxRateUsdCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxRateUsdCny()
+	})
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (u *UsageLogUpsertBulk) ClearFxRateUsdCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxRateUsdCny()
+	})
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (u *UsageLogUpsertBulk) SetFxRateSource(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxRateSource(v)
+	})
+}
+
+// UpdateFxRateSource sets the "fx_rate_source" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFxRateSource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxRateSource()
+	})
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (u *UsageLogUpsertBulk) ClearFxRateSource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxRateSource()
+	})
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (u *UsageLogUpsertBulk) SetFxFetchedAt(v time.Time) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxFetchedAt(v)
+	})
+}
+
+// UpdateFxFetchedAt sets the "fx_fetched_at" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFxFetchedAt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxFetchedAt()
+	})
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (u *UsageLogUpsertBulk) ClearFxFetchedAt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxFetchedAt()
+	})
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (u *UsageLogUpsertBulk) SetFxSafetyMargin(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFxSafetyMargin(v)
+	})
+}
+
+// AddFxSafetyMargin adds v to the "fx_safety_margin" field.
+func (u *UsageLogUpsertBulk) AddFxSafetyMargin(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFxSafetyMargin(v)
+	})
+}
+
+// UpdateFxSafetyMargin sets the "fx_safety_margin" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFxSafetyMargin() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFxSafetyMargin()
+	})
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (u *UsageLogUpsertBulk) ClearFxSafetyMargin() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFxSafetyMargin()
 	})
 }
 

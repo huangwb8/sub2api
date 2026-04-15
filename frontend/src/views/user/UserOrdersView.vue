@@ -3,6 +3,9 @@
     <div class="space-y-4">
       <!-- Filters -->
       <div class="card p-4">
+        <div class="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+          订单充值与钱包余额均为 CNY，按量调用会在计费时依据汇率快照折算成人民币扣减。
+        </div>
         <div class="flex flex-wrap items-center gap-3">
           <Select v-model="currentFilter" :options="statusFilters" class="w-36" @change="fetchOrders" />
           <div class="flex flex-1 items-center justify-end gap-2">

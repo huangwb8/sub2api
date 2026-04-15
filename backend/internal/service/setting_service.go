@@ -110,12 +110,116 @@ type SettingService struct {
 	version                 string // Application version
 }
 
+type BillingFXSettings struct {
+	Enabled         bool
+	Provider        string
+	FallbackRate    float64
+	CacheTTLSeconds int
+	TimeoutMS       int
+	SafetyMargin    float64
+	LastSuccessRate *float64
+	LastSuccessAt   *time.Time
+}
+
 // NewSettingService 创建系统设置服务实例
 func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *SettingService {
 	return &SettingService{
 		settingRepo: settingRepo,
 		cfg:         cfg,
 	}
+}
+
+func (s *SettingService) defaultBillingFXSettings() BillingFXSettings {
+	settings := BillingFXSettings{
+		Enabled:         true,
+		Provider:        "default",
+		FallbackRate:    7.2,
+		CacheTTLSeconds: 600,
+		TimeoutMS:       3000,
+		SafetyMargin:    0.02,
+	}
+	if s == nil || s.cfg == nil {
+		return settings
+	}
+	if raw := strings.TrimSpace(s.cfg.Billing.FX.Provider); raw != "" {
+		settings.Provider = raw
+	}
+	if s.cfg.Billing.FX.FallbackRate > 0 {
+		settings.FallbackRate = s.cfg.Billing.FX.FallbackRate
+	}
+	if s.cfg.Billing.FX.CacheTTLSeconds > 0 {
+		settings.CacheTTLSeconds = s.cfg.Billing.FX.CacheTTLSeconds
+	}
+	if s.cfg.Billing.FX.TimeoutMS > 0 {
+		settings.TimeoutMS = s.cfg.Billing.FX.TimeoutMS
+	}
+	if s.cfg.Billing.FX.SafetyMargin >= 0 {
+		settings.SafetyMargin = s.cfg.Billing.FX.SafetyMargin
+	}
+	if !s.cfg.Billing.FX.Enabled && strings.TrimSpace(s.cfg.Billing.FX.Provider) == "" &&
+		s.cfg.Billing.FX.FallbackRate == 0 && s.cfg.Billing.FX.CacheTTLSeconds == 0 &&
+		s.cfg.Billing.FX.TimeoutMS == 0 && s.cfg.Billing.FX.SafetyMargin == 0 {
+		return settings
+	}
+	settings.Enabled = s.cfg.Billing.FX.Enabled
+	return settings
+}
+
+func (s *SettingService) GetBillingFXSettings(ctx context.Context) BillingFXSettings {
+	settings := s.defaultBillingFXSettings()
+	if s == nil || s.settingRepo == nil {
+		return settings
+	}
+	values, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeyBillingFXEnabled,
+		SettingKeyBillingFXProvider,
+		SettingKeyBillingFXFallbackRate,
+		SettingKeyBillingFXCacheTTLSeconds,
+		SettingKeyBillingFXTimeoutMS,
+		SettingKeyBillingFXSafetyMargin,
+		SettingKeyBillingFXLastSuccessRate,
+		SettingKeyBillingFXLastSuccessAt,
+	})
+	if err != nil {
+		return settings
+	}
+	if raw, ok := values[SettingKeyBillingFXEnabled]; ok {
+		settings.Enabled = raw == "true"
+	}
+	if raw := strings.TrimSpace(values[SettingKeyBillingFXProvider]); raw != "" {
+		settings.Provider = raw
+	}
+	if v, err := strconv.ParseFloat(values[SettingKeyBillingFXFallbackRate], 64); err == nil && v > 0 {
+		settings.FallbackRate = v
+	}
+	if v, err := strconv.Atoi(values[SettingKeyBillingFXCacheTTLSeconds]); err == nil && v > 0 {
+		settings.CacheTTLSeconds = v
+	}
+	if v, err := strconv.Atoi(values[SettingKeyBillingFXTimeoutMS]); err == nil && v > 0 {
+		settings.TimeoutMS = v
+	}
+	if v, err := strconv.ParseFloat(values[SettingKeyBillingFXSafetyMargin], 64); err == nil && v >= 0 {
+		settings.SafetyMargin = v
+	}
+	if v, err := strconv.ParseFloat(values[SettingKeyBillingFXLastSuccessRate], 64); err == nil && v > 0 {
+		settings.LastSuccessRate = &v
+	}
+	if raw := strings.TrimSpace(values[SettingKeyBillingFXLastSuccessAt]); raw != "" {
+		if parsed, err := time.Parse(time.RFC3339, raw); err == nil {
+			settings.LastSuccessAt = &parsed
+		}
+	}
+	return settings
+}
+
+func (s *SettingService) UpdateBillingFXLastSuccess(ctx context.Context, rate float64, fetchedAt time.Time) error {
+	if s == nil || s.settingRepo == nil || rate <= 0 || fetchedAt.IsZero() {
+		return nil
+	}
+	return s.settingRepo.SetMultiple(ctx, map[string]string{
+		SettingKeyBillingFXLastSuccessRate: strconv.FormatFloat(rate, 'f', 10, 64),
+		SettingKeyBillingFXLastSuccessAt:   fetchedAt.UTC().Format(time.RFC3339),
+	})
 }
 
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
@@ -565,6 +669,18 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeySubscriptionCapacityTightness] = strconv.Itoa(
 		clampInt(settings.SubscriptionCapacityTightness, minSubscriptionCapacityTightness, maxSubscriptionCapacityTightness),
 	)
+	updates[SettingKeyBillingFXEnabled] = strconv.FormatBool(settings.BillingFXEnabled)
+	updates[SettingKeyBillingFXProvider] = strings.TrimSpace(settings.BillingFXProvider)
+	updates[SettingKeyBillingFXFallbackRate] = strconv.FormatFloat(settings.BillingFXFallbackRate, 'f', 10, 64)
+	updates[SettingKeyBillingFXCacheTTLSeconds] = strconv.Itoa(settings.BillingFXCacheTTLSeconds)
+	updates[SettingKeyBillingFXTimeoutMS] = strconv.Itoa(settings.BillingFXTimeoutMS)
+	updates[SettingKeyBillingFXSafetyMargin] = strconv.FormatFloat(settings.BillingFXSafetyMargin, 'f', 6, 64)
+	if settings.BillingFXLastSuccessRate != nil && *settings.BillingFXLastSuccessRate > 0 {
+		updates[SettingKeyBillingFXLastSuccessRate] = strconv.FormatFloat(*settings.BillingFXLastSuccessRate, 'f', 10, 64)
+	}
+	if settings.BillingFXLastSuccessAt != nil && !settings.BillingFXLastSuccessAt.IsZero() {
+		updates[SettingKeyBillingFXLastSuccessAt] = settings.BillingFXLastSuccessAt.UTC().Format(time.RFC3339)
+	}
 	defaultSubsJSON, err := json.Marshal(settings.DefaultSubscriptions)
 	if err != nil {
 		return fmt.Errorf("marshal default subscriptions: %w", err)
@@ -902,6 +1018,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		return fmt.Errorf("check existing settings: %w", err)
 	}
 
+	fxDefaults := s.defaultBillingFXSettings()
+
 	// 初始化默认设置
 	defaults := map[string]string{
 		SettingKeyRegistrationEnabled:              "true",
@@ -922,6 +1040,12 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyDefaultBalance:                   strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
 		SettingKeyDefaultSubscriptions:             "[]",
 		SettingKeySubscriptionCapacityTightness:    strconv.Itoa(defaultSubscriptionCapacityTightness),
+		SettingKeyBillingFXEnabled:                 strconv.FormatBool(fxDefaults.Enabled),
+		SettingKeyBillingFXProvider:                fxDefaults.Provider,
+		SettingKeyBillingFXFallbackRate:            strconv.FormatFloat(fxDefaults.FallbackRate, 'f', 10, 64),
+		SettingKeyBillingFXCacheTTLSeconds:         strconv.Itoa(fxDefaults.CacheTTLSeconds),
+		SettingKeyBillingFXTimeoutMS:               strconv.Itoa(fxDefaults.TimeoutMS),
+		SettingKeyBillingFXSafetyMargin:            strconv.FormatFloat(fxDefaults.SafetyMargin, 'f', 6, 64),
 		SettingKeySMTPPort:                         "587",
 		SettingKeySMTPUseTLS:                       "false",
 		SettingKeySubscriptionNotificationEmail:    "",
@@ -1014,6 +1138,39 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		result.DefaultBalance = balance
 	} else {
 		result.DefaultBalance = s.cfg.Default.UserBalance
+	}
+	fxDefaults := s.defaultBillingFXSettings()
+	result.BillingFXEnabled = fxDefaults.Enabled
+	result.BillingFXProvider = fxDefaults.Provider
+	result.BillingFXFallbackRate = fxDefaults.FallbackRate
+	result.BillingFXCacheTTLSeconds = fxDefaults.CacheTTLSeconds
+	result.BillingFXTimeoutMS = fxDefaults.TimeoutMS
+	result.BillingFXSafetyMargin = fxDefaults.SafetyMargin
+	if raw, ok := settings[SettingKeyBillingFXEnabled]; ok {
+		result.BillingFXEnabled = raw == "true"
+	}
+	if raw := strings.TrimSpace(settings[SettingKeyBillingFXProvider]); raw != "" {
+		result.BillingFXProvider = raw
+	}
+	if v, err := strconv.ParseFloat(settings[SettingKeyBillingFXFallbackRate], 64); err == nil && v > 0 {
+		result.BillingFXFallbackRate = v
+	}
+	if v, err := strconv.Atoi(settings[SettingKeyBillingFXCacheTTLSeconds]); err == nil && v > 0 {
+		result.BillingFXCacheTTLSeconds = v
+	}
+	if v, err := strconv.Atoi(settings[SettingKeyBillingFXTimeoutMS]); err == nil && v > 0 {
+		result.BillingFXTimeoutMS = v
+	}
+	if v, err := strconv.ParseFloat(settings[SettingKeyBillingFXSafetyMargin], 64); err == nil && v >= 0 {
+		result.BillingFXSafetyMargin = v
+	}
+	if v, err := strconv.ParseFloat(settings[SettingKeyBillingFXLastSuccessRate], 64); err == nil && v > 0 {
+		result.BillingFXLastSuccessRate = &v
+	}
+	if raw := strings.TrimSpace(settings[SettingKeyBillingFXLastSuccessAt]); raw != "" {
+		if parsed, err := time.Parse(time.RFC3339, raw); err == nil {
+			result.BillingFXLastSuccessAt = &parsed
+		}
 	}
 	result.DefaultSubscriptions = parseDefaultSubscriptions(settings[SettingKeyDefaultSubscriptions])
 

@@ -364,6 +364,11 @@ type UsageLog struct {
 	CacheReadCost     float64 `json:"cache_read_cost"`
 	TotalCost         float64 `json:"total_cost"`
 	ActualCost        float64 `json:"actual_cost"`
+	ChargedAmountCNY  *float64 `json:"charged_amount_cny,omitempty"`
+	FXRateUSDCNY      *float64 `json:"fx_rate_usd_cny,omitempty"`
+	FXRateSource      *string `json:"fx_rate_source,omitempty"`
+	FXFetchedAt       *time.Time `json:"fx_fetched_at,omitempty"`
+	FXSafetyMargin    *float64 `json:"fx_safety_margin,omitempty"`
 	RateMultiplier    float64 `json:"rate_multiplier"`
 
 	BillingType  int8   `json:"billing_type"`

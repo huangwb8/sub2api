@@ -72,6 +72,16 @@ type UsageLog struct {
 	TotalCost float64 `json:"total_cost,omitempty"`
 	// ActualCost holds the value of the "actual_cost" field.
 	ActualCost float64 `json:"actual_cost,omitempty"`
+	// ChargedAmountCny holds the value of the "charged_amount_cny" field.
+	ChargedAmountCny *float64 `json:"charged_amount_cny,omitempty"`
+	// FxRateUsdCny holds the value of the "fx_rate_usd_cny" field.
+	FxRateUsdCny *float64 `json:"fx_rate_usd_cny,omitempty"`
+	// FxRateSource holds the value of the "fx_rate_source" field.
+	FxRateSource *string `json:"fx_rate_source,omitempty"`
+	// FxFetchedAt holds the value of the "fx_fetched_at" field.
+	FxFetchedAt *time.Time `json:"fx_fetched_at,omitempty"`
+	// FxSafetyMargin holds the value of the "fx_safety_margin" field.
+	FxSafetyMargin *float64 `json:"fx_safety_margin,omitempty"`
 	// RateMultiplier holds the value of the "rate_multiplier" field.
 	RateMultiplier float64 `json:"rate_multiplier,omitempty"`
 	// AccountRateMultiplier holds the value of the "account_rate_multiplier" field.
@@ -181,13 +191,13 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case usagelog.FieldStream, usagelog.FieldCacheTTLOverridden:
 			values[i] = new(sql.NullBool)
-		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
+		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldChargedAmountCny, usagelog.FieldFxRateUsdCny, usagelog.FieldFxSafetyMargin, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
 		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount:
 			values[i] = new(sql.NullInt64)
-		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize:
+		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldFxRateSource, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize:
 			values[i] = new(sql.NullString)
-		case usagelog.FieldCreatedAt:
+		case usagelog.FieldFxFetchedAt, usagelog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -367,6 +377,41 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field actual_cost", values[i])
 			} else if value.Valid {
 				_m.ActualCost = value.Float64
+			}
+		case usagelog.FieldChargedAmountCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field charged_amount_cny", values[i])
+			} else if value.Valid {
+				_m.ChargedAmountCny = new(float64)
+				*_m.ChargedAmountCny = value.Float64
+			}
+		case usagelog.FieldFxRateUsdCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field fx_rate_usd_cny", values[i])
+			} else if value.Valid {
+				_m.FxRateUsdCny = new(float64)
+				*_m.FxRateUsdCny = value.Float64
+			}
+		case usagelog.FieldFxRateSource:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field fx_rate_source", values[i])
+			} else if value.Valid {
+				_m.FxRateSource = new(string)
+				*_m.FxRateSource = value.String
+			}
+		case usagelog.FieldFxFetchedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field fx_fetched_at", values[i])
+			} else if value.Valid {
+				_m.FxFetchedAt = new(time.Time)
+				*_m.FxFetchedAt = value.Time
+			}
+		case usagelog.FieldFxSafetyMargin:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field fx_safety_margin", values[i])
+			} else if value.Valid {
+				_m.FxSafetyMargin = new(float64)
+				*_m.FxSafetyMargin = value.Float64
 			}
 		case usagelog.FieldRateMultiplier:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -597,6 +642,31 @@ func (_m *UsageLog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("actual_cost=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ActualCost))
+	builder.WriteString(", ")
+	if v := _m.ChargedAmountCny; v != nil {
+		builder.WriteString("charged_amount_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.FxRateUsdCny; v != nil {
+		builder.WriteString("fx_rate_usd_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.FxRateSource; v != nil {
+		builder.WriteString("fx_rate_source=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.FxFetchedAt; v != nil {
+		builder.WriteString("fx_fetched_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.FxSafetyMargin; v != nil {
+		builder.WriteString("fx_safety_margin=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RateMultiplier))

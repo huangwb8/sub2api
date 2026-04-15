@@ -180,6 +180,31 @@ func ActualCost(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldActualCost, v))
 }
 
+// ChargedAmountCny applies equality check predicate on the "charged_amount_cny" field. It's identical to ChargedAmountCnyEQ.
+func ChargedAmountCny(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldChargedAmountCny, v))
+}
+
+// FxRateUsdCny applies equality check predicate on the "fx_rate_usd_cny" field. It's identical to FxRateUsdCnyEQ.
+func FxRateUsdCny(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxRateUsdCny, v))
+}
+
+// FxRateSource applies equality check predicate on the "fx_rate_source" field. It's identical to FxRateSourceEQ.
+func FxRateSource(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxRateSource, v))
+}
+
+// FxFetchedAt applies equality check predicate on the "fx_fetched_at" field. It's identical to FxFetchedAtEQ.
+func FxFetchedAt(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxFetchedAt, v))
+}
+
+// FxSafetyMargin applies equality check predicate on the "fx_safety_margin" field. It's identical to FxSafetyMarginEQ.
+func FxSafetyMargin(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxSafetyMargin, v))
+}
+
 // RateMultiplier applies equality check predicate on the "rate_multiplier" field. It's identical to RateMultiplierEQ.
 func RateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldRateMultiplier, v))
@@ -1393,6 +1418,281 @@ func ActualCostLT(v float64) predicate.UsageLog {
 // ActualCostLTE applies the LTE predicate on the "actual_cost" field.
 func ActualCostLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldActualCost, v))
+}
+
+// ChargedAmountCnyEQ applies the EQ predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyNEQ applies the NEQ predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyIn applies the In predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldChargedAmountCny, vs...))
+}
+
+// ChargedAmountCnyNotIn applies the NotIn predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldChargedAmountCny, vs...))
+}
+
+// ChargedAmountCnyGT applies the GT predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyGTE applies the GTE predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyLT applies the LT predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyLTE applies the LTE predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldChargedAmountCny, v))
+}
+
+// ChargedAmountCnyIsNil applies the IsNil predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldChargedAmountCny))
+}
+
+// ChargedAmountCnyNotNil applies the NotNil predicate on the "charged_amount_cny" field.
+func ChargedAmountCnyNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldChargedAmountCny))
+}
+
+// FxRateUsdCnyEQ applies the EQ predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyNEQ applies the NEQ predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyIn applies the In predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldFxRateUsdCny, vs...))
+}
+
+// FxRateUsdCnyNotIn applies the NotIn predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldFxRateUsdCny, vs...))
+}
+
+// FxRateUsdCnyGT applies the GT predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyGTE applies the GTE predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyLT applies the LT predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyLTE applies the LTE predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldFxRateUsdCny, v))
+}
+
+// FxRateUsdCnyIsNil applies the IsNil predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldFxRateUsdCny))
+}
+
+// FxRateUsdCnyNotNil applies the NotNil predicate on the "fx_rate_usd_cny" field.
+func FxRateUsdCnyNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldFxRateUsdCny))
+}
+
+// FxRateSourceEQ applies the EQ predicate on the "fx_rate_source" field.
+func FxRateSourceEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxRateSource, v))
+}
+
+// FxRateSourceNEQ applies the NEQ predicate on the "fx_rate_source" field.
+func FxRateSourceNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldFxRateSource, v))
+}
+
+// FxRateSourceIn applies the In predicate on the "fx_rate_source" field.
+func FxRateSourceIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldFxRateSource, vs...))
+}
+
+// FxRateSourceNotIn applies the NotIn predicate on the "fx_rate_source" field.
+func FxRateSourceNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldFxRateSource, vs...))
+}
+
+// FxRateSourceGT applies the GT predicate on the "fx_rate_source" field.
+func FxRateSourceGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldFxRateSource, v))
+}
+
+// FxRateSourceGTE applies the GTE predicate on the "fx_rate_source" field.
+func FxRateSourceGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldFxRateSource, v))
+}
+
+// FxRateSourceLT applies the LT predicate on the "fx_rate_source" field.
+func FxRateSourceLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldFxRateSource, v))
+}
+
+// FxRateSourceLTE applies the LTE predicate on the "fx_rate_source" field.
+func FxRateSourceLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldFxRateSource, v))
+}
+
+// FxRateSourceContains applies the Contains predicate on the "fx_rate_source" field.
+func FxRateSourceContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldFxRateSource, v))
+}
+
+// FxRateSourceHasPrefix applies the HasPrefix predicate on the "fx_rate_source" field.
+func FxRateSourceHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldFxRateSource, v))
+}
+
+// FxRateSourceHasSuffix applies the HasSuffix predicate on the "fx_rate_source" field.
+func FxRateSourceHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldFxRateSource, v))
+}
+
+// FxRateSourceIsNil applies the IsNil predicate on the "fx_rate_source" field.
+func FxRateSourceIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldFxRateSource))
+}
+
+// FxRateSourceNotNil applies the NotNil predicate on the "fx_rate_source" field.
+func FxRateSourceNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldFxRateSource))
+}
+
+// FxRateSourceEqualFold applies the EqualFold predicate on the "fx_rate_source" field.
+func FxRateSourceEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldFxRateSource, v))
+}
+
+// FxRateSourceContainsFold applies the ContainsFold predicate on the "fx_rate_source" field.
+func FxRateSourceContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldFxRateSource, v))
+}
+
+// FxFetchedAtEQ applies the EQ predicate on the "fx_fetched_at" field.
+func FxFetchedAtEQ(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtNEQ applies the NEQ predicate on the "fx_fetched_at" field.
+func FxFetchedAtNEQ(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtIn applies the In predicate on the "fx_fetched_at" field.
+func FxFetchedAtIn(vs ...time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldFxFetchedAt, vs...))
+}
+
+// FxFetchedAtNotIn applies the NotIn predicate on the "fx_fetched_at" field.
+func FxFetchedAtNotIn(vs ...time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldFxFetchedAt, vs...))
+}
+
+// FxFetchedAtGT applies the GT predicate on the "fx_fetched_at" field.
+func FxFetchedAtGT(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtGTE applies the GTE predicate on the "fx_fetched_at" field.
+func FxFetchedAtGTE(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtLT applies the LT predicate on the "fx_fetched_at" field.
+func FxFetchedAtLT(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtLTE applies the LTE predicate on the "fx_fetched_at" field.
+func FxFetchedAtLTE(v time.Time) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldFxFetchedAt, v))
+}
+
+// FxFetchedAtIsNil applies the IsNil predicate on the "fx_fetched_at" field.
+func FxFetchedAtIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldFxFetchedAt))
+}
+
+// FxFetchedAtNotNil applies the NotNil predicate on the "fx_fetched_at" field.
+func FxFetchedAtNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldFxFetchedAt))
+}
+
+// FxSafetyMarginEQ applies the EQ predicate on the "fx_safety_margin" field.
+func FxSafetyMarginEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginNEQ applies the NEQ predicate on the "fx_safety_margin" field.
+func FxSafetyMarginNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginIn applies the In predicate on the "fx_safety_margin" field.
+func FxSafetyMarginIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldFxSafetyMargin, vs...))
+}
+
+// FxSafetyMarginNotIn applies the NotIn predicate on the "fx_safety_margin" field.
+func FxSafetyMarginNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldFxSafetyMargin, vs...))
+}
+
+// FxSafetyMarginGT applies the GT predicate on the "fx_safety_margin" field.
+func FxSafetyMarginGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginGTE applies the GTE predicate on the "fx_safety_margin" field.
+func FxSafetyMarginGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginLT applies the LT predicate on the "fx_safety_margin" field.
+func FxSafetyMarginLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginLTE applies the LTE predicate on the "fx_safety_margin" field.
+func FxSafetyMarginLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldFxSafetyMargin, v))
+}
+
+// FxSafetyMarginIsNil applies the IsNil predicate on the "fx_safety_margin" field.
+func FxSafetyMarginIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldFxSafetyMargin))
+}
+
+// FxSafetyMarginNotNil applies the NotNil predicate on the "fx_safety_margin" field.
+func FxSafetyMarginNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldFxSafetyMargin))
 }
 
 // RateMultiplierEQ applies the EQ predicate on the "rate_multiplier" field.

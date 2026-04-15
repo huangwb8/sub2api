@@ -255,6 +255,16 @@ const (
 
 	// SettingKeyWebSearchEmulationConfig stores JSON config for Anthropic API Key web search emulation.
 	SettingKeyWebSearchEmulationConfig = "web_search_emulation_config"
+
+	// Billing FX settings
+	SettingKeyBillingFXEnabled         = "billing_fx_enabled"
+	SettingKeyBillingFXProvider        = "billing_fx_provider"
+	SettingKeyBillingFXFallbackRate    = "billing_fx_fallback_rate"
+	SettingKeyBillingFXCacheTTLSeconds = "billing_fx_cache_ttl_seconds"
+	SettingKeyBillingFXTimeoutMS       = "billing_fx_timeout_ms"
+	SettingKeyBillingFXSafetyMargin    = "billing_fx_safety_margin"
+	SettingKeyBillingFXLastSuccessRate = "billing_fx_last_success_rate"
+	SettingKeyBillingFXLastSuccessAt   = "billing_fx_last_success_at"
 )
 
 // AdminAPIKeyPrefix is the prefix for admin API keys (distinct from user "sk-" keys).

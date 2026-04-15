@@ -50,7 +50,7 @@ version = ad64190bec3605f97e9e1805a0118aaa51f22b08
 
 优化 plans/2026-04-13-benszresearch-homepage-reference.html
 
-- 目前的设计感太差，不是一个正式的产品。 我想重构一下这个示例首页。
+- 目前的设计感太差，不是一个正式的产品。 我想重构一下这个示例首页。 
 
 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。
 
@@ -59,6 +59,12 @@ version = ad64190bec3605f97e9e1805a0118aaa51f22b08
 优化 plans/2026-04-13-benszresearch-homepage-reference.html
 
 - 我感觉字体不统一不太好看。 比如，研究级 AI基础设施 用的字体 和其它的字的字体相比不太和谐。
+
+---
+
+PlanMardkdown = plans/2026-04-15-dynamic-fx-billing-plan.md
+
+根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

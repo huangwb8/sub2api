@@ -563,6 +563,7 @@ type GatewayService struct {
 	modelsListCache       *gocache.Cache
 	modelsListCacheTTL    time.Duration
 	settingService        *SettingService
+	exchangeRateService   ExchangeRateService
 	responseHeaderFilter  *responseheaders.CompiledHeaderFilter
 	debugModelRouting     atomic.Bool
 	debugClaudeMimic      atomic.Bool
@@ -627,6 +628,7 @@ func NewGatewayService(
 		rpmCache:             rpmCache,
 		userGroupRateCache:   gocache.New(userGroupRateTTL, time.Minute),
 		settingService:       settingService,
+		exchangeRateService:  NewStaticExchangeRateService(cfg),
 		modelsListCache:      gocache.New(modelsListTTL, time.Minute),
 		modelsListCacheTTL:   modelsListTTL,
 		responseHeaderFilter: compileResponseHeaderFilter(cfg),
@@ -7315,6 +7317,7 @@ type usageLogBestEffortWriter interface {
 // postUsageBillingParams 统一扣费所需的参数
 type postUsageBillingParams struct {
 	Cost                  *CostBreakdown
+	ChargeSnapshot        *UsageChargeSnapshot
 	User                  *User
 	APIKey                *APIKey
 	Account               *Account
@@ -7357,11 +7360,11 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 			deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, cost.TotalCost)
 		}
 	} else {
-		if cost.ActualCost > 0 {
-			if err := deps.userRepo.DeductBalance(billingCtx, p.User.ID, cost.ActualCost); err != nil {
+		if chargeAmount := p.balanceChargeAmountCNY(); chargeAmount > 0 {
+			if err := deps.userRepo.DeductBalance(billingCtx, p.User.ID, chargeAmount); err != nil {
 				slog.Error("deduct balance failed", "user_id", p.User.ID, "error", err)
 			}
-			deps.billingCacheService.QueueDeductBalance(p.User.ID, cost.ActualCost)
+			deps.billingCacheService.QueueDeductBalance(p.User.ID, chargeAmount)
 		}
 	}
 
@@ -7454,34 +7457,41 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 
 	if p.IsSubscriptionBill && p.Subscription != nil && p.Cost.TotalCost > 0 {
 		cmd.SubscriptionID = &p.Subscription.ID
-		cmd.SubscriptionCost = p.Cost.TotalCost
+		cmd.SubscriptionCostUSD = p.Cost.TotalCost
 	} else if p.Cost.ActualCost > 0 {
-		cmd.BalanceCost = p.Cost.ActualCost
+		cmd.BalanceCostUSD = p.Cost.ActualCost
+		cmd.BalanceCostCNY = p.balanceChargeAmountCNY()
+		if p.ChargeSnapshot != nil {
+			cmd.FXRateUSDCNY = p.ChargeSnapshot.FXRateUSDCNY
+			cmd.FXRateSource = p.ChargeSnapshot.FXRateSource
+			cmd.FXFetchedAt = p.ChargeSnapshot.FXFetchedAt
+			cmd.FXSafetyMargin = p.ChargeSnapshot.FXSafetyMargin
+		}
 	}
 
 	if p.shouldDeductAPIKeyQuota() {
-		cmd.APIKeyQuotaCost = p.Cost.ActualCost
+		cmd.APIKeyQuotaCostUSD = p.Cost.ActualCost
 	}
 	if p.shouldUpdateRateLimits() {
-		cmd.APIKeyRateLimitCost = p.Cost.ActualCost
+		cmd.APIKeyRateLimitCostUSD = p.Cost.ActualCost
 	}
 	if p.shouldUpdateAccountQuota() {
-		cmd.AccountQuotaCost = p.Cost.TotalCost * p.AccountRateMultiplier
+		cmd.AccountQuotaCostUSD = p.Cost.TotalCost * p.AccountRateMultiplier
 	}
 
 	cmd.Normalize()
 	return cmd
 }
 
-func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog, p *postUsageBillingParams, deps *billingDeps, repo UsageBillingRepository) (bool, error) {
+func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog, p *postUsageBillingParams, deps *billingDeps, repo UsageBillingRepository) (*UsageBillingApplyResult, error) {
 	if p == nil || deps == nil {
-		return false, nil
+		return &UsageBillingApplyResult{}, nil
 	}
 
 	cmd := buildUsageBillingCommand(requestID, usageLog, p)
 	if cmd == nil || cmd.RequestID == "" || repo == nil {
 		postUsageBilling(ctx, p, deps)
-		return true, nil
+		return &UsageBillingApplyResult{Applied: true, ChargeSnapshot: p.ChargeSnapshot}, nil
 	}
 
 	billingCtx, cancel := detachedBillingContext(ctx)
@@ -7489,12 +7499,18 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 
 	result, err := repo.Apply(billingCtx, cmd)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if result == nil || !result.Applied {
 		deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
-		return false, nil
+		if result == nil {
+			return &UsageBillingApplyResult{Applied: false, ChargeSnapshot: p.ChargeSnapshot}, nil
+		}
+		if result.ChargeSnapshot == nil {
+			result.ChargeSnapshot = p.ChargeSnapshot
+		}
+		return result, nil
 	}
 
 	if result.APIKeyQuotaExhausted {
@@ -7504,7 +7520,10 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 	}
 
 	finalizePostUsageBilling(p, deps)
-	return true, nil
+	if result.ChargeSnapshot == nil {
+		result.ChargeSnapshot = p.ChargeSnapshot
+	}
+	return result, nil
 }
 
 func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps) {
@@ -7516,8 +7535,8 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps) {
 		if p.Cost.TotalCost > 0 && p.User != nil && p.APIKey != nil && p.APIKey.GroupID != nil {
 			deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, p.Cost.TotalCost)
 		}
-	} else if p.Cost.ActualCost > 0 && p.User != nil {
-		deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
+	} else if chargeAmount := p.balanceChargeAmountCNY(); chargeAmount > 0 && p.User != nil {
+		deps.billingCacheService.QueueDeductBalance(p.User.ID, chargeAmount)
 	}
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
@@ -7525,6 +7544,16 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps) {
 	}
 
 	deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
+}
+
+func (p *postUsageBillingParams) balanceChargeAmountCNY() float64 {
+	if p == nil || p.IsSubscriptionBill {
+		return 0
+	}
+	if p.ChargeSnapshot != nil && p.ChargeSnapshot.ChargedAmountCNY > 0 {
+		return p.ChargeSnapshot.ChargedAmountCNY
+	}
+	return 0
 }
 
 func detachedBillingContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -7744,11 +7773,12 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	if isSubscriptionBilling {
 		billingType = BillingTypeSubscription
 	}
+	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
 
 	// 创建使用日志
 	accountRateMultiplier := account.BillingRateMultiplier()
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
-		requestedModel, multiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
+		requestedModel, multiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, chargeSnapshot, opts)
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
@@ -7758,8 +7788,9 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	}
 
 	requestID := usageLog.RequestID
-	_, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
+	billingResult, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
 		Cost:                  cost,
+		ChargeSnapshot:        chargeSnapshot,
 		User:                  user,
 		APIKey:                apiKey,
 		Account:               account,
@@ -7772,6 +7803,9 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 
 	if billingErr != nil {
 		return billingErr
+	}
+	if billingResult != nil && billingResult.ChargeSnapshot != nil {
+		usageLog.ApplyChargeSnapshot(billingResult.ChargeSnapshot)
 	}
 	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
 
@@ -7919,6 +7953,7 @@ func (s *GatewayService) buildRecordUsageLog(
 	billingType int8,
 	cacheTTLOverridden bool,
 	cost *CostBreakdown,
+	chargeSnapshot *UsageChargeSnapshot,
 	opts *recordUsageOpts,
 ) *UsageLog {
 	durationMs := int(result.Duration.Milliseconds())
@@ -7968,8 +8003,21 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
 	}
+	usageLog.ApplyChargeSnapshot(chargeSnapshot)
 
 	return usageLog
+}
+
+func (s *GatewayService) resolveUsageChargeSnapshot(ctx context.Context, cost *CostBreakdown, isSubscriptionBilling bool) *UsageChargeSnapshot {
+	if s == nil || isSubscriptionBilling || cost == nil || cost.ActualCost <= 0 || s.exchangeRateService == nil {
+		return nil
+	}
+	resolved, err := s.exchangeRateService.ResolveUSDCNYRate(ctx)
+	if err != nil {
+		slog.Warn("resolve billing fx failed", "error", err)
+		return nil
+	}
+	return BuildUsageChargeSnapshot(cost.ActualCost, resolved)
 }
 
 // resolveBillingMode 根据计费结果和请求类型确定计费模式。

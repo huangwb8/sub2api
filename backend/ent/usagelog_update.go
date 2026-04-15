@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -521,6 +522,127 @@ func (_u *UsageLogUpdate) AddActualCost(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (_u *UsageLogUpdate) SetChargedAmountCny(v float64) *UsageLogUpdate {
+	_u.mutation.ResetChargedAmountCny()
+	_u.mutation.SetChargedAmountCny(v)
+	return _u
+}
+
+// SetNillableChargedAmountCny sets the "charged_amount_cny" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableChargedAmountCny(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetChargedAmountCny(*v)
+	}
+	return _u
+}
+
+// AddChargedAmountCny adds value to the "charged_amount_cny" field.
+func (_u *UsageLogUpdate) AddChargedAmountCny(v float64) *UsageLogUpdate {
+	_u.mutation.AddChargedAmountCny(v)
+	return _u
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (_u *UsageLogUpdate) ClearChargedAmountCny() *UsageLogUpdate {
+	_u.mutation.ClearChargedAmountCny()
+	return _u
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdate) SetFxRateUsdCny(v float64) *UsageLogUpdate {
+	_u.mutation.ResetFxRateUsdCny()
+	_u.mutation.SetFxRateUsdCny(v)
+	return _u
+}
+
+// SetNillableFxRateUsdCny sets the "fx_rate_usd_cny" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFxRateUsdCny(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFxRateUsdCny(*v)
+	}
+	return _u
+}
+
+// AddFxRateUsdCny adds value to the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdate) AddFxRateUsdCny(v float64) *UsageLogUpdate {
+	_u.mutation.AddFxRateUsdCny(v)
+	return _u
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdate) ClearFxRateUsdCny() *UsageLogUpdate {
+	_u.mutation.ClearFxRateUsdCny()
+	return _u
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (_u *UsageLogUpdate) SetFxRateSource(v string) *UsageLogUpdate {
+	_u.mutation.SetFxRateSource(v)
+	return _u
+}
+
+// SetNillableFxRateSource sets the "fx_rate_source" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFxRateSource(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFxRateSource(*v)
+	}
+	return _u
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (_u *UsageLogUpdate) ClearFxRateSource() *UsageLogUpdate {
+	_u.mutation.ClearFxRateSource()
+	return _u
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (_u *UsageLogUpdate) SetFxFetchedAt(v time.Time) *UsageLogUpdate {
+	_u.mutation.SetFxFetchedAt(v)
+	return _u
+}
+
+// SetNillableFxFetchedAt sets the "fx_fetched_at" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFxFetchedAt(v *time.Time) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFxFetchedAt(*v)
+	}
+	return _u
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (_u *UsageLogUpdate) ClearFxFetchedAt() *UsageLogUpdate {
+	_u.mutation.ClearFxFetchedAt()
+	return _u
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (_u *UsageLogUpdate) SetFxSafetyMargin(v float64) *UsageLogUpdate {
+	_u.mutation.ResetFxSafetyMargin()
+	_u.mutation.SetFxSafetyMargin(v)
+	return _u
+}
+
+// SetNillableFxSafetyMargin sets the "fx_safety_margin" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFxSafetyMargin(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFxSafetyMargin(*v)
+	}
+	return _u
+}
+
+// AddFxSafetyMargin adds value to the "fx_safety_margin" field.
+func (_u *UsageLogUpdate) AddFxSafetyMargin(v float64) *UsageLogUpdate {
+	_u.mutation.AddFxSafetyMargin(v)
+	return _u
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (_u *UsageLogUpdate) ClearFxSafetyMargin() *UsageLogUpdate {
+	_u.mutation.ClearFxSafetyMargin()
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdate) SetRateMultiplier(v float64) *UsageLogUpdate {
 	_u.mutation.ResetRateMultiplier()
@@ -877,6 +999,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FxRateSource(); ok {
+		if err := usagelog.FxRateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "fx_rate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.fx_rate_source": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -1032,6 +1159,45 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ChargedAmountCny(); ok {
+		_spec.SetField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedChargedAmountCny(); ok {
+		_spec.AddField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.ChargedAmountCnyCleared() {
+		_spec.ClearField(usagelog.FieldChargedAmountCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.FxRateUsdCny(); ok {
+		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedFxRateUsdCny(); ok {
+		_spec.AddField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.FxRateUsdCnyCleared() {
+		_spec.ClearField(usagelog.FieldFxRateUsdCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.FxRateSource(); ok {
+		_spec.SetField(usagelog.FieldFxRateSource, field.TypeString, value)
+	}
+	if _u.mutation.FxRateSourceCleared() {
+		_spec.ClearField(usagelog.FieldFxRateSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.FxFetchedAt(); ok {
+		_spec.SetField(usagelog.FieldFxFetchedAt, field.TypeTime, value)
+	}
+	if _u.mutation.FxFetchedAtCleared() {
+		_spec.ClearField(usagelog.FieldFxFetchedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FxSafetyMargin(); ok {
+		_spec.SetField(usagelog.FieldFxSafetyMargin, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedFxSafetyMargin(); ok {
+		_spec.AddField(usagelog.FieldFxSafetyMargin, field.TypeFloat64, value)
+	}
+	if _u.mutation.FxSafetyMarginCleared() {
+		_spec.ClearField(usagelog.FieldFxSafetyMargin, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1756,6 +1922,127 @@ func (_u *UsageLogUpdateOne) AddActualCost(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetChargedAmountCny sets the "charged_amount_cny" field.
+func (_u *UsageLogUpdateOne) SetChargedAmountCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetChargedAmountCny()
+	_u.mutation.SetChargedAmountCny(v)
+	return _u
+}
+
+// SetNillableChargedAmountCny sets the "charged_amount_cny" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableChargedAmountCny(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetChargedAmountCny(*v)
+	}
+	return _u
+}
+
+// AddChargedAmountCny adds value to the "charged_amount_cny" field.
+func (_u *UsageLogUpdateOne) AddChargedAmountCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddChargedAmountCny(v)
+	return _u
+}
+
+// ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
+func (_u *UsageLogUpdateOne) ClearChargedAmountCny() *UsageLogUpdateOne {
+	_u.mutation.ClearChargedAmountCny()
+	return _u
+}
+
+// SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdateOne) SetFxRateUsdCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetFxRateUsdCny()
+	_u.mutation.SetFxRateUsdCny(v)
+	return _u
+}
+
+// SetNillableFxRateUsdCny sets the "fx_rate_usd_cny" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFxRateUsdCny(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFxRateUsdCny(*v)
+	}
+	return _u
+}
+
+// AddFxRateUsdCny adds value to the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdateOne) AddFxRateUsdCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddFxRateUsdCny(v)
+	return _u
+}
+
+// ClearFxRateUsdCny clears the value of the "fx_rate_usd_cny" field.
+func (_u *UsageLogUpdateOne) ClearFxRateUsdCny() *UsageLogUpdateOne {
+	_u.mutation.ClearFxRateUsdCny()
+	return _u
+}
+
+// SetFxRateSource sets the "fx_rate_source" field.
+func (_u *UsageLogUpdateOne) SetFxRateSource(v string) *UsageLogUpdateOne {
+	_u.mutation.SetFxRateSource(v)
+	return _u
+}
+
+// SetNillableFxRateSource sets the "fx_rate_source" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFxRateSource(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFxRateSource(*v)
+	}
+	return _u
+}
+
+// ClearFxRateSource clears the value of the "fx_rate_source" field.
+func (_u *UsageLogUpdateOne) ClearFxRateSource() *UsageLogUpdateOne {
+	_u.mutation.ClearFxRateSource()
+	return _u
+}
+
+// SetFxFetchedAt sets the "fx_fetched_at" field.
+func (_u *UsageLogUpdateOne) SetFxFetchedAt(v time.Time) *UsageLogUpdateOne {
+	_u.mutation.SetFxFetchedAt(v)
+	return _u
+}
+
+// SetNillableFxFetchedAt sets the "fx_fetched_at" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFxFetchedAt(v *time.Time) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFxFetchedAt(*v)
+	}
+	return _u
+}
+
+// ClearFxFetchedAt clears the value of the "fx_fetched_at" field.
+func (_u *UsageLogUpdateOne) ClearFxFetchedAt() *UsageLogUpdateOne {
+	_u.mutation.ClearFxFetchedAt()
+	return _u
+}
+
+// SetFxSafetyMargin sets the "fx_safety_margin" field.
+func (_u *UsageLogUpdateOne) SetFxSafetyMargin(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetFxSafetyMargin()
+	_u.mutation.SetFxSafetyMargin(v)
+	return _u
+}
+
+// SetNillableFxSafetyMargin sets the "fx_safety_margin" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFxSafetyMargin(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFxSafetyMargin(*v)
+	}
+	return _u
+}
+
+// AddFxSafetyMargin adds value to the "fx_safety_margin" field.
+func (_u *UsageLogUpdateOne) AddFxSafetyMargin(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddFxSafetyMargin(v)
+	return _u
+}
+
+// ClearFxSafetyMargin clears the value of the "fx_safety_margin" field.
+func (_u *UsageLogUpdateOne) ClearFxSafetyMargin() *UsageLogUpdateOne {
+	_u.mutation.ClearFxSafetyMargin()
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdateOne) SetRateMultiplier(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetRateMultiplier()
@@ -2125,6 +2412,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FxRateSource(); ok {
+		if err := usagelog.FxRateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "fx_rate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.fx_rate_source": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -2297,6 +2589,45 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ChargedAmountCny(); ok {
+		_spec.SetField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedChargedAmountCny(); ok {
+		_spec.AddField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.ChargedAmountCnyCleared() {
+		_spec.ClearField(usagelog.FieldChargedAmountCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.FxRateUsdCny(); ok {
+		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedFxRateUsdCny(); ok {
+		_spec.AddField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.FxRateUsdCnyCleared() {
+		_spec.ClearField(usagelog.FieldFxRateUsdCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.FxRateSource(); ok {
+		_spec.SetField(usagelog.FieldFxRateSource, field.TypeString, value)
+	}
+	if _u.mutation.FxRateSourceCleared() {
+		_spec.ClearField(usagelog.FieldFxRateSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.FxFetchedAt(); ok {
+		_spec.SetField(usagelog.FieldFxFetchedAt, field.TypeTime, value)
+	}
+	if _u.mutation.FxFetchedAtCleared() {
+		_spec.ClearField(usagelog.FieldFxFetchedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FxSafetyMargin(); ok {
+		_spec.SetField(usagelog.FieldFxSafetyMargin, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedFxSafetyMargin(); ok {
+		_spec.AddField(usagelog.FieldFxSafetyMargin, field.TypeFloat64, value)
+	}
+	if _u.mutation.FxSafetyMarginCleared() {
+		_spec.ClearField(usagelog.FieldFxSafetyMargin, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)

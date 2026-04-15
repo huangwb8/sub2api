@@ -278,25 +278,30 @@
           </template>
 
           <template #cell-cost="{ row }">
-            <div class="flex items-center gap-1.5 text-sm">
-              <span class="font-medium text-green-600 dark:text-green-400">
-                {{ formatUsageCost(row.actual_cost, { minimumFractionDigits: 6, maximumFractionDigits: 6 }) }}
-              </span>
-              <!-- Cost Detail Tooltip -->
-              <div
-                class="group relative"
-                @mouseenter="showTooltip($event, row)"
-                @mouseleave="hideTooltip"
-              >
+            <div class="text-sm">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-green-600 dark:text-green-400">
+                  {{ formatUsageCost(row.actual_cost, { minimumFractionDigits: 6, maximumFractionDigits: 6 }) }}
+                </span>
+                <!-- Cost Detail Tooltip -->
                 <div
-                  class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50"
+                  class="group relative"
+                  @mouseenter="showTooltip($event, row)"
+                  @mouseleave="hideTooltip"
                 >
-                  <Icon
-                    name="infoCircle"
-                    size="xs"
-                    class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
-                  />
+                  <div
+                    class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50"
+                  >
+                    <Icon
+                      name="infoCircle"
+                      size="xs"
+                      class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
+                    />
+                  </div>
                 </div>
+              </div>
+              <div v-if="row.charged_amount_cny != null" class="mt-0.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+                {{ formatUsageChargeAmount(row.charged_amount_cny, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }}
               </div>
             </div>
           </template>
@@ -479,11 +484,29 @@
             <span class="text-gray-400">{{ t('usage.original') }}</span>
             <span class="font-medium text-white">{{ formatUsageCost(tooltipData?.total_cost, { minimumFractionDigits: 6, maximumFractionDigits: 6 }) }}</span>
           </div>
-          <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
+          <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.billed') }}</span>
             <span class="font-semibold text-green-400"
               >{{ formatUsageCost(tooltipData?.actual_cost, { minimumFractionDigits: 6, maximumFractionDigits: 6 }) }}</span
             >
+          </div>
+          <div v-if="tooltipData?.charged_amount_cny != null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">CNY</span>
+            <span class="font-semibold text-emerald-300">
+              {{ formatUsageChargeAmount(tooltipData?.charged_amount_cny, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }}
+            </span>
+          </div>
+          <div v-if="tooltipData?.fx_rate_usd_cny != null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">FX</span>
+            <span class="font-medium text-amber-300">1 USD = {{ formatFXRate(tooltipData?.fx_rate_usd_cny) }} CNY</span>
+          </div>
+          <div v-if="tooltipData?.fx_rate_source" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">FX Source</span>
+            <span class="font-medium text-white">{{ tooltipData.fx_rate_source }}</span>
+          </div>
+          <div v-if="tooltipData?.fx_fetched_at" class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
+            <span class="text-gray-400">FX Time</span>
+            <span class="font-medium text-white">{{ formatDateTime(tooltipData.fx_fetched_at) }}</span>
           </div>
         </div>
         <!-- Tooltip Arrow (left side) -->
@@ -510,7 +533,7 @@ import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { UsageLog, ApiKey, UsageQueryParams, UsageStatsResponse } from '@/types'
 import type { Column } from '@/components/common/types'
-import { formatDateTime, formatReasoningEffort, formatUsageCost } from '@/utils/format'
+import { formatDateTime, formatFXRate, formatReasoningEffort, formatUsageChargeAmount, formatUsageCost } from '@/utils/format'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
 import { formatTokenPricePerMillion } from '@/utils/usagePricing'
@@ -846,6 +869,7 @@ const exportToCSV = async () => {
       'Cache Creation Tokens',
       'Rate Multiplier',
       'Billed Cost',
+      'Settled CNY',
       'Original Cost',
       'First Token (ms)',
       'Duration (ms)'
@@ -865,6 +889,7 @@ const exportToCSV = async () => {
         log.cache_creation_tokens,
         log.rate_multiplier,
         log.actual_cost.toFixed(8),
+        log.charged_amount_cny != null ? log.charged_amount_cny.toFixed(8) : '',
         log.total_cost.toFixed(8),
         log.first_token_ms ?? '',
         log.duration_ms

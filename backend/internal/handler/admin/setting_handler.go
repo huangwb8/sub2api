@@ -160,6 +160,14 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		DefaultBalance:                       settings.DefaultBalance,
 		DefaultSubscriptions:                 defaultSubscriptions,
 		SubscriptionCapacityTightness:        settings.SubscriptionCapacityTightness,
+		BillingFXEnabled:                     settings.BillingFXEnabled,
+		BillingFXProvider:                    settings.BillingFXProvider,
+		BillingFXFallbackRate:                settings.BillingFXFallbackRate,
+		BillingFXCacheTTLSeconds:             settings.BillingFXCacheTTLSeconds,
+		BillingFXTimeoutMS:                   settings.BillingFXTimeoutMS,
+		BillingFXSafetyMargin:                settings.BillingFXSafetyMargin,
+		BillingFXLastSuccessRate:             settings.BillingFXLastSuccessRate,
+		BillingFXLastSuccessAt:               settings.BillingFXLastSuccessAt,
 		EnableModelFallback:                  settings.EnableModelFallback,
 		FallbackModelAnthropic:               settings.FallbackModelAnthropic,
 		FallbackModelOpenAI:                  settings.FallbackModelOpenAI,
@@ -277,6 +285,12 @@ type UpdateSettingsRequest struct {
 	DefaultBalance                float64                          `json:"default_balance"`
 	DefaultSubscriptions          []dto.DefaultSubscriptionSetting `json:"default_subscriptions"`
 	SubscriptionCapacityTightness *int                             `json:"subscription_capacity_tightness"`
+	BillingFXEnabled              *bool                            `json:"billing_fx_enabled"`
+	BillingFXProvider             *string                          `json:"billing_fx_provider"`
+	BillingFXFallbackRate         *float64                         `json:"billing_fx_fallback_rate"`
+	BillingFXCacheTTLSeconds      *int                             `json:"billing_fx_cache_ttl_seconds"`
+	BillingFXTimeoutMS            *int                             `json:"billing_fx_timeout_ms"`
+	BillingFXSafetyMargin         *float64                         `json:"billing_fx_safety_margin"`
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -856,6 +870,44 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.SubscriptionCapacityTightness
 		}(),
+		BillingFXEnabled: func() bool {
+			if req.BillingFXEnabled != nil {
+				return *req.BillingFXEnabled
+			}
+			return previousSettings.BillingFXEnabled
+		}(),
+		BillingFXProvider: func() string {
+			if req.BillingFXProvider != nil {
+				return *req.BillingFXProvider
+			}
+			return previousSettings.BillingFXProvider
+		}(),
+		BillingFXFallbackRate: func() float64 {
+			if req.BillingFXFallbackRate != nil {
+				return *req.BillingFXFallbackRate
+			}
+			return previousSettings.BillingFXFallbackRate
+		}(),
+		BillingFXCacheTTLSeconds: func() int {
+			if req.BillingFXCacheTTLSeconds != nil {
+				return *req.BillingFXCacheTTLSeconds
+			}
+			return previousSettings.BillingFXCacheTTLSeconds
+		}(),
+		BillingFXTimeoutMS: func() int {
+			if req.BillingFXTimeoutMS != nil {
+				return *req.BillingFXTimeoutMS
+			}
+			return previousSettings.BillingFXTimeoutMS
+		}(),
+		BillingFXSafetyMargin: func() float64 {
+			if req.BillingFXSafetyMargin != nil {
+				return *req.BillingFXSafetyMargin
+			}
+			return previousSettings.BillingFXSafetyMargin
+		}(),
+		BillingFXLastSuccessRate: previousSettings.BillingFXLastSuccessRate,
+		BillingFXLastSuccessAt:   previousSettings.BillingFXLastSuccessAt,
 		EnableModelFallback:         req.EnableModelFallback,
 		FallbackModelAnthropic:      req.FallbackModelAnthropic,
 		FallbackModelOpenAI:         req.FallbackModelOpenAI,
@@ -1039,6 +1091,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DefaultBalance:                       updatedSettings.DefaultBalance,
 		DefaultSubscriptions:                 updatedDefaultSubscriptions,
 		SubscriptionCapacityTightness:        updatedSettings.SubscriptionCapacityTightness,
+		BillingFXEnabled:                     updatedSettings.BillingFXEnabled,
+		BillingFXProvider:                    updatedSettings.BillingFXProvider,
+		BillingFXFallbackRate:                updatedSettings.BillingFXFallbackRate,
+		BillingFXCacheTTLSeconds:             updatedSettings.BillingFXCacheTTLSeconds,
+		BillingFXTimeoutMS:                   updatedSettings.BillingFXTimeoutMS,
+		BillingFXSafetyMargin:                updatedSettings.BillingFXSafetyMargin,
+		BillingFXLastSuccessRate:             updatedSettings.BillingFXLastSuccessRate,
+		BillingFXLastSuccessAt:               updatedSettings.BillingFXLastSuccessAt,
 		EnableModelFallback:                  updatedSettings.EnableModelFallback,
 		FallbackModelAnthropic:               updatedSettings.FallbackModelAnthropic,
 		FallbackModelOpenAI:                  updatedSettings.FallbackModelOpenAI,

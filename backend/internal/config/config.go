@@ -315,6 +315,7 @@ type ProxyProbeConfig struct {
 
 type BillingConfig struct {
 	CircuitBreaker CircuitBreakerConfig `mapstructure:"circuit_breaker"`
+	FX             BillingFXConfig      `mapstructure:"fx"`
 }
 
 type CircuitBreakerConfig struct {
@@ -322,6 +323,16 @@ type CircuitBreakerConfig struct {
 	FailureThreshold    int  `mapstructure:"failure_threshold"`
 	ResetTimeoutSeconds int  `mapstructure:"reset_timeout_seconds"`
 	HalfOpenRequests    int  `mapstructure:"half_open_requests"`
+}
+
+type BillingFXConfig struct {
+	Enabled         bool    `mapstructure:"enabled"`
+	Provider        string  `mapstructure:"provider"`
+	FallbackRate    float64 `mapstructure:"fallback_rate"`
+	CacheTTLSeconds int     `mapstructure:"cache_ttl_seconds"`
+	TimeoutMS       int     `mapstructure:"timeout_ms"`
+	SafetyMargin    float64 `mapstructure:"safety_margin"`
+	DefaultLiveURL  string  `mapstructure:"default_live_url"`
 }
 
 type ConcurrencyConfig struct {
@@ -1182,6 +1193,13 @@ func setDefaults() {
 	viper.SetDefault("billing.circuit_breaker.failure_threshold", 5)
 	viper.SetDefault("billing.circuit_breaker.reset_timeout_seconds", 30)
 	viper.SetDefault("billing.circuit_breaker.half_open_requests", 3)
+	viper.SetDefault("billing.fx.enabled", true)
+	viper.SetDefault("billing.fx.provider", "default")
+	viper.SetDefault("billing.fx.fallback_rate", 7.2)
+	viper.SetDefault("billing.fx.cache_ttl_seconds", 600)
+	viper.SetDefault("billing.fx.timeout_ms", 3000)
+	viper.SetDefault("billing.fx.safety_margin", 0.02)
+	viper.SetDefault("billing.fx.default_live_url", "https://open.er-api.com/v6/latest/USD")
 
 	// Turnstile
 	viper.SetDefault("turnstile.required", false)
@@ -1753,6 +1771,18 @@ func (c *Config) Validate() error {
 		if c.Billing.CircuitBreaker.HalfOpenRequests <= 0 {
 			return fmt.Errorf("billing.circuit_breaker.half_open_requests must be positive")
 		}
+	}
+	if c.Billing.FX.FallbackRate <= 0 {
+		return fmt.Errorf("billing.fx.fallback_rate must be positive")
+	}
+	if c.Billing.FX.CacheTTLSeconds <= 0 {
+		return fmt.Errorf("billing.fx.cache_ttl_seconds must be positive")
+	}
+	if c.Billing.FX.TimeoutMS <= 0 {
+		return fmt.Errorf("billing.fx.timeout_ms must be positive")
+	}
+	if c.Billing.FX.SafetyMargin < 0 {
+		return fmt.Errorf("billing.fx.safety_margin must be non-negative")
 	}
 	if c.Database.MaxOpenConns <= 0 {
 		return fmt.Errorf("database.max_open_conns must be positive")

@@ -173,6 +173,21 @@ export function formatUsageCost(amount: number | null | undefined, options?: For
   return formatUSD(amount, options)
 }
 
+export function formatUsageChargeAmount(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatCNY(amount, options)
+}
+
+export function formatFXRate(rate: number | null | undefined, fractionDigits: number = 4): string {
+  if (rate === null || rate === undefined || !Number.isFinite(rate)) {
+    return '-'
+  }
+  return new Intl.NumberFormat(getNumberLocale(), {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+    useGrouping: false
+  }).format(rate)
+}
+
 /**
  * 格式化字节大小
  * @param bytes 字节数

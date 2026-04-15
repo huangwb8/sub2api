@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
@@ -47,7 +48,11 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 		return nil, err
 	}
 	if !applied {
-		return &service.UsageBillingApplyResult{Applied: false}, nil
+		snapshot, snapshotErr := r.loadExistingChargeSnapshot(ctx, tx, cmd.RequestID, cmd.APIKeyID)
+		if snapshotErr != nil {
+			return nil, snapshotErr
+		}
+		return &service.UsageBillingApplyResult{Applied: false, ChargeSnapshot: snapshot}, nil
 	}
 
 	result := &service.UsageBillingApplyResult{Applied: true}
@@ -65,11 +70,20 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *sql.Tx, cmd *service.UsageBillingCommand) (bool, error) {
 	var id int64
 	err := tx.QueryRowContext(ctx, `
-		INSERT INTO usage_billing_dedup (request_id, api_key_id, request_fingerprint)
-		VALUES ($1, $2, $3)
+		INSERT INTO usage_billing_dedup (
+			request_id,
+			api_key_id,
+			request_fingerprint,
+			balance_cost_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id
-	`, cmd.RequestID, cmd.APIKeyID, cmd.RequestFingerprint).Scan(&id)
+	`, cmd.RequestID, cmd.APIKeyID, cmd.RequestFingerprint, nullableFloat64(cmd.BalanceCostCNY), nullableFloat64(cmd.FXRateUSDCNY), nullableString(cmd.FXRateSource), nullableTime(cmd.FXFetchedAt), nullableFloat64(cmd.FXSafetyMargin)).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		var existingFingerprint string
 		if err := tx.QueryRowContext(ctx, `
@@ -106,39 +120,127 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 }
 
 func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, tx *sql.Tx, cmd *service.UsageBillingCommand, result *service.UsageBillingApplyResult) error {
-	if cmd.SubscriptionCost > 0 && cmd.SubscriptionID != nil {
-		if err := incrementUsageBillingSubscription(ctx, tx, *cmd.SubscriptionID, cmd.SubscriptionCost); err != nil {
+	if cmd.SubscriptionCostUSD > 0 && cmd.SubscriptionID != nil {
+		if err := incrementUsageBillingSubscription(ctx, tx, *cmd.SubscriptionID, cmd.SubscriptionCostUSD); err != nil {
 			return err
 		}
 	}
 
-	if cmd.BalanceCost > 0 {
-		if err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost); err != nil {
+	if cmd.BalanceCostCNY > 0 {
+		if err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCostCNY); err != nil {
 			return err
 		}
 	}
 
-	if cmd.APIKeyQuotaCost > 0 {
-		exhausted, err := incrementUsageBillingAPIKeyQuota(ctx, tx, cmd.APIKeyID, cmd.APIKeyQuotaCost)
+	if cmd.APIKeyQuotaCostUSD > 0 {
+		exhausted, err := incrementUsageBillingAPIKeyQuota(ctx, tx, cmd.APIKeyID, cmd.APIKeyQuotaCostUSD)
 		if err != nil {
 			return err
 		}
 		result.APIKeyQuotaExhausted = exhausted
 	}
 
-	if cmd.APIKeyRateLimitCost > 0 {
-		if err := incrementUsageBillingAPIKeyRateLimit(ctx, tx, cmd.APIKeyID, cmd.APIKeyRateLimitCost); err != nil {
+	if cmd.APIKeyRateLimitCostUSD > 0 {
+		if err := incrementUsageBillingAPIKeyRateLimit(ctx, tx, cmd.APIKeyID, cmd.APIKeyRateLimitCostUSD); err != nil {
 			return err
 		}
 	}
 
-	if cmd.AccountQuotaCost > 0 && (strings.EqualFold(cmd.AccountType, service.AccountTypeAPIKey) || strings.EqualFold(cmd.AccountType, service.AccountTypeBedrock)) {
-		if err := incrementUsageBillingAccountQuota(ctx, tx, cmd.AccountID, cmd.AccountQuotaCost); err != nil {
+	if cmd.AccountQuotaCostUSD > 0 && (strings.EqualFold(cmd.AccountType, service.AccountTypeAPIKey) || strings.EqualFold(cmd.AccountType, service.AccountTypeBedrock)) {
+		if err := incrementUsageBillingAccountQuota(ctx, tx, cmd.AccountID, cmd.AccountQuotaCostUSD); err != nil {
 			return err
 		}
+	}
+
+	result.ChargeSnapshot = &service.UsageChargeSnapshot{
+		ChargedAmountCNY: cmd.BalanceCostCNY,
+		FXRateUSDCNY:     cmd.FXRateUSDCNY,
+		FXRateSource:     cmd.FXRateSource,
+		FXFetchedAt:      cmd.FXFetchedAt,
+		FXSafetyMargin:   cmd.FXSafetyMargin,
 	}
 
 	return nil
+}
+
+func nullableFloat64(value float64) any {
+	if value <= 0 {
+		return nil
+	}
+	return value
+}
+
+func nullableString(value string) any {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return value
+}
+
+func nullableTime(value *time.Time) any {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	return value.UTC()
+}
+
+func (r *usageBillingRepository) loadExistingChargeSnapshot(ctx context.Context, tx *sql.Tx, requestID string, apiKeyID int64) (*service.UsageChargeSnapshot, error) {
+	snapshot, err := queryUsageBillingChargeSnapshot(ctx, tx, `
+		SELECT balance_cost_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin
+		FROM usage_billing_dedup
+		WHERE request_id = $1 AND api_key_id = $2
+	`, requestID, apiKeyID)
+	if err == nil {
+		return snapshot, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	snapshot, err = queryUsageBillingChargeSnapshot(ctx, tx, `
+		SELECT balance_cost_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin
+		FROM usage_billing_dedup_archive
+		WHERE request_id = $1 AND api_key_id = $2
+	`, requestID, apiKeyID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return snapshot, nil
+}
+
+func queryUsageBillingChargeSnapshot(ctx context.Context, tx *sql.Tx, query string, requestID string, apiKeyID int64) (*service.UsageChargeSnapshot, error) {
+	var chargedAmount sql.NullFloat64
+	var fxRate sql.NullFloat64
+	var fxSource sql.NullString
+	var fxFetchedAt sql.NullTime
+	var fxSafetyMargin sql.NullFloat64
+	if err := tx.QueryRowContext(ctx, query, requestID, apiKeyID).Scan(&chargedAmount, &fxRate, &fxSource, &fxFetchedAt, &fxSafetyMargin); err != nil {
+		return nil, err
+	}
+	if !chargedAmount.Valid && !fxRate.Valid && !fxSource.Valid && !fxFetchedAt.Valid && !fxSafetyMargin.Valid {
+		return nil, nil
+	}
+	snapshot := &service.UsageChargeSnapshot{}
+	if chargedAmount.Valid {
+		snapshot.ChargedAmountCNY = chargedAmount.Float64
+	}
+	if fxRate.Valid {
+		snapshot.FXRateUSDCNY = fxRate.Float64
+	}
+	if fxSource.Valid {
+		snapshot.FXRateSource = fxSource.String
+	}
+	if fxFetchedAt.Valid {
+		fetchedAt := fxFetchedAt.Time.UTC()
+		snapshot.FXFetchedAt = &fetchedAt
+	}
+	if fxSafetyMargin.Valid {
+		snapshot.FXSafetyMargin = fxSafetyMargin.Float64
+	}
+	return snapshot, nil
 }
 
 func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {

@@ -6,6 +6,9 @@
     @close="emit('close')"
   >
     <div v-if="order" class="space-y-4">
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+        订单金额与用户余额均按 CNY 记账；按量 usage 仅在结算时按汇率快照折算为人民币扣费。
+      </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</p>

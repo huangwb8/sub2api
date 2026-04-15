@@ -38,14 +38,15 @@ func TestUsageBillingRepositoryApply_DeduplicatesBalanceBilling(t *testing.T) {
 
 	requestID := uuid.NewString()
 	cmd := &service.UsageBillingCommand{
-		RequestID:           requestID,
-		APIKeyID:            apiKey.ID,
-		UserID:              user.ID,
-		AccountID:           account.ID,
-		AccountType:         service.AccountTypeAPIKey,
-		BalanceCost:         1.25,
-		APIKeyQuotaCost:     1.25,
-		APIKeyRateLimitCost: 1.25,
+		RequestID:              requestID,
+		APIKeyID:               apiKey.ID,
+		UserID:                 user.ID,
+		AccountID:              account.ID,
+		AccountType:            service.AccountTypeAPIKey,
+		BalanceCostUSD:         1.25,
+		BalanceCostCNY:         1.25,
+		APIKeyQuotaCostUSD:     1.25,
+		APIKeyRateLimitCostUSD: 1.25,
 	}
 
 	result1, err := repo.Apply(ctx, cmd)
@@ -107,12 +108,12 @@ func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.
 
 	requestID := uuid.NewString()
 	cmd := &service.UsageBillingCommand{
-		RequestID:        requestID,
-		APIKeyID:         apiKey.ID,
-		UserID:           user.ID,
-		AccountID:        0,
-		SubscriptionID:   &subscription.ID,
-		SubscriptionCost: 2.5,
+		RequestID:           requestID,
+		APIKeyID:            apiKey.ID,
+		UserID:              user.ID,
+		AccountID:           0,
+		SubscriptionID:      &subscription.ID,
+		SubscriptionCostUSD: 2.5,
 	}
 
 	result1, err := repo.Apply(ctx, cmd)
@@ -146,18 +147,20 @@ func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {
 
 	requestID := uuid.NewString()
 	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
-		RequestID:   requestID,
-		APIKeyID:    apiKey.ID,
-		UserID:      user.ID,
-		BalanceCost: 1.25,
+		RequestID:      requestID,
+		APIKeyID:       apiKey.ID,
+		UserID:         user.ID,
+		BalanceCostUSD: 1.25,
+		BalanceCostCNY: 1.25,
 	})
 	require.NoError(t, err)
 
 	_, err = repo.Apply(ctx, &service.UsageBillingCommand{
-		RequestID:   requestID,
-		APIKeyID:    apiKey.ID,
-		UserID:      user.ID,
-		BalanceCost: 2.50,
+		RequestID:      requestID,
+		APIKeyID:       apiKey.ID,
+		UserID:         user.ID,
+		BalanceCostUSD: 2.50,
+		BalanceCostCNY: 2.50,
 	})
 	require.ErrorIs(t, err, service.ErrUsageBillingRequestConflict)
 }
@@ -185,12 +188,12 @@ func TestUsageBillingRepositoryApply_UpdatesAccountQuota(t *testing.T) {
 	})
 
 	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
-		RequestID:        uuid.NewString(),
-		APIKeyID:         apiKey.ID,
-		UserID:           user.ID,
-		AccountID:        account.ID,
-		AccountType:      service.AccountTypeAPIKey,
-		AccountQuotaCost: 3.5,
+		RequestID:           uuid.NewString(),
+		APIKeyID:            apiKey.ID,
+		UserID:              user.ID,
+		AccountID:           account.ID,
+		AccountType:         service.AccountTypeAPIKey,
+		AccountQuotaCostUSD: 3.5,
 	})
 	require.NoError(t, err)
 
@@ -251,10 +254,11 @@ func TestUsageBillingRepositoryApply_DeduplicatesAgainstArchivedKey(t *testing.T
 
 	requestID := uuid.NewString()
 	cmd := &service.UsageBillingCommand{
-		RequestID:   requestID,
-		APIKeyID:    apiKey.ID,
-		UserID:      user.ID,
-		BalanceCost: 1.25,
+		RequestID:      requestID,
+		APIKeyID:       apiKey.ID,
+		UserID:         user.ID,
+		BalanceCostUSD: 1.25,
+		BalanceCostCNY: 1.25,
 	}
 
 	result1, err := repo.Apply(ctx, cmd)

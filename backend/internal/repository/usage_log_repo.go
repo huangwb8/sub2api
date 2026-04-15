@@ -28,7 +28,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, charged_amount_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, created_at"
 
 // usageLogInsertArgTypes must stay in the same order as:
 //  1. prepareUsageLogInsert().args
@@ -61,6 +61,11 @@ var usageLogInsertArgTypes = [...]string{
 	"numeric",     // cache_read_cost
 	"numeric",     // total_cost
 	"numeric",     // actual_cost
+	"numeric",     // charged_amount_cny
+	"numeric",     // fx_rate_usd_cny
+	"text",        // fx_rate_source
+	"timestamptz", // fx_fetched_at
+	"numeric",     // fx_safety_margin
 	"numeric",     // rate_multiplier
 	"numeric",     // account_rate_multiplier
 	"smallint",    // billing_type
@@ -339,6 +344,11 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -367,7 +377,8 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45
+			$24, $25, $26, $27, $28,
+			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -776,6 +787,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -852,6 +868,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				cache_read_cost,
 				total_cost,
 				actual_cost,
+				charged_amount_cny,
+				fx_rate_usd_cny,
+				fx_rate_source,
+				fx_fetched_at,
+				fx_safety_margin,
 				rate_multiplier,
 				account_rate_multiplier,
 				billing_type,
@@ -899,6 +920,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				cache_read_cost,
 				total_cost,
 				actual_cost,
+				charged_amount_cny,
+				fx_rate_usd_cny,
+				fx_rate_source,
+				fx_fetched_at,
+				fx_safety_margin,
 				rate_multiplier,
 				account_rate_multiplier,
 				billing_type,
@@ -986,6 +1012,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -1059,6 +1090,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -1106,6 +1142,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -1161,6 +1202,11 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			charged_amount_cny,
+			fx_rate_usd_cny,
+			fx_rate_source,
+			fx_fetched_at,
+			fx_safety_margin,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -1189,7 +1235,8 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45
+			$24, $25, $26, $27, $28,
+			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1264,6 +1311,11 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			log.CacheReadCost,
 			log.TotalCost,
 			log.ActualCost,
+			nullFloat64(log.ChargedAmountCNY),
+			nullFloat64(log.FXRateUSDCNY),
+			nullString(log.FXRateSource),
+			nullUsageTime(log.FXFetchedAt),
+			nullFloat64(log.FXSafetyMargin),
 			rateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
@@ -4048,6 +4100,11 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		cacheReadCost         float64
 		totalCost             float64
 		actualCost            float64
+		chargedAmountCNY      sql.NullFloat64
+		fxRateUSDCNY          sql.NullFloat64
+		fxRateSource          sql.NullString
+		fxFetchedAt           sql.NullTime
+		fxSafetyMargin        sql.NullFloat64
 		rateMultiplier        float64
 		accountRateMultiplier sql.NullFloat64
 		billingType           int16
@@ -4097,6 +4154,11 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&cacheReadCost,
 		&totalCost,
 		&actualCost,
+		&chargedAmountCNY,
+		&fxRateUSDCNY,
+		&fxRateSource,
+		&fxFetchedAt,
+		&fxSafetyMargin,
 		&rateMultiplier,
 		&accountRateMultiplier,
 		&billingType,
@@ -4144,6 +4206,9 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		CacheReadCost:         cacheReadCost,
 		TotalCost:             totalCost,
 		ActualCost:            actualCost,
+		ChargedAmountCNY:      nullFloat64Ptr(chargedAmountCNY),
+		FXRateUSDCNY:          nullFloat64Ptr(fxRateUSDCNY),
+		FXSafetyMargin:        nullFloat64Ptr(fxSafetyMargin),
 		RateMultiplier:        rateMultiplier,
 		AccountRateMultiplier: nullFloat64Ptr(accountRateMultiplier),
 		BillingType:           int8(billingType),
@@ -4182,6 +4247,13 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	}
 	if ipAddress.Valid {
 		log.IPAddress = &ipAddress.String
+	}
+	if fxRateSource.Valid {
+		log.FXRateSource = &fxRateSource.String
+	}
+	if fxFetchedAt.Valid {
+		fetchedAt := fxFetchedAt.Time.UTC()
+		log.FXFetchedAt = &fetchedAt
 	}
 	if imageSize.Valid {
 		log.ImageSize = &imageSize.String
@@ -4331,6 +4403,20 @@ func nullInt(v *int) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: int64(*v), Valid: true}
+}
+
+func nullFloat64(v *float64) sql.NullFloat64 {
+	if v == nil {
+		return sql.NullFloat64{}
+	}
+	return sql.NullFloat64{Float64: *v, Valid: true}
+}
+
+func nullUsageTime(v *time.Time) sql.NullTime {
+	if v == nil || v.IsZero() {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: v.UTC(), Valid: true}
 }
 
 func nullFloat64Ptr(v sql.NullFloat64) *float64 {

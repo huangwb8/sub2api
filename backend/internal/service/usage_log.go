@@ -143,6 +143,11 @@ type UsageLog struct {
 	CacheReadCost     float64
 	TotalCost         float64
 	ActualCost        float64
+	ChargedAmountCNY  *float64
+	FXRateUSDCNY      *float64
+	FXRateSource      *string
+	FXFetchedAt       *time.Time
+	FXSafetyMargin    *float64
 	RateMultiplier    float64
 	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
 	AccountRateMultiplier *float64
@@ -194,4 +199,24 @@ func (u *UsageLog) SyncRequestTypeAndLegacyFields() {
 	requestType := u.EffectiveRequestType()
 	u.RequestType = requestType
 	u.Stream, u.OpenAIWSMode = ApplyLegacyRequestFields(requestType, u.Stream, u.OpenAIWSMode)
+}
+
+func (u *UsageLog) ApplyChargeSnapshot(snapshot *UsageChargeSnapshot) {
+	if u == nil || snapshot == nil {
+		return
+	}
+	charged := snapshot.ChargedAmountCNY
+	rate := snapshot.FXRateUSDCNY
+	source := strings.TrimSpace(snapshot.FXRateSource)
+	margin := snapshot.FXSafetyMargin
+	u.ChargedAmountCNY = &charged
+	u.FXRateUSDCNY = &rate
+	if source != "" {
+		u.FXRateSource = &source
+	}
+	if snapshot.FXFetchedAt != nil && !snapshot.FXFetchedAt.IsZero() {
+		fetchedAt := snapshot.FXFetchedAt.UTC()
+		u.FXFetchedAt = &fetchedAt
+	}
+	u.FXSafetyMargin = &margin
 }

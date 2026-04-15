@@ -3,6 +3,7 @@ package dto
 import (
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 // CustomMenuItem represents a user-configured custom menu entry.
@@ -94,6 +95,14 @@ type SystemSettings struct {
 	DefaultBalance       float64                      `json:"default_balance"`
 	DefaultSubscriptions []DefaultSubscriptionSetting `json:"default_subscriptions"`
 	SubscriptionCapacityTightness int                 `json:"subscription_capacity_tightness"`
+	BillingFXEnabled              bool                `json:"billing_fx_enabled"`
+	BillingFXProvider             string              `json:"billing_fx_provider"`
+	BillingFXFallbackRate         float64             `json:"billing_fx_fallback_rate"`
+	BillingFXCacheTTLSeconds      int                 `json:"billing_fx_cache_ttl_seconds"`
+	BillingFXTimeoutMS            int                 `json:"billing_fx_timeout_ms"`
+	BillingFXSafetyMargin         float64             `json:"billing_fx_safety_margin"`
+	BillingFXLastSuccessRate      *float64            `json:"billing_fx_last_success_rate,omitempty"`
+	BillingFXLastSuccessAt        *time.Time          `json:"billing_fx_last_success_at,omitempty"`
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`

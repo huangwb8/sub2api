@@ -44,12 +44,22 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "usage_logs", "billing_type", "smallint", 0, false)
 	requireColumn(t, tx, "usage_logs", "request_type", "smallint", 0, false)
 	requireColumn(t, tx, "usage_logs", "openai_ws_mode", "boolean", 0, false)
+	requireColumn(t, tx, "usage_logs", "charged_amount_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_logs", "fx_rate_usd_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_logs", "fx_rate_source", "text", 0, true)
+	requireColumn(t, tx, "usage_logs", "fx_fetched_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "usage_logs", "fx_safety_margin", "numeric", 0, true)
 
 	// usage_billing_dedup: billing idempotency narrow table
 	var usageBillingDedupRegclass sql.NullString
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.usage_billing_dedup')").Scan(&usageBillingDedupRegclass))
 	require.True(t, usageBillingDedupRegclass.Valid, "expected usage_billing_dedup table to exist")
 	requireColumn(t, tx, "usage_billing_dedup", "request_fingerprint", "character varying", 64, false)
+	requireColumn(t, tx, "usage_billing_dedup", "balance_cost_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup", "fx_rate_usd_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup", "fx_rate_source", "text", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup", "fx_fetched_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup", "fx_safety_margin", "numeric", 0, true)
 	requireIndex(t, tx, "usage_billing_dedup", "idx_usage_billing_dedup_request_api_key")
 	requireIndex(t, tx, "usage_billing_dedup", "idx_usage_billing_dedup_created_at_brin")
 
@@ -57,6 +67,11 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.usage_billing_dedup_archive')").Scan(&usageBillingDedupArchiveRegclass))
 	require.True(t, usageBillingDedupArchiveRegclass.Valid, "expected usage_billing_dedup_archive table to exist")
 	requireColumn(t, tx, "usage_billing_dedup_archive", "request_fingerprint", "character varying", 64, false)
+	requireColumn(t, tx, "usage_billing_dedup_archive", "balance_cost_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup_archive", "fx_rate_usd_cny", "numeric", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup_archive", "fx_rate_source", "text", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup_archive", "fx_fetched_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "usage_billing_dedup_archive", "fx_safety_margin", "numeric", 0, true)
 	requireIndex(t, tx, "usage_billing_dedup_archive", "usage_billing_dedup_archive_pkey")
 
 	// settings table should exist

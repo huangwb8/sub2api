@@ -327,6 +327,7 @@ type OpenAIGatewayService struct {
 	openaiWSResolver      OpenAIWSProtocolResolver
 	resolver              *ModelPricingResolver
 	channelService        *ChannelService
+	exchangeRateService   ExchangeRateService
 
 	openaiWSPoolOnce              sync.Once
 	openaiWSStateStoreOnce        sync.Once
@@ -393,6 +394,7 @@ func NewOpenAIGatewayService(
 		openaiWSResolver:      NewOpenAIWSProtocolResolver(cfg),
 		resolver:              resolver,
 		channelService:        channelService,
+		exchangeRateService:   NewStaticExchangeRateService(cfg),
 		responseHeaderFilter:  compileResponseHeaderFilter(cfg),
 		codexSnapshotThrottle: newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}
@@ -4494,6 +4496,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	if isSubscriptionBilling {
 		billingType = BillingTypeSubscription
 	}
+	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
 
 	// Create usage log
 	durationMs := int(result.Duration.Milliseconds())
@@ -4533,6 +4536,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
 	}
+	usageLog.ApplyChargeSnapshot(chargeSnapshot)
 	usageLog.RateMultiplier = multiplier
 	usageLog.AccountRateMultiplier = &accountRateMultiplier
 	usageLog.BillingType = billingType
@@ -4576,9 +4580,10 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		return nil
 	}
 
-	billingErr := func() error {
-		_, err := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
+	billingResult, billingErr := func() (*UsageBillingApplyResult, error) {
+		return applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
 			Cost:                  cost,
+			ChargeSnapshot:        chargeSnapshot,
 			User:                  user,
 			APIKey:                apiKey,
 			Account:               account,
@@ -4588,15 +4593,29 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			AccountRateMultiplier: accountRateMultiplier,
 			APIKeyService:         input.APIKeyService,
 		}, s.billingDeps(), s.usageBillingRepo)
-		return err
 	}()
 
 	if billingErr != nil {
 		return billingErr
 	}
+	if billingResult != nil && billingResult.ChargeSnapshot != nil {
+		usageLog.ApplyChargeSnapshot(billingResult.ChargeSnapshot)
+	}
 	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
 
 	return nil
+}
+
+func (s *OpenAIGatewayService) resolveUsageChargeSnapshot(ctx context.Context, cost *CostBreakdown, isSubscriptionBilling bool) *UsageChargeSnapshot {
+	if s == nil || isSubscriptionBilling || cost == nil || cost.ActualCost <= 0 || s.exchangeRateService == nil {
+		return nil
+	}
+	resolved, err := s.exchangeRateService.ResolveUSDCNYRate(ctx)
+	if err != nil {
+		slog.Warn("resolve billing fx failed", "error", err)
+		return nil
+	}
+	return BuildUsageChargeSnapshot(cost.ActualCost, resolved)
 }
 
 // ParseCodexRateLimitHeaders extracts Codex usage limits from response headers.

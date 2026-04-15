@@ -35,6 +35,11 @@ type CreateUsageLogRequest struct {
 	CacheReadCost         float64 `json:"cache_read_cost"`
 	TotalCost             float64 `json:"total_cost"`
 	ActualCost            float64 `json:"actual_cost"`
+	ChargedAmountCNY      *float64 `json:"charged_amount_cny"`
+	FXRateUSDCNY          *float64 `json:"fx_rate_usd_cny"`
+	FXRateSource          *string  `json:"fx_rate_source"`
+	FXFetchedAt           *time.Time `json:"fx_fetched_at"`
+	FXSafetyMargin        *float64 `json:"fx_safety_margin"`
 	RateMultiplier        float64 `json:"rate_multiplier"`
 	Stream                bool    `json:"stream"`
 	DurationMs            *int    `json:"duration_ms"`
@@ -58,15 +63,27 @@ type UsageService struct {
 	userRepo             UserRepository
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
+	exchangeRateService  ExchangeRateService
 }
 
 // NewUsageService 创建使用统计服务实例
-func NewUsageService(usageRepo UsageLogRepository, userRepo UserRepository, entClient *dbent.Client, authCacheInvalidator APIKeyAuthCacheInvalidator) *UsageService {
+func NewUsageService(
+	usageRepo UsageLogRepository,
+	userRepo UserRepository,
+	entClient *dbent.Client,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+	exchangeRateService ...ExchangeRateService,
+) *UsageService {
+	var fxService ExchangeRateService
+	if len(exchangeRateService) > 0 {
+		fxService = exchangeRateService[0]
+	}
 	return &UsageService{
 		usageRepo:            usageRepo,
 		userRepo:             userRepo,
 		entClient:            entClient,
 		authCacheInvalidator: authCacheInvalidator,
+		exchangeRateService:  fxService,
 	}
 }
 
@@ -113,6 +130,17 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 		Stream:                req.Stream,
 		DurationMs:            req.DurationMs,
 	}
+	if req.ChargedAmountCNY != nil {
+		usageLog.ChargedAmountCNY = req.ChargedAmountCNY
+		usageLog.FXRateUSDCNY = req.FXRateUSDCNY
+		usageLog.FXRateSource = req.FXRateSource
+		usageLog.FXFetchedAt = req.FXFetchedAt
+		usageLog.FXSafetyMargin = req.FXSafetyMargin
+	} else if req.ActualCost > 0 && s.exchangeRateService != nil {
+		if resolved, err := s.exchangeRateService.ResolveUSDCNYRate(txCtx); err == nil {
+			usageLog.ApplyChargeSnapshot(BuildUsageChargeSnapshot(req.ActualCost, resolved))
+		}
+	}
 
 	inserted, err := s.usageRepo.Create(txCtx, usageLog)
 	if err != nil {
@@ -122,7 +150,11 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 	// 扣除用户余额
 	balanceUpdated := false
 	if inserted && req.ActualCost > 0 {
-		if err := s.userRepo.UpdateBalance(txCtx, req.UserID, -req.ActualCost); err != nil {
+		chargeAmount := req.ActualCost
+		if usageLog.ChargedAmountCNY != nil {
+			chargeAmount = *usageLog.ChargedAmountCNY
+		}
+		if err := s.userRepo.UpdateBalance(txCtx, req.UserID, -chargeAmount); err != nil {
 			return nil, fmt.Errorf("update user balance: %w", err)
 		}
 		balanceUpdated = true

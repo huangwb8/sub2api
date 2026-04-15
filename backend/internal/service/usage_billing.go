@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 var ErrUsageBillingRequestIDRequired = errors.New("usage billing request_id is required")
@@ -34,11 +35,16 @@ type UsageBillingCommand struct {
 	ImageCount          int
 	MediaType           string
 
-	BalanceCost         float64
-	SubscriptionCost    float64
-	APIKeyQuotaCost     float64
-	APIKeyRateLimitCost float64
-	AccountQuotaCost    float64
+	BalanceCostUSD         float64
+	BalanceCostCNY         float64
+	SubscriptionCostUSD    float64
+	APIKeyQuotaCostUSD     float64
+	APIKeyRateLimitCostUSD float64
+	AccountQuotaCostUSD    float64
+	FXRateUSDCNY           float64
+	FXRateSource           string
+	FXFetchedAt            *time.Time
+	FXSafetyMargin         float64
 }
 
 func (c *UsageBillingCommand) Normalize() {
@@ -72,11 +78,11 @@ func buildUsageBillingFingerprint(c *UsageBillingCommand) string {
 		c.ImageCount,
 		strings.TrimSpace(c.MediaType),
 		valueOrZero(c.SubscriptionID),
-		c.BalanceCost,
-		c.SubscriptionCost,
-		c.APIKeyQuotaCost,
-		c.APIKeyRateLimitCost,
-		c.AccountQuotaCost,
+		c.BalanceCostUSD,
+		c.SubscriptionCostUSD,
+		c.APIKeyQuotaCostUSD,
+		c.APIKeyRateLimitCostUSD,
+		c.AccountQuotaCostUSD,
 	)
 	if payloadHash := strings.TrimSpace(c.RequestPayloadHash); payloadHash != "" {
 		raw += "|" + payloadHash
@@ -103,6 +109,7 @@ func valueOrZero(v *int64) int64 {
 type UsageBillingApplyResult struct {
 	Applied              bool
 	APIKeyQuotaExhausted bool
+	ChargeSnapshot       *UsageChargeSnapshot
 }
 
 type UsageBillingRepository interface {
