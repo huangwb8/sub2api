@@ -86,6 +86,7 @@ type CreateGroupRequest struct {
 	Description      string             `json:"description"`
 	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
+	ExtraProfitRatePercent *float64     `json:"extra_profit_rate_percent"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
 	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
@@ -120,6 +121,7 @@ type UpdateGroupRequest struct {
 	Description      string             `json:"description"`
 	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
 	RateMultiplier   *float64           `json:"rate_multiplier"`
+	ExtraProfitRatePercent *float64     `json:"extra_profit_rate_percent"`
 	IsExclusive      *bool              `json:"is_exclusive"`
 	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`
 	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
@@ -236,12 +238,17 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	if req.ExtraProfitRatePercent != nil && *req.ExtraProfitRatePercent < 0 {
+		response.BadRequest(c, "extra_profit_rate_percent must be >= 0")
+		return
+	}
 
 	group, err := h.adminService.CreateGroup(c.Request.Context(), &service.CreateGroupInput{
 		Name:                            req.Name,
 		Description:                     req.Description,
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
+		ExtraProfitRatePercent:          req.ExtraProfitRatePercent,
 		IsExclusive:                     req.IsExclusive,
 		SubscriptionType:                req.SubscriptionType,
 		DailyLimitUSD:                   req.DailyLimitUSD.ToServiceInput(),
@@ -286,12 +293,17 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	if req.ExtraProfitRatePercent != nil && *req.ExtraProfitRatePercent < 0 {
+		response.BadRequest(c, "extra_profit_rate_percent must be >= 0")
+		return
+	}
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
 		Name:                            req.Name,
 		Description:                     req.Description,
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
+		ExtraProfitRatePercent:          req.ExtraProfitRatePercent,
 		IsExclusive:                     req.IsExclusive,
 		Status:                          req.Status,
 		SubscriptionType:                req.SubscriptionType,

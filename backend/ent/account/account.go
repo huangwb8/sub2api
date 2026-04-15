@@ -43,6 +43,12 @@ const (
 	FieldPriority = "priority"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
+	// FieldActualCostCny holds the string denoting the actual_cost_cny field in the database.
+	FieldActualCostCny = "actual_cost_cny"
+	// FieldActualCostUsageUsd holds the string denoting the actual_cost_usage_usd field in the database.
+	FieldActualCostUsageUsd = "actual_cost_usage_usd"
+	// FieldActualCostUpdatedAt holds the string denoting the actual_cost_updated_at field in the database.
+	FieldActualCostUpdatedAt = "actual_cost_updated_at"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldErrorMessage holds the string denoting the error_message field in the database.
@@ -126,6 +132,9 @@ var Columns = []string{
 	FieldLoadFactor,
 	FieldPriority,
 	FieldRateMultiplier,
+	FieldActualCostCny,
+	FieldActualCostUsageUsd,
+	FieldActualCostUpdatedAt,
 	FieldStatus,
 	FieldErrorMessage,
 	FieldLastUsedAt,
@@ -266,6 +275,21 @@ func ByPriority(opts ...sql.OrderTermOption) OrderOption {
 // ByRateMultiplier orders the results by the rate_multiplier field.
 func ByRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRateMultiplier, opts...).ToFunc()
+}
+
+// ByActualCostCny orders the results by the actual_cost_cny field.
+func ByActualCostCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActualCostCny, opts...).ToFunc()
+}
+
+// ByActualCostUsageUsd orders the results by the actual_cost_usage_usd field.
+func ByActualCostUsageUsd(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActualCostUsageUsd, opts...).ToFunc()
+}
+
+// ByActualCostUpdatedAt orders the results by the actual_cost_updated_at field.
+func ByActualCostUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActualCostUpdatedAt, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

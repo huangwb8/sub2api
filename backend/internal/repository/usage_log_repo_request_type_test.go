@@ -38,55 +38,10 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 		OpenAIWSMode:   false,
 		CreatedAt:      createdAt,
 	}
+	prepared := prepareUsageLogInsert(log)
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(), // upstream_model
-			sqlmock.AnyArg(), // group_id
-			sqlmock.AnyArg(), // subscription_id
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeWSV2),
-			true,
-			true,
-			sqlmock.AnyArg(), // duration_ms
-			sqlmock.AnyArg(), // first_token_ms
-			sqlmock.AnyArg(), // user_agent
-			sqlmock.AnyArg(), // ip_address
-			log.ImageCount,
-			sqlmock.AnyArg(), // image_size
-			sqlmock.AnyArg(), // service_tier
-			sqlmock.AnyArg(), // reasoning_effort
-			sqlmock.AnyArg(), // inbound_endpoint
-			sqlmock.AnyArg(), // upstream_endpoint
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			createdAt,
-		).
+		WithArgs(anySliceToDriverValues(prepared.args)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -116,55 +71,10 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 		ServiceTier:    &serviceTier,
 		CreatedAt:      createdAt,
 	}
+	prepared := prepareUsageLogInsert(log)
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeSync),
-			false,
-			false,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.ImageCount,
-			sqlmock.AnyArg(),
-			serviceTier,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			createdAt,
-		).
+		WithArgs(anySliceToDriverValues(prepared.args)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -466,6 +376,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0.4,               // cache_read_cost
 			1.0,               // total_cost
 			0.9,               // actual_cost
+			sql.NullFloat64{}, // charged_amount_cny
+			sql.NullFloat64{}, // estimated_cost_cny
+			sql.NullFloat64{}, // fx_rate_usd_cny
+			sql.NullString{},  // fx_rate_source
+			sql.NullTime{},    // fx_fetched_at
+			sql.NullFloat64{}, // fx_safety_margin
 			1.0,               // rate_multiplier
 			sql.NullFloat64{}, // account_rate_multiplier
 			int16(service.BillingTypeBalance),
@@ -513,6 +429,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
+			sql.NullFloat64{},
+			sql.NullFloat64{},
+			sql.NullFloat64{},
+			sql.NullString{},
+			sql.NullTime{},
+			sql.NullFloat64{},
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
@@ -560,6 +482,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
+			sql.NullFloat64{},
+			sql.NullFloat64{},
+			sql.NullFloat64{},
+			sql.NullString{},
+			sql.NullTime{},
+			sql.NullFloat64{},
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),

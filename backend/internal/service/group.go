@@ -15,6 +15,9 @@ type Group struct {
 	Description    string
 	Platform       string
 	RateMultiplier float64
+	// ExtraProfitRatePercent 仅用于标准（余额）计费。
+	// nil 表示仍沿用旧倍率兼容逻辑。
+	ExtraProfitRatePercent *float64
 	IsExclusive    bool
 	Status         string
 	Hydrated       bool // indicates the group was loaded from a trusted repository source
@@ -74,6 +77,10 @@ func (g *Group) IsActive() bool {
 
 func (g *Group) IsSubscriptionType() bool {
 	return g.SubscriptionType == SubscriptionTypeSubscription
+}
+
+func (g *Group) HasExtraProfitRateConfigured() bool {
+	return g != nil && g.ExtraProfitRatePercent != nil
 }
 
 func (g *Group) IsFreeSubscription() bool {

@@ -8,6 +8,7 @@ import type {
   DashboardStats,
   DashboardRecommendationsResponse,
   TrendDataPoint,
+  ProfitabilityTrendPoint,
   ModelStat,
   GroupStat,
   ApiKeyUsageTrendPoint,
@@ -71,6 +72,13 @@ export interface TrendResponse {
   granularity: string
 }
 
+export interface ProfitabilityTrendResponse {
+  trend: ProfitabilityTrendPoint[]
+  start_date: string
+  end_date: string
+  granularity: string
+}
+
 /**
  * Get usage trend data
  * @param params - Query parameters for filtering
@@ -78,6 +86,15 @@ export interface TrendResponse {
  */
 export async function getUsageTrend(params?: TrendParams): Promise<TrendResponse> {
   const { data } = await apiClient.get<TrendResponse>('/admin/dashboard/trend', { params })
+  return data
+}
+
+export async function getProfitabilityTrend(
+  params?: Pick<TrendParams, 'start_date' | 'end_date' | 'granularity'>
+): Promise<ProfitabilityTrendResponse> {
+  const { data } = await apiClient.get<ProfitabilityTrendResponse>('/admin/dashboard/profitability', {
+    params
+  })
   return data
 }
 
@@ -326,6 +343,7 @@ export const dashboardAPI = {
   getRecommendations,
   getRealtimeMetrics,
   getUsageTrend,
+  getProfitabilityTrend,
   getModelStats,
   getGroupStats,
   getSnapshotV2,

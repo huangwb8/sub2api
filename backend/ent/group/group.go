@@ -28,6 +28,8 @@ const (
 	FieldDescription = "description"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
+	// FieldExtraProfitRatePercent holds the string denoting the extra_profit_rate_percent field in the database.
+	FieldExtraProfitRatePercent = "extra_profit_rate_percent"
 	// FieldIsExclusive holds the string denoting the is_exclusive field in the database.
 	FieldIsExclusive = "is_exclusive"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -157,6 +159,7 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldRateMultiplier,
+	FieldExtraProfitRatePercent,
 	FieldIsExclusive,
 	FieldStatus,
 	FieldPlatform,
@@ -296,6 +299,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByRateMultiplier orders the results by the rate_multiplier field.
 func ByRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRateMultiplier, opts...).ToFunc()
+}
+
+// ByExtraProfitRatePercent orders the results by the extra_profit_rate_percent field.
+func ByExtraProfitRatePercent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtraProfitRatePercent, opts...).ToFunc()
 }
 
 // ByIsExclusive orders the results by the is_exclusive field.

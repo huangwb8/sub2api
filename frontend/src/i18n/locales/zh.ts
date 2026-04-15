@@ -1050,6 +1050,15 @@ export default {
           action: '行动'
         }
       },
+      profitability: {
+        title: '盈利水平',
+        description: '按当前时间粒度汇总非管理员用户的余额收入、订阅收入与估算成本，展示实时额外盈利率。',
+        balanceRevenue: '余额收入',
+        subscriptionRevenue: '订阅收入',
+        estimatedCost: '估算成本',
+        profit: '利润',
+        extraProfitRate: '额外盈利率'
+      },
       last7Days: '近 7 天',
       noUsageRecords: '暂无使用记录',
       startUsingApi: '开始使用 API 后，使用历史将显示在这里。',
@@ -1627,6 +1636,7 @@ export default {
         name: '名称',
         platform: '平台',
         rateMultiplier: '费率倍数',
+        billingParameter: '计费参数',
         exclusive: '独占',
         type: '类型',
         priority: '优先级',
@@ -1642,6 +1652,8 @@ export default {
         userNotes: '备注',
         userStatus: '状态'
       },
+      extraProfitRatePercent: '额外盈利率(%)',
+      extraProfitRateHint: '按 (总收入 - 成本) / 成本 计算；仅用于标准（余额）计费',
       usageToday: '今日',
       usageTotal: '累计',
       accountsAvailable: '可用:',
@@ -2155,6 +2167,7 @@ export default {
         notes: '备注',
         priority: '优先级',
         billingRateMultiplier: '账号倍率',
+        actualCostCny: '实际成本',
         weight: '权重',
         status: '状态',
         schedulable: '调度',
@@ -2417,6 +2430,7 @@ export default {
         title: '批量编辑账号',
         selectionInfo: '已选择 {count} 个账号。只更新您勾选或填写的字段，未勾选的字段保持不变。',
         baseUrlPlaceholder: 'https://api.anthropic.com 或 https://api.openai.com',
+        actualCostCnyPlaceholder: '留空或填 0 可清空实际成本',
         baseUrlNotice: '仅适用于 API Key 账号，留空则不修改',
         submit: '批量更新',
         updating: '更新中...',
@@ -2637,6 +2651,8 @@ export default {
       priorityHint: '优先级越小的账号优先使用',
       billingRateMultiplier: '账号计费倍率',
       billingRateMultiplierHint: '0 表示不计费，仅影响账号计费',
+      actualCostCny: '账号实际成本',
+      actualCostCnyHint: '按人民币填写该账号的实际采购成本，系统会结合实际用量自动换算',
       expiresAt: '过期时间',
       expiresAtHint: '留空表示不过期',
       higherPriorityFirst: '数值越小优先级越高',

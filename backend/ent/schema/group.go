@@ -45,6 +45,11 @@ func (Group) Fields() []ent.Field {
 		field.Float("rate_multiplier").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(1.0),
+		field.Float("extra_profit_rate_percent").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
+			Comment("标准余额计费下的额外盈利率（百分比）"),
 		field.Bool("is_exclusive").
 			Default(false),
 		field.String("status").

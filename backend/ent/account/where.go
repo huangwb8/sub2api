@@ -115,6 +115,21 @@ func RateMultiplier(v float64) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// ActualCostCny applies equality check predicate on the "actual_cost_cny" field. It's identical to ActualCostCnyEQ.
+func ActualCostCny(v float64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostCny, v))
+}
+
+// ActualCostUsageUsd applies equality check predicate on the "actual_cost_usage_usd" field. It's identical to ActualCostUsageUsdEQ.
+func ActualCostUsageUsd(v float64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUpdatedAt applies equality check predicate on the "actual_cost_updated_at" field. It's identical to ActualCostUpdatedAtEQ.
+func ActualCostUpdatedAt(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostUpdatedAt, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldStatus, v))
@@ -783,6 +798,156 @@ func RateMultiplierLT(v float64) predicate.Account {
 // RateMultiplierLTE applies the LTE predicate on the "rate_multiplier" field.
 func RateMultiplierLTE(v float64) predicate.Account {
 	return predicate.Account(sql.FieldLTE(FieldRateMultiplier, v))
+}
+
+// ActualCostCnyEQ applies the EQ predicate on the "actual_cost_cny" field.
+func ActualCostCnyEQ(v float64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostCny, v))
+}
+
+// ActualCostCnyNEQ applies the NEQ predicate on the "actual_cost_cny" field.
+func ActualCostCnyNEQ(v float64) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldActualCostCny, v))
+}
+
+// ActualCostCnyIn applies the In predicate on the "actual_cost_cny" field.
+func ActualCostCnyIn(vs ...float64) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldActualCostCny, vs...))
+}
+
+// ActualCostCnyNotIn applies the NotIn predicate on the "actual_cost_cny" field.
+func ActualCostCnyNotIn(vs ...float64) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldActualCostCny, vs...))
+}
+
+// ActualCostCnyGT applies the GT predicate on the "actual_cost_cny" field.
+func ActualCostCnyGT(v float64) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldActualCostCny, v))
+}
+
+// ActualCostCnyGTE applies the GTE predicate on the "actual_cost_cny" field.
+func ActualCostCnyGTE(v float64) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldActualCostCny, v))
+}
+
+// ActualCostCnyLT applies the LT predicate on the "actual_cost_cny" field.
+func ActualCostCnyLT(v float64) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldActualCostCny, v))
+}
+
+// ActualCostCnyLTE applies the LTE predicate on the "actual_cost_cny" field.
+func ActualCostCnyLTE(v float64) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldActualCostCny, v))
+}
+
+// ActualCostCnyIsNil applies the IsNil predicate on the "actual_cost_cny" field.
+func ActualCostCnyIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldActualCostCny))
+}
+
+// ActualCostCnyNotNil applies the NotNil predicate on the "actual_cost_cny" field.
+func ActualCostCnyNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldActualCostCny))
+}
+
+// ActualCostUsageUsdEQ applies the EQ predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdEQ(v float64) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdNEQ applies the NEQ predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdNEQ(v float64) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdIn applies the In predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdIn(vs ...float64) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldActualCostUsageUsd, vs...))
+}
+
+// ActualCostUsageUsdNotIn applies the NotIn predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdNotIn(vs ...float64) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldActualCostUsageUsd, vs...))
+}
+
+// ActualCostUsageUsdGT applies the GT predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdGT(v float64) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdGTE applies the GTE predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdGTE(v float64) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdLT applies the LT predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdLT(v float64) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdLTE applies the LTE predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdLTE(v float64) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldActualCostUsageUsd, v))
+}
+
+// ActualCostUsageUsdIsNil applies the IsNil predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldActualCostUsageUsd))
+}
+
+// ActualCostUsageUsdNotNil applies the NotNil predicate on the "actual_cost_usage_usd" field.
+func ActualCostUsageUsdNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldActualCostUsageUsd))
+}
+
+// ActualCostUpdatedAtEQ applies the EQ predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtEQ(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtNEQ applies the NEQ predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtNEQ(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtIn applies the In predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtIn(vs ...time.Time) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldActualCostUpdatedAt, vs...))
+}
+
+// ActualCostUpdatedAtNotIn applies the NotIn predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtNotIn(vs ...time.Time) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldActualCostUpdatedAt, vs...))
+}
+
+// ActualCostUpdatedAtGT applies the GT predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtGT(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtGTE applies the GTE predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtGTE(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtLT applies the LT predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtLT(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtLTE applies the LTE predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtLTE(v time.Time) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldActualCostUpdatedAt, v))
+}
+
+// ActualCostUpdatedAtIsNil applies the IsNil predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldActualCostUpdatedAt))
+}
+
+// ActualCostUpdatedAtNotNil applies the NotNil predicate on the "actual_cost_updated_at" field.
+func ActualCostUpdatedAtNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldActualCostUpdatedAt))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

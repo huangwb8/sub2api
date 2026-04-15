@@ -2208,7 +2208,7 @@
         <ProxySelector v-model="form.proxy_id" :proxies="proxies" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
           <input v-model.number="form.concurrency" type="number" min="1" class="input"
@@ -2236,6 +2236,11 @@
           <label class="input-label">{{ t('admin.accounts.billingRateMultiplier') }}</label>
           <input v-model.number="form.rate_multiplier" type="number" min="0" step="0.001" class="input" />
           <p class="input-hint">{{ t('admin.accounts.billingRateMultiplierHint') }}</p>
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.accounts.actualCostCny') }}</label>
+          <input v-model.number="form.actual_cost_cny" type="number" min="0" step="0.01" class="input" />
+          <p class="input-hint">{{ t('admin.accounts.actualCostCnyHint') }}</p>
         </div>
       </div>
       <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -3164,9 +3169,21 @@ const form = reactive({
   load_factor: null as number | null,
   priority: 1,
   rate_multiplier: 1,
+  actual_cost_cny: null as number | null,
   group_ids: [] as number[],
   expires_at: null as number | null
 })
+
+const normalizeCreateActualCostCny = (value: number | string | null | undefined): number | undefined => {
+  if (value === null || value === undefined || value === '') {
+    return undefined
+  }
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return undefined
+  }
+  return numericValue
+}
 
 // Helper to check if current type needs OAuth flow
 const isOAuthFlow = computed(() => {
@@ -3654,6 +3671,7 @@ const resetForm = () => {
   form.load_factor = null
   form.priority = 1
   form.rate_multiplier = 1
+  form.actual_cost_cny = null
   form.group_ids = []
   form.expires_at = null
   accountCategory.value = 'oauth-based'
@@ -4091,6 +4109,7 @@ const createAccountAndFinish = async (
     load_factor: form.load_factor ?? undefined,
     priority: form.priority,
     rate_multiplier: form.rate_multiplier,
+    actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
     group_ids: form.group_ids,
     expires_at: form.expires_at,
     auto_pause_on_expired: autoPauseOnExpired.value
@@ -4152,6 +4171,7 @@ const handleOpenAIExchange = async (authCode: string) => {
         load_factor: form.load_factor ?? undefined,
         priority: form.priority,
         rate_multiplier: form.rate_multiplier,
+        actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
         group_ids: form.group_ids,
         expires_at: form.expires_at,
         auto_pause_on_expired: autoPauseOnExpired.value
@@ -4243,6 +4263,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
             load_factor: form.load_factor ?? undefined,
             priority: form.priority,
             rate_multiplier: form.rate_multiplier,
+            actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
             group_ids: form.group_ids,
             expires_at: form.expires_at,
             auto_pause_on_expired: autoPauseOnExpired.value
@@ -4341,6 +4362,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
           load_factor: form.load_factor ?? undefined,
           priority: form.priority,
           rate_multiplier: form.rate_multiplier,
+          actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
           group_ids: form.group_ids,
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value
@@ -4682,6 +4704,7 @@ const handleCookieAuth = async (sessionKey: string) => {
           load_factor: form.load_factor ?? undefined,
           priority: form.priority,
           rate_multiplier: form.rate_multiplier,
+          actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
           group_ids: form.group_ids,
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value

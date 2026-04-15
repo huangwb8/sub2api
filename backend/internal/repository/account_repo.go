@@ -98,6 +98,15 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 	if account.RateMultiplier != nil {
 		builder.SetRateMultiplier(*account.RateMultiplier)
 	}
+	if account.ActualCostCNY != nil {
+		builder.SetActualCostCny(*account.ActualCostCNY)
+	}
+	if account.ActualCostUsageUSD != nil {
+		builder.SetActualCostUsageUsd(*account.ActualCostUsageUSD)
+	}
+	if account.ActualCostUpdatedAt != nil {
+		builder.SetActualCostUpdatedAt(*account.ActualCostUpdatedAt)
+	}
 	if account.LoadFactor != nil {
 		builder.SetLoadFactor(*account.LoadFactor)
 	}
@@ -334,6 +343,21 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 
 	if account.RateMultiplier != nil {
 		builder.SetRateMultiplier(*account.RateMultiplier)
+	}
+	if account.ActualCostCNY != nil {
+		builder.SetActualCostCny(*account.ActualCostCNY)
+	} else {
+		builder.ClearActualCostCny()
+	}
+	if account.ActualCostUsageUSD != nil {
+		builder.SetActualCostUsageUsd(*account.ActualCostUsageUSD)
+	} else {
+		builder.ClearActualCostUsageUsd()
+	}
+	if account.ActualCostUpdatedAt != nil {
+		builder.SetActualCostUpdatedAt(*account.ActualCostUpdatedAt)
+	} else {
+		builder.ClearActualCostUpdatedAt()
 	}
 	if account.LoadFactor != nil {
 		builder.SetLoadFactor(*account.LoadFactor)
@@ -1399,6 +1423,23 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		args = append(args, *updates.RateMultiplier)
 		idx++
 	}
+	if updates.ActualCostCNY != nil {
+		if *updates.ActualCostCNY <= 0 {
+			setClauses = append(setClauses,
+				"actual_cost_cny = NULL",
+				"actual_cost_usage_usd = NULL",
+				"actual_cost_updated_at = NULL",
+			)
+		} else {
+			setClauses = append(setClauses,
+				"actual_cost_cny = $"+itoa(idx),
+				"actual_cost_usage_usd = 0",
+				"actual_cost_updated_at = NOW()",
+			)
+			args = append(args, *updates.ActualCostCNY)
+			idx++
+		}
+	}
 	if updates.LoadFactor != nil {
 		if *updates.LoadFactor <= 0 {
 			setClauses = append(setClauses, "load_factor = NULL")
@@ -1730,6 +1771,9 @@ func accountEntityToService(m *dbent.Account) *service.Account {
 		Concurrency:             m.Concurrency,
 		Priority:                m.Priority,
 		RateMultiplier:          &rateMultiplier,
+		ActualCostCNY:           m.ActualCostCny,
+		ActualCostUsageUSD:      m.ActualCostUsageUsd,
+		ActualCostUpdatedAt:     m.ActualCostUpdatedAt,
 		LoadFactor:              m.LoadFactor,
 		Status:                  m.Status,
 		ErrorMessage:            derefString(m.ErrorMessage),
@@ -1998,6 +2042,19 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 		}
 	}
 	return nil
+}
+
+func (r *accountRepository) IncrementActualCostUsage(ctx context.Context, id int64, amountUSD float64) error {
+	if amountUSD <= 0 {
+		return nil
+	}
+	_, err := r.sql.ExecContext(ctx, `
+		UPDATE accounts
+		SET actual_cost_usage_usd = COALESCE(actual_cost_usage_usd, 0) + $1,
+			updated_at = NOW()
+		WHERE id = $2 AND deleted_at IS NULL
+	`, amountUSD, id)
+	return err
 }
 
 // ResetQuotaUsed 重置账号所有维度的配额用量为 0

@@ -179,10 +179,14 @@
             </div>
           </template>
 
-          <template #cell-rate_multiplier="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300"
-              >{{ value }}x</span
-            >
+          <template #cell-rate_multiplier="{ value, row }">
+            <span class="text-sm text-gray-700 dark:text-gray-300">
+              {{
+                row.subscription_type === "subscription"
+                  ? `${value}x`
+                  : `${(row.extra_profit_rate_percent ?? 0).toFixed(2)}%`
+              }}
+            </span>
           </template>
 
           <template #cell-is_exclusive="{ value }">
@@ -476,7 +480,7 @@
           </select>
           <p class="input-hint">{{ t("admin.groups.copyAccounts.hint") }}</p>
         </div>
-        <div>
+        <div v-if="createForm.subscription_type === 'subscription'">
           <label class="input-label">{{
             t("admin.groups.form.rateMultiplier")
           }}</label>
@@ -490,6 +494,19 @@
             data-tour="group-form-multiplier"
           />
           <p class="input-hint">{{ t("admin.groups.rateMultiplierHint") }}</p>
+        </div>
+        <div v-else>
+          <label class="input-label">{{
+            t("admin.groups.extraProfitRatePercent")
+          }}</label>
+          <input
+            v-model.number="createForm.extra_profit_rate_percent"
+            type="number"
+            step="0.01"
+            min="0"
+            class="input"
+          />
+          <p class="input-hint">{{ t("admin.groups.extraProfitRateHint") }}</p>
         </div>
         <div
           v-if="createForm.subscription_type !== 'subscription'"
@@ -1597,7 +1614,7 @@
             {{ t("admin.groups.copyAccounts.hintEdit") }}
           </p>
         </div>
-        <div>
+        <div v-if="editForm.subscription_type === 'subscription'">
           <label class="input-label">{{
             t("admin.groups.form.rateMultiplier")
           }}</label>
@@ -1610,6 +1627,19 @@
             class="input"
             data-tour="group-form-multiplier"
           />
+        </div>
+        <div v-else>
+          <label class="input-label">{{
+            t("admin.groups.extraProfitRatePercent")
+          }}</label>
+          <input
+            v-model.number="editForm.extra_profit_rate_percent"
+            type="number"
+            step="0.01"
+            min="0"
+            class="input"
+          />
+          <p class="input-hint">{{ t("admin.groups.extraProfitRateHint") }}</p>
         </div>
         <div v-if="editForm.subscription_type !== 'subscription'">
           <div class="mb-1.5 flex items-center gap-1">
@@ -2740,7 +2770,7 @@ const columns = computed<Column[]>(() => [
   },
   {
     key: "rate_multiplier",
-    label: t("admin.groups.columns.rateMultiplier"),
+    label: t("admin.groups.columns.billingParameter"),
     sortable: true,
   },
   {
@@ -2958,6 +2988,7 @@ const createForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  extra_profit_rate_percent: 0 as number | null,
   is_exclusive: false,
   subscription_type: "standard" as SubscriptionType,
   daily_limit_usd: null as number | null,
@@ -3237,6 +3268,7 @@ const editForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  extra_profit_rate_percent: 0 as number | null,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
   subscription_type: "standard" as SubscriptionType,
@@ -3423,6 +3455,7 @@ const closeCreateModal = () => {
   createForm.description = "";
   createForm.platform = "anthropic";
   createForm.rate_multiplier = 1.0;
+  createForm.extra_profit_rate_percent = 0;
   createForm.is_exclusive = false;
   createForm.subscription_type = "standard";
   createForm.daily_limit_usd = null;
@@ -3462,6 +3495,25 @@ const normalizeOptionalLimit = (
   return Number.isFinite(value) && value > 0 ? value : null;
 };
 
+const normalizeExtraProfitRatePercent = (
+  subscriptionType: SubscriptionType,
+  value: number | string | null | undefined,
+): number | null => {
+  if (subscriptionType === "subscription") {
+    return null;
+  }
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return 0;
+  }
+
+  return numericValue;
+};
+
 const handleCreateGroup = async () => {
   if (!createForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
@@ -3472,6 +3524,10 @@ const handleCreateGroup = async () => {
     // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
+      extra_profit_rate_percent: normalizeExtraProfitRatePercent(
+        createForm.subscription_type,
+        createForm.extra_profit_rate_percent,
+      ),
       daily_limit_usd: normalizeOptionalLimit(
         createForm.daily_limit_usd as number | string | null,
       ),
@@ -3525,6 +3581,7 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.description = group.description || "";
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
+  editForm.extra_profit_rate_percent = group.extra_profit_rate_percent ?? 0;
   editForm.is_exclusive = group.is_exclusive;
   editForm.status = group.status;
   editForm.subscription_type = group.subscription_type || "standard";
@@ -3590,6 +3647,10 @@ const handleUpdateGroup = async () => {
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
     const payload = {
       ...editForm,
+      extra_profit_rate_percent: normalizeExtraProfitRatePercent(
+        editForm.subscription_type,
+        editForm.extra_profit_rate_percent,
+      ),
       daily_limit_usd: normalizeOptionalLimit(
         editForm.daily_limit_usd as number | string | null,
       ),
@@ -3696,6 +3757,28 @@ watch(
     if (newVal === "subscription") {
       createForm.is_exclusive = true;
       createForm.fallback_group_id_on_invalid_request = null;
+      if (!createForm.rate_multiplier || createForm.rate_multiplier <= 0) {
+        createForm.rate_multiplier = 1.0;
+      }
+      createForm.extra_profit_rate_percent = null;
+    } else if (createForm.extra_profit_rate_percent == null) {
+      createForm.extra_profit_rate_percent = 0;
+    }
+  },
+);
+
+watch(
+  () => editForm.subscription_type,
+  (newVal) => {
+    if (newVal === "subscription") {
+      editForm.is_exclusive = true;
+      editForm.fallback_group_id_on_invalid_request = null;
+      if (!editForm.rate_multiplier || editForm.rate_multiplier <= 0) {
+        editForm.rate_multiplier = 1.0;
+      }
+      editForm.extra_profit_rate_percent = null;
+    } else if (editForm.extra_profit_rate_percent == null) {
+      editForm.extra_profit_rate_percent = 0;
     }
   },
 );

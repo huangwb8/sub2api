@@ -90,6 +90,15 @@ type TrendDataPoint struct {
 	ActualCost          float64 `json:"actual_cost"` // 实际扣除
 }
 
+type ProfitabilityTrendPoint struct {
+	Date                     string   `json:"date"`
+	RevenueBalanceCNY        float64  `json:"revenue_balance_cny"`
+	RevenueSubscriptionCNY   float64  `json:"revenue_subscription_cny"`
+	EstimatedCostCNY         float64  `json:"estimated_cost_cny"`
+	ProfitCNY                float64  `json:"profit_cny"`
+	ExtraProfitRatePercent   *float64 `json:"extra_profit_rate_percent,omitempty"`
+}
+
 // ModelStat represents usage statistics for a single model
 type ModelStat struct {
 	Model               string  `json:"model"`

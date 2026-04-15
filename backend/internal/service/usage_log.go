@@ -144,6 +144,7 @@ type UsageLog struct {
 	TotalCost         float64
 	ActualCost        float64
 	ChargedAmountCNY  *float64
+	EstimatedCostCNY  *float64
 	FXRateUSDCNY      *float64
 	FXRateSource      *string
 	FXFetchedAt       *time.Time

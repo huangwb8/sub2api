@@ -85,6 +85,11 @@ func RateMultiplier(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// ExtraProfitRatePercent applies equality check predicate on the "extra_profit_rate_percent" field. It's identical to ExtraProfitRatePercentEQ.
+func ExtraProfitRatePercent(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldExtraProfitRatePercent, v))
+}
+
 // IsExclusive applies equality check predicate on the "is_exclusive" field. It's identical to IsExclusiveEQ.
 func IsExclusive(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldIsExclusive, v))
@@ -498,6 +503,56 @@ func RateMultiplierLT(v float64) predicate.Group {
 // RateMultiplierLTE applies the LTE predicate on the "rate_multiplier" field.
 func RateMultiplierLTE(v float64) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldRateMultiplier, v))
+}
+
+// ExtraProfitRatePercentEQ applies the EQ predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentNEQ applies the NEQ predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentNEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentIn applies the In predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldExtraProfitRatePercent, vs...))
+}
+
+// ExtraProfitRatePercentNotIn applies the NotIn predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentNotIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldExtraProfitRatePercent, vs...))
+}
+
+// ExtraProfitRatePercentGT applies the GT predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentGT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentGTE applies the GTE predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentGTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentLT applies the LT predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentLT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentLTE applies the LTE predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentLTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldExtraProfitRatePercent, v))
+}
+
+// ExtraProfitRatePercentIsNil applies the IsNil predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldExtraProfitRatePercent))
+}
+
+// ExtraProfitRatePercentNotNil applies the NotNil predicate on the "extra_profit_rate_percent" field.
+func ExtraProfitRatePercentNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldExtraProfitRatePercent))
 }
 
 // IsExclusiveEQ applies the EQ predicate on the "is_exclusive" field.

@@ -177,6 +177,17 @@ func expectedOpenAICost(t *testing.T, svc *OpenAIGatewayService, model string, u
 	return cost
 }
 
+func expectedOpenAIChargedAmountCNY(t *testing.T, svc *OpenAIGatewayService, costUSD float64) float64 {
+	t.Helper()
+
+	require.NotNil(t, svc.exchangeRateService)
+	resolved, err := svc.exchangeRateService.ResolveUSDCNYRate(context.Background())
+	require.NoError(t, err)
+	snapshot := BuildUsageChargeSnapshot(costUSD, resolved)
+	require.NotNil(t, snapshot)
+	return snapshot.ChargedAmountCNY
+}
+
 func max(a, b int) int {
 	if a > b {
 		return a
@@ -224,7 +235,9 @@ func TestOpenAIGatewayServiceRecordUsage_UsesUserSpecificGroupRate(t *testing.T)
 
 	expected := expectedOpenAICost(t, svc, "gpt-5.1", usage, userRate)
 	require.InDelta(t, expected.ActualCost, usageRepo.lastLog.ActualCost, 1e-12)
-	require.InDelta(t, expected.ActualCost, userRepo.lastAmount, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.ChargedAmountCNY)
+	require.InDelta(t, expectedOpenAIChargedAmountCNY(t, svc, expected.ActualCost), userRepo.lastAmount, 1e-12)
+	require.InDelta(t, *usageRepo.lastLog.ChargedAmountCNY, userRepo.lastAmount, 1e-12)
 	require.Equal(t, 1, userRepo.deductCalls)
 }
 
@@ -299,7 +312,9 @@ func TestOpenAIGatewayServiceRecordUsage_FallsBackToGroupDefaultRateOnResolverEr
 	require.Equal(t, groupRate, usageRepo.lastLog.RateMultiplier)
 
 	expected := expectedOpenAICost(t, svc, "gpt-5.1", usage, groupRate)
-	require.InDelta(t, expected.ActualCost, userRepo.lastAmount, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.ChargedAmountCNY)
+	require.InDelta(t, expectedOpenAIChargedAmountCNY(t, svc, expected.ActualCost), userRepo.lastAmount, 1e-12)
+	require.InDelta(t, *usageRepo.lastLog.ChargedAmountCNY, userRepo.lastAmount, 1e-12)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_FallsBackToGroupDefaultRateWhenResolverMissing(t *testing.T) {
@@ -930,7 +945,9 @@ func TestOpenAIGatewayServiceRecordUsage_BillsMappedRequestsUsingRequestedModel(
 	require.Equal(t, "gpt-5.1", usageRepo.lastLog.Model)
 	require.Equal(t, expectedCost.ActualCost, usageRepo.lastLog.ActualCost)
 	require.Equal(t, expectedCost.TotalCost, usageRepo.lastLog.TotalCost)
-	require.Equal(t, expectedCost.ActualCost, userRepo.lastAmount)
+	require.NotNil(t, usageRepo.lastLog.ChargedAmountCNY)
+	require.Equal(t, expectedOpenAIChargedAmountCNY(t, svc, expectedCost.ActualCost), userRepo.lastAmount)
+	require.Equal(t, *usageRepo.lastLog.ChargedAmountCNY, userRepo.lastAmount)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_ChannelMappedDoesNotOverrideBillingModelWhenUnmapped(t *testing.T) {

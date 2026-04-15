@@ -84,6 +84,7 @@ type AccountBulkUpdate struct {
 	Concurrency    *int
 	Priority       *int
 	RateMultiplier *float64
+	ActualCostCNY  *float64
 	LoadFactor     *int
 	Status         *string
 	Schedulable    *bool
@@ -103,6 +104,7 @@ type CreateAccountRequest struct {
 	Concurrency        int            `json:"concurrency"`
 	Priority           int            `json:"priority"`
 	GroupIDs           []int64        `json:"group_ids"`
+	ActualCostCNY      *float64       `json:"actual_cost_cny"`
 	ExpiresAt          *time.Time     `json:"expires_at"`
 	AutoPauseOnExpired *bool          `json:"auto_pause_on_expired"`
 }
@@ -116,6 +118,7 @@ type UpdateAccountRequest struct {
 	ProxyID            *int64          `json:"proxy_id"`
 	Concurrency        *int            `json:"concurrency"`
 	Priority           *int            `json:"priority"`
+	ActualCostCNY      *float64        `json:"actual_cost_cny"`
 	Status             *string         `json:"status"`
 	GroupIDs           *[]int64        `json:"group_ids"`
 	ExpiresAt          *time.Time      `json:"expires_at"`
@@ -160,8 +163,15 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 		ProxyID:     req.ProxyID,
 		Concurrency: req.Concurrency,
 		Priority:    req.Priority,
+		ActualCostCNY: req.ActualCostCNY,
 		Status:      StatusActive,
 		ExpiresAt:   req.ExpiresAt,
+	}
+	if account.ActualCostCNY != nil && *account.ActualCostCNY > 0 {
+		zero := 0.0
+		now := time.Now().UTC()
+		account.ActualCostUsageUSD = &zero
+		account.ActualCostUpdatedAt = &now
 	}
 	if req.AutoPauseOnExpired != nil {
 		account.AutoPauseOnExpired = *req.AutoPauseOnExpired
@@ -265,6 +275,19 @@ func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccount
 
 	if req.Priority != nil {
 		account.Priority = *req.Priority
+	}
+	if req.ActualCostCNY != nil {
+		if *req.ActualCostCNY <= 0 {
+			account.ActualCostCNY = nil
+			account.ActualCostUsageUSD = nil
+			account.ActualCostUpdatedAt = nil
+		} else {
+			account.ActualCostCNY = req.ActualCostCNY
+			zero := 0.0
+			now := time.Now().UTC()
+			account.ActualCostUsageUSD = &zero
+			account.ActualCostUpdatedAt = &now
+		}
 	}
 
 	if req.Status != nil {

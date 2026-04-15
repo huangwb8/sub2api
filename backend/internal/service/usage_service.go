@@ -33,13 +33,14 @@ type CreateUsageLogRequest struct {
 	OutputCost            float64 `json:"output_cost"`
 	CacheCreationCost     float64 `json:"cache_creation_cost"`
 	CacheReadCost         float64 `json:"cache_read_cost"`
-	TotalCost             float64 `json:"total_cost"`
-	ActualCost            float64 `json:"actual_cost"`
-	ChargedAmountCNY      *float64 `json:"charged_amount_cny"`
-	FXRateUSDCNY          *float64 `json:"fx_rate_usd_cny"`
-	FXRateSource          *string  `json:"fx_rate_source"`
+	TotalCost             float64   `json:"total_cost"`
+	ActualCost            float64   `json:"actual_cost"`
+	ChargedAmountCNY      *float64  `json:"charged_amount_cny"`
+	EstimatedCostCNY      *float64  `json:"estimated_cost_cny"`
+	FXRateUSDCNY          *float64  `json:"fx_rate_usd_cny"`
+	FXRateSource          *string   `json:"fx_rate_source"`
 	FXFetchedAt           *time.Time `json:"fx_fetched_at"`
-	FXSafetyMargin        *float64 `json:"fx_safety_margin"`
+	FXSafetyMargin        *float64  `json:"fx_safety_margin"`
 	RateMultiplier        float64 `json:"rate_multiplier"`
 	Stream                bool    `json:"stream"`
 	DurationMs            *int    `json:"duration_ms"`
@@ -126,6 +127,7 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 		CacheReadCost:         req.CacheReadCost,
 		TotalCost:             req.TotalCost,
 		ActualCost:            req.ActualCost,
+		EstimatedCostCNY:      req.EstimatedCostCNY,
 		RateMultiplier:        req.RateMultiplier,
 		Stream:                req.Stream,
 		DurationMs:            req.DurationMs,

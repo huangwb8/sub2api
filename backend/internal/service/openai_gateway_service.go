@@ -4497,6 +4497,14 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		billingType = BillingTypeSubscription
 	}
 	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
+	var profitabilityCharge *standardBalanceChargeResolution
+	if !isSubscriptionBilling {
+		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
+	}
+	if profitabilityCharge != nil {
+		cost.ActualCost = profitabilityCharge.ChargeCostUSD
+		chargeSnapshot = profitabilityCharge.ChargeSnapshot
+	}
 
 	// Create usage log
 	durationMs := int(result.Duration.Milliseconds())
@@ -4537,6 +4545,9 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.ActualCost = cost.ActualCost
 	}
 	usageLog.ApplyChargeSnapshot(chargeSnapshot)
+	if profitabilityCharge != nil {
+		usageLog.EstimatedCostCNY = &profitabilityCharge.EstimatedCostCNY
+	}
 	usageLog.RateMultiplier = multiplier
 	usageLog.AccountRateMultiplier = &accountRateMultiplier
 	usageLog.BillingType = billingType

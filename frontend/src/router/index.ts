@@ -473,7 +473,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/orders/plans',
     name: 'AdminPaymentPlans',
-    component: () => import('@/views/admin/orders/AdminPaymentPlansView.vue'),
+    redirect: '/admin/subscriptions',
     meta: {
       requiresAuth: true,
       requiresAdmin: true,

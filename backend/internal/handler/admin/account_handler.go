@@ -105,6 +105,7 @@ type CreateAccountRequest struct {
 	Concurrency             int            `json:"concurrency"`
 	Priority                int            `json:"priority"`
 	RateMultiplier          *float64       `json:"rate_multiplier"`
+	ActualCostCNY           *float64       `json:"actual_cost_cny"`
 	LoadFactor              *int           `json:"load_factor"`
 	GroupIDs                []int64        `json:"group_ids"`
 	ExpiresAt               *int64         `json:"expires_at"`
@@ -124,6 +125,7 @@ type UpdateAccountRequest struct {
 	Concurrency             *int           `json:"concurrency"`
 	Priority                *int           `json:"priority"`
 	RateMultiplier          *float64       `json:"rate_multiplier"`
+	ActualCostCNY           *float64       `json:"actual_cost_cny"`
 	LoadFactor              *int           `json:"load_factor"`
 	Status                  string         `json:"status" binding:"omitempty,oneof=active inactive error"`
 	GroupIDs                *[]int64       `json:"group_ids"`
@@ -140,6 +142,7 @@ type BulkUpdateAccountsRequest struct {
 	Concurrency             *int           `json:"concurrency"`
 	Priority                *int           `json:"priority"`
 	RateMultiplier          *float64       `json:"rate_multiplier"`
+	ActualCostCNY           *float64       `json:"actual_cost_cny"`
 	LoadFactor              *int           `json:"load_factor"`
 	Status                  string         `json:"status" binding:"omitempty,oneof=active inactive error"`
 	Schedulable             *bool          `json:"schedulable"`
@@ -512,6 +515,10 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
+	if req.ActualCostCNY != nil && *req.ActualCostCNY < 0 {
+		response.BadRequest(c, "actual_cost_cny must be >= 0")
+		return
+	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 
@@ -530,6 +537,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 			Concurrency:           req.Concurrency,
 			Priority:              req.Priority,
 			RateMultiplier:        req.RateMultiplier,
+			ActualCostCNY:         req.ActualCostCNY,
 			LoadFactor:            req.LoadFactor,
 			GroupIDs:              req.GroupIDs,
 			ExpiresAt:             req.ExpiresAt,
@@ -588,6 +596,10 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
+	if req.ActualCostCNY != nil && *req.ActualCostCNY < 0 {
+		response.BadRequest(c, "actual_cost_cny must be >= 0")
+		return
+	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 
@@ -604,6 +616,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		Concurrency:           req.Concurrency, // 指针类型，nil 表示未提供
 		Priority:              req.Priority,    // 指针类型，nil 表示未提供
 		RateMultiplier:        req.RateMultiplier,
+		ActualCostCNY:         req.ActualCostCNY,
 		LoadFactor:            req.LoadFactor,
 		Status:                req.Status,
 		GroupIDs:              req.GroupIDs,
@@ -1368,6 +1381,10 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		response.BadRequest(c, "rate_multiplier must be >= 0")
 		return
 	}
+	if req.ActualCostCNY != nil && *req.ActualCostCNY < 0 {
+		response.BadRequest(c, "actual_cost_cny must be >= 0")
+		return
+	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 
@@ -1379,6 +1396,7 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		req.Concurrency != nil ||
 		req.Priority != nil ||
 		req.RateMultiplier != nil ||
+		req.ActualCostCNY != nil ||
 		req.LoadFactor != nil ||
 		req.Status != "" ||
 		req.Schedulable != nil ||
@@ -1398,6 +1416,7 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		Concurrency:           req.Concurrency,
 		Priority:              req.Priority,
 		RateMultiplier:        req.RateMultiplier,
+		ActualCostCNY:         req.ActualCostCNY,
 		LoadFactor:            req.LoadFactor,
 		Status:                req.Status,
 		Schedulable:           req.Schedulable,

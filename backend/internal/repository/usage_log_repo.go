@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -28,7 +29,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, charged_amount_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, charged_amount_cny, estimated_cost_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, created_at"
 
 // usageLogInsertArgTypes must stay in the same order as:
 //  1. prepareUsageLogInsert().args
@@ -62,6 +63,7 @@ var usageLogInsertArgTypes = [...]string{
 	"numeric",     // total_cost
 	"numeric",     // actual_cost
 	"numeric",     // charged_amount_cny
+	"numeric",     // estimated_cost_cny
 	"numeric",     // fx_rate_usd_cny
 	"text",        // fx_rate_source
 	"timestamptz", // fx_fetched_at
@@ -345,6 +347,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -377,8 +380,8 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28,
-			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$24, $25, $26, $27, $28, $29,
+			$30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -788,6 +791,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -869,6 +873,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				total_cost,
 				actual_cost,
 				charged_amount_cny,
+				estimated_cost_cny,
 				fx_rate_usd_cny,
 				fx_rate_source,
 				fx_fetched_at,
@@ -921,6 +926,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				total_cost,
 				actual_cost,
 				charged_amount_cny,
+				estimated_cost_cny,
 				fx_rate_usd_cny,
 				fx_rate_source,
 				fx_fetched_at,
@@ -1013,6 +1019,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -1091,6 +1098,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -1143,6 +1151,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -1203,6 +1212,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			total_cost,
 			actual_cost,
 			charged_amount_cny,
+			estimated_cost_cny,
 			fx_rate_usd_cny,
 			fx_rate_source,
 			fx_fetched_at,
@@ -1235,8 +1245,8 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28,
-			$29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$24, $25, $26, $27, $28, $29,
+			$30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1312,6 +1322,7 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			log.TotalCost,
 			log.ActualCost,
 			nullFloat64(log.ChargedAmountCNY),
+			nullFloat64(log.EstimatedCostCNY),
 			nullFloat64(log.FXRateUSDCNY),
 			nullString(log.FXRateSource),
 			nullUsageTime(log.FXFetchedAt),
@@ -2953,6 +2964,92 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 	return results, nil
 }
 
+func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTime, endTime time.Time, granularity string) ([]usagestats.ProfitabilityTrendPoint, error) {
+	dateFormat := safeDateFormat(granularity)
+
+	query := fmt.Sprintf(`
+		WITH balance_usage AS (
+			SELECT
+				created_at AS bucket_at,
+				COALESCE(charged_amount_cny, 0) AS revenue_balance_cny,
+				0::numeric AS revenue_subscription_cny,
+				COALESCE(estimated_cost_cny, 0) AS estimated_cost_cny
+			FROM usage_logs ul
+			INNER JOIN users u ON u.id = ul.user_id
+			WHERE ul.created_at >= $1
+				AND ul.created_at < $2
+				AND COALESCE(u.role, '') <> 'admin'
+		),
+		subscription_orders AS (
+			SELECT
+				COALESCE(po.completed_at, po.paid_at, po.created_at) AS bucket_at,
+				0::numeric AS revenue_balance_cny,
+				COALESCE(po.amount, 0) AS revenue_subscription_cny,
+				0::numeric AS estimated_cost_cny
+			FROM payment_orders po
+			INNER JOIN users u ON u.id = po.user_id
+			WHERE COALESCE(po.completed_at, po.paid_at, po.created_at) >= $1
+				AND COALESCE(po.completed_at, po.paid_at, po.created_at) < $2
+				AND COALESCE(u.role, '') <> 'admin'
+				AND po.order_type = $3
+				AND po.status IN ($4, $5, $6)
+		)
+		SELECT
+			TO_CHAR(bucket_at, '%s') AS date,
+			COALESCE(SUM(revenue_balance_cny), 0) AS revenue_balance_cny,
+			COALESCE(SUM(revenue_subscription_cny), 0) AS revenue_subscription_cny,
+			COALESCE(SUM(estimated_cost_cny), 0) AS estimated_cost_cny
+		FROM (
+			SELECT * FROM balance_usage
+			UNION ALL
+			SELECT * FROM subscription_orders
+		) profitability
+		GROUP BY date
+		ORDER BY date ASC
+	`, dateFormat)
+
+	rows, err := r.sql.QueryContext(
+		ctx,
+		query,
+		startTime,
+		endTime,
+		"subscription",
+		service.OrderStatusCompleted,
+		service.OrderStatusPaid,
+		service.OrderStatusRecharging,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	results := make([]usagestats.ProfitabilityTrendPoint, 0)
+	for rows.Next() {
+		var (
+			point                   usagestats.ProfitabilityTrendPoint
+			revenueBalanceCNY      float64
+			revenueSubscriptionCNY float64
+			estimatedCostCNY       float64
+		)
+		if err := rows.Scan(&point.Date, &revenueBalanceCNY, &revenueSubscriptionCNY, &estimatedCostCNY); err != nil {
+			return nil, err
+		}
+		point.RevenueBalanceCNY = revenueBalanceCNY
+		point.RevenueSubscriptionCNY = revenueSubscriptionCNY
+		point.EstimatedCostCNY = estimatedCostCNY
+		point.ProfitCNY = math.Round((revenueBalanceCNY+revenueSubscriptionCNY-estimatedCostCNY)*1e8) / 1e8
+		if estimatedCostCNY > 0 {
+			rate := math.Round((point.ProfitCNY/estimatedCostCNY*100)*1e4) / 1e4
+			point.ExtraProfitRatePercent = &rate
+		}
+		results = append(results, point)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func shouldUsePreaggregatedTrend(granularity string, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) bool {
 	if granularity != "day" && granularity != "hour" {
 		return false
@@ -4101,6 +4198,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		totalCost             float64
 		actualCost            float64
 		chargedAmountCNY      sql.NullFloat64
+		estimatedCostCNY      sql.NullFloat64
 		fxRateUSDCNY          sql.NullFloat64
 		fxRateSource          sql.NullString
 		fxFetchedAt           sql.NullTime
@@ -4155,6 +4253,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&totalCost,
 		&actualCost,
 		&chargedAmountCNY,
+		&estimatedCostCNY,
 		&fxRateUSDCNY,
 		&fxRateSource,
 		&fxFetchedAt,
@@ -4207,6 +4306,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		TotalCost:             totalCost,
 		ActualCost:            actualCost,
 		ChargedAmountCNY:      nullFloat64Ptr(chargedAmountCNY),
+		EstimatedCostCNY:      nullFloat64Ptr(estimatedCostCNY),
 		FXRateUSDCNY:          nullFloat64Ptr(fxRateUSDCNY),
 		FXSafetyMargin:        nullFloat64Ptr(fxSafetyMargin),
 		RateMultiplier:        rateMultiplier,

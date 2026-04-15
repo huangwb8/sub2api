@@ -101,6 +101,10 @@ func (UsageLog) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}),
+		field.Float("estimated_cost_cny").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}),
 		field.Float("fx_rate_usd_cny").
 			Optional().
 			Nillable().

@@ -109,6 +109,22 @@ func (Account) Fields() []ent.Field {
 		field.Float("rate_multiplier").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(1.0),
+		// actual_cost_cny: 账号实际成本（人民币）
+		// 用于标准余额计费场景下推导真实成本基线
+		field.Float("actual_cost_cny").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}),
+		// actual_cost_usage_usd: 账号实际成本基线对应的累计 token 成本（USD）
+		// 当管理员更新 actual_cost_cny 时重置，用于计算单位成本
+		field.Float("actual_cost_usage_usd").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Time("actual_cost_updated_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 
 		// status: 账户状态，如 "active", "error", "disabled"
 		field.String("status").

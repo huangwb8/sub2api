@@ -105,6 +105,20 @@ func (_c *GroupCreate) SetNillableRateMultiplier(v *float64) *GroupCreate {
 	return _c
 }
 
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (_c *GroupCreate) SetExtraProfitRatePercent(v float64) *GroupCreate {
+	_c.mutation.SetExtraProfitRatePercent(v)
+	return _c
+}
+
+// SetNillableExtraProfitRatePercent sets the "extra_profit_rate_percent" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableExtraProfitRatePercent(v *float64) *GroupCreate {
+	if v != nil {
+		_c.SetExtraProfitRatePercent(*v)
+	}
+	return _c
+}
+
 // SetIsExclusive sets the "is_exclusive" field.
 func (_c *GroupCreate) SetIsExclusive(v bool) *GroupCreate {
 	_c.mutation.SetIsExclusive(v)
@@ -768,6 +782,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
 	}
+	if value, ok := _c.mutation.ExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
+		_node.ExtraProfitRatePercent = &value
+	}
 	if value, ok := _c.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)
 		_node.IsExclusive = value
@@ -1095,6 +1113,30 @@ func (u *GroupUpsert) UpdateRateMultiplier() *GroupUpsert {
 // AddRateMultiplier adds v to the "rate_multiplier" field.
 func (u *GroupUpsert) AddRateMultiplier(v float64) *GroupUpsert {
 	u.Add(group.FieldRateMultiplier, v)
+	return u
+}
+
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (u *GroupUpsert) SetExtraProfitRatePercent(v float64) *GroupUpsert {
+	u.Set(group.FieldExtraProfitRatePercent, v)
+	return u
+}
+
+// UpdateExtraProfitRatePercent sets the "extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateExtraProfitRatePercent() *GroupUpsert {
+	u.SetExcluded(group.FieldExtraProfitRatePercent)
+	return u
+}
+
+// AddExtraProfitRatePercent adds v to the "extra_profit_rate_percent" field.
+func (u *GroupUpsert) AddExtraProfitRatePercent(v float64) *GroupUpsert {
+	u.Add(group.FieldExtraProfitRatePercent, v)
+	return u
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (u *GroupUpsert) ClearExtraProfitRatePercent() *GroupUpsert {
+	u.SetNull(group.FieldExtraProfitRatePercent)
 	return u
 }
 
@@ -1633,6 +1675,34 @@ func (u *GroupUpsertOne) AddRateMultiplier(v float64) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateRateMultiplier() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) SetExtraProfitRatePercent(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetExtraProfitRatePercent(v)
+	})
+}
+
+// AddExtraProfitRatePercent adds v to the "extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) AddExtraProfitRatePercent(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddExtraProfitRatePercent(v)
+	})
+}
+
+// UpdateExtraProfitRatePercent sets the "extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateExtraProfitRatePercent() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateExtraProfitRatePercent()
+	})
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) ClearExtraProfitRatePercent() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearExtraProfitRatePercent()
 	})
 }
 
@@ -2404,6 +2474,34 @@ func (u *GroupUpsertBulk) AddRateMultiplier(v float64) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateRateMultiplier() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) SetExtraProfitRatePercent(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetExtraProfitRatePercent(v)
+	})
+}
+
+// AddExtraProfitRatePercent adds v to the "extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) AddExtraProfitRatePercent(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddExtraProfitRatePercent(v)
+	})
+}
+
+// UpdateExtraProfitRatePercent sets the "extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateExtraProfitRatePercent() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateExtraProfitRatePercent()
+	})
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) ClearExtraProfitRatePercent() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearExtraProfitRatePercent()
 	})
 }
 

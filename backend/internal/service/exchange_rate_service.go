@@ -350,9 +350,16 @@ func BuildUsageChargeSnapshot(costUSD float64, rate *ResolvedExchangeRate) *Usag
 	if costUSD <= 0 || rate == nil || rate.EffectiveRate <= 0 {
 		return nil
 	}
+	return BuildUsageChargeSnapshotFromCNY(costUSD*rate.EffectiveRate, rate)
+}
+
+func BuildUsageChargeSnapshotFromCNY(amountCNY float64, rate *ResolvedExchangeRate) *UsageChargeSnapshot {
+	if amountCNY <= 0 || rate == nil || rate.EffectiveRate <= 0 {
+		return nil
+	}
 	fetchedAt := rate.FetchedAt.UTC()
 	return &UsageChargeSnapshot{
-		ChargedAmountCNY: roundTo(costUSD*rate.EffectiveRate, 8),
+		ChargedAmountCNY: roundTo(amountCNY, 8),
 		FXRateUSDCNY:     roundTo(rate.EffectiveRate, 10),
 		FXRateSource:     strings.TrimSpace(rate.Source),
 		FXFetchedAt:      &fetchedAt,

@@ -181,6 +181,48 @@ func (_c *AccountCreate) SetNillableRateMultiplier(v *float64) *AccountCreate {
 	return _c
 }
 
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (_c *AccountCreate) SetActualCostCny(v float64) *AccountCreate {
+	_c.mutation.SetActualCostCny(v)
+	return _c
+}
+
+// SetNillableActualCostCny sets the "actual_cost_cny" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableActualCostCny(v *float64) *AccountCreate {
+	if v != nil {
+		_c.SetActualCostCny(*v)
+	}
+	return _c
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (_c *AccountCreate) SetActualCostUsageUsd(v float64) *AccountCreate {
+	_c.mutation.SetActualCostUsageUsd(v)
+	return _c
+}
+
+// SetNillableActualCostUsageUsd sets the "actual_cost_usage_usd" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableActualCostUsageUsd(v *float64) *AccountCreate {
+	if v != nil {
+		_c.SetActualCostUsageUsd(*v)
+	}
+	return _c
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (_c *AccountCreate) SetActualCostUpdatedAt(v time.Time) *AccountCreate {
+	_c.mutation.SetActualCostUpdatedAt(v)
+	return _c
+}
+
+// SetNillableActualCostUpdatedAt sets the "actual_cost_updated_at" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableActualCostUpdatedAt(v *time.Time) *AccountCreate {
+	if v != nil {
+		_c.SetActualCostUpdatedAt(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *AccountCreate) SetStatus(v string) *AccountCreate {
 	_c.mutation.SetStatus(v)
@@ -649,6 +691,18 @@ func (_c *AccountCreate) createSpec() (*Account, *sqlgraph.CreateSpec) {
 		_spec.SetField(account.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
 	}
+	if value, ok := _c.mutation.ActualCostCny(); ok {
+		_spec.SetField(account.FieldActualCostCny, field.TypeFloat64, value)
+		_node.ActualCostCny = &value
+	}
+	if value, ok := _c.mutation.ActualCostUsageUsd(); ok {
+		_spec.SetField(account.FieldActualCostUsageUsd, field.TypeFloat64, value)
+		_node.ActualCostUsageUsd = &value
+	}
+	if value, ok := _c.mutation.ActualCostUpdatedAt(); ok {
+		_spec.SetField(account.FieldActualCostUpdatedAt, field.TypeTime, value)
+		_node.ActualCostUpdatedAt = &value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(account.FieldStatus, field.TypeString, value)
 		_node.Status = value
@@ -1011,6 +1065,72 @@ func (u *AccountUpsert) UpdateRateMultiplier() *AccountUpsert {
 // AddRateMultiplier adds v to the "rate_multiplier" field.
 func (u *AccountUpsert) AddRateMultiplier(v float64) *AccountUpsert {
 	u.Add(account.FieldRateMultiplier, v)
+	return u
+}
+
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (u *AccountUpsert) SetActualCostCny(v float64) *AccountUpsert {
+	u.Set(account.FieldActualCostCny, v)
+	return u
+}
+
+// UpdateActualCostCny sets the "actual_cost_cny" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateActualCostCny() *AccountUpsert {
+	u.SetExcluded(account.FieldActualCostCny)
+	return u
+}
+
+// AddActualCostCny adds v to the "actual_cost_cny" field.
+func (u *AccountUpsert) AddActualCostCny(v float64) *AccountUpsert {
+	u.Add(account.FieldActualCostCny, v)
+	return u
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (u *AccountUpsert) ClearActualCostCny() *AccountUpsert {
+	u.SetNull(account.FieldActualCostCny)
+	return u
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (u *AccountUpsert) SetActualCostUsageUsd(v float64) *AccountUpsert {
+	u.Set(account.FieldActualCostUsageUsd, v)
+	return u
+}
+
+// UpdateActualCostUsageUsd sets the "actual_cost_usage_usd" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateActualCostUsageUsd() *AccountUpsert {
+	u.SetExcluded(account.FieldActualCostUsageUsd)
+	return u
+}
+
+// AddActualCostUsageUsd adds v to the "actual_cost_usage_usd" field.
+func (u *AccountUpsert) AddActualCostUsageUsd(v float64) *AccountUpsert {
+	u.Add(account.FieldActualCostUsageUsd, v)
+	return u
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (u *AccountUpsert) ClearActualCostUsageUsd() *AccountUpsert {
+	u.SetNull(account.FieldActualCostUsageUsd)
+	return u
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (u *AccountUpsert) SetActualCostUpdatedAt(v time.Time) *AccountUpsert {
+	u.Set(account.FieldActualCostUpdatedAt, v)
+	return u
+}
+
+// UpdateActualCostUpdatedAt sets the "actual_cost_updated_at" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateActualCostUpdatedAt() *AccountUpsert {
+	u.SetExcluded(account.FieldActualCostUpdatedAt)
+	return u
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (u *AccountUpsert) ClearActualCostUpdatedAt() *AccountUpsert {
+	u.SetNull(account.FieldActualCostUpdatedAt)
 	return u
 }
 
@@ -1528,6 +1648,83 @@ func (u *AccountUpsertOne) AddRateMultiplier(v float64) *AccountUpsertOne {
 func (u *AccountUpsertOne) UpdateRateMultiplier() *AccountUpsertOne {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (u *AccountUpsertOne) SetActualCostCny(v float64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostCny(v)
+	})
+}
+
+// AddActualCostCny adds v to the "actual_cost_cny" field.
+func (u *AccountUpsertOne) AddActualCostCny(v float64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddActualCostCny(v)
+	})
+}
+
+// UpdateActualCostCny sets the "actual_cost_cny" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateActualCostCny() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostCny()
+	})
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (u *AccountUpsertOne) ClearActualCostCny() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostCny()
+	})
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (u *AccountUpsertOne) SetActualCostUsageUsd(v float64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostUsageUsd(v)
+	})
+}
+
+// AddActualCostUsageUsd adds v to the "actual_cost_usage_usd" field.
+func (u *AccountUpsertOne) AddActualCostUsageUsd(v float64) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddActualCostUsageUsd(v)
+	})
+}
+
+// UpdateActualCostUsageUsd sets the "actual_cost_usage_usd" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateActualCostUsageUsd() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostUsageUsd()
+	})
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (u *AccountUpsertOne) ClearActualCostUsageUsd() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostUsageUsd()
+	})
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (u *AccountUpsertOne) SetActualCostUpdatedAt(v time.Time) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostUpdatedAt(v)
+	})
+}
+
+// UpdateActualCostUpdatedAt sets the "actual_cost_updated_at" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateActualCostUpdatedAt() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostUpdatedAt()
+	})
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (u *AccountUpsertOne) ClearActualCostUpdatedAt() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostUpdatedAt()
 	})
 }
 
@@ -2250,6 +2447,83 @@ func (u *AccountUpsertBulk) AddRateMultiplier(v float64) *AccountUpsertBulk {
 func (u *AccountUpsertBulk) UpdateRateMultiplier() *AccountUpsertBulk {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (u *AccountUpsertBulk) SetActualCostCny(v float64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostCny(v)
+	})
+}
+
+// AddActualCostCny adds v to the "actual_cost_cny" field.
+func (u *AccountUpsertBulk) AddActualCostCny(v float64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddActualCostCny(v)
+	})
+}
+
+// UpdateActualCostCny sets the "actual_cost_cny" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateActualCostCny() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostCny()
+	})
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (u *AccountUpsertBulk) ClearActualCostCny() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostCny()
+	})
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (u *AccountUpsertBulk) SetActualCostUsageUsd(v float64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostUsageUsd(v)
+	})
+}
+
+// AddActualCostUsageUsd adds v to the "actual_cost_usage_usd" field.
+func (u *AccountUpsertBulk) AddActualCostUsageUsd(v float64) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.AddActualCostUsageUsd(v)
+	})
+}
+
+// UpdateActualCostUsageUsd sets the "actual_cost_usage_usd" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateActualCostUsageUsd() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostUsageUsd()
+	})
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (u *AccountUpsertBulk) ClearActualCostUsageUsd() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostUsageUsd()
+	})
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (u *AccountUpsertBulk) SetActualCostUpdatedAt(v time.Time) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetActualCostUpdatedAt(v)
+	})
+}
+
+// UpdateActualCostUpdatedAt sets the "actual_cost_updated_at" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateActualCostUpdatedAt() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateActualCostUpdatedAt()
+	})
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (u *AccountUpsertBulk) ClearActualCostUpdatedAt() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearActualCostUpdatedAt()
 	})
 }
 

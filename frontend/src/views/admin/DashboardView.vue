@@ -367,6 +367,81 @@
             <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
           </div>
 
+          <div class="card p-4">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.dashboard.profitability.title') }}
+                </h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.profitability.description') }}
+                </p>
+              </div>
+              <div class="grid min-w-full grid-cols-2 gap-2 text-xs sm:min-w-0 sm:grid-cols-5">
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.balanceRevenue') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(latestProfitabilityPoint?.revenue_balance_cny ?? 0) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.subscriptionRevenue') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(latestProfitabilityPoint?.revenue_subscription_cny ?? 0) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.estimatedCost') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(latestProfitabilityPoint?.estimated_cost_cny ?? 0) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.profit') }}
+                  </div>
+                  <div
+                    class="mt-1 font-semibold"
+                    :class="(latestProfitabilityPoint?.profit_cny ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                  >
+                    {{ formatSignedCny(latestProfitabilityPoint?.profit_cny ?? 0) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.extraProfitRate') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-blue-600 dark:text-blue-400">
+                    {{ formatExtraProfitRate(latestProfitabilityPoint?.extra_profit_rate_percent) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 h-64">
+              <div v-if="profitabilityLoading" class="flex h-full items-center justify-center">
+                <LoadingSpinner size="md" />
+              </div>
+              <Line
+                v-else-if="profitabilityChartData"
+                :data="profitabilityChartData"
+                :options="profitabilityLineOptions"
+              />
+              <div
+                v-else
+                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+              >
+                {{ t('admin.dashboard.noDataAvailable') }}
+              </div>
+            </div>
+          </div>
+
           <!-- User Usage Trend (Full Width) -->
           <div class="card p-4">
             <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
@@ -403,6 +478,7 @@ import type {
   DashboardStats,
   DashboardRecommendationsResponse,
   TrendDataPoint,
+  ProfitabilityTrendPoint,
   ModelStat,
   UserUsageTrendPoint,
   UserSpendingRankingItem
@@ -445,12 +521,14 @@ const loading = ref(false)
 const chartsLoading = ref(false)
 const recommendationsLoading = ref(false)
 const userTrendLoading = ref(false)
+const profitabilityLoading = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
 const recommendations = ref<DashboardRecommendationsResponse | null>(null)
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
+const profitabilityTrend = ref<ProfitabilityTrendPoint[]>([])
 const modelStats = ref<ModelStat[]>([])
 const userTrend = ref<UserUsageTrendPoint[]>([])
 const rankingItems = ref<UserSpendingRankingItem[]>([])
@@ -459,6 +537,7 @@ const rankingTotalRequests = ref(0)
 const rankingTotalTokens = ref(0)
 let chartLoadSeq = 0
 let usersTrendLoadSeq = 0
+let profitabilityLoadSeq = 0
 let rankingLoadSeq = 0
 const rankingLimit = 12
 
@@ -622,6 +701,33 @@ const userTrendChartData = computed(() => {
   }
 })
 
+const latestProfitabilityPoint = computed(() => {
+  if (!profitabilityTrend.value.length) {
+    return null
+  }
+  return profitabilityTrend.value[profitabilityTrend.value.length - 1]
+})
+
+const profitabilityChartData = computed(() => {
+  if (!profitabilityTrend.value.length) return null
+
+  return {
+    labels: profitabilityTrend.value.map(point => point.date),
+    datasets: [
+      {
+        label: t('admin.dashboard.profitability.extraProfitRate'),
+        data: profitabilityTrend.value.map(point => point.extra_profit_rate_percent ?? 0),
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.16)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 4
+      }
+    ]
+  }
+})
+
 // Format helpers
 const formatTokens = (value: number | undefined): string => {
   if (value === undefined || value === null) return '0'
@@ -650,6 +756,17 @@ const formatCost = (value: number): string => {
   return value.toFixed(4)
 }
 
+const formatCny = (value: number): string => `¥${formatCost(value)}`
+
+const formatSignedCny = (value: number): string => `${value >= 0 ? '+' : '-'}${formatCny(Math.abs(value))}`
+
+const formatExtraProfitRate = (value: number | null | undefined): string => {
+  if (value == null || Number.isNaN(value)) {
+    return '--'
+  }
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+}
+
 const formatDuration = (ms: number): string => {
   if (ms >= 1000) {
     return `${(ms / 1000).toFixed(2)}s`
@@ -658,6 +775,53 @@ const formatDuration = (ms: number): string => {
 }
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`
+
+const profitabilityLineOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: 'index' as const
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      callbacks: {
+        label: (context: any) =>
+          `${t('admin.dashboard.profitability.extraProfitRate')}: ${formatExtraProfitRate(
+            typeof context?.raw === 'number' ? context.raw : Number(context?.parsed?.y ?? 0)
+          )}`
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        color: chartColors.value.grid
+      },
+      ticks: {
+        color: chartColors.value.text,
+        font: {
+          size: 10
+        }
+      }
+    },
+    y: {
+      grid: {
+        color: chartColors.value.grid
+      },
+      ticks: {
+        color: chartColors.value.text,
+        font: {
+          size: 10
+        },
+        callback: (value: string | number) => `${Number(value).toFixed(0)}%`
+      }
+    }
+  }
+}))
 
 const recommendationStatusClass = (status: 'healthy' | 'watch' | 'action') => {
   if (status === 'action') {
@@ -760,6 +924,28 @@ const loadUsersTrend = async () => {
   }
 }
 
+const loadProfitabilityTrend = async () => {
+  const currentSeq = ++profitabilityLoadSeq
+  profitabilityLoading.value = true
+  try {
+    const response = await adminAPI.dashboard.getProfitabilityTrend({
+      start_date: startDate.value,
+      end_date: endDate.value,
+      granularity: granularity.value
+    })
+    if (currentSeq !== profitabilityLoadSeq) return
+    profitabilityTrend.value = response.trend || []
+  } catch (error) {
+    if (currentSeq !== profitabilityLoadSeq) return
+    console.error('Error loading profitability trend:', error)
+    profitabilityTrend.value = []
+  } finally {
+    if (currentSeq === profitabilityLoadSeq) {
+      profitabilityLoading.value = false
+    }
+  }
+}
+
 const loadUserSpendingRanking = async () => {
   const currentSeq = ++rankingLoadSeq
   rankingLoading.value = true
@@ -806,6 +992,7 @@ const loadDashboardStats = async () => {
   await Promise.all([
     loadDashboardSnapshot(true),
     loadRecommendations(),
+    loadProfitabilityTrend(),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])
@@ -814,6 +1001,7 @@ const loadDashboardStats = async () => {
 const loadChartData = async () => {
   await Promise.all([
     loadDashboardSnapshot(false),
+    loadProfitabilityTrend(),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])

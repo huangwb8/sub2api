@@ -241,6 +241,80 @@ func (_u *AccountUpdate) AddRateMultiplier(v float64) *AccountUpdate {
 	return _u
 }
 
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (_u *AccountUpdate) SetActualCostCny(v float64) *AccountUpdate {
+	_u.mutation.ResetActualCostCny()
+	_u.mutation.SetActualCostCny(v)
+	return _u
+}
+
+// SetNillableActualCostCny sets the "actual_cost_cny" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableActualCostCny(v *float64) *AccountUpdate {
+	if v != nil {
+		_u.SetActualCostCny(*v)
+	}
+	return _u
+}
+
+// AddActualCostCny adds value to the "actual_cost_cny" field.
+func (_u *AccountUpdate) AddActualCostCny(v float64) *AccountUpdate {
+	_u.mutation.AddActualCostCny(v)
+	return _u
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (_u *AccountUpdate) ClearActualCostCny() *AccountUpdate {
+	_u.mutation.ClearActualCostCny()
+	return _u
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (_u *AccountUpdate) SetActualCostUsageUsd(v float64) *AccountUpdate {
+	_u.mutation.ResetActualCostUsageUsd()
+	_u.mutation.SetActualCostUsageUsd(v)
+	return _u
+}
+
+// SetNillableActualCostUsageUsd sets the "actual_cost_usage_usd" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableActualCostUsageUsd(v *float64) *AccountUpdate {
+	if v != nil {
+		_u.SetActualCostUsageUsd(*v)
+	}
+	return _u
+}
+
+// AddActualCostUsageUsd adds value to the "actual_cost_usage_usd" field.
+func (_u *AccountUpdate) AddActualCostUsageUsd(v float64) *AccountUpdate {
+	_u.mutation.AddActualCostUsageUsd(v)
+	return _u
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (_u *AccountUpdate) ClearActualCostUsageUsd() *AccountUpdate {
+	_u.mutation.ClearActualCostUsageUsd()
+	return _u
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (_u *AccountUpdate) SetActualCostUpdatedAt(v time.Time) *AccountUpdate {
+	_u.mutation.SetActualCostUpdatedAt(v)
+	return _u
+}
+
+// SetNillableActualCostUpdatedAt sets the "actual_cost_updated_at" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableActualCostUpdatedAt(v *time.Time) *AccountUpdate {
+	if v != nil {
+		_u.SetActualCostUpdatedAt(*v)
+	}
+	return _u
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (_u *AccountUpdate) ClearActualCostUpdatedAt() *AccountUpdate {
+	_u.mutation.ClearActualCostUpdatedAt()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *AccountUpdate) SetStatus(v string) *AccountUpdate {
 	_u.mutation.SetStatus(v)
@@ -732,6 +806,30 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(account.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.ActualCostCny(); ok {
+		_spec.SetField(account.FieldActualCostCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedActualCostCny(); ok {
+		_spec.AddField(account.FieldActualCostCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.ActualCostCnyCleared() {
+		_spec.ClearField(account.FieldActualCostCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ActualCostUsageUsd(); ok {
+		_spec.SetField(account.FieldActualCostUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedActualCostUsageUsd(); ok {
+		_spec.AddField(account.FieldActualCostUsageUsd, field.TypeFloat64, value)
+	}
+	if _u.mutation.ActualCostUsageUsdCleared() {
+		_spec.ClearField(account.FieldActualCostUsageUsd, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ActualCostUpdatedAt(); ok {
+		_spec.SetField(account.FieldActualCostUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ActualCostUpdatedAtCleared() {
+		_spec.ClearField(account.FieldActualCostUpdatedAt, field.TypeTime)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(account.FieldStatus, field.TypeString, value)
 	}
@@ -1165,6 +1263,80 @@ func (_u *AccountUpdateOne) SetNillableRateMultiplier(v *float64) *AccountUpdate
 // AddRateMultiplier adds value to the "rate_multiplier" field.
 func (_u *AccountUpdateOne) AddRateMultiplier(v float64) *AccountUpdateOne {
 	_u.mutation.AddRateMultiplier(v)
+	return _u
+}
+
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (_u *AccountUpdateOne) SetActualCostCny(v float64) *AccountUpdateOne {
+	_u.mutation.ResetActualCostCny()
+	_u.mutation.SetActualCostCny(v)
+	return _u
+}
+
+// SetNillableActualCostCny sets the "actual_cost_cny" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableActualCostCny(v *float64) *AccountUpdateOne {
+	if v != nil {
+		_u.SetActualCostCny(*v)
+	}
+	return _u
+}
+
+// AddActualCostCny adds value to the "actual_cost_cny" field.
+func (_u *AccountUpdateOne) AddActualCostCny(v float64) *AccountUpdateOne {
+	_u.mutation.AddActualCostCny(v)
+	return _u
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (_u *AccountUpdateOne) ClearActualCostCny() *AccountUpdateOne {
+	_u.mutation.ClearActualCostCny()
+	return _u
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (_u *AccountUpdateOne) SetActualCostUsageUsd(v float64) *AccountUpdateOne {
+	_u.mutation.ResetActualCostUsageUsd()
+	_u.mutation.SetActualCostUsageUsd(v)
+	return _u
+}
+
+// SetNillableActualCostUsageUsd sets the "actual_cost_usage_usd" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableActualCostUsageUsd(v *float64) *AccountUpdateOne {
+	if v != nil {
+		_u.SetActualCostUsageUsd(*v)
+	}
+	return _u
+}
+
+// AddActualCostUsageUsd adds value to the "actual_cost_usage_usd" field.
+func (_u *AccountUpdateOne) AddActualCostUsageUsd(v float64) *AccountUpdateOne {
+	_u.mutation.AddActualCostUsageUsd(v)
+	return _u
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (_u *AccountUpdateOne) ClearActualCostUsageUsd() *AccountUpdateOne {
+	_u.mutation.ClearActualCostUsageUsd()
+	return _u
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (_u *AccountUpdateOne) SetActualCostUpdatedAt(v time.Time) *AccountUpdateOne {
+	_u.mutation.SetActualCostUpdatedAt(v)
+	return _u
+}
+
+// SetNillableActualCostUpdatedAt sets the "actual_cost_updated_at" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableActualCostUpdatedAt(v *time.Time) *AccountUpdateOne {
+	if v != nil {
+		_u.SetActualCostUpdatedAt(*v)
+	}
+	return _u
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (_u *AccountUpdateOne) ClearActualCostUpdatedAt() *AccountUpdateOne {
+	_u.mutation.ClearActualCostUpdatedAt()
 	return _u
 }
 
@@ -1688,6 +1860,30 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 	}
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(account.FieldRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ActualCostCny(); ok {
+		_spec.SetField(account.FieldActualCostCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedActualCostCny(); ok {
+		_spec.AddField(account.FieldActualCostCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.ActualCostCnyCleared() {
+		_spec.ClearField(account.FieldActualCostCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ActualCostUsageUsd(); ok {
+		_spec.SetField(account.FieldActualCostUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedActualCostUsageUsd(); ok {
+		_spec.AddField(account.FieldActualCostUsageUsd, field.TypeFloat64, value)
+	}
+	if _u.mutation.ActualCostUsageUsdCleared() {
+		_spec.ClearField(account.FieldActualCostUsageUsd, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ActualCostUpdatedAt(); ok {
+		_spec.SetField(account.FieldActualCostUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ActualCostUpdatedAtCleared() {
+		_spec.ClearField(account.FieldActualCostUpdatedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(account.FieldStatus, field.TypeString, value)

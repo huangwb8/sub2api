@@ -1032,7 +1032,7 @@
         <ProxySelector v-model="form.proxy_id" :proxies="proxies" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
           <input v-model.number="form.concurrency" type="number" min="1" class="input"
@@ -1060,6 +1060,11 @@
           <label class="input-label">{{ t('admin.accounts.billingRateMultiplier') }}</label>
           <input v-model.number="form.rate_multiplier" type="number" min="0" step="0.001" class="input" />
           <p class="input-hint">{{ t('admin.accounts.billingRateMultiplierHint') }}</p>
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.accounts.actualCostCny') }}</label>
+          <input v-model.number="form.actual_cost_cny" type="number" min="0" step="0.01" class="input" />
+          <p class="input-hint">{{ t('admin.accounts.actualCostCnyHint') }}</p>
         </div>
       </div>
       <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -1989,6 +1994,7 @@ const form = reactive({
   load_factor: null as number | null,
   priority: 1,
   rate_multiplier: 1,
+  actual_cost_cny: null as number | null,
   status: 'active' as 'active' | 'inactive' | 'error',
   group_ids: [] as number[],
   expires_at: null as number | null
@@ -2043,6 +2049,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   form.load_factor = newAccount.load_factor ?? null
   form.priority = newAccount.priority
   form.rate_multiplier = newAccount.rate_multiplier ?? 1
+  form.actual_cost_cny = newAccount.actual_cost_cny ?? null
   form.status = (newAccount.status === 'active' || newAccount.status === 'inactive' || newAccount.status === 'error')
     ? newAccount.status
     : 'active'
@@ -2308,7 +2315,7 @@ watch(
   { immediate: true }
 )
 
-const loadTLSProfiles = async () => {
+async function loadTLSProfiles() {
   try {
     const profiles = await adminAPI.tlsFingerprintProfiles.list()
     tlsFingerprintProfiles.value = profiles.map(p => ({ id: p.id, name: p.name }))
@@ -2740,6 +2747,12 @@ const handleSubmit = async () => {
     if (lf == null || Number.isNaN(lf) || lf <= 0) {
       updatePayload.load_factor = 0
     }
+    const actualCostCny = form.actual_cost_cny
+    const normalizedActualCostCny = Number(actualCostCny)
+    updatePayload.actual_cost_cny =
+      actualCostCny == null || Number.isNaN(normalizedActualCostCny) || normalizedActualCostCny <= 0
+        ? 0
+        : normalizedActualCostCny
     updatePayload.auto_pause_on_expired = autoPauseOnExpired.value
 
     // For apikey type, handle credentials update

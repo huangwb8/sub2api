@@ -7328,6 +7328,10 @@ type postUsageBillingParams struct {
 	APIKeyService         APIKeyQuotaUpdater
 }
 
+type accountActualCostUsageRecorder interface {
+	IncrementActualCostUsage(ctx context.Context, id int64, amountUSD float64) error
+}
+
 func (p *postUsageBillingParams) shouldDeductAPIKeyQuota() bool {
 	return p.Cost.ActualCost > 0 && p.APIKey.Quota > 0 && p.APIKeyService != nil
 }
@@ -7390,7 +7394,7 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 		}
 	}
 
-	finalizePostUsageBilling(p, deps)
+	finalizePostUsageBilling(ctx, p, deps)
 }
 
 func resolveUsageBillingRequestID(ctx context.Context, upstreamRequestID string) string {
@@ -7519,17 +7523,20 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 		}
 	}
 
-	finalizePostUsageBilling(p, deps)
+	finalizePostUsageBilling(ctx, p, deps)
 	if result.ChargeSnapshot == nil {
 		result.ChargeSnapshot = p.ChargeSnapshot
 	}
 	return result, nil
 }
 
-func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps) {
+func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *billingDeps) {
 	if p == nil || p.Cost == nil || deps == nil {
 		return
 	}
+
+	billingCtx, cancel := detachedBillingContext(ctx)
+	defer cancel()
 
 	if p.IsSubscriptionBill {
 		if p.Cost.TotalCost > 0 && p.User != nil && p.APIKey != nil && p.APIKey.GroupID != nil {
@@ -7541,6 +7548,14 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps) {
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
 		deps.billingCacheService.QueueUpdateAPIKeyRateLimitUsage(p.APIKey.ID, p.Cost.ActualCost)
+	}
+
+	if p.Cost.TotalCost > 0 && p.Account != nil && p.Account.ActualCostCNY != nil && *p.Account.ActualCostCNY > 0 {
+		if recorder, ok := deps.accountRepo.(accountActualCostUsageRecorder); ok {
+			if err := recorder.IncrementActualCostUsage(billingCtx, p.Account.ID, p.Cost.TotalCost); err != nil {
+				slog.Error("increment account actual cost usage failed", "account_id", p.Account.ID, "cost_usd", p.Cost.TotalCost, "error", err)
+			}
+		}
 	}
 
 	deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
@@ -7774,11 +7789,22 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		billingType = BillingTypeSubscription
 	}
 	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
+	var profitabilityCharge *standardBalanceChargeResolution
+	if !isSubscriptionBilling {
+		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
+	}
+	if profitabilityCharge != nil {
+		cost.ActualCost = profitabilityCharge.ChargeCostUSD
+		chargeSnapshot = profitabilityCharge.ChargeSnapshot
+	}
 
 	// 创建使用日志
 	accountRateMultiplier := account.BillingRateMultiplier()
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
 		requestedModel, multiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, chargeSnapshot, opts)
+	if profitabilityCharge != nil {
+		usageLog.EstimatedCostCNY = &profitabilityCharge.EstimatedCostCNY
+	}
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")

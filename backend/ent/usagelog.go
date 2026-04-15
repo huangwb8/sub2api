@@ -74,6 +74,8 @@ type UsageLog struct {
 	ActualCost float64 `json:"actual_cost,omitempty"`
 	// ChargedAmountCny holds the value of the "charged_amount_cny" field.
 	ChargedAmountCny *float64 `json:"charged_amount_cny,omitempty"`
+	// EstimatedCostCny holds the value of the "estimated_cost_cny" field.
+	EstimatedCostCny *float64 `json:"estimated_cost_cny,omitempty"`
 	// FxRateUsdCny holds the value of the "fx_rate_usd_cny" field.
 	FxRateUsdCny *float64 `json:"fx_rate_usd_cny,omitempty"`
 	// FxRateSource holds the value of the "fx_rate_source" field.
@@ -191,7 +193,7 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case usagelog.FieldStream, usagelog.FieldCacheTTLOverridden:
 			values[i] = new(sql.NullBool)
-		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldChargedAmountCny, usagelog.FieldFxRateUsdCny, usagelog.FieldFxSafetyMargin, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
+		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldChargedAmountCny, usagelog.FieldEstimatedCostCny, usagelog.FieldFxRateUsdCny, usagelog.FieldFxSafetyMargin, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
 		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount:
 			values[i] = new(sql.NullInt64)
@@ -384,6 +386,13 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ChargedAmountCny = new(float64)
 				*_m.ChargedAmountCny = value.Float64
+			}
+		case usagelog.FieldEstimatedCostCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field estimated_cost_cny", values[i])
+			} else if value.Valid {
+				_m.EstimatedCostCny = new(float64)
+				*_m.EstimatedCostCny = value.Float64
 			}
 		case usagelog.FieldFxRateUsdCny:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -645,6 +654,11 @@ func (_m *UsageLog) String() string {
 	builder.WriteString(", ")
 	if v := _m.ChargedAmountCny; v != nil {
 		builder.WriteString("charged_amount_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.EstimatedCostCny; v != nil {
+		builder.WriteString("estimated_cost_cny=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

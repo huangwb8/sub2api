@@ -382,6 +382,7 @@ export interface Group {
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
+  extra_profit_rate_percent?: number | null
   is_exclusive: boolean
   status: 'active' | 'inactive'
   subscription_type: SubscriptionType
@@ -495,6 +496,7 @@ export interface CreateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  extra_profit_rate_percent?: number | null
   is_exclusive?: boolean
   subscription_type?: SubscriptionType
   daily_limit_usd?: number | null
@@ -520,6 +522,7 @@ export interface UpdateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  extra_profit_rate_percent?: number | null
   is_exclusive?: boolean
   status?: 'active' | 'inactive'
   subscription_type?: SubscriptionType
@@ -682,6 +685,9 @@ export interface Account {
   current_concurrency?: number // Real-time concurrency count from Redis
   priority: number
   rate_multiplier?: number // Account billing multiplier (>=0, 0 means free)
+  actual_cost_cny?: number | null
+  actual_cost_usage_usd?: number | null
+  actual_cost_updated_at?: string | null
   status: 'active' | 'inactive' | 'error'
   error_message: string | null
   last_used_at: string | null
@@ -862,6 +868,7 @@ export interface CreateAccountRequest {
   load_factor?: number | null
   priority?: number
   rate_multiplier?: number // Account billing multiplier (>=0, 0 means free)
+  actual_cost_cny?: number | null
   group_ids?: number[]
   expires_at?: number | null
   auto_pause_on_expired?: boolean
@@ -879,6 +886,7 @@ export interface UpdateAccountRequest {
   load_factor?: number | null
   priority?: number
   rate_multiplier?: number // Account billing multiplier (>=0, 0 means free)
+  actual_cost_cny?: number | null
   schedulable?: boolean
   status?: 'active' | 'inactive' | 'error'
   group_ids?: number[]
@@ -1253,6 +1261,15 @@ export interface TrendDataPoint {
   total_tokens: number
   cost: number // 标准计费
   actual_cost: number // 实际扣除
+}
+
+export interface ProfitabilityTrendPoint {
+  date: string
+  revenue_balance_cny: number
+  revenue_subscription_cny: number
+  estimated_cost_cny: number
+  profit_cny: number
+  extra_profit_rate_percent?: number | null
 }
 
 export interface ModelStat {

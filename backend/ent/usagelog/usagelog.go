@@ -66,6 +66,8 @@ const (
 	FieldActualCost = "actual_cost"
 	// FieldChargedAmountCny holds the string denoting the charged_amount_cny field in the database.
 	FieldChargedAmountCny = "charged_amount_cny"
+	// FieldEstimatedCostCny holds the string denoting the estimated_cost_cny field in the database.
+	FieldEstimatedCostCny = "estimated_cost_cny"
 	// FieldFxRateUsdCny holds the string denoting the fx_rate_usd_cny field in the database.
 	FieldFxRateUsdCny = "fx_rate_usd_cny"
 	// FieldFxRateSource holds the string denoting the fx_rate_source field in the database.
@@ -176,6 +178,7 @@ var Columns = []string{
 	FieldTotalCost,
 	FieldActualCost,
 	FieldChargedAmountCny,
+	FieldEstimatedCostCny,
 	FieldFxRateUsdCny,
 	FieldFxRateSource,
 	FieldFxFetchedAt,
@@ -401,6 +404,11 @@ func ByActualCost(opts ...sql.OrderTermOption) OrderOption {
 // ByChargedAmountCny orders the results by the charged_amount_cny field.
 func ByChargedAmountCny(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChargedAmountCny, opts...).ToFunc()
+}
+
+// ByEstimatedCostCny orders the results by the estimated_cost_cny field.
+func ByEstimatedCostCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimatedCostCny, opts...).ToFunc()
 }
 
 // ByFxRateUsdCny orders the results by the fx_rate_usd_cny field.

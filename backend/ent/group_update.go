@@ -117,6 +117,33 @@ func (_u *GroupUpdate) AddRateMultiplier(v float64) *GroupUpdate {
 	return _u
 }
 
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (_u *GroupUpdate) SetExtraProfitRatePercent(v float64) *GroupUpdate {
+	_u.mutation.ResetExtraProfitRatePercent()
+	_u.mutation.SetExtraProfitRatePercent(v)
+	return _u
+}
+
+// SetNillableExtraProfitRatePercent sets the "extra_profit_rate_percent" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableExtraProfitRatePercent(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetExtraProfitRatePercent(*v)
+	}
+	return _u
+}
+
+// AddExtraProfitRatePercent adds value to the "extra_profit_rate_percent" field.
+func (_u *GroupUpdate) AddExtraProfitRatePercent(v float64) *GroupUpdate {
+	_u.mutation.AddExtraProfitRatePercent(v)
+	return _u
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (_u *GroupUpdate) ClearExtraProfitRatePercent() *GroupUpdate {
+	_u.mutation.ClearExtraProfitRatePercent()
+	return _u
+}
+
 // SetIsExclusive sets the "is_exclusive" field.
 func (_u *GroupUpdate) SetIsExclusive(v bool) *GroupUpdate {
 	_u.mutation.SetIsExclusive(v)
@@ -896,6 +923,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.ExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedExtraProfitRatePercent(); ok {
+		_spec.AddField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.ExtraProfitRatePercentCleared() {
+		_spec.ClearField(group.FieldExtraProfitRatePercent, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)
 	}
@@ -1422,6 +1458,33 @@ func (_u *GroupUpdateOne) SetNillableRateMultiplier(v *float64) *GroupUpdateOne 
 // AddRateMultiplier adds value to the "rate_multiplier" field.
 func (_u *GroupUpdateOne) AddRateMultiplier(v float64) *GroupUpdateOne {
 	_u.mutation.AddRateMultiplier(v)
+	return _u
+}
+
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) SetExtraProfitRatePercent(v float64) *GroupUpdateOne {
+	_u.mutation.ResetExtraProfitRatePercent()
+	_u.mutation.SetExtraProfitRatePercent(v)
+	return _u
+}
+
+// SetNillableExtraProfitRatePercent sets the "extra_profit_rate_percent" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableExtraProfitRatePercent(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetExtraProfitRatePercent(*v)
+	}
+	return _u
+}
+
+// AddExtraProfitRatePercent adds value to the "extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) AddExtraProfitRatePercent(v float64) *GroupUpdateOne {
+	_u.mutation.AddExtraProfitRatePercent(v)
+	return _u
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) ClearExtraProfitRatePercent() *GroupUpdateOne {
+	_u.mutation.ClearExtraProfitRatePercent()
 	return _u
 }
 
@@ -2233,6 +2296,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedExtraProfitRatePercent(); ok {
+		_spec.AddField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.ExtraProfitRatePercentCleared() {
+		_spec.ClearField(group.FieldExtraProfitRatePercent, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)

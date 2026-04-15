@@ -236,6 +236,15 @@
               {{ (row.rate_multiplier ?? 1).toFixed(2) }}x
             </span>
           </template>
+          <template #cell-actual_cost_cny="{ row }">
+            <span
+              v-if="row.actual_cost_cny != null && row.actual_cost_cny > 0"
+              class="text-sm font-mono text-gray-700 dark:text-gray-300"
+            >
+              ¥{{ row.actual_cost_cny.toFixed(2) }}
+            </span>
+            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+          </template>
           <template #cell-priority="{ value }">
             <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}</span>
           </template>
@@ -398,7 +407,7 @@ const exportingData = ref(false)
 const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
 const hiddenColumns = reactive<Set<string>>(new Set())
-const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier']
+const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
 
 // Sorting settings
@@ -947,6 +956,7 @@ const allColumns = computed(() => {
     { key: 'proxy', label: t('admin.accounts.columns.proxy'), sortable: false },
     { key: 'priority', label: t('admin.accounts.columns.priority'), sortable: true },
     { key: 'rate_multiplier', label: t('admin.accounts.columns.billingRateMultiplier'), sortable: true },
+    { key: 'actual_cost_cny', label: t('admin.accounts.columns.actualCostCny'), sortable: true },
     { key: 'last_used_at', label: t('admin.accounts.columns.lastUsed'), sortable: true },
     { key: 'expires_at', label: t('admin.accounts.columns.expiresAt'), sortable: true },
     { key: 'notes', label: t('admin.accounts.columns.notes'), sortable: false },

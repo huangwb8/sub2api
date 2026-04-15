@@ -674,10 +674,10 @@ const adminNavItems = computed((): NavItem[] => {
       ? [{ path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon }]
       : []),
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
+    { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },
     { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
     { path: '/admin/channels', label: t('nav.channels', '渠道管理'), icon: ChannelIcon, hideInSimpleMode: true },
     { path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
-    { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },
     { path: '/admin/announcements', label: t('nav.announcements'), icon: BellIcon },
     { path: '/admin/proxies', label: t('nav.proxies'), icon: ServerIcon },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
@@ -692,7 +692,6 @@ const adminNavItems = computed((): NavItem[] => {
             children: [
               { path: '/admin/orders/dashboard', label: t('nav.paymentDashboard'), icon: ChartIcon },
               { path: '/admin/orders', label: t('nav.orderManagement'), icon: OrderIcon },
-              { path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon },
             ],
           },
         ]
@@ -705,7 +704,7 @@ const adminNavItems = computed((): NavItem[] => {
     const filtered = baseItems.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
     if (paymentNavigationEnabled.value) {
-      filtered.push({ path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon })
+      filtered.push({ path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon })
     }
     filtered.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
     // Add admin custom menu items after settings

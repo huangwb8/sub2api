@@ -73,6 +73,7 @@ type Group struct {
 	Description    string  `json:"description"`
 	Platform       string  `json:"platform"`
 	RateMultiplier float64 `json:"rate_multiplier"`
+	ExtraProfitRatePercent *float64 `json:"extra_profit_rate_percent,omitempty"`
 	IsExclusive    bool    `json:"is_exclusive"`
 	Status         string  `json:"status"`
 
@@ -143,6 +144,9 @@ type Account struct {
 	LoadFactor         *int           `json:"load_factor,omitempty"`
 	Priority           int            `json:"priority"`
 	RateMultiplier     float64        `json:"rate_multiplier"`
+	ActualCostCNY      *float64       `json:"actual_cost_cny,omitempty"`
+	ActualCostUsageUSD *float64       `json:"actual_cost_usage_usd,omitempty"`
+	ActualCostUpdatedAt *time.Time    `json:"actual_cost_updated_at,omitempty"`
 	Status             string         `json:"status"`
 	ErrorMessage       string         `json:"error_message"`
 	LastUsedAt         *time.Time     `json:"last_used_at"`
@@ -365,6 +369,7 @@ type UsageLog struct {
 	TotalCost         float64 `json:"total_cost"`
 	ActualCost        float64 `json:"actual_cost"`
 	ChargedAmountCNY  *float64 `json:"charged_amount_cny,omitempty"`
+	EstimatedCostCNY  *float64 `json:"estimated_cost_cny,omitempty"`
 	FXRateUSDCNY      *float64 `json:"fx_rate_usd_cny,omitempty"`
 	FXRateSource      *string `json:"fx_rate_source,omitempty"`
 	FXFetchedAt       *time.Time `json:"fx_fetched_at,omitempty"`

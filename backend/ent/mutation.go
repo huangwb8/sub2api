@@ -2276,6 +2276,11 @@ type AccountMutation struct {
 	addpriority               *int
 	rate_multiplier           *float64
 	addrate_multiplier        *float64
+	actual_cost_cny           *float64
+	addactual_cost_cny        *float64
+	actual_cost_usage_usd     *float64
+	addactual_cost_usage_usd  *float64
+	actual_cost_updated_at    *time.Time
 	status                    *string
 	error_message             *string
 	last_used_at              *time.Time
@@ -3037,6 +3042,195 @@ func (m *AccountMutation) AddedRateMultiplier() (r float64, exists bool) {
 func (m *AccountMutation) ResetRateMultiplier() {
 	m.rate_multiplier = nil
 	m.addrate_multiplier = nil
+}
+
+// SetActualCostCny sets the "actual_cost_cny" field.
+func (m *AccountMutation) SetActualCostCny(f float64) {
+	m.actual_cost_cny = &f
+	m.addactual_cost_cny = nil
+}
+
+// ActualCostCny returns the value of the "actual_cost_cny" field in the mutation.
+func (m *AccountMutation) ActualCostCny() (r float64, exists bool) {
+	v := m.actual_cost_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActualCostCny returns the old "actual_cost_cny" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldActualCostCny(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActualCostCny is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActualCostCny requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActualCostCny: %w", err)
+	}
+	return oldValue.ActualCostCny, nil
+}
+
+// AddActualCostCny adds f to the "actual_cost_cny" field.
+func (m *AccountMutation) AddActualCostCny(f float64) {
+	if m.addactual_cost_cny != nil {
+		*m.addactual_cost_cny += f
+	} else {
+		m.addactual_cost_cny = &f
+	}
+}
+
+// AddedActualCostCny returns the value that was added to the "actual_cost_cny" field in this mutation.
+func (m *AccountMutation) AddedActualCostCny() (r float64, exists bool) {
+	v := m.addactual_cost_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearActualCostCny clears the value of the "actual_cost_cny" field.
+func (m *AccountMutation) ClearActualCostCny() {
+	m.actual_cost_cny = nil
+	m.addactual_cost_cny = nil
+	m.clearedFields[account.FieldActualCostCny] = struct{}{}
+}
+
+// ActualCostCnyCleared returns if the "actual_cost_cny" field was cleared in this mutation.
+func (m *AccountMutation) ActualCostCnyCleared() bool {
+	_, ok := m.clearedFields[account.FieldActualCostCny]
+	return ok
+}
+
+// ResetActualCostCny resets all changes to the "actual_cost_cny" field.
+func (m *AccountMutation) ResetActualCostCny() {
+	m.actual_cost_cny = nil
+	m.addactual_cost_cny = nil
+	delete(m.clearedFields, account.FieldActualCostCny)
+}
+
+// SetActualCostUsageUsd sets the "actual_cost_usage_usd" field.
+func (m *AccountMutation) SetActualCostUsageUsd(f float64) {
+	m.actual_cost_usage_usd = &f
+	m.addactual_cost_usage_usd = nil
+}
+
+// ActualCostUsageUsd returns the value of the "actual_cost_usage_usd" field in the mutation.
+func (m *AccountMutation) ActualCostUsageUsd() (r float64, exists bool) {
+	v := m.actual_cost_usage_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActualCostUsageUsd returns the old "actual_cost_usage_usd" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldActualCostUsageUsd(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActualCostUsageUsd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActualCostUsageUsd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActualCostUsageUsd: %w", err)
+	}
+	return oldValue.ActualCostUsageUsd, nil
+}
+
+// AddActualCostUsageUsd adds f to the "actual_cost_usage_usd" field.
+func (m *AccountMutation) AddActualCostUsageUsd(f float64) {
+	if m.addactual_cost_usage_usd != nil {
+		*m.addactual_cost_usage_usd += f
+	} else {
+		m.addactual_cost_usage_usd = &f
+	}
+}
+
+// AddedActualCostUsageUsd returns the value that was added to the "actual_cost_usage_usd" field in this mutation.
+func (m *AccountMutation) AddedActualCostUsageUsd() (r float64, exists bool) {
+	v := m.addactual_cost_usage_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearActualCostUsageUsd clears the value of the "actual_cost_usage_usd" field.
+func (m *AccountMutation) ClearActualCostUsageUsd() {
+	m.actual_cost_usage_usd = nil
+	m.addactual_cost_usage_usd = nil
+	m.clearedFields[account.FieldActualCostUsageUsd] = struct{}{}
+}
+
+// ActualCostUsageUsdCleared returns if the "actual_cost_usage_usd" field was cleared in this mutation.
+func (m *AccountMutation) ActualCostUsageUsdCleared() bool {
+	_, ok := m.clearedFields[account.FieldActualCostUsageUsd]
+	return ok
+}
+
+// ResetActualCostUsageUsd resets all changes to the "actual_cost_usage_usd" field.
+func (m *AccountMutation) ResetActualCostUsageUsd() {
+	m.actual_cost_usage_usd = nil
+	m.addactual_cost_usage_usd = nil
+	delete(m.clearedFields, account.FieldActualCostUsageUsd)
+}
+
+// SetActualCostUpdatedAt sets the "actual_cost_updated_at" field.
+func (m *AccountMutation) SetActualCostUpdatedAt(t time.Time) {
+	m.actual_cost_updated_at = &t
+}
+
+// ActualCostUpdatedAt returns the value of the "actual_cost_updated_at" field in the mutation.
+func (m *AccountMutation) ActualCostUpdatedAt() (r time.Time, exists bool) {
+	v := m.actual_cost_updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActualCostUpdatedAt returns the old "actual_cost_updated_at" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldActualCostUpdatedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActualCostUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActualCostUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActualCostUpdatedAt: %w", err)
+	}
+	return oldValue.ActualCostUpdatedAt, nil
+}
+
+// ClearActualCostUpdatedAt clears the value of the "actual_cost_updated_at" field.
+func (m *AccountMutation) ClearActualCostUpdatedAt() {
+	m.actual_cost_updated_at = nil
+	m.clearedFields[account.FieldActualCostUpdatedAt] = struct{}{}
+}
+
+// ActualCostUpdatedAtCleared returns if the "actual_cost_updated_at" field was cleared in this mutation.
+func (m *AccountMutation) ActualCostUpdatedAtCleared() bool {
+	_, ok := m.clearedFields[account.FieldActualCostUpdatedAt]
+	return ok
+}
+
+// ResetActualCostUpdatedAt resets all changes to the "actual_cost_updated_at" field.
+func (m *AccountMutation) ResetActualCostUpdatedAt() {
+	m.actual_cost_updated_at = nil
+	delete(m.clearedFields, account.FieldActualCostUpdatedAt)
 }
 
 // SetStatus sets the "status" field.
@@ -3855,7 +4049,7 @@ func (m *AccountMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AccountMutation) Fields() []string {
-	fields := make([]string, 0, 28)
+	fields := make([]string, 0, 31)
 	if m.created_at != nil {
 		fields = append(fields, account.FieldCreatedAt)
 	}
@@ -3897,6 +4091,15 @@ func (m *AccountMutation) Fields() []string {
 	}
 	if m.rate_multiplier != nil {
 		fields = append(fields, account.FieldRateMultiplier)
+	}
+	if m.actual_cost_cny != nil {
+		fields = append(fields, account.FieldActualCostCny)
+	}
+	if m.actual_cost_usage_usd != nil {
+		fields = append(fields, account.FieldActualCostUsageUsd)
+	}
+	if m.actual_cost_updated_at != nil {
+		fields = append(fields, account.FieldActualCostUpdatedAt)
 	}
 	if m.status != nil {
 		fields = append(fields, account.FieldStatus)
@@ -3976,6 +4179,12 @@ func (m *AccountMutation) Field(name string) (ent.Value, bool) {
 		return m.Priority()
 	case account.FieldRateMultiplier:
 		return m.RateMultiplier()
+	case account.FieldActualCostCny:
+		return m.ActualCostCny()
+	case account.FieldActualCostUsageUsd:
+		return m.ActualCostUsageUsd()
+	case account.FieldActualCostUpdatedAt:
+		return m.ActualCostUpdatedAt()
 	case account.FieldStatus:
 		return m.Status()
 	case account.FieldErrorMessage:
@@ -4041,6 +4250,12 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldPriority(ctx)
 	case account.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
+	case account.FieldActualCostCny:
+		return m.OldActualCostCny(ctx)
+	case account.FieldActualCostUsageUsd:
+		return m.OldActualCostUsageUsd(ctx)
+	case account.FieldActualCostUpdatedAt:
+		return m.OldActualCostUpdatedAt(ctx)
 	case account.FieldStatus:
 		return m.OldStatus(ctx)
 	case account.FieldErrorMessage:
@@ -4176,6 +4391,27 @@ func (m *AccountMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRateMultiplier(v)
 		return nil
+	case account.FieldActualCostCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActualCostCny(v)
+		return nil
+	case account.FieldActualCostUsageUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActualCostUsageUsd(v)
+		return nil
+	case account.FieldActualCostUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActualCostUpdatedAt(v)
+		return nil
 	case account.FieldStatus:
 		v, ok := value.(string)
 		if !ok {
@@ -4294,6 +4530,12 @@ func (m *AccountMutation) AddedFields() []string {
 	if m.addrate_multiplier != nil {
 		fields = append(fields, account.FieldRateMultiplier)
 	}
+	if m.addactual_cost_cny != nil {
+		fields = append(fields, account.FieldActualCostCny)
+	}
+	if m.addactual_cost_usage_usd != nil {
+		fields = append(fields, account.FieldActualCostUsageUsd)
+	}
 	return fields
 }
 
@@ -4310,6 +4552,10 @@ func (m *AccountMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPriority()
 	case account.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
+	case account.FieldActualCostCny:
+		return m.AddedActualCostCny()
+	case account.FieldActualCostUsageUsd:
+		return m.AddedActualCostUsageUsd()
 	}
 	return nil, false
 }
@@ -4347,6 +4593,20 @@ func (m *AccountMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddRateMultiplier(v)
 		return nil
+	case account.FieldActualCostCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddActualCostCny(v)
+		return nil
+	case account.FieldActualCostUsageUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddActualCostUsageUsd(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Account numeric field %s", name)
 }
@@ -4366,6 +4626,15 @@ func (m *AccountMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(account.FieldLoadFactor) {
 		fields = append(fields, account.FieldLoadFactor)
+	}
+	if m.FieldCleared(account.FieldActualCostCny) {
+		fields = append(fields, account.FieldActualCostCny)
+	}
+	if m.FieldCleared(account.FieldActualCostUsageUsd) {
+		fields = append(fields, account.FieldActualCostUsageUsd)
+	}
+	if m.FieldCleared(account.FieldActualCostUpdatedAt) {
+		fields = append(fields, account.FieldActualCostUpdatedAt)
 	}
 	if m.FieldCleared(account.FieldErrorMessage) {
 		fields = append(fields, account.FieldErrorMessage)
@@ -4425,6 +4694,15 @@ func (m *AccountMutation) ClearField(name string) error {
 		return nil
 	case account.FieldLoadFactor:
 		m.ClearLoadFactor()
+		return nil
+	case account.FieldActualCostCny:
+		m.ClearActualCostCny()
+		return nil
+	case account.FieldActualCostUsageUsd:
+		m.ClearActualCostUsageUsd()
+		return nil
+	case account.FieldActualCostUpdatedAt:
+		m.ClearActualCostUpdatedAt()
 		return nil
 	case account.FieldErrorMessage:
 		m.ClearErrorMessage()
@@ -4508,6 +4786,15 @@ func (m *AccountMutation) ResetField(name string) error {
 		return nil
 	case account.FieldRateMultiplier:
 		m.ResetRateMultiplier()
+		return nil
+	case account.FieldActualCostCny:
+		m.ResetActualCostCny()
+		return nil
+	case account.FieldActualCostUsageUsd:
+		m.ResetActualCostUsageUsd()
+		return nil
+	case account.FieldActualCostUpdatedAt:
+		m.ResetActualCostUpdatedAt()
 		return nil
 	case account.FieldStatus:
 		m.ResetStatus()
@@ -8220,6 +8507,8 @@ type GroupMutation struct {
 	description                             *string
 	rate_multiplier                         *float64
 	addrate_multiplier                      *float64
+	extra_profit_rate_percent               *float64
+	addextra_profit_rate_percent            *float64
 	is_exclusive                            *bool
 	status                                  *string
 	platform                                *string
@@ -8637,6 +8926,76 @@ func (m *GroupMutation) AddedRateMultiplier() (r float64, exists bool) {
 func (m *GroupMutation) ResetRateMultiplier() {
 	m.rate_multiplier = nil
 	m.addrate_multiplier = nil
+}
+
+// SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
+func (m *GroupMutation) SetExtraProfitRatePercent(f float64) {
+	m.extra_profit_rate_percent = &f
+	m.addextra_profit_rate_percent = nil
+}
+
+// ExtraProfitRatePercent returns the value of the "extra_profit_rate_percent" field in the mutation.
+func (m *GroupMutation) ExtraProfitRatePercent() (r float64, exists bool) {
+	v := m.extra_profit_rate_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExtraProfitRatePercent returns the old "extra_profit_rate_percent" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldExtraProfitRatePercent(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExtraProfitRatePercent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExtraProfitRatePercent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExtraProfitRatePercent: %w", err)
+	}
+	return oldValue.ExtraProfitRatePercent, nil
+}
+
+// AddExtraProfitRatePercent adds f to the "extra_profit_rate_percent" field.
+func (m *GroupMutation) AddExtraProfitRatePercent(f float64) {
+	if m.addextra_profit_rate_percent != nil {
+		*m.addextra_profit_rate_percent += f
+	} else {
+		m.addextra_profit_rate_percent = &f
+	}
+}
+
+// AddedExtraProfitRatePercent returns the value that was added to the "extra_profit_rate_percent" field in this mutation.
+func (m *GroupMutation) AddedExtraProfitRatePercent() (r float64, exists bool) {
+	v := m.addextra_profit_rate_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
+func (m *GroupMutation) ClearExtraProfitRatePercent() {
+	m.extra_profit_rate_percent = nil
+	m.addextra_profit_rate_percent = nil
+	m.clearedFields[group.FieldExtraProfitRatePercent] = struct{}{}
+}
+
+// ExtraProfitRatePercentCleared returns if the "extra_profit_rate_percent" field was cleared in this mutation.
+func (m *GroupMutation) ExtraProfitRatePercentCleared() bool {
+	_, ok := m.clearedFields[group.FieldExtraProfitRatePercent]
+	return ok
+}
+
+// ResetExtraProfitRatePercent resets all changes to the "extra_profit_rate_percent" field.
+func (m *GroupMutation) ResetExtraProfitRatePercent() {
+	m.extra_profit_rate_percent = nil
+	m.addextra_profit_rate_percent = nil
+	delete(m.clearedFields, group.FieldExtraProfitRatePercent)
 }
 
 // SetIsExclusive sets the "is_exclusive" field.
@@ -10201,7 +10560,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 30)
+	fields := make([]string, 0, 31)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -10219,6 +10578,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.rate_multiplier != nil {
 		fields = append(fields, group.FieldRateMultiplier)
+	}
+	if m.extra_profit_rate_percent != nil {
+		fields = append(fields, group.FieldExtraProfitRatePercent)
 	}
 	if m.is_exclusive != nil {
 		fields = append(fields, group.FieldIsExclusive)
@@ -10312,6 +10674,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case group.FieldRateMultiplier:
 		return m.RateMultiplier()
+	case group.FieldExtraProfitRatePercent:
+		return m.ExtraProfitRatePercent()
 	case group.FieldIsExclusive:
 		return m.IsExclusive()
 	case group.FieldStatus:
@@ -10381,6 +10745,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDescription(ctx)
 	case group.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
+	case group.FieldExtraProfitRatePercent:
+		return m.OldExtraProfitRatePercent(ctx)
 	case group.FieldIsExclusive:
 		return m.OldIsExclusive(ctx)
 	case group.FieldStatus:
@@ -10479,6 +10845,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRateMultiplier(v)
+		return nil
+	case group.FieldExtraProfitRatePercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExtraProfitRatePercent(v)
 		return nil
 	case group.FieldIsExclusive:
 		v, ok := value.(bool)
@@ -10659,6 +11032,9 @@ func (m *GroupMutation) AddedFields() []string {
 	if m.addrate_multiplier != nil {
 		fields = append(fields, group.FieldRateMultiplier)
 	}
+	if m.addextra_profit_rate_percent != nil {
+		fields = append(fields, group.FieldExtraProfitRatePercent)
+	}
 	if m.adddaily_limit_usd != nil {
 		fields = append(fields, group.FieldDailyLimitUsd)
 	}
@@ -10699,6 +11075,8 @@ func (m *GroupMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case group.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
+	case group.FieldExtraProfitRatePercent:
+		return m.AddedExtraProfitRatePercent()
 	case group.FieldDailyLimitUsd:
 		return m.AddedDailyLimitUsd()
 	case group.FieldWeeklyLimitUsd:
@@ -10734,6 +11112,13 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRateMultiplier(v)
+		return nil
+	case group.FieldExtraProfitRatePercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExtraProfitRatePercent(v)
 		return nil
 	case group.FieldDailyLimitUsd:
 		v, ok := value.(float64)
@@ -10819,6 +11204,9 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
+	if m.FieldCleared(group.FieldExtraProfitRatePercent) {
+		fields = append(fields, group.FieldExtraProfitRatePercent)
+	}
 	if m.FieldCleared(group.FieldDailyLimitUsd) {
 		fields = append(fields, group.FieldDailyLimitUsd)
 	}
@@ -10865,6 +11253,9 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case group.FieldExtraProfitRatePercent:
+		m.ClearExtraProfitRatePercent()
 		return nil
 	case group.FieldDailyLimitUsd:
 		m.ClearDailyLimitUsd()
@@ -10918,6 +11309,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldRateMultiplier:
 		m.ResetRateMultiplier()
+		return nil
+	case group.FieldExtraProfitRatePercent:
+		m.ResetExtraProfitRatePercent()
 		return nil
 	case group.FieldIsExclusive:
 		m.ResetIsExclusive()
@@ -24872,6 +25266,8 @@ type UsageLogMutation struct {
 	addactual_cost              *float64
 	charged_amount_cny          *float64
 	addcharged_amount_cny       *float64
+	estimated_cost_cny          *float64
+	addestimated_cost_cny       *float64
 	fx_rate_usd_cny             *float64
 	addfx_rate_usd_cny          *float64
 	fx_rate_source              *string
@@ -26345,6 +26741,76 @@ func (m *UsageLogMutation) ResetChargedAmountCny() {
 	delete(m.clearedFields, usagelog.FieldChargedAmountCny)
 }
 
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (m *UsageLogMutation) SetEstimatedCostCny(f float64) {
+	m.estimated_cost_cny = &f
+	m.addestimated_cost_cny = nil
+}
+
+// EstimatedCostCny returns the value of the "estimated_cost_cny" field in the mutation.
+func (m *UsageLogMutation) EstimatedCostCny() (r float64, exists bool) {
+	v := m.estimated_cost_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEstimatedCostCny returns the old "estimated_cost_cny" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldEstimatedCostCny(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEstimatedCostCny is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEstimatedCostCny requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEstimatedCostCny: %w", err)
+	}
+	return oldValue.EstimatedCostCny, nil
+}
+
+// AddEstimatedCostCny adds f to the "estimated_cost_cny" field.
+func (m *UsageLogMutation) AddEstimatedCostCny(f float64) {
+	if m.addestimated_cost_cny != nil {
+		*m.addestimated_cost_cny += f
+	} else {
+		m.addestimated_cost_cny = &f
+	}
+}
+
+// AddedEstimatedCostCny returns the value that was added to the "estimated_cost_cny" field in this mutation.
+func (m *UsageLogMutation) AddedEstimatedCostCny() (r float64, exists bool) {
+	v := m.addestimated_cost_cny
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (m *UsageLogMutation) ClearEstimatedCostCny() {
+	m.estimated_cost_cny = nil
+	m.addestimated_cost_cny = nil
+	m.clearedFields[usagelog.FieldEstimatedCostCny] = struct{}{}
+}
+
+// EstimatedCostCnyCleared returns if the "estimated_cost_cny" field was cleared in this mutation.
+func (m *UsageLogMutation) EstimatedCostCnyCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldEstimatedCostCny]
+	return ok
+}
+
+// ResetEstimatedCostCny resets all changes to the "estimated_cost_cny" field.
+func (m *UsageLogMutation) ResetEstimatedCostCny() {
+	m.estimated_cost_cny = nil
+	m.addestimated_cost_cny = nil
+	delete(m.clearedFields, usagelog.FieldEstimatedCostCny)
+}
+
 // SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
 func (m *UsageLogMutation) SetFxRateUsdCny(f float64) {
 	m.fx_rate_usd_cny = &f
@@ -27385,7 +27851,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 42)
+	fields := make([]string, 0, 43)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -27463,6 +27929,9 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.charged_amount_cny != nil {
 		fields = append(fields, usagelog.FieldChargedAmountCny)
+	}
+	if m.estimated_cost_cny != nil {
+		fields = append(fields, usagelog.FieldEstimatedCostCny)
 	}
 	if m.fx_rate_usd_cny != nil {
 		fields = append(fields, usagelog.FieldFxRateUsdCny)
@@ -27572,6 +28041,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.ActualCost()
 	case usagelog.FieldChargedAmountCny:
 		return m.ChargedAmountCny()
+	case usagelog.FieldEstimatedCostCny:
+		return m.EstimatedCostCny()
 	case usagelog.FieldFxRateUsdCny:
 		return m.FxRateUsdCny()
 	case usagelog.FieldFxRateSource:
@@ -27665,6 +28136,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldActualCost(ctx)
 	case usagelog.FieldChargedAmountCny:
 		return m.OldChargedAmountCny(ctx)
+	case usagelog.FieldEstimatedCostCny:
+		return m.OldEstimatedCostCny(ctx)
 	case usagelog.FieldFxRateUsdCny:
 		return m.OldFxRateUsdCny(ctx)
 	case usagelog.FieldFxRateSource:
@@ -27888,6 +28361,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetChargedAmountCny(v)
 		return nil
+	case usagelog.FieldEstimatedCostCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEstimatedCostCny(v)
+		return nil
 	case usagelog.FieldFxRateUsdCny:
 		v, ok := value.(float64)
 		if !ok {
@@ -28050,6 +28530,9 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addcharged_amount_cny != nil {
 		fields = append(fields, usagelog.FieldChargedAmountCny)
 	}
+	if m.addestimated_cost_cny != nil {
+		fields = append(fields, usagelog.FieldEstimatedCostCny)
+	}
 	if m.addfx_rate_usd_cny != nil {
 		fields = append(fields, usagelog.FieldFxRateUsdCny)
 	}
@@ -28110,6 +28593,8 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedActualCost()
 	case usagelog.FieldChargedAmountCny:
 		return m.AddedChargedAmountCny()
+	case usagelog.FieldEstimatedCostCny:
+		return m.AddedEstimatedCostCny()
 	case usagelog.FieldFxRateUsdCny:
 		return m.AddedFxRateUsdCny()
 	case usagelog.FieldFxSafetyMargin:
@@ -28233,6 +28718,13 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddChargedAmountCny(v)
 		return nil
+	case usagelog.FieldEstimatedCostCny:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEstimatedCostCny(v)
+		return nil
 	case usagelog.FieldFxRateUsdCny:
 		v, ok := value.(float64)
 		if !ok {
@@ -28324,6 +28816,9 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldChargedAmountCny) {
 		fields = append(fields, usagelog.FieldChargedAmountCny)
 	}
+	if m.FieldCleared(usagelog.FieldEstimatedCostCny) {
+		fields = append(fields, usagelog.FieldEstimatedCostCny)
+	}
 	if m.FieldCleared(usagelog.FieldFxRateUsdCny) {
 		fields = append(fields, usagelog.FieldFxRateUsdCny)
 	}
@@ -28394,6 +28889,9 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldChargedAmountCny:
 		m.ClearChargedAmountCny()
+		return nil
+	case usagelog.FieldEstimatedCostCny:
+		m.ClearEstimatedCostCny()
 		return nil
 	case usagelog.FieldFxRateUsdCny:
 		m.ClearFxRateUsdCny()
@@ -28510,6 +29008,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldChargedAmountCny:
 		m.ResetChargedAmountCny()
+		return nil
+	case usagelog.FieldEstimatedCostCny:
+		m.ResetEstimatedCostCny()
 		return nil
 	case usagelog.FieldFxRateUsdCny:
 		m.ResetFxRateUsdCny()

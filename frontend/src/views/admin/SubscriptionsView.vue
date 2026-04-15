@@ -1,7 +1,10 @@
 <template>
   <AppLayout>
-    <TablePageLayout>
-      <template #filters>
+    <div class="space-y-6">
+      <AdminPaymentPlansView embedded />
+
+      <TablePageLayout>
+        <template #filters>
         <!-- Top Toolbar: Left (search + filters) / Right (actions) -->
         <div class="flex flex-wrap items-start justify-between gap-4">
           <!-- Left: Fuzzy user search + filters (wrap to multiple lines) -->
@@ -428,8 +431,9 @@
         @update:page="handlePageChange"
         @update:pageSize="handlePageSizeChange"
       />
-      </template>
-    </TablePageLayout>
+        </template>
+      </TablePageLayout>
+    </div>
 
     <!-- Assign Subscription Modal -->
     <BaseDialog
@@ -758,6 +762,7 @@ import Select from '@/components/common/Select.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Icon from '@/components/icons/Icon.vue'
+import AdminPaymentPlansView from '@/views/admin/orders/AdminPaymentPlansView.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()

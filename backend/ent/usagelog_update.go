@@ -549,6 +549,33 @@ func (_u *UsageLogUpdate) ClearChargedAmountCny() *UsageLogUpdate {
 	return _u
 }
 
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (_u *UsageLogUpdate) SetEstimatedCostCny(v float64) *UsageLogUpdate {
+	_u.mutation.ResetEstimatedCostCny()
+	_u.mutation.SetEstimatedCostCny(v)
+	return _u
+}
+
+// SetNillableEstimatedCostCny sets the "estimated_cost_cny" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableEstimatedCostCny(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetEstimatedCostCny(*v)
+	}
+	return _u
+}
+
+// AddEstimatedCostCny adds value to the "estimated_cost_cny" field.
+func (_u *UsageLogUpdate) AddEstimatedCostCny(v float64) *UsageLogUpdate {
+	_u.mutation.AddEstimatedCostCny(v)
+	return _u
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (_u *UsageLogUpdate) ClearEstimatedCostCny() *UsageLogUpdate {
+	_u.mutation.ClearEstimatedCostCny()
+	return _u
+}
+
 // SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
 func (_u *UsageLogUpdate) SetFxRateUsdCny(v float64) *UsageLogUpdate {
 	_u.mutation.ResetFxRateUsdCny()
@@ -1168,6 +1195,15 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ChargedAmountCnyCleared() {
 		_spec.ClearField(usagelog.FieldChargedAmountCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimatedCostCny(); ok {
+		_spec.SetField(usagelog.FieldEstimatedCostCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimatedCostCny(); ok {
+		_spec.AddField(usagelog.FieldEstimatedCostCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimatedCostCnyCleared() {
+		_spec.ClearField(usagelog.FieldEstimatedCostCny, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.FxRateUsdCny(); ok {
 		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
@@ -1949,6 +1985,33 @@ func (_u *UsageLogUpdateOne) ClearChargedAmountCny() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (_u *UsageLogUpdateOne) SetEstimatedCostCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetEstimatedCostCny()
+	_u.mutation.SetEstimatedCostCny(v)
+	return _u
+}
+
+// SetNillableEstimatedCostCny sets the "estimated_cost_cny" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableEstimatedCostCny(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetEstimatedCostCny(*v)
+	}
+	return _u
+}
+
+// AddEstimatedCostCny adds value to the "estimated_cost_cny" field.
+func (_u *UsageLogUpdateOne) AddEstimatedCostCny(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddEstimatedCostCny(v)
+	return _u
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (_u *UsageLogUpdateOne) ClearEstimatedCostCny() *UsageLogUpdateOne {
+	_u.mutation.ClearEstimatedCostCny()
+	return _u
+}
+
 // SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
 func (_u *UsageLogUpdateOne) SetFxRateUsdCny(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetFxRateUsdCny()
@@ -2598,6 +2661,15 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.ChargedAmountCnyCleared() {
 		_spec.ClearField(usagelog.FieldChargedAmountCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimatedCostCny(); ok {
+		_spec.SetField(usagelog.FieldEstimatedCostCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimatedCostCny(); ok {
+		_spec.AddField(usagelog.FieldEstimatedCostCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimatedCostCnyCleared() {
+		_spec.ClearField(usagelog.FieldEstimatedCostCny, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.FxRateUsdCny(); ok {
 		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)

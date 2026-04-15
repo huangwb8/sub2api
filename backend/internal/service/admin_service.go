@@ -132,6 +132,7 @@ type CreateGroupInput struct {
 	Description      string
 	Platform         string
 	RateMultiplier   float64
+	ExtraProfitRatePercent *float64
 	IsExclusive      bool
 	SubscriptionType string   // standard/subscription
 	DailyLimitUSD    *float64 // 日限额 (USD)
@@ -166,6 +167,7 @@ type UpdateGroupInput struct {
 	Description      string
 	Platform         string
 	RateMultiplier   *float64 // 使用指针以支持设置为0
+	ExtraProfitRatePercent *float64
 	IsExclusive      *bool
 	Status           string
 	SubscriptionType string   // standard/subscription
@@ -207,6 +209,7 @@ type CreateAccountInput struct {
 	Concurrency        int
 	Priority           int
 	RateMultiplier     *float64 // 账号计费倍率（>=0，允许 0）
+	ActualCostCNY      *float64
 	LoadFactor         *int
 	GroupIDs           []int64
 	ExpiresAt          *int64
@@ -228,6 +231,7 @@ type UpdateAccountInput struct {
 	Concurrency           *int     // 使用指针区分"未提供"和"设置为0"
 	Priority              *int     // 使用指针区分"未提供"和"设置为0"
 	RateMultiplier        *float64 // 账号计费倍率（>=0，允许 0）
+	ActualCostCNY         *float64
 	LoadFactor            *int
 	Status                string
 	GroupIDs              *[]int64
@@ -244,6 +248,7 @@ type BulkUpdateAccountsInput struct {
 	Concurrency    *int
 	Priority       *int
 	RateMultiplier *float64 // 账号计费倍率（>=0，允许 0）
+	ActualCostCNY  *float64
 	LoadFactor     *int
 	Status         string
 	Schedulable    *bool
@@ -820,6 +825,9 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	if subscriptionType == "" {
 		subscriptionType = SubscriptionTypeStandard
 	}
+	if input.ExtraProfitRatePercent != nil && *input.ExtraProfitRatePercent < 0 {
+		return nil, errors.New("extra_profit_rate_percent must be >= 0")
+	}
 
 	// 限额字段：nil/负数 表示"无限制"，0 表示"不允许用量"，正数表示具体限额
 	dailyLimit := normalizeLimit(input.DailyLimitUSD)
@@ -891,6 +899,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		Description:                     input.Description,
 		Platform:                        platform,
 		RateMultiplier:                  input.RateMultiplier,
+		ExtraProfitRatePercent:          input.ExtraProfitRatePercent,
 		IsExclusive:                     input.IsExclusive,
 		Status:                          StatusActive,
 		SubscriptionType:                subscriptionType,
@@ -1039,6 +1048,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if err != nil {
 		return nil, err
 	}
+	if input.ExtraProfitRatePercent != nil && *input.ExtraProfitRatePercent < 0 {
+		return nil, errors.New("extra_profit_rate_percent must be >= 0")
+	}
 
 	if input.Name != "" {
 		group.Name = input.Name
@@ -1051,6 +1063,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	}
 	if input.RateMultiplier != nil {
 		group.RateMultiplier = *input.RateMultiplier
+	}
+	if input.ExtraProfitRatePercent != nil {
+		group.ExtraProfitRatePercent = input.ExtraProfitRatePercent
 	}
 	if input.IsExclusive != nil {
 		group.IsExclusive = *input.IsExclusive
@@ -1553,6 +1568,20 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 		}
 		account.RateMultiplier = input.RateMultiplier
 	}
+	if input.ActualCostCNY != nil {
+		if *input.ActualCostCNY < 0 {
+			return nil, errors.New("actual_cost_cny must be >= 0")
+		}
+		if *input.ActualCostCNY == 0 {
+			account.ActualCostCNY = nil
+		} else {
+			account.ActualCostCNY = input.ActualCostCNY
+			zero := 0.0
+			now := time.Now().UTC()
+			account.ActualCostUsageUSD = &zero
+			account.ActualCostUpdatedAt = &now
+		}
+	}
 	if input.LoadFactor != nil && *input.LoadFactor > 0 {
 		if *input.LoadFactor > 10000 {
 			return nil, errors.New("load_factor must be <= 10000")
@@ -1667,6 +1696,22 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		}
 		account.RateMultiplier = input.RateMultiplier
 	}
+	if input.ActualCostCNY != nil {
+		if *input.ActualCostCNY < 0 {
+			return nil, errors.New("actual_cost_cny must be >= 0")
+		}
+		if *input.ActualCostCNY == 0 {
+			account.ActualCostCNY = nil
+			account.ActualCostUsageUSD = nil
+			account.ActualCostUpdatedAt = nil
+		} else {
+			account.ActualCostCNY = input.ActualCostCNY
+			zero := 0.0
+			now := time.Now().UTC()
+			account.ActualCostUsageUSD = &zero
+			account.ActualCostUpdatedAt = &now
+		}
+	}
 	if input.LoadFactor != nil {
 		if *input.LoadFactor <= 0 {
 			account.LoadFactor = nil // 0 或负数表示清除
@@ -1776,6 +1821,9 @@ func (s *adminServiceImpl) BulkUpdateAccounts(ctx context.Context, input *BulkUp
 			return nil, errors.New("rate_multiplier must be >= 0")
 		}
 	}
+	if input.ActualCostCNY != nil && *input.ActualCostCNY < 0 {
+		return nil, errors.New("actual_cost_cny must be >= 0")
+	}
 
 	// Prepare bulk updates for columns and JSONB fields.
 	repoUpdates := AccountBulkUpdate{
@@ -1796,6 +1844,9 @@ func (s *adminServiceImpl) BulkUpdateAccounts(ctx context.Context, input *BulkUp
 	}
 	if input.RateMultiplier != nil {
 		repoUpdates.RateMultiplier = input.RateMultiplier
+	}
+	if input.ActualCostCNY != nil {
+		repoUpdates.ActualCostCNY = input.ActualCostCNY
 	}
 	if input.LoadFactor != nil {
 		if *input.LoadFactor <= 0 {

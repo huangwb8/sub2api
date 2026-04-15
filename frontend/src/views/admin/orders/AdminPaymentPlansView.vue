@@ -1,6 +1,23 @@
 <template>
-  <AppLayout>
-    <div class="space-y-4">
+  <component :is="isEmbedded ? 'div' : AppLayout">
+    <div
+      :class="[
+        'space-y-4',
+        isEmbedded
+          ? 'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-dark-800'
+          : ''
+      ]"
+    >
+      <div v-if="isEmbedded" class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+            {{ t('nav.paymentPlans') }}
+          </h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ t('payment.admin.planManagementHint') }}
+          </p>
+        </div>
+      </div>
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
         <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
@@ -146,7 +163,7 @@
     </BaseDialog>
 
     <ConfirmDialog :show="showDeletePlanDialog" :title="t('payment.admin.deletePlan')" :message="t('payment.admin.deletePlanConfirm')" :confirm-text="t('common.delete')" danger @confirm="handleDeletePlan" @cancel="showDeletePlanDialog = false" />
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -172,6 +189,10 @@ import { formatPaymentAmount, formatUsageCost } from '@/utils/format'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false
+})
+const isEmbedded = computed(() => props.embedded)
 
 // ==================== Groups ====================
 

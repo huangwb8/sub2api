@@ -185,6 +185,11 @@ func ChargedAmountCny(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldChargedAmountCny, v))
 }
 
+// EstimatedCostCny applies equality check predicate on the "estimated_cost_cny" field. It's identical to EstimatedCostCnyEQ.
+func EstimatedCostCny(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldEstimatedCostCny, v))
+}
+
 // FxRateUsdCny applies equality check predicate on the "fx_rate_usd_cny" field. It's identical to FxRateUsdCnyEQ.
 func FxRateUsdCny(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldFxRateUsdCny, v))
@@ -1468,6 +1473,56 @@ func ChargedAmountCnyIsNil() predicate.UsageLog {
 // ChargedAmountCnyNotNil applies the NotNil predicate on the "charged_amount_cny" field.
 func ChargedAmountCnyNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldChargedAmountCny))
+}
+
+// EstimatedCostCnyEQ applies the EQ predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyNEQ applies the NEQ predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyIn applies the In predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldEstimatedCostCny, vs...))
+}
+
+// EstimatedCostCnyNotIn applies the NotIn predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldEstimatedCostCny, vs...))
+}
+
+// EstimatedCostCnyGT applies the GT predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyGTE applies the GTE predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyLT applies the LT predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyLTE applies the LTE predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldEstimatedCostCny, v))
+}
+
+// EstimatedCostCnyIsNil applies the IsNil predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldEstimatedCostCny))
+}
+
+// EstimatedCostCnyNotNil applies the NotNil predicate on the "estimated_cost_cny" field.
+func EstimatedCostCnyNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldEstimatedCostCny))
 }
 
 // FxRateUsdCnyEQ applies the EQ predicate on the "fx_rate_usd_cny" field.

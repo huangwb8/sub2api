@@ -351,6 +351,20 @@ func (_c *UsageLogCreate) SetNillableChargedAmountCny(v *float64) *UsageLogCreat
 	return _c
 }
 
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (_c *UsageLogCreate) SetEstimatedCostCny(v float64) *UsageLogCreate {
+	_c.mutation.SetEstimatedCostCny(v)
+	return _c
+}
+
+// SetNillableEstimatedCostCny sets the "estimated_cost_cny" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableEstimatedCostCny(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetEstimatedCostCny(*v)
+	}
+	return _c
+}
+
 // SetFxRateUsdCny sets the "fx_rate_usd_cny" field.
 func (_c *UsageLogCreate) SetFxRateUsdCny(v float64) *UsageLogCreate {
 	_c.mutation.SetFxRateUsdCny(v)
@@ -954,6 +968,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ChargedAmountCny(); ok {
 		_spec.SetField(usagelog.FieldChargedAmountCny, field.TypeFloat64, value)
 		_node.ChargedAmountCny = &value
+	}
+	if value, ok := _c.mutation.EstimatedCostCny(); ok {
+		_spec.SetField(usagelog.FieldEstimatedCostCny, field.TypeFloat64, value)
+		_node.EstimatedCostCny = &value
 	}
 	if value, ok := _c.mutation.FxRateUsdCny(); ok {
 		_spec.SetField(usagelog.FieldFxRateUsdCny, field.TypeFloat64, value)
@@ -1603,6 +1621,30 @@ func (u *UsageLogUpsert) AddChargedAmountCny(v float64) *UsageLogUpsert {
 // ClearChargedAmountCny clears the value of the "charged_amount_cny" field.
 func (u *UsageLogUpsert) ClearChargedAmountCny() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldChargedAmountCny)
+	return u
+}
+
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (u *UsageLogUpsert) SetEstimatedCostCny(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldEstimatedCostCny, v)
+	return u
+}
+
+// UpdateEstimatedCostCny sets the "estimated_cost_cny" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateEstimatedCostCny() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldEstimatedCostCny)
+	return u
+}
+
+// AddEstimatedCostCny adds v to the "estimated_cost_cny" field.
+func (u *UsageLogUpsert) AddEstimatedCostCny(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldEstimatedCostCny, v)
+	return u
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (u *UsageLogUpsert) ClearEstimatedCostCny() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldEstimatedCostCny)
 	return u
 }
 
@@ -2461,6 +2503,34 @@ func (u *UsageLogUpsertOne) UpdateChargedAmountCny() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearChargedAmountCny() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearChargedAmountCny()
+	})
+}
+
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (u *UsageLogUpsertOne) SetEstimatedCostCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetEstimatedCostCny(v)
+	})
+}
+
+// AddEstimatedCostCny adds v to the "estimated_cost_cny" field.
+func (u *UsageLogUpsertOne) AddEstimatedCostCny(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddEstimatedCostCny(v)
+	})
+}
+
+// UpdateEstimatedCostCny sets the "estimated_cost_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateEstimatedCostCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateEstimatedCostCny()
+	})
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (u *UsageLogUpsertOne) ClearEstimatedCostCny() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearEstimatedCostCny()
 	})
 }
 
@@ -3533,6 +3603,34 @@ func (u *UsageLogUpsertBulk) UpdateChargedAmountCny() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearChargedAmountCny() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearChargedAmountCny()
+	})
+}
+
+// SetEstimatedCostCny sets the "estimated_cost_cny" field.
+func (u *UsageLogUpsertBulk) SetEstimatedCostCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetEstimatedCostCny(v)
+	})
+}
+
+// AddEstimatedCostCny adds v to the "estimated_cost_cny" field.
+func (u *UsageLogUpsertBulk) AddEstimatedCostCny(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddEstimatedCostCny(v)
+	})
+}
+
+// UpdateEstimatedCostCny sets the "estimated_cost_cny" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateEstimatedCostCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateEstimatedCostCny()
+	})
+}
+
+// ClearEstimatedCostCny clears the value of the "estimated_cost_cny" field.
+func (u *UsageLogUpsertBulk) ClearEstimatedCostCny() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearEstimatedCostCny()
 	})
 }
 
