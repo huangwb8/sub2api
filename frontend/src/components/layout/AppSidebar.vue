@@ -7,7 +7,14 @@
     ]"
   >
     <!-- Logo/Brand -->
-    <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': sidebarCollapsed }">
+    <router-link
+      to="/home"
+      class="sidebar-header sidebar-header-link"
+      :class="{ 'sidebar-header-collapsed': sidebarCollapsed }"
+      data-testid="sidebar-home-link"
+      aria-label="返回首页"
+      @click="handleMenuItemClick('/home')"
+    >
       <!-- Custom Logo or Default Logo -->
       <div class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
         <img v-if="settingsLoaded" :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
@@ -19,7 +26,7 @@
         <!-- Version Badge -->
         <VersionBadge :version="siteVersion" />
       </div>
-    </div>
+    </router-link>
 
     <!-- Navigation -->
     <nav class="sidebar-nav scrollbar-hide">
@@ -809,6 +816,11 @@ onMounted(() => {
   gap: 0;
   padding-left: 1.125rem;
   padding-right: 1.125rem;
+}
+
+.sidebar-header-link {
+  color: inherit;
+  text-decoration: none;
 }
 
 .sidebar-brand {
