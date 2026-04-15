@@ -8,11 +8,15 @@ const { pollOrderStatus, cancelOrder, verifyOrder, showError } = vi.hoisted(() =
   showError: vi.fn(),
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-  }),
-}))
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (key: string) => key,
+    }),
+  }
+})
 
 vi.mock('@/stores/payment', () => ({
   usePaymentStore: () => ({
@@ -94,5 +98,6 @@ describe('PaymentStatusPanel', () => {
     expect(verifyOrder).toHaveBeenCalledWith('sub2_test_pending')
     expect(wrapper.emitted('success')).toBeTruthy()
     expect(wrapper.text()).toContain('payment.result.subscriptionSuccess')
+    expect(wrapper.text()).toContain('¥19.90')
   })
 })

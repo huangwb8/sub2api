@@ -14,8 +14,8 @@
     </template>
     <template #cell-amount="{ value, row }">
       <div class="text-sm">
-        <span class="font-medium text-gray-900 dark:text-white">${{ value.toFixed(2) }}</span>
-        <span v-if="row.pay_amount !== value" class="ml-1 text-xs text-gray-500">(${{ row.pay_amount.toFixed(2) }})</span>
+        <span class="font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(value) }}</span>
+        <span v-if="row.pay_amount !== value" class="ml-1 text-xs text-gray-500">({{ formatPaymentAmount(row.pay_amount) }})</span>
       </div>
     </template>
     <template #cell-payment_type="{ value }">
@@ -38,6 +38,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { PaymentOrder } from '@/types/payment'
 import type { Column } from '@/components/common/types'
+import { formatPaymentAmount } from '@/utils/format'
 import DataTable from '@/components/common/DataTable.vue'
 import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
 

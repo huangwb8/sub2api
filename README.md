@@ -106,6 +106,7 @@ sudo systemctl enable --now sub2api
 - 用户端有完整购买、支付、结果页与订单页
 - 支持 webhook 延迟场景下的主动补单恢复
 - 支持余额支付订阅，减少无意义的第三方跳转
+- 用户余额与支付金额按人民币展示，API usage / quota / limit 按美元展示，避免两套金额语义混淆
 
 支付与订阅配置详见 `docs/PAYMENT_CN.md`。
 

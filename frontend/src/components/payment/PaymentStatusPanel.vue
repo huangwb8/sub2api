@@ -22,7 +22,7 @@
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">${{ paidOrder.pay_amount.toFixed(2) }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(paidOrder.pay_amount) }}</span>
               </div>
             </div>
           </div>
@@ -124,6 +124,7 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import { POPUP_WINDOW_FEATURES } from '@/components/payment/providerConfig'
 import type { PaymentOrder } from '@/types/payment'
 import Icon from '@/components/icons/Icon.vue'
+import { formatPaymentAmount } from '@/utils/format'
 import QRCode from 'qrcode'
 import alipayIcon from '@/assets/icons/alipay.svg'
 import wxpayIcon from '@/assets/icons/wxpay.svg'

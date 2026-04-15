@@ -42,7 +42,7 @@
                   <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('payment.methods.' + method.type, method.type) }}</span>
                 </div>
                 <div class="text-right">
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">${{ method.amount.toFixed(2) }}</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(method.amount) }}</span>
                   <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">({{ method.count }})</span>
                 </div>
               </div>
@@ -57,7 +57,7 @@
                   <span :class="['flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold', rankClass(idx)]">{{ idx + 1 }}</span>
                   <span class="text-sm text-gray-700 dark:text-gray-300">{{ user.email }}</span>
                 </div>
-                <span class="text-sm font-medium text-gray-900 dark:text-white">${{ user.amount.toFixed(2) }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(user.amount) }}</span>
               </div>
             </div>
           </div>
@@ -74,6 +74,7 @@ import { useAppStore } from '@/stores/app'
 import { adminPaymentAPI } from '@/api/admin/payment'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { DashboardStats } from '@/types/payment'
+import { formatPaymentAmount } from '@/utils/format'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'

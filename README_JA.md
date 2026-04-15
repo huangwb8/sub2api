@@ -106,6 +106,7 @@ sudo systemctl enable --now sub2api
 - ユーザー側に購入、支払い、結果、注文ページが用意されている
 - Webhook 遅延時も注文照会で回復できる
 - サブスクリプションに対する残高支払いに対応している
+- ユーザー残高と決済金額は CNY、API usage / quota / limit は USD で表示し、金額の意味が混ざらないようにしている
 
 詳細は `docs/PAYMENT_CN.md` を参照してください。
 

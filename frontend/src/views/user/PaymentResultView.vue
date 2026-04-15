@@ -38,7 +38,7 @@
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">&#165;{{ order.pay_amount.toFixed(2) }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(order.pay_amount) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
@@ -59,7 +59,7 @@
             </div>
             <div v-if="returnInfo.money" class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">&#165;{{ returnInfo.money }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ formatPaymentAmount(Number(returnInfo.money) || 0) }}</span>
             </div>
             <div v-if="returnInfo.type" class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
@@ -85,6 +85,7 @@ import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
 import { usePaymentStore } from '@/stores/payment'
 import { paymentAPI } from '@/api/payment'
 import type { PaymentOrder } from '@/types/payment'
+import { formatPaymentAmount } from '@/utils/format'
 
 const { t } = useI18n()
 const route = useRoute()

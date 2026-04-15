@@ -2,6 +2,8 @@
 
 Sub2API has a built-in payment system that enables user self-service top-up without deploying a separate payment service.
 
+Current UI currency semantics are intentionally split: top-ups, payment amounts, orders, and user balances are displayed in CNY (`¥`), while API usage cost, quota limits, and subscription-group `*_usd` limits remain displayed in USD (`$`). No automatic exchange-rate conversion is applied between the two tracks.
+
 ---
 
 ## Table of Contents

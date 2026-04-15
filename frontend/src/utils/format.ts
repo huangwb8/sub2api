@@ -5,6 +5,72 @@
 
 import { i18n, getLocale } from '@/i18n'
 
+export type SupportedCurrency = 'CNY' | 'USD'
+
+export interface FormatMoneyOptions {
+  minimumFractionDigits?: number
+  maximumFractionDigits?: number
+  useGrouping?: boolean
+  trimTrailingZeros?: boolean
+}
+
+const DEFAULT_CURRENCY_FALLBACK: Record<SupportedCurrency, string> = {
+  CNY: '¥0.00',
+  USD: '$0.00'
+}
+
+const CURRENCY_SYMBOL: Record<SupportedCurrency, string> = {
+  CNY: '¥',
+  USD: '$'
+}
+
+function getNumberLocale(): string {
+  return getLocale() === 'zh' ? 'zh-CN' : 'en-US'
+}
+
+function normalizeCurrency(currency: string): SupportedCurrency | null {
+  const normalized = currency.toUpperCase()
+  if (normalized === 'CNY' || normalized === 'USD') {
+    return normalized
+  }
+  return null
+}
+
+function resolveFractionDigits(amount: number, options?: FormatMoneyOptions) {
+  const defaultDigits = Math.abs(amount) > 0 && Math.abs(amount) < 0.01 ? 6 : 2
+  const maximumFractionDigits = options?.maximumFractionDigits ?? defaultDigits
+  const minimumFractionDigits = options?.minimumFractionDigits
+    ?? (options?.trimTrailingZeros ? 0 : Math.min(defaultDigits, maximumFractionDigits))
+
+  return {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }
+}
+
+function formatSupportedCurrency(
+  amount: number | null | undefined,
+  currency: SupportedCurrency,
+  options?: FormatMoneyOptions
+): string {
+  if (amount === null || amount === undefined) {
+    return DEFAULT_CURRENCY_FALLBACK[currency]
+  }
+
+  const { minimumFractionDigits, maximumFractionDigits } = resolveFractionDigits(amount, options)
+  const formatted = new Intl.NumberFormat(getNumberLocale(), {
+    minimumFractionDigits,
+    maximumFractionDigits,
+    useGrouping: options?.useGrouping ?? true
+  }).format(amount)
+
+  return `${CURRENCY_SYMBOL[currency]}${formatted}`
+}
+
+export function getCurrencySymbol(currency: SupportedCurrency): string {
+  return CURRENCY_SYMBOL[currency]
+}
+
 /**
  * 格式化相对时间
  * @param date 日期字符串或 Date 对象
@@ -59,9 +125,14 @@ export function formatNumber(num: number | null | undefined): string {
  * @returns 格式化后的字符串，如 "$1.25"
  */
 export function formatCurrency(amount: number | null | undefined, currency: string = 'USD'): string {
+  const supportedCurrency = normalizeCurrency(currency)
+  if (supportedCurrency) {
+    return formatSupportedCurrency(amount, supportedCurrency)
+  }
+
   if (amount === null || amount === undefined) return '$0.00'
 
-  const locale = getLocale()
+  const locale = getNumberLocale()
 
   // For very small amounts, show more decimals
   const fractionDigits = amount > 0 && amount < 0.01 ? 6 : 2
@@ -72,6 +143,34 @@ export function formatCurrency(amount: number | null | undefined, currency: stri
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits
   }).format(amount)
+}
+
+export function formatMoney(
+  amount: number | null | undefined,
+  currency: SupportedCurrency,
+  options?: FormatMoneyOptions
+): string {
+  return formatSupportedCurrency(amount, currency, options)
+}
+
+export function formatCNY(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatSupportedCurrency(amount, 'CNY', options)
+}
+
+export function formatUSD(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatSupportedCurrency(amount, 'USD', options)
+}
+
+export function formatBalanceAmount(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatCNY(amount, options)
+}
+
+export function formatPaymentAmount(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatCNY(amount, options)
+}
+
+export function formatUsageCost(amount: number | null | undefined, options?: FormatMoneyOptions): string {
+  return formatUSD(amount, options)
 }
 
 /**

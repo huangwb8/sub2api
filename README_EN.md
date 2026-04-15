@@ -106,6 +106,7 @@ Built-in payments now cover more than balance top-ups. End users can directly pu
 - Users get purchase, payment, result, and order pages out of the box
 - Delayed webhook scenarios can recover through active order verification
 - Balance payment for subscriptions is supported to reduce unnecessary third-party redirects
+- User balances and payment amounts are shown in CNY, while API usage, quota, and limit data stay in USD to keep the two money semantics separate
 
 See `docs/PAYMENT_CN.md` for detailed payment and subscription configuration.
 
