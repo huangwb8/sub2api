@@ -79,6 +79,11 @@ export interface ProfitabilityTrendResponse {
   granularity: string
 }
 
+export interface ProfitabilityBoundsResponse {
+  has_data: boolean
+  earliest_date?: string
+}
+
 /**
  * Get usage trend data
  * @param params - Query parameters for filtering
@@ -95,6 +100,11 @@ export async function getProfitabilityTrend(
   const { data } = await apiClient.get<ProfitabilityTrendResponse>('/admin/dashboard/profitability', {
     params
   })
+  return data
+}
+
+export async function getProfitabilityBounds(): Promise<ProfitabilityBoundsResponse> {
+  const { data } = await apiClient.get<ProfitabilityBoundsResponse>('/admin/dashboard/profitability/bounds')
   return data
 }
 
@@ -343,6 +353,7 @@ export const dashboardAPI = {
   getRecommendations,
   getRealtimeMetrics,
   getUsageTrend,
+  getProfitabilityBounds,
   getProfitabilityTrend,
   getModelStats,
   getGroupStats,

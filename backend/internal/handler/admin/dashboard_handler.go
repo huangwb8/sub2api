@@ -17,10 +17,10 @@ import (
 
 // DashboardHandler handles admin dashboard statistics
 type DashboardHandler struct {
-	dashboardService              *service.DashboardService
+	dashboardService               *service.DashboardService
 	dashboardRecommendationService *service.DashboardRecommendationService
-	aggregationService            *service.DashboardAggregationService
-	startTime                     time.Time // Server start time for uptime calculation
+	aggregationService             *service.DashboardAggregationService
+	startTime                      time.Time // Server start time for uptime calculation
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
@@ -310,6 +310,23 @@ func (h *DashboardHandler) GetProfitabilityTrend(c *gin.Context) {
 		"end_date":    endTime.Add(-24 * time.Hour).Format("2006-01-02"),
 		"granularity": granularity,
 	})
+}
+
+// GetProfitabilityBounds handles getting the available profitability date bounds.
+// GET /api/v1/admin/dashboard/profitability/bounds
+func (h *DashboardHandler) GetProfitabilityBounds(c *gin.Context) {
+	bounds, err := h.dashboardService.GetProfitabilityBounds(c.Request.Context())
+	if err != nil {
+		response.Error(c, 500, "Failed to get profitability bounds")
+		return
+	}
+
+	if bounds == nil {
+		response.Success(c, gin.H{"has_data": false})
+		return
+	}
+
+	response.Success(c, bounds)
 }
 
 // GetModelStats handles getting model usage statistics

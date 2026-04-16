@@ -377,6 +377,19 @@
                   {{ t('admin.dashboard.profitability.description') }}
                 </p>
               </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.timeRange') }}:
+                </span>
+                <DateRangePicker
+                  v-model:start-date="profitabilityStartDate"
+                  v-model:end-date="profitabilityEndDate"
+                  :default-preset="profitabilityDefaultPreset"
+                  :enable-all-time="Boolean(profitabilityAllTimeStartDate)"
+                  :all-time-start-date="profitabilityAllTimeStartDate"
+                  @change="onProfitabilityRangeChange"
+                />
+              </div>
               <div class="grid min-w-full grid-cols-2 gap-2 text-xs sm:min-w-0 sm:grid-cols-5">
                 <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
                   <div class="text-gray-500 dark:text-gray-400">
@@ -546,6 +559,12 @@ const formatLocalDate = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+const profitabilityStartDate = ref(formatLocalDate(new Date()))
+const profitabilityEndDate = ref(formatLocalDate(new Date()))
+const profitabilityAllTimeStartDate = ref<string | null>(null)
+const profitabilityGranularity = ref<'day' | 'hour'>('day')
+const profitabilityBoundsLoaded = ref(false)
+
 const getLast24HoursRangeDates = (): { start: string; end: string } => {
   const end = new Date()
   const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
@@ -560,6 +579,9 @@ const granularity = ref<'day' | 'hour'>('hour')
 const defaultRange = getLast24HoursRangeDates()
 const startDate = ref(defaultRange.start)
 const endDate = ref(defaultRange.end)
+const profitabilityDefaultPreset = computed(() =>
+  profitabilityAllTimeStartDate.value ? 'allTime' : 'last24Hours'
+)
 
 // Granularity options for Select component
 const granularityOptions = computed(() => [
@@ -844,25 +866,31 @@ const goToUserUsage = (item: UserSpendingRankingItem) => {
   })
 }
 
+const resolveGranularityForRange = (start: string, end: string): 'day' | 'hour' => {
+  const startDateValue = new Date(start)
+  const endDateValue = new Date(end)
+  const daysDiff = Math.ceil((endDateValue.getTime() - startDateValue.getTime()) / (1000 * 60 * 60 * 24))
+  return daysDiff <= 1 ? 'hour' : 'day'
+}
+
 // Date range change handler
 const onDateRangeChange = (range: {
   startDate: string
   endDate: string
   preset: string | null
 }) => {
-  // Auto-select granularity based on date range
-  const start = new Date(range.startDate)
-  const end = new Date(range.endDate)
-  const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-
-  // If range is 1 day, use hourly granularity
-  if (daysDiff <= 1) {
-    granularity.value = 'hour'
-  } else {
-    granularity.value = 'day'
-  }
+  granularity.value = resolveGranularityForRange(range.startDate, range.endDate)
 
   loadChartData()
+}
+
+const onProfitabilityRangeChange = (range: {
+  startDate: string
+  endDate: string
+  preset: string | null
+}) => {
+  profitabilityGranularity.value = resolveGranularityForRange(range.startDate, range.endDate)
+  loadProfitabilityTrend()
 }
 
 // Load data
@@ -924,14 +952,44 @@ const loadUsersTrend = async () => {
   }
 }
 
+const loadProfitabilityBounds = async () => {
+  try {
+    const bounds = await adminAPI.dashboard.getProfitabilityBounds()
+    const today = formatLocalDate(new Date())
+
+    if (bounds.has_data && bounds.earliest_date) {
+      profitabilityAllTimeStartDate.value = bounds.earliest_date
+      profitabilityStartDate.value = bounds.earliest_date
+      profitabilityEndDate.value = today
+      profitabilityGranularity.value = resolveGranularityForRange(bounds.earliest_date, today)
+      profitabilityBoundsLoaded.value = true
+      return
+    }
+
+    profitabilityAllTimeStartDate.value = null
+    profitabilityStartDate.value = today
+    profitabilityEndDate.value = today
+    profitabilityGranularity.value = 'hour'
+    profitabilityBoundsLoaded.value = true
+  } catch (error) {
+    console.error('Error loading profitability bounds:', error)
+    const today = formatLocalDate(new Date())
+    profitabilityAllTimeStartDate.value = null
+    profitabilityStartDate.value = today
+    profitabilityEndDate.value = today
+    profitabilityGranularity.value = 'hour'
+    profitabilityBoundsLoaded.value = true
+  }
+}
+
 const loadProfitabilityTrend = async () => {
   const currentSeq = ++profitabilityLoadSeq
   profitabilityLoading.value = true
   try {
     const response = await adminAPI.dashboard.getProfitabilityTrend({
-      start_date: startDate.value,
-      end_date: endDate.value,
-      granularity: granularity.value
+      start_date: profitabilityStartDate.value,
+      end_date: profitabilityEndDate.value,
+      granularity: profitabilityGranularity.value
     })
     if (currentSeq !== profitabilityLoadSeq) return
     profitabilityTrend.value = response.trend || []
@@ -989,6 +1047,9 @@ const loadRecommendations = async () => {
 }
 
 const loadDashboardStats = async () => {
+  if (!profitabilityBoundsLoaded.value) {
+    await loadProfitabilityBounds()
+  }
   await Promise.all([
     loadDashboardSnapshot(true),
     loadRecommendations(),
@@ -1001,7 +1062,6 @@ const loadDashboardStats = async () => {
 const loadChartData = async () => {
   await Promise.all([
     loadDashboardSnapshot(false),
-    loadProfitabilityTrend(),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])

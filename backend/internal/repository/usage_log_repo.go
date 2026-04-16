@@ -3026,7 +3026,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 	results := make([]usagestats.ProfitabilityTrendPoint, 0)
 	for rows.Next() {
 		var (
-			point                   usagestats.ProfitabilityTrendPoint
+			point                  usagestats.ProfitabilityTrendPoint
 			revenueBalanceCNY      float64
 			revenueSubscriptionCNY float64
 			estimatedCostCNY       float64
@@ -3048,6 +3048,60 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 		return nil, err
 	}
 	return results, nil
+}
+
+func (r *usageLogRepository) GetProfitabilityBounds(ctx context.Context) (*usagestats.ProfitabilityBounds, error) {
+	query := `
+		SELECT MIN(bucket_at) AS earliest_at
+		FROM (
+			SELECT MIN(ul.created_at) AS bucket_at
+			FROM usage_logs ul
+			INNER JOIN users u ON u.id = ul.user_id
+			WHERE COALESCE(u.role, '') <> 'admin'
+
+			UNION ALL
+
+			SELECT MIN(COALESCE(po.completed_at, po.paid_at, po.created_at)) AS bucket_at
+			FROM payment_orders po
+			INNER JOIN users u ON u.id = po.user_id
+			WHERE COALESCE(u.role, '') <> 'admin'
+				AND po.order_type = $1
+				AND po.status IN ($2, $3, $4)
+		) candidates
+		WHERE bucket_at IS NOT NULL
+	`
+
+	rows, err := r.sql.QueryContext(
+		ctx,
+		query,
+		"subscription",
+		service.OrderStatusCompleted,
+		service.OrderStatusPaid,
+		service.OrderStatusRecharging,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var earliestAt sql.NullTime
+	if rows.Next() {
+		if err := rows.Scan(&earliestAt); err != nil {
+			return nil, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if !earliestAt.Valid {
+		return &usagestats.ProfitabilityBounds{HasData: false}, nil
+	}
+
+	return &usagestats.ProfitabilityBounds{
+		HasData:      true,
+		EarliestDate: earliestAt.Time.UTC().Format("2006-01-02"),
+	}, nil
 }
 
 func shouldUsePreaggregatedTrend(granularity string, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) bool {

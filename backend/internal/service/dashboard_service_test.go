@@ -16,15 +16,17 @@ import (
 
 type usageRepoStub struct {
 	UsageLogRepository
-	stats      *usagestats.DashboardStats
-	rangeStats *usagestats.DashboardStats
-	err        error
-	rangeErr   error
-	calls      int32
-	rangeCalls int32
-	rangeStart time.Time
-	rangeEnd   time.Time
-	onCall     chan struct{}
+	stats               *usagestats.DashboardStats
+	rangeStats          *usagestats.DashboardStats
+	profitabilityBounds *usagestats.ProfitabilityBounds
+	err                 error
+	rangeErr            error
+	profitabilityErr    error
+	calls               int32
+	rangeCalls          int32
+	rangeStart          time.Time
+	rangeEnd            time.Time
+	onCall              chan struct{}
 }
 
 func (s *usageRepoStub) GetDashboardStats(ctx context.Context) (*usagestats.DashboardStats, error) {
@@ -52,6 +54,13 @@ func (s *usageRepoStub) GetDashboardStatsWithRange(ctx context.Context, start, e
 		return s.rangeStats, nil
 	}
 	return s.stats, nil
+}
+
+func (s *usageRepoStub) GetProfitabilityBounds(ctx context.Context) (*usagestats.ProfitabilityBounds, error) {
+	if s.profitabilityErr != nil {
+		return nil, s.profitabilityErr
+	}
+	return s.profitabilityBounds, nil
 }
 
 type dashboardCacheStub struct {
@@ -392,4 +401,21 @@ func TestDashboardService_AggDisabled_UsesUsageLogsFallback(t *testing.T) {
 	require.Equal(t, int32(1), atomic.LoadInt32(&repo.rangeCalls))
 	require.False(t, repo.rangeEnd.IsZero())
 	require.Equal(t, truncateToDayUTC(repo.rangeEnd.AddDate(0, 0, -7)), repo.rangeStart)
+}
+
+func TestDashboardService_GetProfitabilityBounds(t *testing.T) {
+	earliest := time.Date(2025, 2, 3, 0, 0, 0, 0, time.UTC)
+	repo := &usageRepoStub{
+		profitabilityBounds: &usagestats.ProfitabilityBounds{
+			HasData:      true,
+			EarliestDate: earliest.Format("2006-01-02"),
+		},
+	}
+	svc := NewDashboardService(repo, nil, nil, nil)
+
+	got, err := svc.GetProfitabilityBounds(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.True(t, got.HasData)
+	require.Equal(t, "2025-02-03", got.EarliestDate)
 }

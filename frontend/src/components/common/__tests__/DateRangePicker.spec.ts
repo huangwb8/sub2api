@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import DateRangePicker from '../DateRangePicker.vue'
 
 const messages: Record<string, string> = {
+  'dates.allTime': 'All Time',
   'dates.today': 'Today',
   'dates.yesterday': 'Yesterday',
   'dates.last24Hours': 'Last 24 Hours',
@@ -92,5 +93,26 @@ describe('DateRangePicker', () => {
         preset: 'last24Hours'
       }
     ])
+  })
+
+  it('recognizes the all-time preset when enabled', () => {
+    const today = formatLocalDate(new Date())
+
+    const wrapper = mount(DateRangePicker, {
+      props: {
+        startDate: '2025-01-01',
+        endDate: today,
+        enableAllTime: true,
+        allTimeStartDate: '2025-01-01',
+        defaultPreset: 'allTime'
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('All Time')
   })
 })

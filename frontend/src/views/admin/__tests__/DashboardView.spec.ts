@@ -4,10 +4,13 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
 
-const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
+const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking, getProfitabilityTrend, getProfitabilityBounds, getRecommendations } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
   getUserUsageTrend: vi.fn(),
-  getUserSpendingRanking: vi.fn()
+  getUserSpendingRanking: vi.fn(),
+  getProfitabilityTrend: vi.fn(),
+  getProfitabilityBounds: vi.fn(),
+  getRecommendations: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -15,7 +18,10 @@ vi.mock('@/api/admin', () => ({
     dashboard: {
       getSnapshotV2,
       getUserUsageTrend,
-      getUserSpendingRanking
+      getUserSpendingRanking,
+      getProfitabilityTrend,
+      getProfitabilityBounds,
+      getRecommendations
     }
   }
 }))
@@ -90,6 +96,9 @@ describe('admin DashboardView', () => {
     getSnapshotV2.mockReset()
     getUserUsageTrend.mockReset()
     getUserSpendingRanking.mockReset()
+    getProfitabilityTrend.mockReset()
+    getProfitabilityBounds.mockReset()
+    getRecommendations.mockReset()
 
     getSnapshotV2.mockResolvedValue({
       stats: createDashboardStats(),
@@ -109,6 +118,27 @@ describe('admin DashboardView', () => {
       total_tokens: 0,
       start_date: '',
       end_date: ''
+    })
+    getProfitabilityBounds.mockResolvedValue({
+      has_data: true,
+      earliest_date: '2025-01-10'
+    })
+    getProfitabilityTrend.mockResolvedValue({
+      trend: [],
+      start_date: '',
+      end_date: '',
+      granularity: 'day'
+    })
+    getRecommendations.mockResolvedValue({
+      generated_at: '',
+      lookback_days: 30,
+      items: [],
+      summary: {
+        group_count: 0,
+        current_schedulable_accounts: 0,
+        recommended_additional_accounts: 0,
+        urgent_group_count: 0
+      }
     })
   })
 
@@ -139,5 +169,31 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+  })
+
+  it('loads profitability panel with all-time range by default', async () => {
+    mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(getProfitabilityBounds).toHaveBeenCalledTimes(1)
+    expect(getProfitabilityTrend).toHaveBeenCalledWith({
+      start_date: '2025-01-10',
+      end_date: formatLocalDate(new Date()),
+      granularity: 'day'
+    })
   })
 })
