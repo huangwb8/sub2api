@@ -7,8 +7,11 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了公开订阅套餐接口 `GET /api/v1/payment/public/plans`：首页、自定义落地页等未登录场景现在也可以只读获取后台已上线的套餐列表，用于自动化展示费用页。
 
 ### Changed（变更）
+- 优化了首页自定义内容能力：`home_content` 的 HTML 模式现在支持受信任管理员内容中的内联脚本执行与清理机制，可用于实现多界面导航、动态套餐加载等轻量交互，同时保留 iframe 模式兼容。
+- 升级了 `docs/page-demo/2026-04-13-benszresearch-homepage-reference.html`：在保留原有首页主视觉的基础上新增“首页 / 费用”双界面导航，并让费用页自动读取后台当前可售订阅套餐。
 
 ### Fixed（修复）
 
