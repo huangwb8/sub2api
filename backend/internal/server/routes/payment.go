@@ -48,6 +48,7 @@ func RegisterPaymentRoutes(
 	// (user session may have expired during provider redirect).
 	public := v1.Group("/payment/public")
 	{
+		public.GET("/plans", paymentHandler.GetPlans)
 		public.POST("/orders/verify", paymentHandler.VerifyOrderPublic)
 	}
 

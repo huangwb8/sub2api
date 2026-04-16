@@ -9,7 +9,7 @@
       allowfullscreen
     ></iframe>
     <!-- HTML mode - SECURITY: homeContent is admin-only setting, XSS risk is acceptable -->
-    <div v-else v-html="homeContent"></div>
+    <div v-else ref="homeContentRoot"></div>
   </div>
 
   <!-- Default Home Page -->
@@ -405,11 +405,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+
+type HomeContentCleanup = () => void
+
+interface HomeContentRuntime {
+  apiBase: string
+  root: HTMLElement
+  onCleanup: (callback: HomeContentCleanup) => void
+  registerCleanup: (callback: HomeContentCleanup) => void
+}
+
+declare global {
+  interface Window {
+    __SUB2API_HOME_CONTENT__?: HomeContentRuntime
+  }
+}
 
 const { t } = useI18n()
 
@@ -422,6 +439,9 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
+const homeContentRoot = ref<HTMLElement | null>(null)
+const homeContentCleanup = ref<HomeContentCleanup[]>([])
+let homeContentRenderToken = 0
 
 // Check if homeContent is a URL (for iframe display)
 const isHomeContentUrl = computed(() => {
@@ -467,6 +487,99 @@ function initTheme() {
   }
 }
 
+function resetHomeContentRuntime() {
+  homeContentRenderToken += 1
+  delete window.__SUB2API_HOME_CONTENT__
+
+  for (const cleanup of homeContentCleanup.value.splice(0)) {
+    try {
+      cleanup()
+    } catch (error) {
+      console.error('[home] Failed to cleanup custom home content:', error)
+    }
+  }
+
+  if (homeContentRoot.value) {
+    homeContentRoot.value.innerHTML = ''
+  }
+}
+
+async function executeHomeContentScripts(root: HTMLElement, token: number) {
+  const scripts = Array.from(root.querySelectorAll('script'))
+
+  for (const originalScript of scripts) {
+    if (token !== homeContentRenderToken) return
+
+    const script = document.createElement('script')
+    for (const { name, value } of Array.from(originalScript.attributes)) {
+      script.setAttribute(name, value)
+    }
+
+    if (originalScript.textContent) {
+      script.textContent = originalScript.textContent
+    }
+
+    const parent = originalScript.parentNode
+    if (!parent) continue
+
+    if (script.src) {
+      await new Promise<void>((resolve) => {
+        script.onload = () => resolve()
+        script.onerror = () => {
+          console.error('[home] Failed to load custom home content script:', script.src)
+          resolve()
+        }
+        parent.replaceChild(script, originalScript)
+      })
+      continue
+    }
+
+    parent.replaceChild(script, originalScript)
+  }
+}
+
+async function renderCustomHomeContent() {
+  if (!homeContent.value || isHomeContentUrl.value) {
+    resetHomeContentRuntime()
+    return
+  }
+
+  await nextTick()
+
+  const root = homeContentRoot.value
+  if (!root) return
+
+  resetHomeContentRuntime()
+
+  const token = ++homeContentRenderToken
+  root.innerHTML = homeContent.value
+
+  const registerCleanup = (callback: HomeContentCleanup) => {
+    if (typeof callback === 'function') {
+      homeContentCleanup.value.push(callback)
+    }
+  }
+
+  window.__SUB2API_HOME_CONTENT__ = {
+    apiBase: API_BASE_URL,
+    root,
+    onCleanup: registerCleanup,
+    registerCleanup,
+  }
+
+  try {
+    await executeHomeContentScripts(root, token)
+  } finally {
+    if (window.__SUB2API_HOME_CONTENT__?.root === root) {
+      delete window.__SUB2API_HOME_CONTENT__
+    }
+  }
+}
+
+watch([homeContent, isHomeContentUrl], () => {
+  void renderCustomHomeContent()
+}, { immediate: true })
+
 onMounted(() => {
   initTheme()
 
@@ -477,6 +590,10 @@ onMounted(() => {
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+})
+
+onBeforeUnmount(() => {
+  resetHomeContentRuntime()
 })
 </script>
 
