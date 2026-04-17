@@ -120,17 +120,21 @@ func TestPaymentConfigService_CreatePlan_RejectsInvalidGroups(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), "active") || strings.Contains(err.Error(), "可用"))
 
 	plan, err := svc.CreatePlan(ctx, CreatePlanRequest{
-		GroupID:      activeSubGroup.ID,
-		Name:         "valid-plan",
-		Description:  "valid-plan",
-		Price:        9.9,
-		ValidityDays: 30,
-		ValidityUnit: "days",
-		ForSale:      true,
+		GroupID:       activeSubGroup.ID,
+		Name:          "valid-plan",
+		Description:   "valid-plan",
+		Price:         9.9,
+		ValidityDays:  30,
+		ValidityUnit:  "days",
+		ForSale:       true,
+		UpgradeFamily: "openai-team",
+		UpgradeRank:   20,
 	})
 	require.NoError(t, err)
 	require.Equal(t, activeSubGroup.ID, plan.GroupID)
 	require.Equal(t, planValidityUnitDay, plan.ValidityUnit)
+	require.Equal(t, "openai-team", plan.UpgradeFamily)
+	require.Equal(t, 20, plan.UpgradeRank)
 }
 
 func TestPaymentConfigService_CreatePlan_RejectsNonPositivePrice(t *testing.T) {
@@ -192,9 +196,17 @@ func TestPaymentConfigService_UpdatePlan_NormalizesPluralValidityUnit(t *testing
 	plan := mustCreateSubscriptionPlan(t, ctx, client, activeSubGroup.ID, "valid-plan", true)
 
 	weeks := "weeks"
-	updated, err := svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{ValidityUnit: &weeks})
+	family := "openai-team"
+	rank := 30
+	updated, err := svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{
+		ValidityUnit:  &weeks,
+		UpgradeFamily: &family,
+		UpgradeRank:   &rank,
+	})
 	require.NoError(t, err)
 	require.Equal(t, planValidityUnitWeek, updated.ValidityUnit)
+	require.Equal(t, family, updated.UpgradeFamily)
+	require.Equal(t, rank, updated.UpgradeRank)
 }
 
 func TestPaymentConfigService_UpdatePlan_RejectsNonPositivePrice(t *testing.T) {

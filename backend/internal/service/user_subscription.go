@@ -7,6 +7,13 @@ type UserSubscription struct {
 	UserID  int64
 	GroupID int64
 
+	CurrentPlanID           *int64
+	CurrentPlanName         string
+	CurrentPlanPriceCNY     *float64
+	CurrentPlanValidityDays *int
+	CurrentPlanValidityUnit string
+	BillingCycleStartedAt   *time.Time
+
 	StartsAt  time.Time
 	ExpiresAt time.Time
 	Status    string

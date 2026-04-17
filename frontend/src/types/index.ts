@@ -1374,6 +1374,12 @@ export interface UserSubscription {
   id: number
   user_id: number
   group_id: number
+  current_plan_id?: number | null
+  current_plan_name: string
+  current_plan_price_cny?: number | null
+  current_plan_validity_days?: number | null
+  current_plan_validity_unit: string
+  billing_cycle_started_at?: string | null
   status: 'active' | 'expired' | 'revoked'
   daily_usage_usd: number
   weekly_usage_usd: number
@@ -1386,6 +1392,27 @@ export interface UserSubscription {
   expires_at: string | null
   user?: User
   group?: Group
+}
+
+export interface SubscriptionUpgradeOption {
+  target_plan_id: number
+  target_group_id: number
+  target_plan_name: string
+  target_price_cny: number
+  default_payment_type: string
+  payable_cny: number
+  upgrade_family: string
+  upgrade_rank: number
+}
+
+export interface SubscriptionUpgradeOptionsResult {
+  source_subscription_id: number
+  source_group_id: number
+  source_plan_id: number
+  source_plan_name: string
+  remaining_ratio: number
+  credit_cny: number
+  options: SubscriptionUpgradeOption[]
 }
 
 export interface SubscriptionProgress {

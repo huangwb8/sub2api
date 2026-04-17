@@ -31,7 +31,7 @@ For a maintained fork, the project is now much more than a thin relay layer. It 
 - Token-level billing, usage tracking, cost accounting, and reporting
 - Smart scheduling with sticky sessions, account rotation, failover, and model mapping
 - Built-in payments with EasyPay, official Alipay, official WeChat Pay, and Stripe
-- Self-service top-up, subscription purchase, renewal, order lookup, and payment status pages
+- Self-service top-up, subscription purchase, renewal, upgrade-with-difference payment, order lookup, and payment status pages
 - Admin console for users, groups, channels, subscriptions, announcements, promo codes, and system settings
 - External page embedding through iframe for tickets, docs, purchase flows, and custom integrations
 - Online update checks, release automation, Docker image publishing, and data-management integration
@@ -100,12 +100,14 @@ After first start, finish initialization through the web setup wizard.
 
 ### Self-Service Subscription Flow
 
-Built-in payments now cover more than balance top-ups. End users can directly purchase and renew subscription plans.
+Built-in payments now cover more than balance top-ups. End users can directly purchase, renew, and upgrade subscription plans with difference payment.
 
 - Subscription products can be managed directly in the admin panel
 - Users get purchase, payment, result, and order pages out of the box
 - Delayed webhook scenarios can recover through active order verification
 - Balance payment for subscriptions is supported to reduce unnecessary third-party redirects
+- Higher-tier upgrades within the same upgrade family can reuse the remaining value of the current billing cycle as credit
+- Legacy subscriptions without plan snapshots are clearly marked as not upgradeable to keep billing traceable
 - User balances and payment amounts are shown in CNY, while API usage, quota, and limit data stay in USD to keep the two money semantics separate
 
 See `docs/PAYMENT_CN.md` for detailed payment and subscription configuration.

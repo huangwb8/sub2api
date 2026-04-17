@@ -132,6 +132,16 @@
           <div><label class="input-label">{{ t('payment.admin.validityDays') }}</label><input v-model.number="planForm.validity_days" type="number" min="1" class="input" required /></div>
           <div><label class="input-label">{{ t('payment.admin.validityUnit') }}</label><Select v-model="planForm.validity_unit" :options="validityUnitOptions" /></div>
         </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="input-label">Upgrade Family</label>
+            <input v-model.trim="planForm.upgrade_family" type="text" class="input" placeholder="openai-team" />
+          </div>
+          <div>
+            <label class="input-label">Upgrade Rank</label>
+            <input v-model.number="planForm.upgrade_rank" type="number" min="0" class="input" />
+          </div>
+        </div>
         <div>
           <label class="input-label">{{ t('payment.admin.features') }}</label>
           <textarea v-model="planFeaturesText" rows="3" class="input" :placeholder="t('payment.admin.featuresPlaceholder')"></textarea>
@@ -242,7 +252,19 @@ const showDeletePlanDialog = ref(false)
 const planSaving = ref(false)
 const editingPlan = ref<SubscriptionPlan | null>(null)
 const deletingPlanId = ref<number | null>(null)
-const planForm = reactive({ name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'day', for_sale: true, sort_order: 0 })
+const planForm = reactive({
+  name: '',
+  group_id: 0,
+  description: '',
+  price: 0,
+  original_price: 0,
+  validity_days: 30,
+  validity_unit: 'day',
+  upgrade_family: '',
+  upgrade_rank: 0,
+  for_sale: true,
+  sort_order: 0
+})
 const planFeaturesText = ref('')
 
 const validityUnitOptions = computed(() => [
@@ -258,6 +280,8 @@ const planColumns = computed((): Column[] => [
   { key: 'group_id', label: t('payment.admin.group') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'validity_days', label: t('payment.admin.validityDays') },
+  { key: 'upgrade_family', label: 'Upgrade Family' },
+  { key: 'upgrade_rank', label: 'Upgrade Rank' },
   { key: 'for_sale', label: t('payment.admin.forSale') },
   { key: 'sort_order', label: t('payment.admin.sortOrder') },
   { key: 'actions', label: t('common.actions') },
@@ -293,10 +317,34 @@ function openPlanEdit(plan: SubscriptionPlan | null) {
   editingPlan.value = plan
   if (plan) {
     const normalizedPlan = normalizeSubscriptionPlan(plan)
-    Object.assign(planForm, { name: normalizedPlan.name, group_id: normalizedPlan.group_id, description: normalizedPlan.description, price: normalizedPlan.price, original_price: normalizedPlan.original_price || 0, validity_days: normalizedPlan.validity_days, validity_unit: normalizedPlan.validity_unit || 'day', for_sale: normalizedPlan.for_sale, sort_order: normalizedPlan.sort_order })
+    Object.assign(planForm, {
+      name: normalizedPlan.name,
+      group_id: normalizedPlan.group_id,
+      description: normalizedPlan.description,
+      price: normalizedPlan.price,
+      original_price: normalizedPlan.original_price || 0,
+      validity_days: normalizedPlan.validity_days,
+      validity_unit: normalizedPlan.validity_unit || 'day',
+      upgrade_family: normalizedPlan.upgrade_family || '',
+      upgrade_rank: normalizedPlan.upgrade_rank || 0,
+      for_sale: normalizedPlan.for_sale,
+      sort_order: normalizedPlan.sort_order
+    })
     planFeaturesText.value = (normalizedPlan.features || []).join('\n')
   } else {
-    Object.assign(planForm, { name: '', group_id: 0, description: '', price: 0, original_price: 0, validity_days: 30, validity_unit: 'day', for_sale: true, sort_order: 0 })
+    Object.assign(planForm, {
+      name: '',
+      group_id: 0,
+      description: '',
+      price: 0,
+      original_price: 0,
+      validity_days: 30,
+      validity_unit: 'day',
+      upgrade_family: '',
+      upgrade_rank: 0,
+      for_sale: true,
+      sort_order: 0
+    })
     planFeaturesText.value = ''
   }
   showPlanDialog.value = true
@@ -326,6 +374,8 @@ function buildPlanPayload() {
     original_price: planForm.original_price || 0,
     validity_days: planForm.validity_days,
     validity_unit: planForm.validity_unit,
+    upgrade_family: planForm.upgrade_family,
+    upgrade_rank: planForm.upgrade_rank,
     for_sale: planForm.for_sale,
     sort_order: planForm.sort_order,
     features,

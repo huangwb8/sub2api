@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
@@ -94,10 +95,15 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	if err != nil {
 		return nil, infraerrors.BadRequest("PLAN_VALIDITY_UNIT_INVALID", err.Error())
 	}
+	upgradeFamily, upgradeRank, err := normalizePlanUpgradeMetadata(req.UpgradeFamily, req.UpgradeRank)
+	if err != nil {
+		return nil, err
+	}
 	b := s.entClient.SubscriptionPlan.Create().
 		SetGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
 		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(validityUnit).
 		SetFeatures(req.Features).SetProductName(req.ProductName).
+		SetUpgradeFamily(upgradeFamily).SetUpgradeRank(upgradeRank).
 		SetForSale(req.ForSale).SetSortOrder(req.SortOrder)
 	if req.OriginalPrice != nil {
 		b.SetOriginalPrice(*req.OriginalPrice)
@@ -108,6 +114,10 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 // UpdatePlan updates a subscription plan by ID (patch semantics).
 // NOTE: This function exceeds 30 lines due to per-field nil-check patch update boilerplate.
 func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req UpdatePlanRequest) (*dbent.SubscriptionPlan, error) {
+	existing, err := s.entClient.SubscriptionPlan.Get(ctx, id)
+	if err != nil {
+		return nil, infraerrors.NotFound("PLAN_NOT_FOUND", "subscription plan not found")
+	}
 	if req.GroupID != nil {
 		if err := s.validatePlanGroup(ctx, *req.GroupID); err != nil {
 			return nil, err
@@ -124,6 +134,18 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 			return nil, infraerrors.BadRequest("PLAN_VALIDITY_UNIT_INVALID", err.Error())
 		}
 		req.ValidityUnit = &validityUnit
+	}
+	upgradeFamily := existing.UpgradeFamily
+	upgradeRank := existing.UpgradeRank
+	if req.UpgradeFamily != nil {
+		upgradeFamily = *req.UpgradeFamily
+	}
+	if req.UpgradeRank != nil {
+		upgradeRank = *req.UpgradeRank
+	}
+	normalizedUpgradeFamily, normalizedUpgradeRank, err := normalizePlanUpgradeMetadata(upgradeFamily, upgradeRank)
+	if err != nil {
+		return nil, err
 	}
 	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
 	if req.GroupID != nil {
@@ -152,6 +174,10 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	}
 	if req.ProductName != nil {
 		u.SetProductName(*req.ProductName)
+	}
+	if req.UpgradeFamily != nil || req.UpgradeRank != nil {
+		u.SetUpgradeFamily(normalizedUpgradeFamily)
+		u.SetUpgradeRank(normalizedUpgradeRank)
 	}
 	if req.ForSale != nil {
 		u.SetForSale(*req.ForSale)
@@ -219,4 +245,15 @@ func validatePlanPrice(price float64) error {
 		return infraerrors.BadRequest("PLAN_PRICE_INVALID", "subscription plan price must be greater than 0")
 	}
 	return nil
+}
+
+func normalizePlanUpgradeMetadata(family string, rank int) (string, int, error) {
+	family = strings.TrimSpace(family)
+	if family == "" {
+		return "", 0, nil
+	}
+	if rank < 0 {
+		return "", 0, infraerrors.BadRequest("PLAN_UPGRADE_RANK_INVALID", "subscription plan upgrade rank must be greater than or equal to 0")
+	}
+	return family, rank, nil
 }

@@ -4,10 +4,12 @@ import { useSubscriptionStore } from '@/stores/subscriptions'
 
 // Mock subscriptions API
 const mockGetActiveSubscriptions = vi.fn()
+const mockGetUpgradeOptions = vi.fn()
 
 vi.mock('@/api/subscriptions', () => ({
   default: {
     getActiveSubscriptions: (...args: any[]) => mockGetActiveSubscriptions(...args),
+    getUpgradeOptions: (...args: any[]) => mockGetUpgradeOptions(...args),
   },
 }))
 
@@ -16,6 +18,8 @@ const fakeSubscriptions = [
     id: 1,
     user_id: 1,
     group_id: 1,
+    current_plan_name: 'Basic',
+    current_plan_validity_unit: 'day',
     status: 'active' as const,
     daily_usage_usd: 5,
     weekly_usage_usd: 20,
@@ -31,6 +35,8 @@ const fakeSubscriptions = [
     id: 2,
     user_id: 1,
     group_id: 2,
+    current_plan_name: 'Pro',
+    current_plan_validity_unit: 'day',
     status: 'active' as const,
     daily_usage_usd: 10,
     weekly_usage_usd: 40,
@@ -44,11 +50,33 @@ const fakeSubscriptions = [
   },
 ]
 
+const fakeUpgradeOptions = {
+  source_subscription_id: 1,
+  source_group_id: 1,
+  source_plan_id: 11,
+  source_plan_name: 'Basic',
+  remaining_ratio: 0.5,
+  credit_cny: 50,
+  options: [
+    {
+      target_plan_id: 22,
+      target_group_id: 2,
+      target_plan_name: 'Pro',
+      target_price_cny: 150,
+      default_payment_type: 'balance',
+      payable_cny: 100,
+      upgrade_family: 'openai-team',
+      upgrade_rank: 20,
+    },
+  ],
+}
+
 describe('useSubscriptionStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.useFakeTimers()
     vi.clearAllMocks()
+    mockGetUpgradeOptions.mockReset()
   })
 
   afterEach(() => {
@@ -188,6 +216,54 @@ describe('useSubscriptionStore', () => {
 
       await store.fetchActiveSubscriptions()
       expect(mockGetActiveSubscriptions).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('fetchUpgradeOptions', () => {
+    it('成功获取升级选项并写入缓存', async () => {
+      mockGetUpgradeOptions.mockResolvedValue(fakeUpgradeOptions)
+      const store = useSubscriptionStore()
+
+      const result = await store.fetchUpgradeOptions(1)
+
+      expect(result).toEqual(fakeUpgradeOptions)
+      expect(store.upgradeOptionsBySubscription[1]).toEqual(fakeUpgradeOptions)
+    })
+
+    it('升级选项请求会做并发去重', async () => {
+      let resolvePromise: (v: any) => void
+      mockGetUpgradeOptions.mockImplementation(
+        () => new Promise((resolve) => { resolvePromise = resolve })
+      )
+      const store = useSubscriptionStore()
+
+      const p1 = store.fetchUpgradeOptions(1)
+      const p2 = store.fetchUpgradeOptions(1)
+
+      expect(mockGetUpgradeOptions).toHaveBeenCalledTimes(1)
+
+      resolvePromise!(fakeUpgradeOptions)
+
+      const [r1, r2] = await Promise.all([p1, p2])
+      expect(r1).toEqual(fakeUpgradeOptions)
+      expect(r2).toEqual(fakeUpgradeOptions)
+    })
+
+    it('force=true 时会重新获取升级选项', async () => {
+      mockGetUpgradeOptions.mockResolvedValue(fakeUpgradeOptions)
+      const store = useSubscriptionStore()
+
+      await store.fetchUpgradeOptions(1)
+
+      const nextOptions = {
+        ...fakeUpgradeOptions,
+        credit_cny: 40,
+      }
+      mockGetUpgradeOptions.mockResolvedValue(nextOptions)
+
+      const result = await store.fetchUpgradeOptions(1, true)
+      expect(mockGetUpgradeOptions).toHaveBeenCalledTimes(2)
+      expect(result.credit_cny).toBe(40)
     })
   })
 

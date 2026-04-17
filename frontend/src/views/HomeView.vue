@@ -590,6 +590,12 @@ onMounted(() => {
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+
+  // Re-render home content after mount — the immediate watcher may have fired
+  // during setup when the template ref was still null, leaving scripts unexecuted.
+  if (homeContent.value && !isHomeContentUrl.value && homeContentRoot.value) {
+    void renderCustomHomeContent()
+  }
 })
 
 onBeforeUnmount(() => {

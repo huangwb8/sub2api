@@ -6,7 +6,7 @@
       </div>
       <template v-else>
         <!-- Tab Switcher (hide during payment and subscription confirm) -->
-        <div v-if="tabs.length > 1 && paymentPhase === 'select' && !selectedPlan" class="flex space-x-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-800">
+        <div v-if="tabs.length > 1 && paymentPhase === 'select' && !selectedPlan && !selectedUpgradeOption" class="flex space-x-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-800">
           <button v-for="tab in tabs" :key="tab.key"
             class="flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
             :class="activeTab === tab.key ? 'bg-white text-gray-900 shadow dark:bg-dark-700 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
@@ -99,9 +99,38 @@
           <!-- Subscribe Tab -->
           <template v-else-if="activeTab === 'subscription'">
             <!-- Subscription confirm (inline, replaces plan list) -->
-            <template v-if="selectedPlan">
+            <template v-if="selectedPlan || selectedUpgradeOption">
               <div class="card p-5">
-                <!-- Header: platform badge + plan name -->
+                <template v-if="selectedUpgradeOption && selectedUpgradePlan && upgradeOptionsResult">
+                <div class="mb-3 flex flex-wrap items-center gap-2">
+                  <span :class="['rounded-md border px-2 py-0.5 text-xs font-medium', planBadgeClass]">
+                    {{ platformLabel(selectedUpgradePlan.group_platform || '') }}
+                  </span>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ selectedUpgradeOption.target_plan_name }}</h3>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('payment.upgrade.currentPlan') }}</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ upgradeOptionsResult.source_plan_name }}</p>
+                  </div>
+                  <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('payment.upgrade.targetPlan') }}</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ selectedUpgradeOption.target_plan_name }}</p>
+                  </div>
+                  <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-900/20">
+                    <p class="text-xs text-emerald-700 dark:text-emerald-300">{{ t('payment.upgrade.credit') }}</p>
+                    <p class="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">{{ formatPaymentAmount(upgradeOptionsResult.credit_cny) }}</p>
+                  </div>
+                  <div class="rounded-xl bg-amber-50 p-3 dark:bg-amber-900/20">
+                    <p class="text-xs text-amber-700 dark:text-amber-300">{{ t('payment.upgrade.payable') }}</p>
+                    <p class="mt-1 text-lg font-bold text-amber-700 dark:text-amber-300">{{ formatPaymentAmount(selectedUpgradeOption.payable_cny) }}</p>
+                  </div>
+                </div>
+                <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('payment.upgrade.remainingRatio', { ratio: `${Math.round(upgradeOptionsResult.remaining_ratio * 100)}%` }) }}
+                </p>
+                </template>
+                <template v-else-if="selectedPlan">
                 <div class="mb-3 flex flex-wrap items-center gap-2">
                   <span :class="['rounded-md border px-2 py-0.5 text-xs font-medium', planBadgeClass]">
                     {{ platformLabel(selectedPlan.group_platform || '') }}
@@ -145,6 +174,7 @@
                     <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ t('payment.planCard.unlimited') }}</div>
                   </div>
                 </div>
+                </template>
               </div>
               <div v-if="subMethodOptions.length >= 1" class="card p-6">
                 <PaymentMethodSelector
@@ -153,11 +183,11 @@
                   @select="selectedMethod = $event"
                 />
               </div>
-              <div v-if="feeRate > 0 && selectedPlan.price > 0" class="card p-6">
+              <div v-if="feeRate > 0 && selectedCheckoutAmount > 0" class="card p-6">
                 <div class="space-y-2 text-sm">
                   <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">{{ t('payment.amountLabel') }}</span>
-                    <span class="text-gray-900 dark:text-white">{{ formatPaymentAmount(selectedPlan.price) }}</span>
+                    <span class="text-gray-900 dark:text-white">{{ formatPaymentAmount(selectedCheckoutAmount) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">{{ t('payment.fee') }} ({{ feeRate }}%)</span>
@@ -169,14 +199,14 @@
                   </div>
                 </div>
               </div>
-              <button :class="['btn w-full py-3 text-base font-medium', paymentButtonClass]" :disabled="!canSubmitSubscription || submitting" @click="confirmSubscribe">
+              <button :class="['btn w-full py-3 text-base font-medium', paymentButtonClass]" :disabled="!canSubmitSubscription || submitting" @click="confirmSubscriptionCheckout">
                 <span v-if="submitting" class="flex items-center justify-center gap-2">
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   {{ t('common.processing') }}
                 </span>
-                <span v-else>{{ t('payment.createOrder') }} {{ formatPaymentAmount(feeRate > 0 ? subTotalAmount : selectedPlan.price) }}</span>
+                <span v-else>{{ t('payment.createOrder') }} {{ formatPaymentAmount(feeRate > 0 ? subTotalAmount : selectedCheckoutAmount) }}</span>
               </button>
-              <button class="btn btn-secondary w-full" @click="selectedPlan = null">{{ t('common.cancel') }}</button>
+              <button class="btn btn-secondary w-full" @click="clearSubscriptionSelection">{{ t('common.cancel') }}</button>
               <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-900/20">
                 <p class="text-sm text-red-700 dark:text-red-400">{{ errorMessage }}</p>
               </div>
@@ -216,7 +246,7 @@
             </template>
           </template>
         </template>
-        <div v-if="(checkout.help_text || checkout.help_image_url) && paymentPhase === 'select' && !selectedPlan" class="card p-4">
+        <div v-if="(checkout.help_text || checkout.help_image_url) && paymentPhase === 'select' && !selectedPlan && !selectedUpgradeOption" class="card p-4">
           <div class="flex flex-col items-center gap-3">
             <img v-if="checkout.help_image_url" :src="checkout.help_image_url" alt=""
               class="h-40 max-w-full cursor-pointer rounded-lg object-contain transition-opacity hover:opacity-80"
@@ -266,6 +296,7 @@ import { paymentAPI } from '@/api/payment'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { SubscriptionPlan, CheckoutInfoResponse } from '@/types/payment'
+import type { SubscriptionUpgradeOption, SubscriptionUpgradeOptionsResult } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
@@ -303,6 +334,9 @@ const activeTab = ref<'recharge' | 'subscription'>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
+const selectedUpgradeOption = ref<SubscriptionUpgradeOption | null>(null)
+const upgradeOptionsResult = ref<SubscriptionUpgradeOptionsResult | null>(null)
+const upgradeSourceSubscriptionId = ref<number | null>(null)
 const previewImage = ref('')
 
 // Payment phase: 'select' → 'paying' (QR/redirect) or 'stripe' (inline Stripe)
@@ -335,9 +369,9 @@ function resetPayment() {
 }
 
 function onPaymentDone() {
-  const wasSubscription = paymentState.value.orderType === 'subscription'
+  const wasSubscription = paymentState.value.orderType === 'subscription' || paymentState.value.orderType === 'subscription_upgrade'
   resetPayment()
-  selectedPlan.value = null
+  clearSubscriptionSelection()
   if (wasSubscription) {
     subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
   }
@@ -345,15 +379,15 @@ function onPaymentDone() {
 
 function onPaymentSuccess() {
   authStore.refreshUser()
-  if (paymentState.value.orderType === 'subscription') {
+  if (paymentState.value.orderType === 'subscription' || paymentState.value.orderType === 'subscription_upgrade') {
     subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
   }
 }
 
 function onStripeDone() {
-  const wasSubscription = paymentState.value.orderType === 'subscription'
+  const wasSubscription = paymentState.value.orderType === 'subscription' || paymentState.value.orderType === 'subscription_upgrade'
   resetPayment()
-  selectedPlan.value = null
+  clearSubscriptionSelection()
   if (wasSubscription) {
     subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
   }
@@ -453,7 +487,7 @@ function isBalancePaymentMethod(type: string): boolean {
 }
 
 function balanceMethodAvailableForPlan(price: number): boolean {
-  return price > 0 && userBalance.value >= price
+  return price >= 0 && userBalance.value >= price
 }
 
 function selectFirstExternalMethod(amountForMethod = validAmount.value) {
@@ -465,7 +499,7 @@ function selectFirstExternalMethod(amountForMethod = validAmount.value) {
 
 // Subscription-specific: method options based on plan price
 const subMethodOptions = computed<PaymentMethodOption[]>(() => {
-  const planPrice = selectedPlan.value?.price ?? 0
+  const planPrice = selectedCheckoutAmount.value
   const methods: PaymentMethodOption[] = []
 
   if (planPrice > 0) {
@@ -489,23 +523,23 @@ const subMethodOptions = computed<PaymentMethodOption[]>(() => {
 })
 
 const subFeeAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
+  const price = selectedCheckoutAmount.value
   if (feeRate.value <= 0 || price <= 0) return 0
   return Math.ceil(((price * feeRate.value) / 100) * 100) / 100
 })
 
 const subTotalAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
+  const price = selectedCheckoutAmount.value
   if (feeRate.value <= 0 || price <= 0) return price
   return Math.round((price + subFeeAmount.value) * 100) / 100
 })
 
 const canSubmitSubscription = computed(() =>
-  selectedPlan.value !== null
+  (selectedPlan.value !== null || selectedUpgradeOption.value !== null)
     && (
       isBalancePaymentMethod(selectedMethod.value)
-        ? balanceMethodAvailableForPlan(selectedPlan.value.price)
-        : amountFitsMethod(selectedPlan.value.price, selectedMethod.value) && selectedLimit.value?.available !== false
+        ? balanceMethodAvailableForPlan(selectedCheckoutAmount.value)
+        : amountFitsMethod(selectedCheckoutAmount.value, selectedMethod.value) && selectedLimit.value?.available !== false
     )
 )
 
@@ -534,8 +568,20 @@ const paymentButtonClass = computed(() => {
 })
 
 // Subscription confirm: platform accent colors (clean card, no gradient)
-const planBadgeClass = computed(() => platformBadgeClass(selectedPlan.value?.group_platform || ''))
-const planTextClass = computed(() => platformTextClass(selectedPlan.value?.group_platform || ''))
+const selectedUpgradePlan = computed(() =>
+  selectedUpgradeOption.value
+    ? checkout.value.plans.find(plan => plan.id === selectedUpgradeOption.value?.target_plan_id) || null
+    : null
+)
+const selectedCheckoutAmount = computed(() =>
+  selectedUpgradeOption.value?.payable_cny ?? selectedPlan.value?.price ?? 0
+)
+const planBadgeClass = computed(() =>
+  platformBadgeClass(selectedUpgradePlan.value?.group_platform || selectedPlan.value?.group_platform || '')
+)
+const planTextClass = computed(() =>
+  platformTextClass(selectedUpgradePlan.value?.group_platform || selectedPlan.value?.group_platform || '')
+)
 
 // Renewal modal state
 const showRenewalModal = ref(false)
@@ -555,6 +601,9 @@ const planValiditySuffix = computed(() => {
 })
 
 function selectPlan(plan: SubscriptionPlan) {
+  selectedUpgradeOption.value = null
+  upgradeOptionsResult.value = null
+  upgradeSourceSubscriptionId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
   if (balanceMethodAvailableForPlan(plan.price)) {
@@ -569,6 +618,9 @@ function selectPlan(plan: SubscriptionPlan) {
 function selectPlanFromModal(plan: SubscriptionPlan) {
   showRenewalModal.value = false
   renewGroupId.value = null
+  selectedUpgradeOption.value = null
+  upgradeOptionsResult.value = null
+  upgradeSourceSubscriptionId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
   if (balanceMethodAvailableForPlan(plan.price)) {
@@ -585,17 +637,54 @@ function closeRenewalModal() {
   renewGroupId.value = null
 }
 
+function selectUpgradeOptionForCheckout(
+  option: SubscriptionUpgradeOption,
+  result: SubscriptionUpgradeOptionsResult,
+  sourceSubscriptionId: number
+) {
+  selectedPlan.value = null
+  selectedUpgradeOption.value = option
+  upgradeOptionsResult.value = result
+  upgradeSourceSubscriptionId.value = sourceSubscriptionId
+  errorMessage.value = ''
+  if (option.payable_cny === 0 || option.default_payment_type === BALANCE_PAYMENT_METHOD || balanceMethodAvailableForPlan(option.payable_cny)) {
+    selectedMethod.value = BALANCE_PAYMENT_METHOD
+    return
+  }
+  selectedMethod.value = option.default_payment_type
+  if (!selectedMethod.value || !amountFitsMethod(option.payable_cny, selectedMethod.value)) {
+    selectFirstExternalMethod(option.payable_cny)
+  }
+}
+
+function clearSubscriptionSelection() {
+  selectedPlan.value = null
+  selectedUpgradeOption.value = null
+  upgradeOptionsResult.value = null
+  upgradeSourceSubscriptionId.value = null
+}
+
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
   await createOrder(validAmount.value, 'balance')
 }
 
-async function confirmSubscribe() {
-  if (!selectedPlan.value || submitting.value) return
+async function confirmSubscriptionCheckout() {
+  if (submitting.value) return
+  if (selectedUpgradeOption.value && upgradeSourceSubscriptionId.value) {
+    await createOrder(
+      selectedUpgradeOption.value.payable_cny,
+      'subscription_upgrade',
+      selectedUpgradeOption.value.target_plan_id,
+      upgradeSourceSubscriptionId.value
+    )
+    return
+  }
+  if (!selectedPlan.value) return
   await createOrder(selectedPlan.value.price, 'subscription', selectedPlan.value.id)
 }
 
-async function createOrder(orderAmount: number, orderType: string, planId?: number) {
+async function createOrder(orderAmount: number, orderType: string, planId?: number, sourceSubscriptionId?: number) {
   submitting.value = true
   errorMessage.value = ''
   try {
@@ -604,6 +693,7 @@ async function createOrder(orderAmount: number, orderType: string, planId?: numb
       payment_type: selectedMethod.value,
       order_type: orderType,
       plan_id: planId,
+      source_subscription_id: sourceSubscriptionId,
     })
     const openWindow = (url: string) => {
       const win = window.open(url, 'paymentPopup', POPUP_WINDOW_FEATURES)
@@ -654,11 +744,11 @@ async function createOrder(orderAmount: number, orderType: string, planId?: numb
       paymentPhase.value = 'paying'
     } else if ((result.status === 'COMPLETED' || result.status === 'PAID') && selectedMethod.value === BALANCE_PAYMENT_METHOD) {
       await authStore.refreshUser()
-      if (orderType === 'subscription') {
+      if (orderType === 'subscription' || orderType === 'subscription_upgrade') {
         await subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
       }
-      selectedPlan.value = null
-      appStore.showSuccess(orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success'))
+      clearSubscriptionSelection()
+      appStore.showSuccess(orderType === 'subscription' || orderType === 'subscription_upgrade' ? t('payment.result.subscriptionSuccess') : t('payment.result.success'))
     } else {
       errorMessage.value = t('payment.result.failed')
       appStore.showError(errorMessage.value)
@@ -698,11 +788,29 @@ onMounted(async () => {
     // Handle renewal navigation: ?tab=subscription&group=123
     if (route.query.tab === 'subscription') {
       activeTab.value = 'subscription'
+      await subscriptionStore.fetchActiveSubscriptions().catch(() => {})
+      if (route.query.upgrade_source) {
+        const sourceSubscriptionId = Number(route.query.upgrade_source)
+        const targetPlanId = Number(route.query.upgrade_target || 0)
+        const result = await subscriptionStore.fetchUpgradeOptions(sourceSubscriptionId, true)
+        if (result.options.length === 0) {
+          appStore.showError(t('payment.upgrade.noOptions'))
+        } else if (targetPlanId) {
+          const option = result.options.find(item => item.target_plan_id === targetPlanId)
+          if (option) {
+            selectUpgradeOptionForCheckout(option, result, sourceSubscriptionId)
+          } else {
+            appStore.showError(t('payment.upgrade.noOptions'))
+          }
+        } else {
+          selectUpgradeOptionForCheckout(result.options[0], result, sourceSubscriptionId)
+        }
+      }
       if (route.query.group) {
         const groupId = Number(route.query.group)
         const groupPlans = checkout.value.plans.filter(p => p.group_id === groupId)
         if (groupPlans.length === 1) {
-          selectedPlan.value = groupPlans[0]
+          selectPlan(groupPlans[0])
         } else if (groupPlans.length > 1) {
           renewGroupId.value = groupId
           showRenewalModal.value = true

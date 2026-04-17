@@ -149,6 +149,74 @@ func TestPaymentService_CreateOrder_WithBalancePaymentCompletesSubscription(t *t
 	sub, err := svc.subscriptionSvc.GetActiveSubscription(ctx, user.ID, group.ID)
 	require.NoError(t, err)
 	require.NotNil(t, sub)
+	require.NotNil(t, sub.CurrentPlanID)
+	require.Equal(t, plan.ID, *sub.CurrentPlanID)
+	require.Equal(t, plan.Name, sub.CurrentPlanName)
+	require.NotNil(t, sub.CurrentPlanPriceCNY)
+	require.InDelta(t, plan.Price, *sub.CurrentPlanPriceCNY, 0.0001)
+	require.NotNil(t, sub.CurrentPlanValidityDays)
+	require.Equal(t, plan.ValidityDays, *sub.CurrentPlanValidityDays)
+	require.Equal(t, plan.ValidityUnit, sub.CurrentPlanValidityUnit)
+	require.NotNil(t, sub.BillingCycleStartedAt)
+}
+
+func TestPaymentService_CreateOrder_WithBalancePaymentRefreshesPlanSnapshotOnRenewal(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentServiceSQLite(t)
+	ctx := context.Background()
+
+	user := mustCreatePaymentUser(t, ctx, client, 500)
+	group := mustCreatePlanGroup(t, ctx, client, "renew-sub-group", StatusActive, SubscriptionTypeSubscription)
+	firstPlan := mustCreateSubscriptionPlan(t, ctx, client, group.ID, "basic-plan", true)
+	secondPlan, err := client.SubscriptionPlan.Create().
+		SetGroupID(group.ID).
+		SetName("pro-plan").
+		SetDescription("pro plan").
+		SetPrice(39.9).
+		SetValidityDays(30).
+		SetValidityUnit("day").
+		SetForSale(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = svc.CreateOrder(ctx, CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      firstPlan.Price,
+		PaymentType: payment.TypeBalance,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      firstPlan.ID,
+	})
+	require.NoError(t, err)
+
+	firstSub, err := svc.subscriptionSvc.GetActiveSubscription(ctx, user.ID, group.ID)
+	require.NoError(t, err)
+	require.NotNil(t, firstSub.BillingCycleStartedAt)
+	firstCycleStart := *firstSub.BillingCycleStartedAt
+
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = svc.CreateOrder(ctx, CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      secondPlan.Price,
+		PaymentType: payment.TypeBalance,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      secondPlan.ID,
+	})
+	require.NoError(t, err)
+
+	renewedSub, err := svc.subscriptionSvc.GetActiveSubscription(ctx, user.ID, group.ID)
+	require.NoError(t, err)
+	require.NotNil(t, renewedSub.CurrentPlanID)
+	require.Equal(t, secondPlan.ID, *renewedSub.CurrentPlanID)
+	require.Equal(t, secondPlan.Name, renewedSub.CurrentPlanName)
+	require.NotNil(t, renewedSub.CurrentPlanPriceCNY)
+	require.InDelta(t, secondPlan.Price, *renewedSub.CurrentPlanPriceCNY, 0.0001)
+	require.NotNil(t, renewedSub.CurrentPlanValidityDays)
+	require.Equal(t, secondPlan.ValidityDays, *renewedSub.CurrentPlanValidityDays)
+	require.Equal(t, secondPlan.ValidityUnit, renewedSub.CurrentPlanValidityUnit)
+	require.NotNil(t, renewedSub.BillingCycleStartedAt)
+	require.True(t, renewedSub.BillingCycleStartedAt.After(firstCycleStart) || renewedSub.BillingCycleStartedAt.Equal(firstCycleStart))
 }
 
 func TestPaymentService_CreateOrder_WithBalancePaymentRejectsInsufficientBalance(t *testing.T) {

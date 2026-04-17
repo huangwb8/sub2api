@@ -68,14 +68,14 @@ type APIKey struct {
 }
 
 type Group struct {
-	ID             int64   `json:"id"`
-	Name           string  `json:"name"`
-	Description    string  `json:"description"`
-	Platform       string  `json:"platform"`
-	RateMultiplier float64 `json:"rate_multiplier"`
+	ID                     int64    `json:"id"`
+	Name                   string   `json:"name"`
+	Description            string   `json:"description"`
+	Platform               string   `json:"platform"`
+	RateMultiplier         float64  `json:"rate_multiplier"`
 	ExtraProfitRatePercent *float64 `json:"extra_profit_rate_percent,omitempty"`
-	IsExclusive    bool    `json:"is_exclusive"`
-	Status         string  `json:"status"`
+	IsExclusive            bool     `json:"is_exclusive"`
+	Status                 string   `json:"status"`
 
 	SubscriptionType string   `json:"subscription_type"`
 	DailyLimitUSD    *float64 `json:"daily_limit_usd"`
@@ -132,28 +132,28 @@ type AdminGroup struct {
 }
 
 type Account struct {
-	ID                 int64          `json:"id"`
-	Name               string         `json:"name"`
-	Notes              *string        `json:"notes"`
-	Platform           string         `json:"platform"`
-	Type               string         `json:"type"`
-	Credentials        map[string]any `json:"credentials"`
-	Extra              map[string]any `json:"extra"`
-	ProxyID            *int64         `json:"proxy_id"`
-	Concurrency        int            `json:"concurrency"`
-	LoadFactor         *int           `json:"load_factor,omitempty"`
-	Priority           int            `json:"priority"`
-	RateMultiplier     float64        `json:"rate_multiplier"`
-	ActualCostCNY      *float64       `json:"actual_cost_cny,omitempty"`
-	ActualCostUsageUSD *float64       `json:"actual_cost_usage_usd,omitempty"`
-	ActualCostUpdatedAt *time.Time    `json:"actual_cost_updated_at,omitempty"`
-	Status             string         `json:"status"`
-	ErrorMessage       string         `json:"error_message"`
-	LastUsedAt         *time.Time     `json:"last_used_at"`
-	ExpiresAt          *int64         `json:"expires_at"`
-	AutoPauseOnExpired bool           `json:"auto_pause_on_expired"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
+	ID                  int64          `json:"id"`
+	Name                string         `json:"name"`
+	Notes               *string        `json:"notes"`
+	Platform            string         `json:"platform"`
+	Type                string         `json:"type"`
+	Credentials         map[string]any `json:"credentials"`
+	Extra               map[string]any `json:"extra"`
+	ProxyID             *int64         `json:"proxy_id"`
+	Concurrency         int            `json:"concurrency"`
+	LoadFactor          *int           `json:"load_factor,omitempty"`
+	Priority            int            `json:"priority"`
+	RateMultiplier      float64        `json:"rate_multiplier"`
+	ActualCostCNY       *float64       `json:"actual_cost_cny,omitempty"`
+	ActualCostUsageUSD  *float64       `json:"actual_cost_usage_usd,omitempty"`
+	ActualCostUpdatedAt *time.Time     `json:"actual_cost_updated_at,omitempty"`
+	Status              string         `json:"status"`
+	ErrorMessage        string         `json:"error_message"`
+	LastUsedAt          *time.Time     `json:"last_used_at"`
+	ExpiresAt           *int64         `json:"expires_at"`
+	AutoPauseOnExpired  bool           `json:"auto_pause_on_expired"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
 
 	Schedulable bool `json:"schedulable"`
 
@@ -362,19 +362,19 @@ type UsageLog struct {
 	CacheCreation5mTokens int `json:"cache_creation_5m_tokens"`
 	CacheCreation1hTokens int `json:"cache_creation_1h_tokens"`
 
-	InputCost         float64 `json:"input_cost"`
-	OutputCost        float64 `json:"output_cost"`
-	CacheCreationCost float64 `json:"cache_creation_cost"`
-	CacheReadCost     float64 `json:"cache_read_cost"`
-	TotalCost         float64 `json:"total_cost"`
-	ActualCost        float64 `json:"actual_cost"`
-	ChargedAmountCNY  *float64 `json:"charged_amount_cny,omitempty"`
-	EstimatedCostCNY  *float64 `json:"estimated_cost_cny,omitempty"`
-	FXRateUSDCNY      *float64 `json:"fx_rate_usd_cny,omitempty"`
-	FXRateSource      *string `json:"fx_rate_source,omitempty"`
+	InputCost         float64    `json:"input_cost"`
+	OutputCost        float64    `json:"output_cost"`
+	CacheCreationCost float64    `json:"cache_creation_cost"`
+	CacheReadCost     float64    `json:"cache_read_cost"`
+	TotalCost         float64    `json:"total_cost"`
+	ActualCost        float64    `json:"actual_cost"`
+	ChargedAmountCNY  *float64   `json:"charged_amount_cny,omitempty"`
+	EstimatedCostCNY  *float64   `json:"estimated_cost_cny,omitempty"`
+	FXRateUSDCNY      *float64   `json:"fx_rate_usd_cny,omitempty"`
+	FXRateSource      *string    `json:"fx_rate_source,omitempty"`
 	FXFetchedAt       *time.Time `json:"fx_fetched_at,omitempty"`
-	FXSafetyMargin    *float64 `json:"fx_safety_margin,omitempty"`
-	RateMultiplier    float64 `json:"rate_multiplier"`
+	FXSafetyMargin    *float64   `json:"fx_safety_margin,omitempty"`
+	RateMultiplier    float64    `json:"rate_multiplier"`
 
 	BillingType  int8   `json:"billing_type"`
 	RequestType  string `json:"request_type"`
@@ -476,6 +476,13 @@ type UserSubscription struct {
 	ID      int64 `json:"id"`
 	UserID  int64 `json:"user_id"`
 	GroupID int64 `json:"group_id"`
+
+	CurrentPlanID           *int64     `json:"current_plan_id,omitempty"`
+	CurrentPlanName         string     `json:"current_plan_name"`
+	CurrentPlanPriceCNY     *float64   `json:"current_plan_price_cny,omitempty"`
+	CurrentPlanValidityDays *int       `json:"current_plan_validity_days,omitempty"`
+	CurrentPlanValidityUnit string     `json:"current_plan_validity_unit"`
+	BillingCycleStartedAt   *time.Time `json:"billing_cycle_started_at,omitempty"`
 
 	StartsAt  time.Time `json:"starts_at"`
 	ExpiresAt time.Time `json:"expires_at"`

@@ -5120,7 +5120,8 @@ export default {
     expiresOn: 'Expires on {date}',
     resetIn: 'Resets in {time}',
     windowNotActive: 'Awaiting first use',
-    usageOf: '{used} of {limit}'
+    usageOf: '{used} of {limit}',
+    upgrade: 'Upgrade'
   },
 
   // Onboarding Tour
@@ -5378,6 +5379,16 @@ export default {
     subscribeNow: 'Subscribe Now',
     renewNow: 'Renew',
     selectPlan: 'Select Plan',
+    upgrade: {
+      currentPlan: 'Current Plan',
+      targetPlan: 'Target Plan',
+      credit: 'Upgrade Credit',
+      payable: 'Amount Due',
+      remainingRatio: '{ratio} of the current billing cycle remains available as credit',
+      proceed: 'Upgrade Now',
+      noOptions: 'No higher-tier upgrade options are currently available',
+      unsupported: 'Upgrade unavailable',
+    },
     planFeatures: 'Features',
     planCard: {
       rate: 'Rate',

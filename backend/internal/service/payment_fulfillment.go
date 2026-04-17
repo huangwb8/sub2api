@@ -129,6 +129,9 @@ func (s *PaymentService) executeFulfillment(ctx context.Context, oid int64) erro
 	if err != nil {
 		return fmt.Errorf("get order: %w", err)
 	}
+	if o.OrderType == payment.OrderTypeSubscriptionUpgrade {
+		return s.ExecuteSubscriptionUpgradeFulfillment(ctx, oid)
+	}
 	if o.OrderType == payment.OrderTypeSubscription {
 		return s.ExecuteSubscriptionFulfillment(ctx, oid)
 	}
@@ -251,12 +254,53 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 	return nil
 }
 
+func (s *PaymentService) ExecuteSubscriptionUpgradeFulfillment(ctx context.Context, oid int64) error {
+	o, err := s.entClient.PaymentOrder.Get(ctx, oid)
+	if err != nil {
+		return infraerrors.NotFound("NOT_FOUND", "order not found")
+	}
+	if o.Status == OrderStatusCompleted {
+		return nil
+	}
+	if psIsRefundStatus(o.Status) {
+		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
+	}
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
+	}
+	if o.PlanID == nil || o.SourceSubscriptionID == nil {
+		return infraerrors.BadRequest("INVALID_STATUS", "missing upgrade order info")
+	}
+	c, err := s.entClient.PaymentOrder.Update().
+		Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).
+		SetStatus(OrderStatusRecharging).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("lock: %w", err)
+	}
+	if c == 0 {
+		return nil
+	}
+	if err := s.doSubscriptionUpgrade(ctx, o); err != nil {
+		s.markFailed(ctx, oid, err)
+		return err
+	}
+	return nil
+}
+
 func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error {
 	gid := *o.SubscriptionGroupID
 	days := *o.SubscriptionDays
+	var plan *dbent.SubscriptionPlan
 	g, err := s.groupRepo.GetByID(ctx, gid)
 	if err != nil || g.Status != payment.EntityStatusActive {
 		return fmt.Errorf("group %d no longer exists or inactive", gid)
+	}
+	if o.PlanID != nil {
+		plan, err = s.configService.GetPlan(ctx, *o.PlanID)
+		if err != nil {
+			return fmt.Errorf("load subscription plan: %w", err)
+		}
 	}
 	// Idempotency: check audit log to see if subscription was already assigned.
 	// Prevents double-extension on retry after markCompleted fails.
@@ -265,11 +309,96 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
 	}
 	orderNote := fmt.Sprintf("payment order %d", o.ID)
-	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, ValidityDays: days, AssignedBy: 0, Notes: orderNote})
+	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
+		UserID:       o.UserID,
+		GroupID:      gid,
+		ValidityDays: days,
+		AssignedBy:   0,
+		Notes:        orderNote,
+		PlanSnapshot: subscriptionPlanSnapshotFromPlan(plan),
+	})
 	if err != nil {
 		return fmt.Errorf("assign subscription: %w", err)
 	}
 	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+}
+
+func (s *PaymentService) doSubscriptionUpgrade(ctx context.Context, o *dbent.PaymentOrder) error {
+	targetPlan, err := s.configService.GetPlan(ctx, *o.PlanID)
+	if err != nil {
+		return fmt.Errorf("load target plan: %w", err)
+	}
+	now := time.Now()
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+
+	sourceSub, err := tx.UserSubscription.Get(txCtx, *o.SourceSubscriptionID)
+	if err != nil {
+		return fmt.Errorf("load source subscription: %w", err)
+	}
+	if sourceSub.UserID != o.UserID {
+		return infraerrors.Forbidden("FORBIDDEN", "source subscription does not belong to the order owner")
+	}
+	if sourceSub.Status != SubscriptionStatusActive || !sourceSub.ExpiresAt.After(now) {
+		return infraerrors.BadRequest("UPGRADE_SOURCE_INACTIVE", "source subscription is no longer active")
+	}
+	if o.SourcePlanID != nil && sourceSub.CurrentPlanID != nil && *o.SourcePlanID != *sourceSub.CurrentPlanID {
+		return infraerrors.Conflict("UPGRADE_SOURCE_CHANGED", "source subscription plan has changed since the upgrade order was created")
+	}
+
+	revokeNotes := ""
+	if sourceSub.Notes != nil {
+		revokeNotes = *sourceSub.Notes
+	}
+	if revokeNotes != "" {
+		revokeNotes += "\n"
+	}
+	revokeNotes += fmt.Sprintf("revoked by subscription upgrade order %d -> plan %d", o.ID, targetPlan.ID)
+	if _, err := tx.UserSubscription.UpdateOneID(sourceSub.ID).
+		SetStatus(SubscriptionStatusExpired).
+		SetExpiresAt(now).
+		SetNotes(revokeNotes).
+		Save(txCtx); err != nil {
+		return fmt.Errorf("revoke source subscription: %w", err)
+	}
+
+	if _, err := s.subscriptionSvc.AssignSubscription(txCtx, &AssignSubscriptionInput{
+		UserID:                o.UserID,
+		GroupID:               targetPlan.GroupID,
+		ValidityDays:          psComputeValidityDays(targetPlan.ValidityDays, targetPlan.ValidityUnit),
+		AssignedBy:            0,
+		Notes:                 fmt.Sprintf("upgraded from subscription %d via payment order %d", sourceSub.ID, o.ID),
+		PlanSnapshot:          subscriptionPlanSnapshotFromPlan(targetPlan),
+		BillingCycleStartedAt: &now,
+	}); err != nil {
+		return fmt.Errorf("create target subscription: %w", err)
+	}
+
+	if _, err := tx.PaymentOrder.UpdateOneID(o.ID).
+		SetStatus(OrderStatusCompleted).
+		SetCompletedAt(now).
+		ClearFailedAt().
+		ClearFailedReason().
+		Save(txCtx); err != nil {
+		return fmt.Errorf("mark upgrade order completed: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit upgrade fulfillment: %w", err)
+	}
+
+	s.subscriptionSvc.InvalidateSubCache(o.UserID, sourceSub.GroupID)
+	s.subscriptionSvc.InvalidateSubCache(o.UserID, targetPlan.GroupID)
+	s.writeAuditLog(ctx, o.ID, "UPGRADE_SUCCESS", "system", map[string]any{
+		"sourceSubscriptionID": sourceSub.ID,
+		"targetPlanID":         targetPlan.ID,
+		"targetGroupID":        targetPlan.GroupID,
+	})
+	return nil
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {

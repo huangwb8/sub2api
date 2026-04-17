@@ -28,6 +28,12 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 	builder := client.UserSubscription.Create().
 		SetUserID(sub.UserID).
 		SetGroupID(sub.GroupID).
+		SetNillableCurrentPlanID(sub.CurrentPlanID).
+		SetCurrentPlanName(sub.CurrentPlanName).
+		SetNillableCurrentPlanPriceCny(sub.CurrentPlanPriceCNY).
+		SetNillableCurrentPlanValidityDays(sub.CurrentPlanValidityDays).
+		SetCurrentPlanValidityUnit(sub.CurrentPlanValidityUnit).
+		SetNillableBillingCycleStartedAt(sub.BillingCycleStartedAt).
 		SetExpiresAt(sub.ExpiresAt).
 		SetNillableDailyWindowStart(sub.DailyWindowStart).
 		SetNillableWeeklyWindowStart(sub.WeeklyWindowStart).
@@ -110,6 +116,12 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 	builder := client.UserSubscription.UpdateOneID(sub.ID).
 		SetUserID(sub.UserID).
 		SetGroupID(sub.GroupID).
+		SetNillableCurrentPlanID(sub.CurrentPlanID).
+		SetCurrentPlanName(sub.CurrentPlanName).
+		SetNillableCurrentPlanPriceCny(sub.CurrentPlanPriceCNY).
+		SetNillableCurrentPlanValidityDays(sub.CurrentPlanValidityDays).
+		SetCurrentPlanValidityUnit(sub.CurrentPlanValidityUnit).
+		SetNillableBillingCycleStartedAt(sub.BillingCycleStartedAt).
 		SetStartsAt(sub.StartsAt).
 		SetExpiresAt(sub.ExpiresAt).
 		SetStatus(sub.Status).
@@ -430,23 +442,29 @@ func userSubscriptionEntityToService(m *dbent.UserSubscription) *service.UserSub
 		return nil
 	}
 	out := &service.UserSubscription{
-		ID:                 m.ID,
-		UserID:             m.UserID,
-		GroupID:            m.GroupID,
-		StartsAt:           m.StartsAt,
-		ExpiresAt:          m.ExpiresAt,
-		Status:             m.Status,
-		DailyWindowStart:   m.DailyWindowStart,
-		WeeklyWindowStart:  m.WeeklyWindowStart,
-		MonthlyWindowStart: m.MonthlyWindowStart,
-		DailyUsageUSD:      m.DailyUsageUsd,
-		WeeklyUsageUSD:     m.WeeklyUsageUsd,
-		MonthlyUsageUSD:    m.MonthlyUsageUsd,
-		AssignedBy:         m.AssignedBy,
-		AssignedAt:         m.AssignedAt,
-		Notes:              derefString(m.Notes),
-		CreatedAt:          m.CreatedAt,
-		UpdatedAt:          m.UpdatedAt,
+		ID:                      m.ID,
+		UserID:                  m.UserID,
+		GroupID:                 m.GroupID,
+		CurrentPlanID:           m.CurrentPlanID,
+		CurrentPlanName:         m.CurrentPlanName,
+		CurrentPlanPriceCNY:     m.CurrentPlanPriceCny,
+		CurrentPlanValidityDays: m.CurrentPlanValidityDays,
+		CurrentPlanValidityUnit: m.CurrentPlanValidityUnit,
+		BillingCycleStartedAt:   m.BillingCycleStartedAt,
+		StartsAt:                m.StartsAt,
+		ExpiresAt:               m.ExpiresAt,
+		Status:                  m.Status,
+		DailyWindowStart:        m.DailyWindowStart,
+		WeeklyWindowStart:       m.WeeklyWindowStart,
+		MonthlyWindowStart:      m.MonthlyWindowStart,
+		DailyUsageUSD:           m.DailyUsageUsd,
+		WeeklyUsageUSD:          m.WeeklyUsageUsd,
+		MonthlyUsageUSD:         m.MonthlyUsageUsd,
+		AssignedBy:              m.AssignedBy,
+		AssignedAt:              m.AssignedAt,
+		Notes:                   derefString(m.Notes),
+		CreatedAt:               m.CreatedAt,
+		UpdatedAt:               m.UpdatedAt,
 	}
 	if m.Edges.User != nil {
 		out.User = userEntityToService(m.Edges.User)
@@ -477,4 +495,10 @@ func applyUserSubscriptionEntityToService(dst *service.UserSubscription, src *db
 	dst.ID = src.ID
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+	dst.CurrentPlanID = src.CurrentPlanID
+	dst.CurrentPlanName = src.CurrentPlanName
+	dst.CurrentPlanPriceCNY = src.CurrentPlanPriceCny
+	dst.CurrentPlanValidityDays = src.CurrentPlanValidityDays
+	dst.CurrentPlanValidityUnit = src.CurrentPlanValidityUnit
+	dst.BillingCycleStartedAt = src.BillingCycleStartedAt
 }

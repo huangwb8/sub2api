@@ -46,10 +46,20 @@ const (
 	FieldOrderType = "order_type"
 	// FieldPlanID holds the string denoting the plan_id field in the database.
 	FieldPlanID = "plan_id"
+	// FieldSourceSubscriptionID holds the string denoting the source_subscription_id field in the database.
+	FieldSourceSubscriptionID = "source_subscription_id"
+	// FieldSourcePlanID holds the string denoting the source_plan_id field in the database.
+	FieldSourcePlanID = "source_plan_id"
 	// FieldSubscriptionGroupID holds the string denoting the subscription_group_id field in the database.
 	FieldSubscriptionGroupID = "subscription_group_id"
 	// FieldSubscriptionDays holds the string denoting the subscription_days field in the database.
 	FieldSubscriptionDays = "subscription_days"
+	// FieldUpgradeCreditCny holds the string denoting the upgrade_credit_cny field in the database.
+	FieldUpgradeCreditCny = "upgrade_credit_cny"
+	// FieldUpgradePayableCny holds the string denoting the upgrade_payable_cny field in the database.
+	FieldUpgradePayableCny = "upgrade_payable_cny"
+	// FieldUpgradeRemainingRatio holds the string denoting the upgrade_remaining_ratio field in the database.
+	FieldUpgradeRemainingRatio = "upgrade_remaining_ratio"
 	// FieldProviderInstanceID holds the string denoting the provider_instance_id field in the database.
 	FieldProviderInstanceID = "provider_instance_id"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -120,8 +130,13 @@ var Columns = []string{
 	FieldQrCodeImg,
 	FieldOrderType,
 	FieldPlanID,
+	FieldSourceSubscriptionID,
+	FieldSourcePlanID,
 	FieldSubscriptionGroupID,
 	FieldSubscriptionDays,
+	FieldUpgradeCreditCny,
+	FieldUpgradePayableCny,
+	FieldUpgradeRemainingRatio,
 	FieldProviderInstanceID,
 	FieldStatus,
 	FieldRefundAmount,
@@ -286,6 +301,16 @@ func ByPlanID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPlanID, opts...).ToFunc()
 }
 
+// BySourceSubscriptionID orders the results by the source_subscription_id field.
+func BySourceSubscriptionID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourceSubscriptionID, opts...).ToFunc()
+}
+
+// BySourcePlanID orders the results by the source_plan_id field.
+func BySourcePlanID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourcePlanID, opts...).ToFunc()
+}
+
 // BySubscriptionGroupID orders the results by the subscription_group_id field.
 func BySubscriptionGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubscriptionGroupID, opts...).ToFunc()
@@ -294,6 +319,21 @@ func BySubscriptionGroupID(opts ...sql.OrderTermOption) OrderOption {
 // BySubscriptionDays orders the results by the subscription_days field.
 func BySubscriptionDays(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubscriptionDays, opts...).ToFunc()
+}
+
+// ByUpgradeCreditCny orders the results by the upgrade_credit_cny field.
+func ByUpgradeCreditCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpgradeCreditCny, opts...).ToFunc()
+}
+
+// ByUpgradePayableCny orders the results by the upgrade_payable_cny field.
+func ByUpgradePayableCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpgradePayableCny, opts...).ToFunc()
+}
+
+// ByUpgradeRemainingRatio orders the results by the upgrade_remaining_ratio field.
+func ByUpgradeRemainingRatio(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpgradeRemainingRatio, opts...).ToFunc()
 }
 
 // ByProviderInstanceID orders the results by the provider_instance_id field.

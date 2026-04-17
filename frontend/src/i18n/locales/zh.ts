@@ -5297,7 +5297,8 @@ export default {
     expiresOn: '{date} 到期',
     resetIn: '{time} 后重置',
     windowNotActive: '等待首次使用',
-    usageOf: '已用 {used} / {limit}'
+    usageOf: '已用 {used} / {limit}',
+    upgrade: '升级套餐'
   },
 
   // Onboarding Tour
@@ -5582,6 +5583,16 @@ export default {
     subscribeNow: '立即开通',
     renewNow: '续费',
     selectPlan: '选择套餐',
+    upgrade: {
+      currentPlan: '当前套餐',
+      targetPlan: '目标套餐',
+      credit: '剩余折抵',
+      payable: '需补差价',
+      remainingRatio: '当前计费周期剩余 {ratio} 可用于折抵',
+      proceed: '去补差价',
+      noOptions: '当前没有可升级的更高档套餐',
+      unsupported: '暂不支持升级',
+    },
     planFeatures: '功能特性',
     planCard: {
       rate: '倍率',

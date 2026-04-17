@@ -99,6 +99,16 @@ func ProductName(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldProductName, v))
 }
 
+// UpgradeFamily applies equality check predicate on the "upgrade_family" field. It's identical to UpgradeFamilyEQ.
+func UpgradeFamily(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUpgradeFamily, v))
+}
+
+// UpgradeRank applies equality check predicate on the "upgrade_rank" field. It's identical to UpgradeRankEQ.
+func UpgradeRank(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUpgradeRank, v))
+}
+
 // ForSale applies equality check predicate on the "for_sale" field. It's identical to ForSaleEQ.
 func ForSale(v bool) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldForSale, v))
@@ -612,6 +622,111 @@ func ProductNameEqualFold(v string) predicate.SubscriptionPlan {
 // ProductNameContainsFold applies the ContainsFold predicate on the "product_name" field.
 func ProductNameContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldProductName, v))
+}
+
+// UpgradeFamilyEQ applies the EQ predicate on the "upgrade_family" field.
+func UpgradeFamilyEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyNEQ applies the NEQ predicate on the "upgrade_family" field.
+func UpgradeFamilyNEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyIn applies the In predicate on the "upgrade_family" field.
+func UpgradeFamilyIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldUpgradeFamily, vs...))
+}
+
+// UpgradeFamilyNotIn applies the NotIn predicate on the "upgrade_family" field.
+func UpgradeFamilyNotIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldUpgradeFamily, vs...))
+}
+
+// UpgradeFamilyGT applies the GT predicate on the "upgrade_family" field.
+func UpgradeFamilyGT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyGTE applies the GTE predicate on the "upgrade_family" field.
+func UpgradeFamilyGTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyLT applies the LT predicate on the "upgrade_family" field.
+func UpgradeFamilyLT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyLTE applies the LTE predicate on the "upgrade_family" field.
+func UpgradeFamilyLTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyContains applies the Contains predicate on the "upgrade_family" field.
+func UpgradeFamilyContains(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContains(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyHasPrefix applies the HasPrefix predicate on the "upgrade_family" field.
+func UpgradeFamilyHasPrefix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasPrefix(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyHasSuffix applies the HasSuffix predicate on the "upgrade_family" field.
+func UpgradeFamilyHasSuffix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasSuffix(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyEqualFold applies the EqualFold predicate on the "upgrade_family" field.
+func UpgradeFamilyEqualFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEqualFold(FieldUpgradeFamily, v))
+}
+
+// UpgradeFamilyContainsFold applies the ContainsFold predicate on the "upgrade_family" field.
+func UpgradeFamilyContainsFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldUpgradeFamily, v))
+}
+
+// UpgradeRankEQ applies the EQ predicate on the "upgrade_rank" field.
+func UpgradeRankEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUpgradeRank, v))
+}
+
+// UpgradeRankNEQ applies the NEQ predicate on the "upgrade_rank" field.
+func UpgradeRankNEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldUpgradeRank, v))
+}
+
+// UpgradeRankIn applies the In predicate on the "upgrade_rank" field.
+func UpgradeRankIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldUpgradeRank, vs...))
+}
+
+// UpgradeRankNotIn applies the NotIn predicate on the "upgrade_rank" field.
+func UpgradeRankNotIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldUpgradeRank, vs...))
+}
+
+// UpgradeRankGT applies the GT predicate on the "upgrade_rank" field.
+func UpgradeRankGT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldUpgradeRank, v))
+}
+
+// UpgradeRankGTE applies the GTE predicate on the "upgrade_rank" field.
+func UpgradeRankGTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldUpgradeRank, v))
+}
+
+// UpgradeRankLT applies the LT predicate on the "upgrade_rank" field.
+func UpgradeRankLT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldUpgradeRank, v))
+}
+
+// UpgradeRankLTE applies the LTE predicate on the "upgrade_rank" field.
+func UpgradeRankLTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldUpgradeRank, v))
 }
 
 // ForSaleEQ applies the EQ predicate on the "for_sale" field.

@@ -37,6 +37,26 @@ func (UserSubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("user_id"),
 		field.Int64("group_id"),
+		field.Int64("current_plan_id").
+			Optional().
+			Nillable(),
+		field.String("current_plan_name").
+			MaxLen(100).
+			Default(""),
+		field.Float("current_plan_price_cny").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Optional().
+			Nillable(),
+		field.Int("current_plan_validity_days").
+			Optional().
+			Nillable(),
+		field.String("current_plan_validity_unit").
+			MaxLen(10).
+			Default(""),
+		field.Time("billing_cycle_started_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 
 		field.Time("starts_at").
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),

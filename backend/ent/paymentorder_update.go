@@ -311,6 +311,60 @@ func (_u *PaymentOrderUpdate) ClearPlanID() *PaymentOrderUpdate {
 	return _u
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (_u *PaymentOrderUpdate) SetSourceSubscriptionID(v int64) *PaymentOrderUpdate {
+	_u.mutation.ResetSourceSubscriptionID()
+	_u.mutation.SetSourceSubscriptionID(v)
+	return _u
+}
+
+// SetNillableSourceSubscriptionID sets the "source_subscription_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSourceSubscriptionID(v *int64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSourceSubscriptionID(*v)
+	}
+	return _u
+}
+
+// AddSourceSubscriptionID adds value to the "source_subscription_id" field.
+func (_u *PaymentOrderUpdate) AddSourceSubscriptionID(v int64) *PaymentOrderUpdate {
+	_u.mutation.AddSourceSubscriptionID(v)
+	return _u
+}
+
+// ClearSourceSubscriptionID clears the value of the "source_subscription_id" field.
+func (_u *PaymentOrderUpdate) ClearSourceSubscriptionID() *PaymentOrderUpdate {
+	_u.mutation.ClearSourceSubscriptionID()
+	return _u
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (_u *PaymentOrderUpdate) SetSourcePlanID(v int64) *PaymentOrderUpdate {
+	_u.mutation.ResetSourcePlanID()
+	_u.mutation.SetSourcePlanID(v)
+	return _u
+}
+
+// SetNillableSourcePlanID sets the "source_plan_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSourcePlanID(v *int64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSourcePlanID(*v)
+	}
+	return _u
+}
+
+// AddSourcePlanID adds value to the "source_plan_id" field.
+func (_u *PaymentOrderUpdate) AddSourcePlanID(v int64) *PaymentOrderUpdate {
+	_u.mutation.AddSourcePlanID(v)
+	return _u
+}
+
+// ClearSourcePlanID clears the value of the "source_plan_id" field.
+func (_u *PaymentOrderUpdate) ClearSourcePlanID() *PaymentOrderUpdate {
+	_u.mutation.ClearSourcePlanID()
+	return _u
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (_u *PaymentOrderUpdate) SetSubscriptionGroupID(v int64) *PaymentOrderUpdate {
 	_u.mutation.ResetSubscriptionGroupID()
@@ -362,6 +416,87 @@ func (_u *PaymentOrderUpdate) AddSubscriptionDays(v int) *PaymentOrderUpdate {
 // ClearSubscriptionDays clears the value of the "subscription_days" field.
 func (_u *PaymentOrderUpdate) ClearSubscriptionDays() *PaymentOrderUpdate {
 	_u.mutation.ClearSubscriptionDays()
+	return _u
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdate) SetUpgradeCreditCny(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetUpgradeCreditCny()
+	_u.mutation.SetUpgradeCreditCny(v)
+	return _u
+}
+
+// SetNillableUpgradeCreditCny sets the "upgrade_credit_cny" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableUpgradeCreditCny(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetUpgradeCreditCny(*v)
+	}
+	return _u
+}
+
+// AddUpgradeCreditCny adds value to the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdate) AddUpgradeCreditCny(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddUpgradeCreditCny(v)
+	return _u
+}
+
+// ClearUpgradeCreditCny clears the value of the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdate) ClearUpgradeCreditCny() *PaymentOrderUpdate {
+	_u.mutation.ClearUpgradeCreditCny()
+	return _u
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdate) SetUpgradePayableCny(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetUpgradePayableCny()
+	_u.mutation.SetUpgradePayableCny(v)
+	return _u
+}
+
+// SetNillableUpgradePayableCny sets the "upgrade_payable_cny" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableUpgradePayableCny(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetUpgradePayableCny(*v)
+	}
+	return _u
+}
+
+// AddUpgradePayableCny adds value to the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdate) AddUpgradePayableCny(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddUpgradePayableCny(v)
+	return _u
+}
+
+// ClearUpgradePayableCny clears the value of the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdate) ClearUpgradePayableCny() *PaymentOrderUpdate {
+	_u.mutation.ClearUpgradePayableCny()
+	return _u
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdate) SetUpgradeRemainingRatio(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetUpgradeRemainingRatio()
+	_u.mutation.SetUpgradeRemainingRatio(v)
+	return _u
+}
+
+// SetNillableUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableUpgradeRemainingRatio(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetUpgradeRemainingRatio(*v)
+	}
+	return _u
+}
+
+// AddUpgradeRemainingRatio adds value to the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdate) AddUpgradeRemainingRatio(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddUpgradeRemainingRatio(v)
+	return _u
+}
+
+// ClearUpgradeRemainingRatio clears the value of the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdate) ClearUpgradeRemainingRatio() *PaymentOrderUpdate {
+	_u.mutation.ClearUpgradeRemainingRatio()
 	return _u
 }
 
@@ -886,6 +1021,24 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.PlanIDCleared() {
 		_spec.ClearField(paymentorder.FieldPlanID, field.TypeInt64)
 	}
+	if value, ok := _u.mutation.SourceSubscriptionID(); ok {
+		_spec.SetField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSourceSubscriptionID(); ok {
+		_spec.AddField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64, value)
+	}
+	if _u.mutation.SourceSubscriptionIDCleared() {
+		_spec.ClearField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.SourcePlanID(); ok {
+		_spec.SetField(paymentorder.FieldSourcePlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSourcePlanID(); ok {
+		_spec.AddField(paymentorder.FieldSourcePlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.SourcePlanIDCleared() {
+		_spec.ClearField(paymentorder.FieldSourcePlanID, field.TypeInt64)
+	}
 	if value, ok := _u.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)
 	}
@@ -903,6 +1056,33 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.SubscriptionDaysCleared() {
 		_spec.ClearField(paymentorder.FieldSubscriptionDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpgradeCreditCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeCreditCny(); ok {
+		_spec.AddField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradeCreditCnyCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpgradePayableCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradePayableCny(); ok {
+		_spec.AddField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradePayableCnyCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpgradeRemainingRatio(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeRemainingRatio(); ok {
+		_spec.AddField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradeRemainingRatioCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.ProviderInstanceID(); ok {
 		_spec.SetField(paymentorder.FieldProviderInstanceID, field.TypeString, value)
@@ -1325,6 +1505,60 @@ func (_u *PaymentOrderUpdateOne) ClearPlanID() *PaymentOrderUpdateOne {
 	return _u
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (_u *PaymentOrderUpdateOne) SetSourceSubscriptionID(v int64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSourceSubscriptionID()
+	_u.mutation.SetSourceSubscriptionID(v)
+	return _u
+}
+
+// SetNillableSourceSubscriptionID sets the "source_subscription_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSourceSubscriptionID(v *int64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSourceSubscriptionID(*v)
+	}
+	return _u
+}
+
+// AddSourceSubscriptionID adds value to the "source_subscription_id" field.
+func (_u *PaymentOrderUpdateOne) AddSourceSubscriptionID(v int64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSourceSubscriptionID(v)
+	return _u
+}
+
+// ClearSourceSubscriptionID clears the value of the "source_subscription_id" field.
+func (_u *PaymentOrderUpdateOne) ClearSourceSubscriptionID() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSourceSubscriptionID()
+	return _u
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (_u *PaymentOrderUpdateOne) SetSourcePlanID(v int64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSourcePlanID()
+	_u.mutation.SetSourcePlanID(v)
+	return _u
+}
+
+// SetNillableSourcePlanID sets the "source_plan_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSourcePlanID(v *int64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSourcePlanID(*v)
+	}
+	return _u
+}
+
+// AddSourcePlanID adds value to the "source_plan_id" field.
+func (_u *PaymentOrderUpdateOne) AddSourcePlanID(v int64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSourcePlanID(v)
+	return _u
+}
+
+// ClearSourcePlanID clears the value of the "source_plan_id" field.
+func (_u *PaymentOrderUpdateOne) ClearSourcePlanID() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSourcePlanID()
+	return _u
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (_u *PaymentOrderUpdateOne) SetSubscriptionGroupID(v int64) *PaymentOrderUpdateOne {
 	_u.mutation.ResetSubscriptionGroupID()
@@ -1376,6 +1610,87 @@ func (_u *PaymentOrderUpdateOne) AddSubscriptionDays(v int) *PaymentOrderUpdateO
 // ClearSubscriptionDays clears the value of the "subscription_days" field.
 func (_u *PaymentOrderUpdateOne) ClearSubscriptionDays() *PaymentOrderUpdateOne {
 	_u.mutation.ClearSubscriptionDays()
+	return _u
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdateOne) SetUpgradeCreditCny(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetUpgradeCreditCny()
+	_u.mutation.SetUpgradeCreditCny(v)
+	return _u
+}
+
+// SetNillableUpgradeCreditCny sets the "upgrade_credit_cny" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableUpgradeCreditCny(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetUpgradeCreditCny(*v)
+	}
+	return _u
+}
+
+// AddUpgradeCreditCny adds value to the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdateOne) AddUpgradeCreditCny(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddUpgradeCreditCny(v)
+	return _u
+}
+
+// ClearUpgradeCreditCny clears the value of the "upgrade_credit_cny" field.
+func (_u *PaymentOrderUpdateOne) ClearUpgradeCreditCny() *PaymentOrderUpdateOne {
+	_u.mutation.ClearUpgradeCreditCny()
+	return _u
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdateOne) SetUpgradePayableCny(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetUpgradePayableCny()
+	_u.mutation.SetUpgradePayableCny(v)
+	return _u
+}
+
+// SetNillableUpgradePayableCny sets the "upgrade_payable_cny" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableUpgradePayableCny(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetUpgradePayableCny(*v)
+	}
+	return _u
+}
+
+// AddUpgradePayableCny adds value to the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdateOne) AddUpgradePayableCny(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddUpgradePayableCny(v)
+	return _u
+}
+
+// ClearUpgradePayableCny clears the value of the "upgrade_payable_cny" field.
+func (_u *PaymentOrderUpdateOne) ClearUpgradePayableCny() *PaymentOrderUpdateOne {
+	_u.mutation.ClearUpgradePayableCny()
+	return _u
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdateOne) SetUpgradeRemainingRatio(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetUpgradeRemainingRatio()
+	_u.mutation.SetUpgradeRemainingRatio(v)
+	return _u
+}
+
+// SetNillableUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableUpgradeRemainingRatio(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetUpgradeRemainingRatio(*v)
+	}
+	return _u
+}
+
+// AddUpgradeRemainingRatio adds value to the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdateOne) AddUpgradeRemainingRatio(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddUpgradeRemainingRatio(v)
+	return _u
+}
+
+// ClearUpgradeRemainingRatio clears the value of the "upgrade_remaining_ratio" field.
+func (_u *PaymentOrderUpdateOne) ClearUpgradeRemainingRatio() *PaymentOrderUpdateOne {
+	_u.mutation.ClearUpgradeRemainingRatio()
 	return _u
 }
 
@@ -1930,6 +2245,24 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 	if _u.mutation.PlanIDCleared() {
 		_spec.ClearField(paymentorder.FieldPlanID, field.TypeInt64)
 	}
+	if value, ok := _u.mutation.SourceSubscriptionID(); ok {
+		_spec.SetField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSourceSubscriptionID(); ok {
+		_spec.AddField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64, value)
+	}
+	if _u.mutation.SourceSubscriptionIDCleared() {
+		_spec.ClearField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.SourcePlanID(); ok {
+		_spec.SetField(paymentorder.FieldSourcePlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSourcePlanID(); ok {
+		_spec.AddField(paymentorder.FieldSourcePlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.SourcePlanIDCleared() {
+		_spec.ClearField(paymentorder.FieldSourcePlanID, field.TypeInt64)
+	}
 	if value, ok := _u.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)
 	}
@@ -1947,6 +2280,33 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 	}
 	if _u.mutation.SubscriptionDaysCleared() {
 		_spec.ClearField(paymentorder.FieldSubscriptionDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpgradeCreditCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeCreditCny(); ok {
+		_spec.AddField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradeCreditCnyCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpgradePayableCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradePayableCny(); ok {
+		_spec.AddField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradePayableCnyCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UpgradeRemainingRatio(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeRemainingRatio(); ok {
+		_spec.AddField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64, value)
+	}
+	if _u.mutation.UpgradeRemainingRatioCleared() {
+		_spec.ClearField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.ProviderInstanceID(); ok {
 		_spec.SetField(paymentorder.FieldProviderInstanceID, field.TypeString, value)

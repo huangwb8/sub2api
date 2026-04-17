@@ -27,6 +27,8 @@ type subscriptionPlanResponse struct {
 	ValidityUnit  string   `json:"validity_unit"`
 	Features      string   `json:"features"`
 	ProductName   string   `json:"product_name"`
+	UpgradeFamily string   `json:"upgrade_family"`
+	UpgradeRank   int      `json:"upgrade_rank"`
 	ForSale       bool     `json:"for_sale"`
 	SortOrder     int      `json:"sort_order"`
 }
@@ -43,6 +45,8 @@ func toSubscriptionPlanResponse(plan *dbent.SubscriptionPlan) subscriptionPlanRe
 		ValidityUnit:  plan.ValidityUnit,
 		Features:      plan.Features,
 		ProductName:   plan.ProductName,
+		UpgradeFamily: plan.UpgradeFamily,
+		UpgradeRank:   plan.UpgradeRank,
 		ForSale:       plan.ForSale,
 		SortOrder:     plan.SortOrder,
 	}

@@ -20,7 +20,7 @@ export type OrderStatus =
 
 export type PaymentType = 'balance' | 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay'
 
-export type OrderType = 'balance' | 'subscription'
+export type OrderType = 'balance' | 'subscription' | 'subscription_upgrade'
 
 // ==================== Configuration ====================
 
@@ -89,6 +89,11 @@ export interface PaymentOrder {
   refund_requested_by?: number
   refund_request_reason?: string
   plan_id?: number
+  source_subscription_id?: number
+  source_plan_id?: number
+  upgrade_credit_cny?: number
+  upgrade_payable_cny?: number
+  upgrade_remaining_ratio?: number
   provider_instance_id?: string
 }
 
@@ -112,6 +117,8 @@ export interface SubscriptionPlan {
   validity_unit: string
   /** Stored as JSON string in backend; API layer should parse before use */
   features: string[]
+  upgrade_family?: string
+  upgrade_rank?: number
   for_sale: boolean
   sort_order: number
 }
@@ -151,6 +158,7 @@ export interface CreateOrderRequest {
   payment_type: string
   order_type: string
   plan_id?: number
+  source_subscription_id?: number
 }
 
 export interface CreateOrderResult {

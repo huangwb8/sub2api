@@ -79,6 +79,90 @@ func (_c *UserSubscriptionCreate) SetGroupID(v int64) *UserSubscriptionCreate {
 	return _c
 }
 
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (_c *UserSubscriptionCreate) SetCurrentPlanID(v int64) *UserSubscriptionCreate {
+	_c.mutation.SetCurrentPlanID(v)
+	return _c
+}
+
+// SetNillableCurrentPlanID sets the "current_plan_id" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableCurrentPlanID(v *int64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetCurrentPlanID(*v)
+	}
+	return _c
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (_c *UserSubscriptionCreate) SetCurrentPlanName(v string) *UserSubscriptionCreate {
+	_c.mutation.SetCurrentPlanName(v)
+	return _c
+}
+
+// SetNillableCurrentPlanName sets the "current_plan_name" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableCurrentPlanName(v *string) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetCurrentPlanName(*v)
+	}
+	return _c
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (_c *UserSubscriptionCreate) SetCurrentPlanPriceCny(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetCurrentPlanPriceCny(v)
+	return _c
+}
+
+// SetNillableCurrentPlanPriceCny sets the "current_plan_price_cny" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableCurrentPlanPriceCny(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetCurrentPlanPriceCny(*v)
+	}
+	return _c
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (_c *UserSubscriptionCreate) SetCurrentPlanValidityDays(v int) *UserSubscriptionCreate {
+	_c.mutation.SetCurrentPlanValidityDays(v)
+	return _c
+}
+
+// SetNillableCurrentPlanValidityDays sets the "current_plan_validity_days" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableCurrentPlanValidityDays(v *int) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetCurrentPlanValidityDays(*v)
+	}
+	return _c
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (_c *UserSubscriptionCreate) SetCurrentPlanValidityUnit(v string) *UserSubscriptionCreate {
+	_c.mutation.SetCurrentPlanValidityUnit(v)
+	return _c
+}
+
+// SetNillableCurrentPlanValidityUnit sets the "current_plan_validity_unit" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableCurrentPlanValidityUnit(v *string) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetCurrentPlanValidityUnit(*v)
+	}
+	return _c
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (_c *UserSubscriptionCreate) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionCreate {
+	_c.mutation.SetBillingCycleStartedAt(v)
+	return _c
+}
+
+// SetNillableBillingCycleStartedAt sets the "billing_cycle_started_at" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableBillingCycleStartedAt(v *time.Time) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetBillingCycleStartedAt(*v)
+	}
+	return _c
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (_c *UserSubscriptionCreate) SetStartsAt(v time.Time) *UserSubscriptionCreate {
 	_c.mutation.SetStartsAt(v)
@@ -326,6 +410,14 @@ func (_c *UserSubscriptionCreate) defaults() error {
 		v := usersubscription.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.CurrentPlanName(); !ok {
+		v := usersubscription.DefaultCurrentPlanName
+		_c.mutation.SetCurrentPlanName(v)
+	}
+	if _, ok := _c.mutation.CurrentPlanValidityUnit(); !ok {
+		v := usersubscription.DefaultCurrentPlanValidityUnit
+		_c.mutation.SetCurrentPlanValidityUnit(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := usersubscription.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -365,6 +457,22 @@ func (_c *UserSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.GroupID(); !ok {
 		return &ValidationError{Name: "group_id", err: errors.New(`ent: missing required field "UserSubscription.group_id"`)}
+	}
+	if _, ok := _c.mutation.CurrentPlanName(); !ok {
+		return &ValidationError{Name: "current_plan_name", err: errors.New(`ent: missing required field "UserSubscription.current_plan_name"`)}
+	}
+	if v, ok := _c.mutation.CurrentPlanName(); ok {
+		if err := usersubscription.CurrentPlanNameValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_name", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_name": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CurrentPlanValidityUnit(); !ok {
+		return &ValidationError{Name: "current_plan_validity_unit", err: errors.New(`ent: missing required field "UserSubscription.current_plan_validity_unit"`)}
+	}
+	if v, ok := _c.mutation.CurrentPlanValidityUnit(); ok {
+		if err := usersubscription.CurrentPlanValidityUnitValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_validity_unit", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_validity_unit": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.StartsAt(); !ok {
 		return &ValidationError{Name: "starts_at", err: errors.New(`ent: missing required field "UserSubscription.starts_at"`)}
@@ -436,6 +544,30 @@ func (_c *UserSubscriptionCreate) createSpec() (*UserSubscription, *sqlgraph.Cre
 	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(usersubscription.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
+	}
+	if value, ok := _c.mutation.CurrentPlanID(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanID, field.TypeInt64, value)
+		_node.CurrentPlanID = &value
+	}
+	if value, ok := _c.mutation.CurrentPlanName(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanName, field.TypeString, value)
+		_node.CurrentPlanName = value
+	}
+	if value, ok := _c.mutation.CurrentPlanPriceCny(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64, value)
+		_node.CurrentPlanPriceCny = &value
+	}
+	if value, ok := _c.mutation.CurrentPlanValidityDays(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt, value)
+		_node.CurrentPlanValidityDays = &value
+	}
+	if value, ok := _c.mutation.CurrentPlanValidityUnit(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityUnit, field.TypeString, value)
+		_node.CurrentPlanValidityUnit = value
+	}
+	if value, ok := _c.mutation.BillingCycleStartedAt(); ok {
+		_spec.SetField(usersubscription.FieldBillingCycleStartedAt, field.TypeTime, value)
+		_node.BillingCycleStartedAt = &value
 	}
 	if value, ok := _c.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)
@@ -651,6 +783,120 @@ func (u *UserSubscriptionUpsert) SetGroupID(v int64) *UserSubscriptionUpsert {
 // UpdateGroupID sets the "group_id" field to the value that was provided on create.
 func (u *UserSubscriptionUpsert) UpdateGroupID() *UserSubscriptionUpsert {
 	u.SetExcluded(usersubscription.FieldGroupID)
+	return u
+}
+
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (u *UserSubscriptionUpsert) SetCurrentPlanID(v int64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldCurrentPlanID, v)
+	return u
+}
+
+// UpdateCurrentPlanID sets the "current_plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateCurrentPlanID() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldCurrentPlanID)
+	return u
+}
+
+// AddCurrentPlanID adds v to the "current_plan_id" field.
+func (u *UserSubscriptionUpsert) AddCurrentPlanID(v int64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldCurrentPlanID, v)
+	return u
+}
+
+// ClearCurrentPlanID clears the value of the "current_plan_id" field.
+func (u *UserSubscriptionUpsert) ClearCurrentPlanID() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldCurrentPlanID)
+	return u
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (u *UserSubscriptionUpsert) SetCurrentPlanName(v string) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldCurrentPlanName, v)
+	return u
+}
+
+// UpdateCurrentPlanName sets the "current_plan_name" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateCurrentPlanName() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldCurrentPlanName)
+	return u
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsert) SetCurrentPlanPriceCny(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldCurrentPlanPriceCny, v)
+	return u
+}
+
+// UpdateCurrentPlanPriceCny sets the "current_plan_price_cny" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateCurrentPlanPriceCny() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldCurrentPlanPriceCny)
+	return u
+}
+
+// AddCurrentPlanPriceCny adds v to the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsert) AddCurrentPlanPriceCny(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldCurrentPlanPriceCny, v)
+	return u
+}
+
+// ClearCurrentPlanPriceCny clears the value of the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsert) ClearCurrentPlanPriceCny() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldCurrentPlanPriceCny)
+	return u
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsert) SetCurrentPlanValidityDays(v int) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldCurrentPlanValidityDays, v)
+	return u
+}
+
+// UpdateCurrentPlanValidityDays sets the "current_plan_validity_days" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateCurrentPlanValidityDays() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldCurrentPlanValidityDays)
+	return u
+}
+
+// AddCurrentPlanValidityDays adds v to the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsert) AddCurrentPlanValidityDays(v int) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldCurrentPlanValidityDays, v)
+	return u
+}
+
+// ClearCurrentPlanValidityDays clears the value of the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsert) ClearCurrentPlanValidityDays() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldCurrentPlanValidityDays)
+	return u
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (u *UserSubscriptionUpsert) SetCurrentPlanValidityUnit(v string) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldCurrentPlanValidityUnit, v)
+	return u
+}
+
+// UpdateCurrentPlanValidityUnit sets the "current_plan_validity_unit" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateCurrentPlanValidityUnit() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldCurrentPlanValidityUnit)
+	return u
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsert) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldBillingCycleStartedAt, v)
+	return u
+}
+
+// UpdateBillingCycleStartedAt sets the "billing_cycle_started_at" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateBillingCycleStartedAt() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldBillingCycleStartedAt)
+	return u
+}
+
+// ClearBillingCycleStartedAt clears the value of the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsert) ClearBillingCycleStartedAt() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldBillingCycleStartedAt)
 	return u
 }
 
@@ -951,6 +1197,139 @@ func (u *UserSubscriptionUpsertOne) SetGroupID(v int64) *UserSubscriptionUpsertO
 func (u *UserSubscriptionUpsertOne) UpdateGroupID() *UserSubscriptionUpsertOne {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (u *UserSubscriptionUpsertOne) SetCurrentPlanID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanID(v)
+	})
+}
+
+// AddCurrentPlanID adds v to the "current_plan_id" field.
+func (u *UserSubscriptionUpsertOne) AddCurrentPlanID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanID(v)
+	})
+}
+
+// UpdateCurrentPlanID sets the "current_plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateCurrentPlanID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanID()
+	})
+}
+
+// ClearCurrentPlanID clears the value of the "current_plan_id" field.
+func (u *UserSubscriptionUpsertOne) ClearCurrentPlanID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanID()
+	})
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (u *UserSubscriptionUpsertOne) SetCurrentPlanName(v string) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanName(v)
+	})
+}
+
+// UpdateCurrentPlanName sets the "current_plan_name" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateCurrentPlanName() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanName()
+	})
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertOne) SetCurrentPlanPriceCny(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanPriceCny(v)
+	})
+}
+
+// AddCurrentPlanPriceCny adds v to the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertOne) AddCurrentPlanPriceCny(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanPriceCny(v)
+	})
+}
+
+// UpdateCurrentPlanPriceCny sets the "current_plan_price_cny" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateCurrentPlanPriceCny() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanPriceCny()
+	})
+}
+
+// ClearCurrentPlanPriceCny clears the value of the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertOne) ClearCurrentPlanPriceCny() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanPriceCny()
+	})
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertOne) SetCurrentPlanValidityDays(v int) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanValidityDays(v)
+	})
+}
+
+// AddCurrentPlanValidityDays adds v to the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertOne) AddCurrentPlanValidityDays(v int) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanValidityDays(v)
+	})
+}
+
+// UpdateCurrentPlanValidityDays sets the "current_plan_validity_days" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateCurrentPlanValidityDays() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanValidityDays()
+	})
+}
+
+// ClearCurrentPlanValidityDays clears the value of the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertOne) ClearCurrentPlanValidityDays() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanValidityDays()
+	})
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (u *UserSubscriptionUpsertOne) SetCurrentPlanValidityUnit(v string) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanValidityUnit(v)
+	})
+}
+
+// UpdateCurrentPlanValidityUnit sets the "current_plan_validity_unit" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateCurrentPlanValidityUnit() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanValidityUnit()
+	})
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsertOne) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetBillingCycleStartedAt(v)
+	})
+}
+
+// UpdateBillingCycleStartedAt sets the "billing_cycle_started_at" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateBillingCycleStartedAt() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateBillingCycleStartedAt()
+	})
+}
+
+// ClearBillingCycleStartedAt clears the value of the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsertOne) ClearBillingCycleStartedAt() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearBillingCycleStartedAt()
 	})
 }
 
@@ -1449,6 +1828,139 @@ func (u *UserSubscriptionUpsertBulk) SetGroupID(v int64) *UserSubscriptionUpsert
 func (u *UserSubscriptionUpsertBulk) UpdateGroupID() *UserSubscriptionUpsertBulk {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (u *UserSubscriptionUpsertBulk) SetCurrentPlanID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanID(v)
+	})
+}
+
+// AddCurrentPlanID adds v to the "current_plan_id" field.
+func (u *UserSubscriptionUpsertBulk) AddCurrentPlanID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanID(v)
+	})
+}
+
+// UpdateCurrentPlanID sets the "current_plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateCurrentPlanID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanID()
+	})
+}
+
+// ClearCurrentPlanID clears the value of the "current_plan_id" field.
+func (u *UserSubscriptionUpsertBulk) ClearCurrentPlanID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanID()
+	})
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (u *UserSubscriptionUpsertBulk) SetCurrentPlanName(v string) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanName(v)
+	})
+}
+
+// UpdateCurrentPlanName sets the "current_plan_name" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateCurrentPlanName() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanName()
+	})
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertBulk) SetCurrentPlanPriceCny(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanPriceCny(v)
+	})
+}
+
+// AddCurrentPlanPriceCny adds v to the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertBulk) AddCurrentPlanPriceCny(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanPriceCny(v)
+	})
+}
+
+// UpdateCurrentPlanPriceCny sets the "current_plan_price_cny" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateCurrentPlanPriceCny() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanPriceCny()
+	})
+}
+
+// ClearCurrentPlanPriceCny clears the value of the "current_plan_price_cny" field.
+func (u *UserSubscriptionUpsertBulk) ClearCurrentPlanPriceCny() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanPriceCny()
+	})
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertBulk) SetCurrentPlanValidityDays(v int) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanValidityDays(v)
+	})
+}
+
+// AddCurrentPlanValidityDays adds v to the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertBulk) AddCurrentPlanValidityDays(v int) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddCurrentPlanValidityDays(v)
+	})
+}
+
+// UpdateCurrentPlanValidityDays sets the "current_plan_validity_days" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateCurrentPlanValidityDays() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanValidityDays()
+	})
+}
+
+// ClearCurrentPlanValidityDays clears the value of the "current_plan_validity_days" field.
+func (u *UserSubscriptionUpsertBulk) ClearCurrentPlanValidityDays() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearCurrentPlanValidityDays()
+	})
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (u *UserSubscriptionUpsertBulk) SetCurrentPlanValidityUnit(v string) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetCurrentPlanValidityUnit(v)
+	})
+}
+
+// UpdateCurrentPlanValidityUnit sets the "current_plan_validity_unit" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateCurrentPlanValidityUnit() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateCurrentPlanValidityUnit()
+	})
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsertBulk) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetBillingCycleStartedAt(v)
+	})
+}
+
+// UpdateBillingCycleStartedAt sets the "billing_cycle_started_at" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateBillingCycleStartedAt() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateBillingCycleStartedAt()
+	})
+}
+
+// ClearBillingCycleStartedAt clears the value of the "billing_cycle_started_at" field.
+func (u *UserSubscriptionUpsertBulk) ClearBillingCycleStartedAt() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearBillingCycleStartedAt()
 	})
 }
 

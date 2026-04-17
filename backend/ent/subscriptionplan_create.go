@@ -124,6 +124,34 @@ func (_c *SubscriptionPlanCreate) SetNillableProductName(v *string) *Subscriptio
 	return _c
 }
 
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (_c *SubscriptionPlanCreate) SetUpgradeFamily(v string) *SubscriptionPlanCreate {
+	_c.mutation.SetUpgradeFamily(v)
+	return _c
+}
+
+// SetNillableUpgradeFamily sets the "upgrade_family" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableUpgradeFamily(v *string) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetUpgradeFamily(*v)
+	}
+	return _c
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (_c *SubscriptionPlanCreate) SetUpgradeRank(v int) *SubscriptionPlanCreate {
+	_c.mutation.SetUpgradeRank(v)
+	return _c
+}
+
+// SetNillableUpgradeRank sets the "upgrade_rank" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableUpgradeRank(v *int) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetUpgradeRank(*v)
+	}
+	return _c
+}
+
 // SetForSale sets the "for_sale" field.
 func (_c *SubscriptionPlanCreate) SetForSale(v bool) *SubscriptionPlanCreate {
 	_c.mutation.SetForSale(v)
@@ -235,6 +263,14 @@ func (_c *SubscriptionPlanCreate) defaults() {
 		v := subscriptionplan.DefaultProductName
 		_c.mutation.SetProductName(v)
 	}
+	if _, ok := _c.mutation.UpgradeFamily(); !ok {
+		v := subscriptionplan.DefaultUpgradeFamily
+		_c.mutation.SetUpgradeFamily(v)
+	}
+	if _, ok := _c.mutation.UpgradeRank(); !ok {
+		v := subscriptionplan.DefaultUpgradeRank
+		_c.mutation.SetUpgradeRank(v)
+	}
 	if _, ok := _c.mutation.ForSale(); !ok {
 		v := subscriptionplan.DefaultForSale
 		_c.mutation.SetForSale(v)
@@ -293,6 +329,17 @@ func (_c *SubscriptionPlanCreate) check() error {
 		if err := subscriptionplan.ProductNameValidator(v); err != nil {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.UpgradeFamily(); !ok {
+		return &ValidationError{Name: "upgrade_family", err: errors.New(`ent: missing required field "SubscriptionPlan.upgrade_family"`)}
+	}
+	if v, ok := _c.mutation.UpgradeFamily(); ok {
+		if err := subscriptionplan.UpgradeFamilyValidator(v); err != nil {
+			return &ValidationError{Name: "upgrade_family", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.upgrade_family": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.UpgradeRank(); !ok {
+		return &ValidationError{Name: "upgrade_rank", err: errors.New(`ent: missing required field "SubscriptionPlan.upgrade_rank"`)}
 	}
 	if _, ok := _c.mutation.ForSale(); !ok {
 		return &ValidationError{Name: "for_sale", err: errors.New(`ent: missing required field "SubscriptionPlan.for_sale"`)}
@@ -368,6 +415,14 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 	if value, ok := _c.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
 		_node.ProductName = value
+	}
+	if value, ok := _c.mutation.UpgradeFamily(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeFamily, field.TypeString, value)
+		_node.UpgradeFamily = value
+	}
+	if value, ok := _c.mutation.UpgradeRank(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeRank, field.TypeInt, value)
+		_node.UpgradeRank = value
 	}
 	if value, ok := _c.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
@@ -572,6 +627,36 @@ func (u *SubscriptionPlanUpsert) SetProductName(v string) *SubscriptionPlanUpser
 // UpdateProductName sets the "product_name" field to the value that was provided on create.
 func (u *SubscriptionPlanUpsert) UpdateProductName() *SubscriptionPlanUpsert {
 	u.SetExcluded(subscriptionplan.FieldProductName)
+	return u
+}
+
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (u *SubscriptionPlanUpsert) SetUpgradeFamily(v string) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldUpgradeFamily, v)
+	return u
+}
+
+// UpdateUpgradeFamily sets the "upgrade_family" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateUpgradeFamily() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldUpgradeFamily)
+	return u
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsert) SetUpgradeRank(v int) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldUpgradeRank, v)
+	return u
+}
+
+// UpdateUpgradeRank sets the "upgrade_rank" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateUpgradeRank() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldUpgradeRank)
+	return u
+}
+
+// AddUpgradeRank adds v to the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsert) AddUpgradeRank(v int) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldUpgradeRank, v)
 	return u
 }
 
@@ -820,6 +905,41 @@ func (u *SubscriptionPlanUpsertOne) SetProductName(v string) *SubscriptionPlanUp
 func (u *SubscriptionPlanUpsertOne) UpdateProductName() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (u *SubscriptionPlanUpsertOne) SetUpgradeFamily(v string) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUpgradeFamily(v)
+	})
+}
+
+// UpdateUpgradeFamily sets the "upgrade_family" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateUpgradeFamily() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUpgradeFamily()
+	})
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsertOne) SetUpgradeRank(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUpgradeRank(v)
+	})
+}
+
+// AddUpgradeRank adds v to the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsertOne) AddUpgradeRank(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddUpgradeRank(v)
+	})
+}
+
+// UpdateUpgradeRank sets the "upgrade_rank" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateUpgradeRank() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUpgradeRank()
 	})
 }
 
@@ -1241,6 +1361,41 @@ func (u *SubscriptionPlanUpsertBulk) SetProductName(v string) *SubscriptionPlanU
 func (u *SubscriptionPlanUpsertBulk) UpdateProductName() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (u *SubscriptionPlanUpsertBulk) SetUpgradeFamily(v string) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUpgradeFamily(v)
+	})
+}
+
+// UpdateUpgradeFamily sets the "upgrade_family" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateUpgradeFamily() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUpgradeFamily()
+	})
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsertBulk) SetUpgradeRank(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUpgradeRank(v)
+	})
+}
+
+// AddUpgradeRank adds v to the "upgrade_rank" field.
+func (u *SubscriptionPlanUpsertBulk) AddUpgradeRank(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddUpgradeRank(v)
+	})
+}
+
+// UpdateUpgradeRank sets the "upgrade_rank" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateUpgradeRank() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUpgradeRank()
 	})
 }
 

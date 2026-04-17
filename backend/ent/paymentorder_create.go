@@ -183,6 +183,34 @@ func (_c *PaymentOrderCreate) SetNillablePlanID(v *int64) *PaymentOrderCreate {
 	return _c
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (_c *PaymentOrderCreate) SetSourceSubscriptionID(v int64) *PaymentOrderCreate {
+	_c.mutation.SetSourceSubscriptionID(v)
+	return _c
+}
+
+// SetNillableSourceSubscriptionID sets the "source_subscription_id" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSourceSubscriptionID(v *int64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSourceSubscriptionID(*v)
+	}
+	return _c
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (_c *PaymentOrderCreate) SetSourcePlanID(v int64) *PaymentOrderCreate {
+	_c.mutation.SetSourcePlanID(v)
+	return _c
+}
+
+// SetNillableSourcePlanID sets the "source_plan_id" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSourcePlanID(v *int64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSourcePlanID(*v)
+	}
+	return _c
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (_c *PaymentOrderCreate) SetSubscriptionGroupID(v int64) *PaymentOrderCreate {
 	_c.mutation.SetSubscriptionGroupID(v)
@@ -207,6 +235,48 @@ func (_c *PaymentOrderCreate) SetSubscriptionDays(v int) *PaymentOrderCreate {
 func (_c *PaymentOrderCreate) SetNillableSubscriptionDays(v *int) *PaymentOrderCreate {
 	if v != nil {
 		_c.SetSubscriptionDays(*v)
+	}
+	return _c
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (_c *PaymentOrderCreate) SetUpgradeCreditCny(v float64) *PaymentOrderCreate {
+	_c.mutation.SetUpgradeCreditCny(v)
+	return _c
+}
+
+// SetNillableUpgradeCreditCny sets the "upgrade_credit_cny" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableUpgradeCreditCny(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetUpgradeCreditCny(*v)
+	}
+	return _c
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (_c *PaymentOrderCreate) SetUpgradePayableCny(v float64) *PaymentOrderCreate {
+	_c.mutation.SetUpgradePayableCny(v)
+	return _c
+}
+
+// SetNillableUpgradePayableCny sets the "upgrade_payable_cny" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableUpgradePayableCny(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetUpgradePayableCny(*v)
+	}
+	return _c
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (_c *PaymentOrderCreate) SetUpgradeRemainingRatio(v float64) *PaymentOrderCreate {
+	_c.mutation.SetUpgradeRemainingRatio(v)
+	return _c
+}
+
+// SetNillableUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableUpgradeRemainingRatio(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetUpgradeRemainingRatio(*v)
 	}
 	return _c
 }
@@ -736,6 +806,14 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 		_spec.SetField(paymentorder.FieldPlanID, field.TypeInt64, value)
 		_node.PlanID = &value
 	}
+	if value, ok := _c.mutation.SourceSubscriptionID(); ok {
+		_spec.SetField(paymentorder.FieldSourceSubscriptionID, field.TypeInt64, value)
+		_node.SourceSubscriptionID = &value
+	}
+	if value, ok := _c.mutation.SourcePlanID(); ok {
+		_spec.SetField(paymentorder.FieldSourcePlanID, field.TypeInt64, value)
+		_node.SourcePlanID = &value
+	}
 	if value, ok := _c.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)
 		_node.SubscriptionGroupID = &value
@@ -743,6 +821,18 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.SubscriptionDays(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionDays, field.TypeInt, value)
 		_node.SubscriptionDays = &value
+	}
+	if value, ok := _c.mutation.UpgradeCreditCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeCreditCny, field.TypeFloat64, value)
+		_node.UpgradeCreditCny = &value
+	}
+	if value, ok := _c.mutation.UpgradePayableCny(); ok {
+		_spec.SetField(paymentorder.FieldUpgradePayableCny, field.TypeFloat64, value)
+		_node.UpgradePayableCny = &value
+	}
+	if value, ok := _c.mutation.UpgradeRemainingRatio(); ok {
+		_spec.SetField(paymentorder.FieldUpgradeRemainingRatio, field.TypeFloat64, value)
+		_node.UpgradeRemainingRatio = &value
 	}
 	if value, ok := _c.mutation.ProviderInstanceID(); ok {
 		_spec.SetField(paymentorder.FieldProviderInstanceID, field.TypeString, value)
@@ -1135,6 +1225,54 @@ func (u *PaymentOrderUpsert) ClearPlanID() *PaymentOrderUpsert {
 	return u
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (u *PaymentOrderUpsert) SetSourceSubscriptionID(v int64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSourceSubscriptionID, v)
+	return u
+}
+
+// UpdateSourceSubscriptionID sets the "source_subscription_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSourceSubscriptionID() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSourceSubscriptionID)
+	return u
+}
+
+// AddSourceSubscriptionID adds v to the "source_subscription_id" field.
+func (u *PaymentOrderUpsert) AddSourceSubscriptionID(v int64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSourceSubscriptionID, v)
+	return u
+}
+
+// ClearSourceSubscriptionID clears the value of the "source_subscription_id" field.
+func (u *PaymentOrderUpsert) ClearSourceSubscriptionID() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSourceSubscriptionID)
+	return u
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (u *PaymentOrderUpsert) SetSourcePlanID(v int64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSourcePlanID, v)
+	return u
+}
+
+// UpdateSourcePlanID sets the "source_plan_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSourcePlanID() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSourcePlanID)
+	return u
+}
+
+// AddSourcePlanID adds v to the "source_plan_id" field.
+func (u *PaymentOrderUpsert) AddSourcePlanID(v int64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSourcePlanID, v)
+	return u
+}
+
+// ClearSourcePlanID clears the value of the "source_plan_id" field.
+func (u *PaymentOrderUpsert) ClearSourcePlanID() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSourcePlanID)
+	return u
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (u *PaymentOrderUpsert) SetSubscriptionGroupID(v int64) *PaymentOrderUpsert {
 	u.Set(paymentorder.FieldSubscriptionGroupID, v)
@@ -1180,6 +1318,78 @@ func (u *PaymentOrderUpsert) AddSubscriptionDays(v int) *PaymentOrderUpsert {
 // ClearSubscriptionDays clears the value of the "subscription_days" field.
 func (u *PaymentOrderUpsert) ClearSubscriptionDays() *PaymentOrderUpsert {
 	u.SetNull(paymentorder.FieldSubscriptionDays)
+	return u
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsert) SetUpgradeCreditCny(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldUpgradeCreditCny, v)
+	return u
+}
+
+// UpdateUpgradeCreditCny sets the "upgrade_credit_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateUpgradeCreditCny() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldUpgradeCreditCny)
+	return u
+}
+
+// AddUpgradeCreditCny adds v to the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsert) AddUpgradeCreditCny(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldUpgradeCreditCny, v)
+	return u
+}
+
+// ClearUpgradeCreditCny clears the value of the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsert) ClearUpgradeCreditCny() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldUpgradeCreditCny)
+	return u
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsert) SetUpgradePayableCny(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldUpgradePayableCny, v)
+	return u
+}
+
+// UpdateUpgradePayableCny sets the "upgrade_payable_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateUpgradePayableCny() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldUpgradePayableCny)
+	return u
+}
+
+// AddUpgradePayableCny adds v to the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsert) AddUpgradePayableCny(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldUpgradePayableCny, v)
+	return u
+}
+
+// ClearUpgradePayableCny clears the value of the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsert) ClearUpgradePayableCny() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldUpgradePayableCny)
+	return u
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsert) SetUpgradeRemainingRatio(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldUpgradeRemainingRatio, v)
+	return u
+}
+
+// UpdateUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateUpgradeRemainingRatio() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldUpgradeRemainingRatio)
+	return u
+}
+
+// AddUpgradeRemainingRatio adds v to the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsert) AddUpgradeRemainingRatio(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldUpgradeRemainingRatio, v)
+	return u
+}
+
+// ClearUpgradeRemainingRatio clears the value of the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsert) ClearUpgradeRemainingRatio() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldUpgradeRemainingRatio)
 	return u
 }
 
@@ -1803,6 +2013,62 @@ func (u *PaymentOrderUpsertOne) ClearPlanID() *PaymentOrderUpsertOne {
 	})
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (u *PaymentOrderUpsertOne) SetSourceSubscriptionID(v int64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSourceSubscriptionID(v)
+	})
+}
+
+// AddSourceSubscriptionID adds v to the "source_subscription_id" field.
+func (u *PaymentOrderUpsertOne) AddSourceSubscriptionID(v int64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSourceSubscriptionID(v)
+	})
+}
+
+// UpdateSourceSubscriptionID sets the "source_subscription_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSourceSubscriptionID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSourceSubscriptionID()
+	})
+}
+
+// ClearSourceSubscriptionID clears the value of the "source_subscription_id" field.
+func (u *PaymentOrderUpsertOne) ClearSourceSubscriptionID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSourceSubscriptionID()
+	})
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (u *PaymentOrderUpsertOne) SetSourcePlanID(v int64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSourcePlanID(v)
+	})
+}
+
+// AddSourcePlanID adds v to the "source_plan_id" field.
+func (u *PaymentOrderUpsertOne) AddSourcePlanID(v int64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSourcePlanID(v)
+	})
+}
+
+// UpdateSourcePlanID sets the "source_plan_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSourcePlanID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSourcePlanID()
+	})
+}
+
+// ClearSourcePlanID clears the value of the "source_plan_id" field.
+func (u *PaymentOrderUpsertOne) ClearSourcePlanID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSourcePlanID()
+	})
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (u *PaymentOrderUpsertOne) SetSubscriptionGroupID(v int64) *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
@@ -1856,6 +2122,90 @@ func (u *PaymentOrderUpsertOne) UpdateSubscriptionDays() *PaymentOrderUpsertOne 
 func (u *PaymentOrderUpsertOne) ClearSubscriptionDays() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.ClearSubscriptionDays()
+	})
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertOne) SetUpgradeCreditCny(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradeCreditCny(v)
+	})
+}
+
+// AddUpgradeCreditCny adds v to the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertOne) AddUpgradeCreditCny(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradeCreditCny(v)
+	})
+}
+
+// UpdateUpgradeCreditCny sets the "upgrade_credit_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateUpgradeCreditCny() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradeCreditCny()
+	})
+}
+
+// ClearUpgradeCreditCny clears the value of the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertOne) ClearUpgradeCreditCny() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradeCreditCny()
+	})
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertOne) SetUpgradePayableCny(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradePayableCny(v)
+	})
+}
+
+// AddUpgradePayableCny adds v to the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertOne) AddUpgradePayableCny(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradePayableCny(v)
+	})
+}
+
+// UpdateUpgradePayableCny sets the "upgrade_payable_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateUpgradePayableCny() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradePayableCny()
+	})
+}
+
+// ClearUpgradePayableCny clears the value of the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertOne) ClearUpgradePayableCny() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradePayableCny()
+	})
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertOne) SetUpgradeRemainingRatio(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradeRemainingRatio(v)
+	})
+}
+
+// AddUpgradeRemainingRatio adds v to the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertOne) AddUpgradeRemainingRatio(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradeRemainingRatio(v)
+	})
+}
+
+// UpdateUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateUpgradeRemainingRatio() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradeRemainingRatio()
+	})
+}
+
+// ClearUpgradeRemainingRatio clears the value of the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertOne) ClearUpgradeRemainingRatio() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradeRemainingRatio()
 	})
 }
 
@@ -2693,6 +3043,62 @@ func (u *PaymentOrderUpsertBulk) ClearPlanID() *PaymentOrderUpsertBulk {
 	})
 }
 
+// SetSourceSubscriptionID sets the "source_subscription_id" field.
+func (u *PaymentOrderUpsertBulk) SetSourceSubscriptionID(v int64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSourceSubscriptionID(v)
+	})
+}
+
+// AddSourceSubscriptionID adds v to the "source_subscription_id" field.
+func (u *PaymentOrderUpsertBulk) AddSourceSubscriptionID(v int64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSourceSubscriptionID(v)
+	})
+}
+
+// UpdateSourceSubscriptionID sets the "source_subscription_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSourceSubscriptionID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSourceSubscriptionID()
+	})
+}
+
+// ClearSourceSubscriptionID clears the value of the "source_subscription_id" field.
+func (u *PaymentOrderUpsertBulk) ClearSourceSubscriptionID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSourceSubscriptionID()
+	})
+}
+
+// SetSourcePlanID sets the "source_plan_id" field.
+func (u *PaymentOrderUpsertBulk) SetSourcePlanID(v int64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSourcePlanID(v)
+	})
+}
+
+// AddSourcePlanID adds v to the "source_plan_id" field.
+func (u *PaymentOrderUpsertBulk) AddSourcePlanID(v int64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSourcePlanID(v)
+	})
+}
+
+// UpdateSourcePlanID sets the "source_plan_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSourcePlanID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSourcePlanID()
+	})
+}
+
+// ClearSourcePlanID clears the value of the "source_plan_id" field.
+func (u *PaymentOrderUpsertBulk) ClearSourcePlanID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSourcePlanID()
+	})
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (u *PaymentOrderUpsertBulk) SetSubscriptionGroupID(v int64) *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
@@ -2746,6 +3152,90 @@ func (u *PaymentOrderUpsertBulk) UpdateSubscriptionDays() *PaymentOrderUpsertBul
 func (u *PaymentOrderUpsertBulk) ClearSubscriptionDays() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.ClearSubscriptionDays()
+	})
+}
+
+// SetUpgradeCreditCny sets the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertBulk) SetUpgradeCreditCny(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradeCreditCny(v)
+	})
+}
+
+// AddUpgradeCreditCny adds v to the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertBulk) AddUpgradeCreditCny(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradeCreditCny(v)
+	})
+}
+
+// UpdateUpgradeCreditCny sets the "upgrade_credit_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateUpgradeCreditCny() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradeCreditCny()
+	})
+}
+
+// ClearUpgradeCreditCny clears the value of the "upgrade_credit_cny" field.
+func (u *PaymentOrderUpsertBulk) ClearUpgradeCreditCny() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradeCreditCny()
+	})
+}
+
+// SetUpgradePayableCny sets the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertBulk) SetUpgradePayableCny(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradePayableCny(v)
+	})
+}
+
+// AddUpgradePayableCny adds v to the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertBulk) AddUpgradePayableCny(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradePayableCny(v)
+	})
+}
+
+// UpdateUpgradePayableCny sets the "upgrade_payable_cny" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateUpgradePayableCny() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradePayableCny()
+	})
+}
+
+// ClearUpgradePayableCny clears the value of the "upgrade_payable_cny" field.
+func (u *PaymentOrderUpsertBulk) ClearUpgradePayableCny() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradePayableCny()
+	})
+}
+
+// SetUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertBulk) SetUpgradeRemainingRatio(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetUpgradeRemainingRatio(v)
+	})
+}
+
+// AddUpgradeRemainingRatio adds v to the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertBulk) AddUpgradeRemainingRatio(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddUpgradeRemainingRatio(v)
+	})
+}
+
+// UpdateUpgradeRemainingRatio sets the "upgrade_remaining_ratio" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateUpgradeRemainingRatio() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateUpgradeRemainingRatio()
+	})
+}
+
+// ClearUpgradeRemainingRatio clears the value of the "upgrade_remaining_ratio" field.
+func (u *PaymentOrderUpsertBulk) ClearUpgradeRemainingRatio() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearUpgradeRemainingRatio()
 	})
 }
 

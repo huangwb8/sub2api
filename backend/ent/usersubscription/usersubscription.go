@@ -25,6 +25,18 @@ const (
 	FieldUserID = "user_id"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
+	// FieldCurrentPlanID holds the string denoting the current_plan_id field in the database.
+	FieldCurrentPlanID = "current_plan_id"
+	// FieldCurrentPlanName holds the string denoting the current_plan_name field in the database.
+	FieldCurrentPlanName = "current_plan_name"
+	// FieldCurrentPlanPriceCny holds the string denoting the current_plan_price_cny field in the database.
+	FieldCurrentPlanPriceCny = "current_plan_price_cny"
+	// FieldCurrentPlanValidityDays holds the string denoting the current_plan_validity_days field in the database.
+	FieldCurrentPlanValidityDays = "current_plan_validity_days"
+	// FieldCurrentPlanValidityUnit holds the string denoting the current_plan_validity_unit field in the database.
+	FieldCurrentPlanValidityUnit = "current_plan_validity_unit"
+	// FieldBillingCycleStartedAt holds the string denoting the billing_cycle_started_at field in the database.
+	FieldBillingCycleStartedAt = "billing_cycle_started_at"
 	// FieldStartsAt holds the string denoting the starts_at field in the database.
 	FieldStartsAt = "starts_at"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
@@ -97,6 +109,12 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldUserID,
 	FieldGroupID,
+	FieldCurrentPlanID,
+	FieldCurrentPlanName,
+	FieldCurrentPlanPriceCny,
+	FieldCurrentPlanValidityDays,
+	FieldCurrentPlanValidityUnit,
+	FieldBillingCycleStartedAt,
 	FieldStartsAt,
 	FieldExpiresAt,
 	FieldStatus,
@@ -135,6 +153,14 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultCurrentPlanName holds the default value on creation for the "current_plan_name" field.
+	DefaultCurrentPlanName string
+	// CurrentPlanNameValidator is a validator for the "current_plan_name" field. It is called by the builders before save.
+	CurrentPlanNameValidator func(string) error
+	// DefaultCurrentPlanValidityUnit holds the default value on creation for the "current_plan_validity_unit" field.
+	DefaultCurrentPlanValidityUnit string
+	// CurrentPlanValidityUnitValidator is a validator for the "current_plan_validity_unit" field. It is called by the builders before save.
+	CurrentPlanValidityUnitValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -180,6 +206,36 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 // ByGroupID orders the results by the group_id field.
 func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+}
+
+// ByCurrentPlanID orders the results by the current_plan_id field.
+func ByCurrentPlanID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentPlanID, opts...).ToFunc()
+}
+
+// ByCurrentPlanName orders the results by the current_plan_name field.
+func ByCurrentPlanName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentPlanName, opts...).ToFunc()
+}
+
+// ByCurrentPlanPriceCny orders the results by the current_plan_price_cny field.
+func ByCurrentPlanPriceCny(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentPlanPriceCny, opts...).ToFunc()
+}
+
+// ByCurrentPlanValidityDays orders the results by the current_plan_validity_days field.
+func ByCurrentPlanValidityDays(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentPlanValidityDays, opts...).ToFunc()
+}
+
+// ByCurrentPlanValidityUnit orders the results by the current_plan_validity_unit field.
+func ByCurrentPlanValidityUnit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentPlanValidityUnit, opts...).ToFunc()
+}
+
+// ByBillingCycleStartedAt orders the results by the billing_cycle_started_at field.
+func ByBillingCycleStartedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBillingCycleStartedAt, opts...).ToFunc()
 }
 
 // ByStartsAt orders the results by the starts_at field.

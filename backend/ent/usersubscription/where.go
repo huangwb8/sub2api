@@ -80,6 +80,36 @@ func GroupID(v int64) predicate.UserSubscription {
 	return predicate.UserSubscription(sql.FieldEQ(FieldGroupID, v))
 }
 
+// CurrentPlanID applies equality check predicate on the "current_plan_id" field. It's identical to CurrentPlanIDEQ.
+func CurrentPlanID(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanName applies equality check predicate on the "current_plan_name" field. It's identical to CurrentPlanNameEQ.
+func CurrentPlanName(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanPriceCny applies equality check predicate on the "current_plan_price_cny" field. It's identical to CurrentPlanPriceCnyEQ.
+func CurrentPlanPriceCny(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanValidityDays applies equality check predicate on the "current_plan_validity_days" field. It's identical to CurrentPlanValidityDaysEQ.
+func CurrentPlanValidityDays(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityUnit applies equality check predicate on the "current_plan_validity_unit" field. It's identical to CurrentPlanValidityUnitEQ.
+func CurrentPlanValidityUnit(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanValidityUnit, v))
+}
+
+// BillingCycleStartedAt applies equality check predicate on the "billing_cycle_started_at" field. It's identical to BillingCycleStartedAtEQ.
+func BillingCycleStartedAt(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldBillingCycleStartedAt, v))
+}
+
 // StartsAt applies equality check predicate on the "starts_at" field. It's identical to StartsAtEQ.
 func StartsAt(v time.Time) predicate.UserSubscription {
 	return predicate.UserSubscription(sql.FieldEQ(FieldStartsAt, v))
@@ -308,6 +338,336 @@ func GroupIDIn(vs ...int64) predicate.UserSubscription {
 // GroupIDNotIn applies the NotIn predicate on the "group_id" field.
 func GroupIDNotIn(vs ...int64) predicate.UserSubscription {
 	return predicate.UserSubscription(sql.FieldNotIn(FieldGroupID, vs...))
+}
+
+// CurrentPlanIDEQ applies the EQ predicate on the "current_plan_id" field.
+func CurrentPlanIDEQ(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDNEQ applies the NEQ predicate on the "current_plan_id" field.
+func CurrentPlanIDNEQ(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDIn applies the In predicate on the "current_plan_id" field.
+func CurrentPlanIDIn(vs ...int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldCurrentPlanID, vs...))
+}
+
+// CurrentPlanIDNotIn applies the NotIn predicate on the "current_plan_id" field.
+func CurrentPlanIDNotIn(vs ...int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldCurrentPlanID, vs...))
+}
+
+// CurrentPlanIDGT applies the GT predicate on the "current_plan_id" field.
+func CurrentPlanIDGT(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDGTE applies the GTE predicate on the "current_plan_id" field.
+func CurrentPlanIDGTE(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDLT applies the LT predicate on the "current_plan_id" field.
+func CurrentPlanIDLT(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDLTE applies the LTE predicate on the "current_plan_id" field.
+func CurrentPlanIDLTE(v int64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldCurrentPlanID, v))
+}
+
+// CurrentPlanIDIsNil applies the IsNil predicate on the "current_plan_id" field.
+func CurrentPlanIDIsNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIsNull(FieldCurrentPlanID))
+}
+
+// CurrentPlanIDNotNil applies the NotNil predicate on the "current_plan_id" field.
+func CurrentPlanIDNotNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotNull(FieldCurrentPlanID))
+}
+
+// CurrentPlanNameEQ applies the EQ predicate on the "current_plan_name" field.
+func CurrentPlanNameEQ(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameNEQ applies the NEQ predicate on the "current_plan_name" field.
+func CurrentPlanNameNEQ(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameIn applies the In predicate on the "current_plan_name" field.
+func CurrentPlanNameIn(vs ...string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldCurrentPlanName, vs...))
+}
+
+// CurrentPlanNameNotIn applies the NotIn predicate on the "current_plan_name" field.
+func CurrentPlanNameNotIn(vs ...string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldCurrentPlanName, vs...))
+}
+
+// CurrentPlanNameGT applies the GT predicate on the "current_plan_name" field.
+func CurrentPlanNameGT(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameGTE applies the GTE predicate on the "current_plan_name" field.
+func CurrentPlanNameGTE(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameLT applies the LT predicate on the "current_plan_name" field.
+func CurrentPlanNameLT(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameLTE applies the LTE predicate on the "current_plan_name" field.
+func CurrentPlanNameLTE(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameContains applies the Contains predicate on the "current_plan_name" field.
+func CurrentPlanNameContains(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldContains(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameHasPrefix applies the HasPrefix predicate on the "current_plan_name" field.
+func CurrentPlanNameHasPrefix(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldHasPrefix(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameHasSuffix applies the HasSuffix predicate on the "current_plan_name" field.
+func CurrentPlanNameHasSuffix(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldHasSuffix(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameEqualFold applies the EqualFold predicate on the "current_plan_name" field.
+func CurrentPlanNameEqualFold(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEqualFold(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanNameContainsFold applies the ContainsFold predicate on the "current_plan_name" field.
+func CurrentPlanNameContainsFold(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldContainsFold(FieldCurrentPlanName, v))
+}
+
+// CurrentPlanPriceCnyEQ applies the EQ predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyEQ(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyNEQ applies the NEQ predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyNEQ(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyIn applies the In predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyIn(vs ...float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldCurrentPlanPriceCny, vs...))
+}
+
+// CurrentPlanPriceCnyNotIn applies the NotIn predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyNotIn(vs ...float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldCurrentPlanPriceCny, vs...))
+}
+
+// CurrentPlanPriceCnyGT applies the GT predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyGT(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyGTE applies the GTE predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyGTE(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyLT applies the LT predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyLT(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyLTE applies the LTE predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyLTE(v float64) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldCurrentPlanPriceCny, v))
+}
+
+// CurrentPlanPriceCnyIsNil applies the IsNil predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyIsNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIsNull(FieldCurrentPlanPriceCny))
+}
+
+// CurrentPlanPriceCnyNotNil applies the NotNil predicate on the "current_plan_price_cny" field.
+func CurrentPlanPriceCnyNotNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotNull(FieldCurrentPlanPriceCny))
+}
+
+// CurrentPlanValidityDaysEQ applies the EQ predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysEQ(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysNEQ applies the NEQ predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysNEQ(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysIn applies the In predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysIn(vs ...int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldCurrentPlanValidityDays, vs...))
+}
+
+// CurrentPlanValidityDaysNotIn applies the NotIn predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysNotIn(vs ...int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldCurrentPlanValidityDays, vs...))
+}
+
+// CurrentPlanValidityDaysGT applies the GT predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysGT(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysGTE applies the GTE predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysGTE(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysLT applies the LT predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysLT(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysLTE applies the LTE predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysLTE(v int) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldCurrentPlanValidityDays, v))
+}
+
+// CurrentPlanValidityDaysIsNil applies the IsNil predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysIsNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIsNull(FieldCurrentPlanValidityDays))
+}
+
+// CurrentPlanValidityDaysNotNil applies the NotNil predicate on the "current_plan_validity_days" field.
+func CurrentPlanValidityDaysNotNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotNull(FieldCurrentPlanValidityDays))
+}
+
+// CurrentPlanValidityUnitEQ applies the EQ predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitEQ(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitNEQ applies the NEQ predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitNEQ(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitIn applies the In predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitIn(vs ...string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldCurrentPlanValidityUnit, vs...))
+}
+
+// CurrentPlanValidityUnitNotIn applies the NotIn predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitNotIn(vs ...string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldCurrentPlanValidityUnit, vs...))
+}
+
+// CurrentPlanValidityUnitGT applies the GT predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitGT(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitGTE applies the GTE predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitGTE(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitLT applies the LT predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitLT(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitLTE applies the LTE predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitLTE(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitContains applies the Contains predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitContains(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldContains(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitHasPrefix applies the HasPrefix predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitHasPrefix(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldHasPrefix(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitHasSuffix applies the HasSuffix predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitHasSuffix(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldHasSuffix(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitEqualFold applies the EqualFold predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitEqualFold(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEqualFold(FieldCurrentPlanValidityUnit, v))
+}
+
+// CurrentPlanValidityUnitContainsFold applies the ContainsFold predicate on the "current_plan_validity_unit" field.
+func CurrentPlanValidityUnitContainsFold(v string) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldContainsFold(FieldCurrentPlanValidityUnit, v))
+}
+
+// BillingCycleStartedAtEQ applies the EQ predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtEQ(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldEQ(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtNEQ applies the NEQ predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtNEQ(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNEQ(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtIn applies the In predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtIn(vs ...time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIn(FieldBillingCycleStartedAt, vs...))
+}
+
+// BillingCycleStartedAtNotIn applies the NotIn predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtNotIn(vs ...time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotIn(FieldBillingCycleStartedAt, vs...))
+}
+
+// BillingCycleStartedAtGT applies the GT predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtGT(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGT(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtGTE applies the GTE predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtGTE(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldGTE(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtLT applies the LT predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtLT(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLT(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtLTE applies the LTE predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtLTE(v time.Time) predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldLTE(FieldBillingCycleStartedAt, v))
+}
+
+// BillingCycleStartedAtIsNil applies the IsNil predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtIsNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldIsNull(FieldBillingCycleStartedAt))
+}
+
+// BillingCycleStartedAtNotNil applies the NotNil predicate on the "billing_cycle_started_at" field.
+func BillingCycleStartedAtNotNil() predicate.UserSubscription {
+	return predicate.UserSubscription(sql.FieldNotNull(FieldBillingCycleStartedAt))
 }
 
 // StartsAtEQ applies the EQ predicate on the "starts_at" field.

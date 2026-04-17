@@ -29,6 +29,18 @@ type UserSubscription struct {
 	UserID int64 `json:"user_id,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID int64 `json:"group_id,omitempty"`
+	// CurrentPlanID holds the value of the "current_plan_id" field.
+	CurrentPlanID *int64 `json:"current_plan_id,omitempty"`
+	// CurrentPlanName holds the value of the "current_plan_name" field.
+	CurrentPlanName string `json:"current_plan_name,omitempty"`
+	// CurrentPlanPriceCny holds the value of the "current_plan_price_cny" field.
+	CurrentPlanPriceCny *float64 `json:"current_plan_price_cny,omitempty"`
+	// CurrentPlanValidityDays holds the value of the "current_plan_validity_days" field.
+	CurrentPlanValidityDays *int `json:"current_plan_validity_days,omitempty"`
+	// CurrentPlanValidityUnit holds the value of the "current_plan_validity_unit" field.
+	CurrentPlanValidityUnit string `json:"current_plan_validity_unit,omitempty"`
+	// BillingCycleStartedAt holds the value of the "billing_cycle_started_at" field.
+	BillingCycleStartedAt *time.Time `json:"billing_cycle_started_at,omitempty"`
 	// StartsAt holds the value of the "starts_at" field.
 	StartsAt time.Time `json:"starts_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
@@ -121,13 +133,13 @@ func (*UserSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd:
+		case usersubscription.FieldCurrentPlanPriceCny, usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd:
 			values[i] = new(sql.NullFloat64)
-		case usersubscription.FieldID, usersubscription.FieldUserID, usersubscription.FieldGroupID, usersubscription.FieldAssignedBy:
+		case usersubscription.FieldID, usersubscription.FieldUserID, usersubscription.FieldGroupID, usersubscription.FieldCurrentPlanID, usersubscription.FieldCurrentPlanValidityDays, usersubscription.FieldAssignedBy:
 			values[i] = new(sql.NullInt64)
-		case usersubscription.FieldStatus, usersubscription.FieldNotes:
+		case usersubscription.FieldCurrentPlanName, usersubscription.FieldCurrentPlanValidityUnit, usersubscription.FieldStatus, usersubscription.FieldNotes:
 			values[i] = new(sql.NullString)
-		case usersubscription.FieldCreatedAt, usersubscription.FieldUpdatedAt, usersubscription.FieldDeletedAt, usersubscription.FieldStartsAt, usersubscription.FieldExpiresAt, usersubscription.FieldDailyWindowStart, usersubscription.FieldWeeklyWindowStart, usersubscription.FieldMonthlyWindowStart, usersubscription.FieldAssignedAt:
+		case usersubscription.FieldCreatedAt, usersubscription.FieldUpdatedAt, usersubscription.FieldDeletedAt, usersubscription.FieldBillingCycleStartedAt, usersubscription.FieldStartsAt, usersubscription.FieldExpiresAt, usersubscription.FieldDailyWindowStart, usersubscription.FieldWeeklyWindowStart, usersubscription.FieldMonthlyWindowStart, usersubscription.FieldAssignedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -180,6 +192,46 @@ func (_m *UserSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field group_id", values[i])
 			} else if value.Valid {
 				_m.GroupID = value.Int64
+			}
+		case usersubscription.FieldCurrentPlanID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field current_plan_id", values[i])
+			} else if value.Valid {
+				_m.CurrentPlanID = new(int64)
+				*_m.CurrentPlanID = value.Int64
+			}
+		case usersubscription.FieldCurrentPlanName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field current_plan_name", values[i])
+			} else if value.Valid {
+				_m.CurrentPlanName = value.String
+			}
+		case usersubscription.FieldCurrentPlanPriceCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field current_plan_price_cny", values[i])
+			} else if value.Valid {
+				_m.CurrentPlanPriceCny = new(float64)
+				*_m.CurrentPlanPriceCny = value.Float64
+			}
+		case usersubscription.FieldCurrentPlanValidityDays:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field current_plan_validity_days", values[i])
+			} else if value.Valid {
+				_m.CurrentPlanValidityDays = new(int)
+				*_m.CurrentPlanValidityDays = int(value.Int64)
+			}
+		case usersubscription.FieldCurrentPlanValidityUnit:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field current_plan_validity_unit", values[i])
+			} else if value.Valid {
+				_m.CurrentPlanValidityUnit = value.String
+			}
+		case usersubscription.FieldBillingCycleStartedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field billing_cycle_started_at", values[i])
+			} else if value.Valid {
+				_m.BillingCycleStartedAt = new(time.Time)
+				*_m.BillingCycleStartedAt = value.Time
 			}
 		case usersubscription.FieldStartsAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -330,6 +382,32 @@ func (_m *UserSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("group_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GroupID))
+	builder.WriteString(", ")
+	if v := _m.CurrentPlanID; v != nil {
+		builder.WriteString("current_plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("current_plan_name=")
+	builder.WriteString(_m.CurrentPlanName)
+	builder.WriteString(", ")
+	if v := _m.CurrentPlanPriceCny; v != nil {
+		builder.WriteString("current_plan_price_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.CurrentPlanValidityDays; v != nil {
+		builder.WriteString("current_plan_validity_days=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("current_plan_validity_unit=")
+	builder.WriteString(_m.CurrentPlanValidityUnit)
+	builder.WriteString(", ")
+	if v := _m.BillingCycleStartedAt; v != nil {
+		builder.WriteString("billing_cycle_started_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("starts_at=")
 	builder.WriteString(_m.StartsAt.Format(time.ANSIC))

@@ -188,6 +188,41 @@ func (_u *SubscriptionPlanUpdate) SetNillableProductName(v *string) *Subscriptio
 	return _u
 }
 
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (_u *SubscriptionPlanUpdate) SetUpgradeFamily(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetUpgradeFamily(v)
+	return _u
+}
+
+// SetNillableUpgradeFamily sets the "upgrade_family" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableUpgradeFamily(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetUpgradeFamily(*v)
+	}
+	return _u
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (_u *SubscriptionPlanUpdate) SetUpgradeRank(v int) *SubscriptionPlanUpdate {
+	_u.mutation.ResetUpgradeRank()
+	_u.mutation.SetUpgradeRank(v)
+	return _u
+}
+
+// SetNillableUpgradeRank sets the "upgrade_rank" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableUpgradeRank(v *int) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetUpgradeRank(*v)
+	}
+	return _u
+}
+
+// AddUpgradeRank adds value to the "upgrade_rank" field.
+func (_u *SubscriptionPlanUpdate) AddUpgradeRank(v int) *SubscriptionPlanUpdate {
+	_u.mutation.AddUpgradeRank(v)
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdate) SetForSale(v bool) *SubscriptionPlanUpdate {
 	_u.mutation.SetForSale(v)
@@ -287,6 +322,11 @@ func (_u *SubscriptionPlanUpdate) check() error {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.UpgradeFamily(); ok {
+		if err := subscriptionplan.UpgradeFamilyValidator(v); err != nil {
+			return &ValidationError{Name: "upgrade_family", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.upgrade_family": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -343,6 +383,15 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpgradeFamily(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeFamily, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpgradeRank(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeRank, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeRank(); ok {
+		_spec.AddField(subscriptionplan.FieldUpgradeRank, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
@@ -536,6 +585,41 @@ func (_u *SubscriptionPlanUpdateOne) SetNillableProductName(v *string) *Subscrip
 	return _u
 }
 
+// SetUpgradeFamily sets the "upgrade_family" field.
+func (_u *SubscriptionPlanUpdateOne) SetUpgradeFamily(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetUpgradeFamily(v)
+	return _u
+}
+
+// SetNillableUpgradeFamily sets the "upgrade_family" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableUpgradeFamily(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetUpgradeFamily(*v)
+	}
+	return _u
+}
+
+// SetUpgradeRank sets the "upgrade_rank" field.
+func (_u *SubscriptionPlanUpdateOne) SetUpgradeRank(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetUpgradeRank()
+	_u.mutation.SetUpgradeRank(v)
+	return _u
+}
+
+// SetNillableUpgradeRank sets the "upgrade_rank" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableUpgradeRank(v *int) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetUpgradeRank(*v)
+	}
+	return _u
+}
+
+// AddUpgradeRank adds value to the "upgrade_rank" field.
+func (_u *SubscriptionPlanUpdateOne) AddUpgradeRank(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddUpgradeRank(v)
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdateOne) SetForSale(v bool) *SubscriptionPlanUpdateOne {
 	_u.mutation.SetForSale(v)
@@ -648,6 +732,11 @@ func (_u *SubscriptionPlanUpdateOne) check() error {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.UpgradeFamily(); ok {
+		if err := subscriptionplan.UpgradeFamilyValidator(v); err != nil {
+			return &ValidationError{Name: "upgrade_family", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.upgrade_family": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -721,6 +810,15 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpgradeFamily(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeFamily, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpgradeRank(); ok {
+		_spec.SetField(subscriptionplan.FieldUpgradeRank, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpgradeRank(); ok {
+		_spec.AddField(subscriptionplan.FieldUpgradeRank, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)

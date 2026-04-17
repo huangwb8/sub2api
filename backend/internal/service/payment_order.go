@@ -44,6 +44,9 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if user.Status != payment.EntityStatusActive {
 		return nil, infraerrors.Forbidden("USER_INACTIVE", "user account is disabled")
 	}
+	if req.OrderType == payment.OrderTypeSubscriptionUpgrade {
+		return s.createSubscriptionUpgradeOrder(ctx, req, user, plan, cfg)
+	}
 	amount := req.Amount
 	if plan != nil {
 		amount = plan.Price
@@ -70,7 +73,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 
 func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrderRequest, cfg *PaymentConfig) (*dbent.SubscriptionPlan, error) {
 	if req.PaymentType == payment.TypeBalance {
-		if req.OrderType != payment.OrderTypeSubscription {
+		if req.OrderType != payment.OrderTypeSubscription && req.OrderType != payment.OrderTypeSubscriptionUpgrade {
 			return nil, infraerrors.BadRequest("INVALID_PAYMENT_TYPE", "balance payment is only available for subscription orders")
 		}
 		return s.validateSubOrder(ctx, req)
@@ -79,6 +82,9 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 		return nil, infraerrors.Forbidden("BALANCE_PAYMENT_DISABLED", "balance recharge has been disabled")
 	}
 	if req.OrderType == payment.OrderTypeSubscription {
+		return s.validateSubOrder(ctx, req)
+	}
+	if req.OrderType == payment.OrderTypeSubscriptionUpgrade {
 		return s.validateSubOrder(ctx, req)
 	}
 	if math.IsNaN(req.Amount) || math.IsInf(req.Amount, 0) || req.Amount <= 0 {
@@ -259,6 +265,7 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 		ValidityDays: psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit),
 		AssignedBy:   0,
 		Notes:        fmt.Sprintf("payment order %d", order.ID),
+		PlanSnapshot: subscriptionPlanSnapshotFromPlan(plan),
 	})
 	if err != nil {
 		if rollbackErr := s.userRepo.UpdateBalance(ctx, req.UserID, amount); rollbackErr != nil {
@@ -309,6 +316,233 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 		PaymentType: completedOrder.PaymentType,
 		ExpiresAt:   completedOrder.ExpiresAt,
 	}, nil
+}
+
+func subscriptionPlanSnapshotFromPlan(plan *dbent.SubscriptionPlan) *SubscriptionPlanSnapshot {
+	if plan == nil {
+		return nil
+	}
+	planID := plan.ID
+	price := plan.Price
+	validityDays := plan.ValidityDays
+	return &SubscriptionPlanSnapshot{
+		PlanID:       &planID,
+		PlanName:     plan.Name,
+		PlanPriceCNY: &price,
+		ValidityDays: &validityDays,
+		ValidityUnit: plan.ValidityUnit,
+	}
+}
+
+func (s *PaymentService) createSubscriptionUpgradeOrder(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig) (*CreateOrderResponse, error) {
+	if plan == nil {
+		return nil, infraerrors.BadRequest("INVALID_INPUT", "subscription upgrade order requires a target plan")
+	}
+	if req.SourceSubscriptionID == 0 {
+		return nil, infraerrors.BadRequest("INVALID_INPUT", "subscription upgrade order requires a source subscription")
+	}
+
+	upgradeSvc := NewSubscriptionUpgradeService(s.entClient, s.subscriptionSvc, s.configService, s.userRepo)
+	quote, err := upgradeSvc.BuildUpgradeQuote(ctx, req.UserID, req.SourceSubscriptionID, plan.ID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.ensureNoPendingUpgradeOrder(ctx, req.SourceSubscriptionID); err != nil {
+		return nil, err
+	}
+
+	amount := quote.PayableCNY
+	if amount <= 0 {
+		order, err := s.createZeroSubscriptionUpgradeOrder(ctx, req, user, plan, quote, cfg)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.ExecuteSubscriptionUpgradeFulfillment(ctx, order.ID); err != nil {
+			return nil, err
+		}
+		completedOrder, err := s.entClient.PaymentOrder.Get(ctx, order.ID)
+		if err != nil {
+			return nil, fmt.Errorf("reload order: %w", err)
+		}
+		return &CreateOrderResponse{
+			OrderID:     completedOrder.ID,
+			Amount:      completedOrder.Amount,
+			PayAmount:   completedOrder.PayAmount,
+			FeeRate:     completedOrder.FeeRate,
+			Status:      completedOrder.Status,
+			PaymentType: completedOrder.PaymentType,
+			ExpiresAt:   completedOrder.ExpiresAt,
+		}, nil
+	}
+
+	if req.PaymentType == payment.TypeBalance {
+		order, err := s.createBalanceSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.ExecuteSubscriptionUpgradeFulfillment(ctx, order.ID); err != nil {
+			if rollbackErr := s.userRepo.UpdateBalance(ctx, req.UserID, amount); rollbackErr != nil {
+				return nil, fmt.Errorf("upgrade fulfillment failed: %w (balance rollback failed: %w)", err, rollbackErr)
+			}
+			return nil, err
+		}
+		completedOrder, err := s.entClient.PaymentOrder.Get(ctx, order.ID)
+		if err != nil {
+			return nil, fmt.Errorf("reload order: %w", err)
+		}
+		return &CreateOrderResponse{
+			OrderID:     completedOrder.ID,
+			Amount:      completedOrder.Amount,
+			PayAmount:   completedOrder.PayAmount,
+			FeeRate:     completedOrder.FeeRate,
+			Status:      completedOrder.Status,
+			PaymentType: completedOrder.PaymentType,
+			ExpiresAt:   completedOrder.ExpiresAt,
+		}, nil
+	}
+
+	feeRate := s.getFeeRate(req.PaymentType)
+	payAmountStr := payment.CalculatePayAmount(amount, feeRate)
+	payAmount, _ := strconv.ParseFloat(payAmountStr, 64)
+	order, err := s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, feeRate, payAmount, OrderStatusPending, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.invokeProvider(ctx, order, req, cfg, payAmountStr, payAmount, plan)
+	if err != nil {
+		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
+			SetStatus(OrderStatusFailed).
+			Save(ctx)
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (s *PaymentService) ensureNoPendingUpgradeOrder(ctx context.Context, sourceSubscriptionID int64) error {
+	exists, err := s.entClient.PaymentOrder.Query().
+		Where(
+			paymentorder.OrderTypeEQ(payment.OrderTypeSubscriptionUpgrade),
+			paymentorder.SourceSubscriptionID(sourceSubscriptionID),
+			paymentorder.StatusIn(OrderStatusPending, OrderStatusPaid, OrderStatusRecharging, OrderStatusFailed),
+		).
+		Exist(ctx)
+	if err != nil {
+		return fmt.Errorf("check pending upgrade orders: %w", err)
+	}
+	if exists {
+		return infraerrors.Conflict("UPGRADE_ORDER_EXISTS", "there is already an unfinished upgrade order for this subscription")
+	}
+	return nil
+}
+
+func (s *PaymentService) createZeroSubscriptionUpgradeOrder(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig) (*dbent.PaymentOrder, error) {
+	now := time.Now()
+	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, 0, 0, 0, OrderStatusPaid, &now)
+}
+
+func (s *PaymentService) createBalanceSubscriptionUpgradeOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig, amount float64) (*dbent.PaymentOrder, error) {
+	if amount > 0 {
+		currentUser, err := s.userRepo.GetByID(ctx, req.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("get user: %w", err)
+		}
+		if currentUser.Balance < amount {
+			return nil, ErrInsufficientBalance
+		}
+	}
+	now := time.Now()
+	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, 0, amount, OrderStatusPaid, &now)
+}
+
+func (s *PaymentService) createSubscriptionUpgradeOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig, amount, feeRate, payAmount float64, initialStatus string, paidAt *time.Time) (*dbent.PaymentOrder, error) {
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if err := s.checkPendingLimit(ctx, tx, req.UserID, cfg.MaxPendingOrders); err != nil {
+		return nil, err
+	}
+	if err := s.ensureNoPendingUpgradeOrder(dbent.NewTxContext(ctx, tx), req.SourceSubscriptionID); err != nil {
+		return nil, err
+	}
+	if req.PaymentType == payment.TypeBalance && amount > 0 {
+		affected, err := tx.User.Update().
+			Where(dbuser.IDEQ(req.UserID), dbuser.BalanceGTE(amount)).
+			AddBalance(-amount).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("deduct balance: %w", err)
+		}
+		if affected == 0 {
+			return nil, ErrInsufficientBalance
+		}
+	}
+
+	tm := cfg.OrderTimeoutMin
+	if tm <= 0 {
+		tm = defaultOrderTimeoutMin
+	}
+	expiresAt := time.Now().Add(time.Duration(tm) * time.Minute)
+	if initialStatus == OrderStatusPaid && paidAt != nil {
+		expiresAt = *paidAt
+	}
+
+	builder := tx.PaymentOrder.Create().
+		SetUserID(req.UserID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetNillableUserNotes(psNilIfEmpty(user.Notes)).
+		SetAmount(amount).
+		SetPayAmount(payAmount).
+		SetFeeRate(feeRate).
+		SetRechargeCode("").
+		SetOutTradeNo(generateOutTradeNo()).
+		SetPaymentType(req.PaymentType).
+		SetPaymentTradeNo("").
+		SetOrderType(payment.OrderTypeSubscriptionUpgrade).
+		SetPlanID(plan.ID).
+		SetSourceSubscriptionID(req.SourceSubscriptionID).
+		SetSourcePlanID(quote.SourcePlanID).
+		SetSubscriptionGroupID(plan.GroupID).
+		SetSubscriptionDays(psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit)).
+		SetUpgradeCreditCny(quote.CreditCNY).
+		SetUpgradePayableCny(quote.PayableCNY).
+		SetUpgradeRemainingRatio(quote.RemainingRatio).
+		SetStatus(initialStatus).
+		SetExpiresAt(expiresAt).
+		SetClientIP(req.ClientIP).
+		SetSrcHost(req.SrcHost)
+	if req.SrcURL != "" {
+		builder.SetSrcURL(req.SrcURL)
+	}
+	if paidAt != nil {
+		builder.SetPaidAt(*paidAt)
+	}
+	order, err := builder.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create upgrade order: %w", err)
+	}
+	code := fmt.Sprintf("PAY-%d-%d", order.ID, time.Now().UnixNano()%100000)
+	order, err = tx.PaymentOrder.UpdateOneID(order.ID).SetRechargeCode(code).Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("set recharge code: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit order transaction: %w", err)
+	}
+	s.writeAuditLog(ctx, order.ID, "ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{
+		"orderType":            payment.OrderTypeSubscriptionUpgrade,
+		"paymentType":          req.PaymentType,
+		"sourceSubscriptionID": req.SourceSubscriptionID,
+		"targetPlanID":         plan.ID,
+		"payableCNY":           quote.PayableCNY,
+		"creditCNY":            quote.CreditCNY,
+		"remainingRatio":       quote.RemainingRatio,
+	})
+	return order, nil
 }
 
 func (s *PaymentService) createBalanceSubscriptionOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, amount float64) (*dbent.PaymentOrder, error) {

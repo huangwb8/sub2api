@@ -85,6 +85,135 @@ func (_u *UserSubscriptionUpdate) SetNillableGroupID(v *int64) *UserSubscription
 	return _u
 }
 
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (_u *UserSubscriptionUpdate) SetCurrentPlanID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.ResetCurrentPlanID()
+	_u.mutation.SetCurrentPlanID(v)
+	return _u
+}
+
+// SetNillableCurrentPlanID sets the "current_plan_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableCurrentPlanID(v *int64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPlanID(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanID adds value to the "current_plan_id" field.
+func (_u *UserSubscriptionUpdate) AddCurrentPlanID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.AddCurrentPlanID(v)
+	return _u
+}
+
+// ClearCurrentPlanID clears the value of the "current_plan_id" field.
+func (_u *UserSubscriptionUpdate) ClearCurrentPlanID() *UserSubscriptionUpdate {
+	_u.mutation.ClearCurrentPlanID()
+	return _u
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (_u *UserSubscriptionUpdate) SetCurrentPlanName(v string) *UserSubscriptionUpdate {
+	_u.mutation.SetCurrentPlanName(v)
+	return _u
+}
+
+// SetNillableCurrentPlanName sets the "current_plan_name" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableCurrentPlanName(v *string) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPlanName(*v)
+	}
+	return _u
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdate) SetCurrentPlanPriceCny(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetCurrentPlanPriceCny()
+	_u.mutation.SetCurrentPlanPriceCny(v)
+	return _u
+}
+
+// SetNillableCurrentPlanPriceCny sets the "current_plan_price_cny" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableCurrentPlanPriceCny(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPlanPriceCny(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanPriceCny adds value to the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdate) AddCurrentPlanPriceCny(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddCurrentPlanPriceCny(v)
+	return _u
+}
+
+// ClearCurrentPlanPriceCny clears the value of the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdate) ClearCurrentPlanPriceCny() *UserSubscriptionUpdate {
+	_u.mutation.ClearCurrentPlanPriceCny()
+	return _u
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdate) SetCurrentPlanValidityDays(v int) *UserSubscriptionUpdate {
+	_u.mutation.ResetCurrentPlanValidityDays()
+	_u.mutation.SetCurrentPlanValidityDays(v)
+	return _u
+}
+
+// SetNillableCurrentPlanValidityDays sets the "current_plan_validity_days" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableCurrentPlanValidityDays(v *int) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPlanValidityDays(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanValidityDays adds value to the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdate) AddCurrentPlanValidityDays(v int) *UserSubscriptionUpdate {
+	_u.mutation.AddCurrentPlanValidityDays(v)
+	return _u
+}
+
+// ClearCurrentPlanValidityDays clears the value of the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdate) ClearCurrentPlanValidityDays() *UserSubscriptionUpdate {
+	_u.mutation.ClearCurrentPlanValidityDays()
+	return _u
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (_u *UserSubscriptionUpdate) SetCurrentPlanValidityUnit(v string) *UserSubscriptionUpdate {
+	_u.mutation.SetCurrentPlanValidityUnit(v)
+	return _u
+}
+
+// SetNillableCurrentPlanValidityUnit sets the "current_plan_validity_unit" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableCurrentPlanValidityUnit(v *string) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPlanValidityUnit(*v)
+	}
+	return _u
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (_u *UserSubscriptionUpdate) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionUpdate {
+	_u.mutation.SetBillingCycleStartedAt(v)
+	return _u
+}
+
+// SetNillableBillingCycleStartedAt sets the "billing_cycle_started_at" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableBillingCycleStartedAt(v *time.Time) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetBillingCycleStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearBillingCycleStartedAt clears the value of the "billing_cycle_started_at" field.
+func (_u *UserSubscriptionUpdate) ClearBillingCycleStartedAt() *UserSubscriptionUpdate {
+	_u.mutation.ClearBillingCycleStartedAt()
+	return _u
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (_u *UserSubscriptionUpdate) SetStartsAt(v time.Time) *UserSubscriptionUpdate {
 	_u.mutation.SetStartsAt(v)
@@ -436,6 +565,16 @@ func (_u *UserSubscriptionUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserSubscriptionUpdate) check() error {
+	if v, ok := _u.mutation.CurrentPlanName(); ok {
+		if err := usersubscription.CurrentPlanNameValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_name", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_name": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentPlanValidityUnit(); ok {
+		if err := usersubscription.CurrentPlanValidityUnitValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_validity_unit", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_validity_unit": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := usersubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.status": %w`, err)}
@@ -470,6 +609,45 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(usersubscription.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CurrentPlanID(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanID(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.CurrentPlanIDCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.CurrentPlanName(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CurrentPlanPriceCny(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanPriceCny(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.CurrentPlanPriceCnyCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CurrentPlanValidityDays(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanValidityDays(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt, value)
+	}
+	if _u.mutation.CurrentPlanValidityDaysCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.CurrentPlanValidityUnit(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityUnit, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BillingCycleStartedAt(); ok {
+		_spec.SetField(usersubscription.FieldBillingCycleStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.BillingCycleStartedAtCleared() {
+		_spec.ClearField(usersubscription.FieldBillingCycleStartedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)
@@ -728,6 +906,135 @@ func (_u *UserSubscriptionUpdateOne) SetNillableGroupID(v *int64) *UserSubscript
 	if v != nil {
 		_u.SetGroupID(*v)
 	}
+	return _u
+}
+
+// SetCurrentPlanID sets the "current_plan_id" field.
+func (_u *UserSubscriptionUpdateOne) SetCurrentPlanID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetCurrentPlanID()
+	_u.mutation.SetCurrentPlanID(v)
+	return _u
+}
+
+// SetNillableCurrentPlanID sets the "current_plan_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableCurrentPlanID(v *int64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPlanID(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanID adds value to the "current_plan_id" field.
+func (_u *UserSubscriptionUpdateOne) AddCurrentPlanID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddCurrentPlanID(v)
+	return _u
+}
+
+// ClearCurrentPlanID clears the value of the "current_plan_id" field.
+func (_u *UserSubscriptionUpdateOne) ClearCurrentPlanID() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearCurrentPlanID()
+	return _u
+}
+
+// SetCurrentPlanName sets the "current_plan_name" field.
+func (_u *UserSubscriptionUpdateOne) SetCurrentPlanName(v string) *UserSubscriptionUpdateOne {
+	_u.mutation.SetCurrentPlanName(v)
+	return _u
+}
+
+// SetNillableCurrentPlanName sets the "current_plan_name" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableCurrentPlanName(v *string) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPlanName(*v)
+	}
+	return _u
+}
+
+// SetCurrentPlanPriceCny sets the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdateOne) SetCurrentPlanPriceCny(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetCurrentPlanPriceCny()
+	_u.mutation.SetCurrentPlanPriceCny(v)
+	return _u
+}
+
+// SetNillableCurrentPlanPriceCny sets the "current_plan_price_cny" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableCurrentPlanPriceCny(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPlanPriceCny(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanPriceCny adds value to the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdateOne) AddCurrentPlanPriceCny(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddCurrentPlanPriceCny(v)
+	return _u
+}
+
+// ClearCurrentPlanPriceCny clears the value of the "current_plan_price_cny" field.
+func (_u *UserSubscriptionUpdateOne) ClearCurrentPlanPriceCny() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearCurrentPlanPriceCny()
+	return _u
+}
+
+// SetCurrentPlanValidityDays sets the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdateOne) SetCurrentPlanValidityDays(v int) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetCurrentPlanValidityDays()
+	_u.mutation.SetCurrentPlanValidityDays(v)
+	return _u
+}
+
+// SetNillableCurrentPlanValidityDays sets the "current_plan_validity_days" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableCurrentPlanValidityDays(v *int) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPlanValidityDays(*v)
+	}
+	return _u
+}
+
+// AddCurrentPlanValidityDays adds value to the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdateOne) AddCurrentPlanValidityDays(v int) *UserSubscriptionUpdateOne {
+	_u.mutation.AddCurrentPlanValidityDays(v)
+	return _u
+}
+
+// ClearCurrentPlanValidityDays clears the value of the "current_plan_validity_days" field.
+func (_u *UserSubscriptionUpdateOne) ClearCurrentPlanValidityDays() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearCurrentPlanValidityDays()
+	return _u
+}
+
+// SetCurrentPlanValidityUnit sets the "current_plan_validity_unit" field.
+func (_u *UserSubscriptionUpdateOne) SetCurrentPlanValidityUnit(v string) *UserSubscriptionUpdateOne {
+	_u.mutation.SetCurrentPlanValidityUnit(v)
+	return _u
+}
+
+// SetNillableCurrentPlanValidityUnit sets the "current_plan_validity_unit" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableCurrentPlanValidityUnit(v *string) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPlanValidityUnit(*v)
+	}
+	return _u
+}
+
+// SetBillingCycleStartedAt sets the "billing_cycle_started_at" field.
+func (_u *UserSubscriptionUpdateOne) SetBillingCycleStartedAt(v time.Time) *UserSubscriptionUpdateOne {
+	_u.mutation.SetBillingCycleStartedAt(v)
+	return _u
+}
+
+// SetNillableBillingCycleStartedAt sets the "billing_cycle_started_at" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableBillingCycleStartedAt(v *time.Time) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetBillingCycleStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearBillingCycleStartedAt clears the value of the "billing_cycle_started_at" field.
+func (_u *UserSubscriptionUpdateOne) ClearBillingCycleStartedAt() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearBillingCycleStartedAt()
 	return _u
 }
 
@@ -1095,6 +1402,16 @@ func (_u *UserSubscriptionUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserSubscriptionUpdateOne) check() error {
+	if v, ok := _u.mutation.CurrentPlanName(); ok {
+		if err := usersubscription.CurrentPlanNameValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_name", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_name": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentPlanValidityUnit(); ok {
+		if err := usersubscription.CurrentPlanValidityUnitValidator(v); err != nil {
+			return &ValidationError{Name: "current_plan_validity_unit", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.current_plan_validity_unit": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := usersubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.status": %w`, err)}
@@ -1146,6 +1463,45 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(usersubscription.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CurrentPlanID(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanID(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.CurrentPlanIDCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.CurrentPlanName(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CurrentPlanPriceCny(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanPriceCny(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64, value)
+	}
+	if _u.mutation.CurrentPlanPriceCnyCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanPriceCny, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CurrentPlanValidityDays(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentPlanValidityDays(); ok {
+		_spec.AddField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt, value)
+	}
+	if _u.mutation.CurrentPlanValidityDaysCleared() {
+		_spec.ClearField(usersubscription.FieldCurrentPlanValidityDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.CurrentPlanValidityUnit(); ok {
+		_spec.SetField(usersubscription.FieldCurrentPlanValidityUnit, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BillingCycleStartedAt(); ok {
+		_spec.SetField(usersubscription.FieldBillingCycleStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.BillingCycleStartedAtCleared() {
+		_spec.ClearField(usersubscription.FieldBillingCycleStartedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)

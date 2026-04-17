@@ -130,6 +130,8 @@ type checkoutPlan struct {
 	ValidityUnit    string   `json:"validity_unit"`
 	Features        []string `json:"features"`
 	ProductName     string   `json:"product_name"`
+	UpgradeFamily   string   `json:"upgrade_family"`
+	UpgradeRank     int      `json:"upgrade_rank"`
 	ForSale         bool     `json:"for_sale"`
 	SortOrder       int      `json:"sort_order"`
 }
@@ -162,6 +164,8 @@ func (h *PaymentHandler) listDisplayPlans(ctx context.Context) ([]checkoutPlan, 
 			ValidityUnit:    p.ValidityUnit,
 			Features:        parseFeatures(p.Features),
 			ProductName:     p.ProductName,
+			UpgradeFamily:   p.UpgradeFamily,
+			UpgradeRank:     p.UpgradeRank,
 			ForSale:         p.ForSale,
 			SortOrder:       p.SortOrder,
 		})
@@ -200,10 +204,11 @@ func (h *PaymentHandler) GetLimits(c *gin.Context) {
 
 // CreateOrderRequest is the request body for creating a payment order.
 type CreateOrderRequest struct {
-	Amount      float64 `json:"amount"`
-	PaymentType string  `json:"payment_type" binding:"required"`
-	OrderType   string  `json:"order_type"`
-	PlanID      int64   `json:"plan_id"`
+	Amount               float64 `json:"amount"`
+	PaymentType          string  `json:"payment_type" binding:"required"`
+	OrderType            string  `json:"order_type"`
+	PlanID               int64   `json:"plan_id"`
+	SourceSubscriptionID int64   `json:"source_subscription_id"`
 }
 
 // CreateOrder creates a new payment order.
@@ -221,15 +226,16 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 	}
 
 	result, err := h.paymentService.CreateOrder(c.Request.Context(), service.CreateOrderRequest{
-		UserID:      subject.UserID,
-		Amount:      req.Amount,
-		PaymentType: req.PaymentType,
-		ClientIP:    c.ClientIP(),
-		IsMobile:    isMobile(c),
-		SrcHost:     c.Request.Host,
-		SrcURL:      c.Request.Referer(),
-		OrderType:   req.OrderType,
-		PlanID:      req.PlanID,
+		UserID:               subject.UserID,
+		Amount:               req.Amount,
+		PaymentType:          req.PaymentType,
+		ClientIP:             c.ClientIP(),
+		IsMobile:             isMobile(c),
+		SrcHost:              c.Request.Host,
+		SrcURL:               c.Request.Referer(),
+		OrderType:            req.OrderType,
+		PlanID:               req.PlanID,
+		SourceSubscriptionID: req.SourceSubscriptionID,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

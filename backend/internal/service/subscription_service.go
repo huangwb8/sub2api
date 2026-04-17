@@ -147,11 +147,21 @@ func (s *SubscriptionService) InvalidateSubCache(userID, groupID int64) {
 
 // AssignSubscriptionInput 分配订阅输入
 type AssignSubscriptionInput struct {
-	UserID       int64
-	GroupID      int64
-	ValidityDays int
-	AssignedBy   int64
-	Notes        string
+	UserID                int64
+	GroupID               int64
+	ValidityDays          int
+	AssignedBy            int64
+	Notes                 string
+	PlanSnapshot          *SubscriptionPlanSnapshot
+	BillingCycleStartedAt *time.Time
+}
+
+type SubscriptionPlanSnapshot struct {
+	PlanID       *int64
+	PlanName     string
+	PlanPriceCNY *float64
+	ValidityDays *int
+	ValidityUnit string
 }
 
 // AssignSubscription 分配订阅给用户（不允许重复分配）
@@ -212,38 +222,29 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 			newExpiresAt = MaxExpiresAt
 		}
 
-		// 开启事务：ExtendExpiry + UpdateStatus + UpdateNotes 在同一事务中完成
+		// 开启事务：续期与可选套餐快照更新在同一事务中完成
 		tx, err := s.entClient.Tx(ctx)
 		if err != nil {
 			return nil, false, fmt.Errorf("begin transaction: %w", err)
 		}
 		txCtx := dbent.NewTxContext(ctx, tx)
 
-		// 更新过期时间
-		if err := s.userSubRepo.ExtendExpiry(txCtx, existingSub.ID, newExpiresAt); err != nil {
-			_ = tx.Rollback()
-			return nil, false, fmt.Errorf("extend subscription: %w", err)
-		}
-
-		// 如果订阅已过期或被暂停，恢复为active状态
+		existingSub.ExpiresAt = newExpiresAt
 		if existingSub.Status != SubscriptionStatusActive {
-			if err := s.userSubRepo.UpdateStatus(txCtx, existingSub.ID, SubscriptionStatusActive); err != nil {
-				_ = tx.Rollback()
-				return nil, false, fmt.Errorf("update subscription status: %w", err)
-			}
+			existingSub.Status = SubscriptionStatusActive
 		}
-
-		// 追加备注
 		if input.Notes != "" {
 			newNotes := existingSub.Notes
 			if newNotes != "" {
 				newNotes += "\n"
 			}
 			newNotes += input.Notes
-			if err := s.userSubRepo.UpdateNotes(txCtx, existingSub.ID, newNotes); err != nil {
-				_ = tx.Rollback()
-				return nil, false, fmt.Errorf("update subscription notes: %w", err)
-			}
+			existingSub.Notes = newNotes
+		}
+		applySubscriptionPlanSnapshot(existingSub, input.PlanSnapshot, input.BillingCycleStartedAt, now)
+		if err := s.userSubRepo.Update(txCtx, existingSub); err != nil {
+			_ = tx.Rollback()
+			return nil, false, fmt.Errorf("update subscription: %w", err)
 		}
 
 		// 提交事务
@@ -318,6 +319,7 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 	if input.AssignedBy > 0 {
 		sub.AssignedBy = &input.AssignedBy
 	}
+	applySubscriptionPlanSnapshot(sub, input.PlanSnapshot, input.BillingCycleStartedAt, now)
 
 	if err := s.userSubRepo.Create(ctx, sub); err != nil {
 		return nil, err
@@ -330,6 +332,24 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 	}
 	s.notifyAdminsOfNewSubscription(ctx, createdSub)
 	return createdSub, nil
+}
+
+func applySubscriptionPlanSnapshot(sub *UserSubscription, snapshot *SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time, fallback time.Time) {
+	if sub == nil || snapshot == nil {
+		return
+	}
+	sub.CurrentPlanID = snapshot.PlanID
+	sub.CurrentPlanName = snapshot.PlanName
+	sub.CurrentPlanPriceCNY = snapshot.PlanPriceCNY
+	sub.CurrentPlanValidityDays = snapshot.ValidityDays
+	sub.CurrentPlanValidityUnit = snapshot.ValidityUnit
+	if billingCycleStartedAt != nil {
+		start := *billingCycleStartedAt
+		sub.BillingCycleStartedAt = &start
+		return
+	}
+	start := fallback
+	sub.BillingCycleStartedAt = &start
 }
 
 // BulkAssignSubscriptionInput 批量分配订阅输入

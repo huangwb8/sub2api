@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client'
-import type { UserSubscription, SubscriptionProgress } from '@/types'
+import type { UserSubscription, SubscriptionProgress, SubscriptionUpgradeOptionsResult } from '@/types'
 
 /**
  * Subscription summary for user dashboard
@@ -67,10 +67,20 @@ export async function getSubscriptionProgress(
   return response.data
 }
 
+export async function getUpgradeOptions(
+  subscriptionId: number
+): Promise<SubscriptionUpgradeOptionsResult> {
+  const response = await apiClient.get<SubscriptionUpgradeOptionsResult>(
+    `/subscriptions/${subscriptionId}/upgrade-options`
+  )
+  return response.data
+}
+
 export default {
   getMySubscriptions,
   getActiveSubscriptions,
   getSubscriptionsProgress,
   getSubscriptionSummary,
-  getSubscriptionProgress
+  getSubscriptionProgress,
+  getUpgradeOptions
 }

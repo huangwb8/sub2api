@@ -6,7 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import subscriptionsAPI from '@/api/subscriptions'
-import type { UserSubscription } from '@/types'
+import type { UserSubscription, SubscriptionUpgradeOptionsResult } from '@/types'
 
 // Cache TTL: 60 seconds
 const CACHE_TTL_MS = 60_000
@@ -20,9 +20,11 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
   const loading = ref(false)
   const loaded = ref(false)
   const lastFetchedAt = ref<number | null>(null)
+  const upgradeOptionsBySubscription = ref<Record<number, SubscriptionUpgradeOptionsResult>>({})
 
   // In-flight request deduplication
   let activePromise: Promise<UserSubscription[]> | null = null
+  const upgradePromises = new Map<number, Promise<SubscriptionUpgradeOptionsResult>>()
 
   // Auto-refresh interval
   let pollerInterval: ReturnType<typeof setInterval> | null = null
@@ -111,7 +113,9 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
   function clear() {
     requestGeneration++
     activePromise = null
+    upgradePromises.clear()
     activeSubscriptions.value = []
+    upgradeOptionsBySubscription.value = {}
     loaded.value = false
     lastFetchedAt.value = null
     stopPolling()
@@ -124,9 +128,43 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
     lastFetchedAt.value = null
   }
 
+  async function fetchUpgradeOptions(
+    subscriptionId: number,
+    force = false
+  ): Promise<SubscriptionUpgradeOptionsResult> {
+    const cached = upgradeOptionsBySubscription.value[subscriptionId]
+    if (cached && !force) {
+      return cached
+    }
+
+    const pending = upgradePromises.get(subscriptionId)
+    if (pending && !force) {
+      return pending
+    }
+
+    const requestPromise = subscriptionsAPI
+      .getUpgradeOptions(subscriptionId)
+      .then((result) => {
+        upgradeOptionsBySubscription.value = {
+          ...upgradeOptionsBySubscription.value,
+          [subscriptionId]: result,
+        }
+        return result
+      })
+      .finally(() => {
+        if (upgradePromises.get(subscriptionId) === requestPromise) {
+          upgradePromises.delete(subscriptionId)
+        }
+      })
+
+    upgradePromises.set(subscriptionId, requestPromise)
+    return requestPromise
+  }
+
   return {
     // State
     activeSubscriptions,
+    upgradeOptionsBySubscription,
     loading,
     hasActiveSubscriptions,
 
@@ -135,6 +173,7 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
     startPolling,
     stopPolling,
     clear,
-    invalidateCache
+    invalidateCache,
+    fetchUpgradeOptions
   }
 })

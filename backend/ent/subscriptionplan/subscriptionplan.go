@@ -31,6 +31,10 @@ const (
 	FieldFeatures = "features"
 	// FieldProductName holds the string denoting the product_name field in the database.
 	FieldProductName = "product_name"
+	// FieldUpgradeFamily holds the string denoting the upgrade_family field in the database.
+	FieldUpgradeFamily = "upgrade_family"
+	// FieldUpgradeRank holds the string denoting the upgrade_rank field in the database.
+	FieldUpgradeRank = "upgrade_rank"
 	// FieldForSale holds the string denoting the for_sale field in the database.
 	FieldForSale = "for_sale"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
@@ -55,6 +59,8 @@ var Columns = []string{
 	FieldValidityUnit,
 	FieldFeatures,
 	FieldProductName,
+	FieldUpgradeFamily,
+	FieldUpgradeRank,
 	FieldForSale,
 	FieldSortOrder,
 	FieldCreatedAt,
@@ -88,6 +94,12 @@ var (
 	DefaultProductName string
 	// ProductNameValidator is a validator for the "product_name" field. It is called by the builders before save.
 	ProductNameValidator func(string) error
+	// DefaultUpgradeFamily holds the default value on creation for the "upgrade_family" field.
+	DefaultUpgradeFamily string
+	// UpgradeFamilyValidator is a validator for the "upgrade_family" field. It is called by the builders before save.
+	UpgradeFamilyValidator func(string) error
+	// DefaultUpgradeRank holds the default value on creation for the "upgrade_rank" field.
+	DefaultUpgradeRank int
 	// DefaultForSale holds the default value on creation for the "for_sale" field.
 	DefaultForSale bool
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
@@ -151,6 +163,16 @@ func ByFeatures(opts ...sql.OrderTermOption) OrderOption {
 // ByProductName orders the results by the product_name field.
 func ByProductName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProductName, opts...).ToFunc()
+}
+
+// ByUpgradeFamily orders the results by the upgrade_family field.
+func ByUpgradeFamily(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpgradeFamily, opts...).ToFunc()
+}
+
+// ByUpgradeRank orders the results by the upgrade_rank field.
+func ByUpgradeRank(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpgradeRank, opts...).ToFunc()
 }
 
 // ByForSale orders the results by the for_sale field.

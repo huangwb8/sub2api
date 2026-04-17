@@ -81,10 +81,28 @@ func (PaymentOrder) Fields() []ent.Field {
 		field.Int64("plan_id").
 			Optional().
 			Nillable(),
+		field.Int64("source_subscription_id").
+			Optional().
+			Nillable(),
+		field.Int64("source_plan_id").
+			Optional().
+			Nillable(),
 		field.Int64("subscription_group_id").
 			Optional().
 			Nillable(),
 		field.Int("subscription_days").
+			Optional().
+			Nillable(),
+		field.Float("upgrade_credit_cny").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Optional().
+			Nillable(),
+		field.Float("upgrade_payable_cny").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Optional().
+			Nillable(),
+		field.Float("upgrade_remaining_ratio").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Optional().
 			Nillable(),
 		field.String("provider_instance_id").

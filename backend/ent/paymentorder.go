@@ -50,10 +50,20 @@ type PaymentOrder struct {
 	OrderType string `json:"order_type,omitempty"`
 	// PlanID holds the value of the "plan_id" field.
 	PlanID *int64 `json:"plan_id,omitempty"`
+	// SourceSubscriptionID holds the value of the "source_subscription_id" field.
+	SourceSubscriptionID *int64 `json:"source_subscription_id,omitempty"`
+	// SourcePlanID holds the value of the "source_plan_id" field.
+	SourcePlanID *int64 `json:"source_plan_id,omitempty"`
 	// SubscriptionGroupID holds the value of the "subscription_group_id" field.
 	SubscriptionGroupID *int64 `json:"subscription_group_id,omitempty"`
 	// SubscriptionDays holds the value of the "subscription_days" field.
 	SubscriptionDays *int `json:"subscription_days,omitempty"`
+	// UpgradeCreditCny holds the value of the "upgrade_credit_cny" field.
+	UpgradeCreditCny *float64 `json:"upgrade_credit_cny,omitempty"`
+	// UpgradePayableCny holds the value of the "upgrade_payable_cny" field.
+	UpgradePayableCny *float64 `json:"upgrade_payable_cny,omitempty"`
+	// UpgradeRemainingRatio holds the value of the "upgrade_remaining_ratio" field.
+	UpgradeRemainingRatio *float64 `json:"upgrade_remaining_ratio,omitempty"`
 	// ProviderInstanceID holds the value of the "provider_instance_id" field.
 	ProviderInstanceID *string `json:"provider_instance_id,omitempty"`
 	// Status holds the value of the "status" field.
@@ -125,9 +135,9 @@ func (*PaymentOrder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case paymentorder.FieldForceRefund:
 			values[i] = new(sql.NullBool)
-		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldRefundAmount:
+		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldUpgradeCreditCny, paymentorder.FieldUpgradePayableCny, paymentorder.FieldUpgradeRemainingRatio, paymentorder.FieldRefundAmount:
 			values[i] = new(sql.NullFloat64)
-		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
+		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSourceSubscriptionID, paymentorder.FieldSourcePlanID, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
 			values[i] = new(sql.NullInt64)
 		case paymentorder.FieldUserEmail, paymentorder.FieldUserName, paymentorder.FieldUserNotes, paymentorder.FieldRechargeCode, paymentorder.FieldOutTradeNo, paymentorder.FieldPaymentType, paymentorder.FieldPaymentTradeNo, paymentorder.FieldPayURL, paymentorder.FieldQrCode, paymentorder.FieldQrCodeImg, paymentorder.FieldOrderType, paymentorder.FieldProviderInstanceID, paymentorder.FieldStatus, paymentorder.FieldRefundReason, paymentorder.FieldRefundRequestReason, paymentorder.FieldRefundRequestedBy, paymentorder.FieldFailedReason, paymentorder.FieldClientIP, paymentorder.FieldSrcHost, paymentorder.FieldSrcURL:
 			values[i] = new(sql.NullString)
@@ -255,6 +265,20 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 				_m.PlanID = new(int64)
 				*_m.PlanID = value.Int64
 			}
+		case paymentorder.FieldSourceSubscriptionID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field source_subscription_id", values[i])
+			} else if value.Valid {
+				_m.SourceSubscriptionID = new(int64)
+				*_m.SourceSubscriptionID = value.Int64
+			}
+		case paymentorder.FieldSourcePlanID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field source_plan_id", values[i])
+			} else if value.Valid {
+				_m.SourcePlanID = new(int64)
+				*_m.SourcePlanID = value.Int64
+			}
 		case paymentorder.FieldSubscriptionGroupID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field subscription_group_id", values[i])
@@ -268,6 +292,27 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SubscriptionDays = new(int)
 				*_m.SubscriptionDays = int(value.Int64)
+			}
+		case paymentorder.FieldUpgradeCreditCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field upgrade_credit_cny", values[i])
+			} else if value.Valid {
+				_m.UpgradeCreditCny = new(float64)
+				*_m.UpgradeCreditCny = value.Float64
+			}
+		case paymentorder.FieldUpgradePayableCny:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field upgrade_payable_cny", values[i])
+			} else if value.Valid {
+				_m.UpgradePayableCny = new(float64)
+				*_m.UpgradePayableCny = value.Float64
+			}
+		case paymentorder.FieldUpgradeRemainingRatio:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field upgrade_remaining_ratio", values[i])
+			} else if value.Valid {
+				_m.UpgradeRemainingRatio = new(float64)
+				*_m.UpgradeRemainingRatio = value.Float64
 			}
 		case paymentorder.FieldProviderInstanceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -493,6 +538,16 @@ func (_m *PaymentOrder) String() string {
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
+	if v := _m.SourceSubscriptionID; v != nil {
+		builder.WriteString("source_subscription_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SourcePlanID; v != nil {
+		builder.WriteString("source_plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	if v := _m.SubscriptionGroupID; v != nil {
 		builder.WriteString("subscription_group_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
@@ -500,6 +555,21 @@ func (_m *PaymentOrder) String() string {
 	builder.WriteString(", ")
 	if v := _m.SubscriptionDays; v != nil {
 		builder.WriteString("subscription_days=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpgradeCreditCny; v != nil {
+		builder.WriteString("upgrade_credit_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpgradePayableCny; v != nil {
+		builder.WriteString("upgrade_payable_cny=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpgradeRemainingRatio; v != nil {
+		builder.WriteString("upgrade_remaining_ratio=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

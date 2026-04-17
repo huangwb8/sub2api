@@ -119,8 +119,11 @@ func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float
 		rr = fmt.Sprintf("refund order:%d", o.ID)
 	}
 	p := &RefundPlan{OrderID: oid, Order: o, RefundAmount: amt, GatewayAmount: ga, Reason: rr, Force: force, DeductBalance: deduct, DeductionType: payment.DeductionTypeNone}
-	if o.OrderType == payment.OrderTypeSubscription && o.PaymentType == payment.TypeBalance {
+	if (o.OrderType == payment.OrderTypeSubscription || o.OrderType == payment.OrderTypeSubscriptionUpgrade) && o.PaymentType == payment.TypeBalance {
 		p.BalanceToCredit = p.RefundAmount
+	}
+	if o.OrderType == payment.OrderTypeSubscriptionUpgrade {
+		p.DeductBalance = false
 	}
 	if deduct {
 		if er := s.prepDeduct(ctx, o, p, force); er != nil {
@@ -131,6 +134,10 @@ func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float
 }
 
 func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, p *RefundPlan, force bool) *RefundResult {
+	if o.OrderType == payment.OrderTypeSubscriptionUpgrade {
+		p.DeductionType = payment.DeductionTypeNone
+		return nil
+	}
 	if o.OrderType == payment.OrderTypeSubscription {
 		p.DeductionType = payment.DeductionTypeSubscription
 		if o.SubscriptionGroupID != nil && o.SubscriptionDays != nil {

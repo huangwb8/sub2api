@@ -68,6 +68,8 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 		SetFeatures("优先排队\n支持多模型").
 		SetForSale(true).
 		SetSortOrder(7).
+		SetUpgradeFamily("openai-team").
+		SetUpgradeRank(20).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -92,6 +94,8 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 			Features             []string `json:"features"`
 			ForSale              bool     `json:"for_sale"`
 			SortOrder            int      `json:"sort_order"`
+			UpgradeFamily        string   `json:"upgrade_family"`
+			UpgradeRank          int      `json:"upgrade_rank"`
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
@@ -108,4 +112,6 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 	require.Equal(t, []string{"优先排队", "支持多模型"}, plan.Features)
 	require.True(t, plan.ForSale)
 	require.Equal(t, 7, plan.SortOrder)
+	require.Equal(t, "openai-team", plan.UpgradeFamily)
+	require.Equal(t, 20, plan.UpgradeRank)
 }

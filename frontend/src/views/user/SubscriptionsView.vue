@@ -71,6 +71,19 @@
               >
                 {{ t('payment.renewNow') }}
               </button>
+              <button
+                v-if="subscription.status === 'active' && canUpgradeSubscription(subscription)"
+                class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-dark-600 dark:text-gray-200 dark:hover:bg-dark-700"
+                @click="toggleUpgradePanel(subscription)"
+              >
+                {{ t('userSubscriptions.upgrade') }}
+              </button>
+              <span
+                v-else-if="subscription.status === 'active'"
+                class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300"
+              >
+                {{ t('payment.upgrade.unsupported') }}
+              </span>
             </div>
           </div>
 
@@ -238,6 +251,45 @@
                 </div>
               </div>
             </div>
+
+            <div v-if="expandedUpgradeId === subscription.id" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+              <div v-if="upgradeLoadingId === subscription.id" class="flex justify-center py-4">
+                <div class="h-6 w-6 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+              </div>
+              <template v-else-if="upgradeOptionsFor(subscription.id)">
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-xl bg-white/80 p-3 dark:bg-dark-800/80">
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('payment.upgrade.currentPlan') }}</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ upgradeOptionsFor(subscription.id)?.source_plan_name || subscription.current_plan_name }}</p>
+                  </div>
+                  <div class="rounded-xl bg-white/80 p-3 dark:bg-dark-800/80">
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('payment.upgrade.credit') }}</p>
+                    <p class="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ formatPaymentAmount(upgradeOptionsFor(subscription.id)?.credit_cny || 0) }}</p>
+                  </div>
+                </div>
+                <div class="mt-3 space-y-3" v-if="upgradeOptionsFor(subscription.id)?.options.length">
+                  <div v-for="option in upgradeOptionsFor(subscription.id)?.options" :key="option.target_plan_id" class="rounded-xl border border-amber-200 bg-white/80 p-3 dark:border-amber-900/30 dark:bg-dark-800/80">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ option.target_plan_name }}</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {{ t('payment.upgrade.payable') }}: {{ formatPaymentAmount(option.payable_cny) }}
+                        </p>
+                      </div>
+                      <button
+                        class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
+                        @click="goToUpgradeCheckout(subscription.id, option.target_plan_id)"
+                      >
+                        {{ t('payment.upgrade.proceed') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p v-else class="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                  {{ t('payment.upgrade.noOptions') }}
+                </p>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -250,11 +302,13 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { useSubscriptionStore } from '@/stores/subscriptions'
 import subscriptionsAPI from '@/api/subscriptions'
-import type { UserSubscription } from '@/types'
+import type { UserSubscription, SubscriptionUpgradeOptionsResult } from '@/types'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { formatDateOnly, formatUsageCost } from '@/utils/format'
+import { formatDateOnly, formatPaymentAmount, formatUsageCost } from '@/utils/format'
 import { platformBorderClass, platformBadgeClass, platformButtonClass, platformLabel } from '@/utils/platformColors'
 
 function platformAccentDotClass(p: string): string {
@@ -270,9 +324,12 @@ function platformAccentDotClass(p: string): string {
 const { t } = useI18n()
 const router = useRouter()
 const appStore = useAppStore()
+const subscriptionStore = useSubscriptionStore()
 
 const subscriptions = ref<UserSubscription[]>([])
 const loading = ref(true)
+const expandedUpgradeId = ref<number | null>(null)
+const upgradeLoadingId = ref<number | null>(null)
 
 async function loadSubscriptions() {
   try {
@@ -284,6 +341,48 @@ async function loadSubscriptions() {
   } finally {
     loading.value = false
   }
+}
+
+function canUpgradeSubscription(subscription: UserSubscription): boolean {
+  return subscription.status === 'active'
+    && !!subscription.current_plan_id
+    && !!subscription.billing_cycle_started_at
+    && !!subscription.current_plan_validity_unit
+}
+
+function upgradeOptionsFor(subscriptionId: number): SubscriptionUpgradeOptionsResult | undefined {
+  return subscriptionStore.upgradeOptionsBySubscription[subscriptionId]
+}
+
+async function toggleUpgradePanel(subscription: UserSubscription) {
+  if (expandedUpgradeId.value === subscription.id) {
+    expandedUpgradeId.value = null
+    return
+  }
+  if (!canUpgradeSubscription(subscription)) {
+    appStore.showError(t('payment.upgrade.unsupported'))
+    return
+  }
+  expandedUpgradeId.value = subscription.id
+  upgradeLoadingId.value = subscription.id
+  try {
+    await subscriptionStore.fetchUpgradeOptions(subscription.id)
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, t('payment.upgrade.unsupported')))
+  } finally {
+    upgradeLoadingId.value = null
+  }
+}
+
+function goToUpgradeCheckout(sourceSubscriptionId: number, targetPlanId: number) {
+  router.push({
+    path: '/purchase',
+    query: {
+      tab: 'subscription',
+      upgrade_source: String(sourceSubscriptionId),
+      upgrade_target: String(targetPlanId),
+    },
+  })
 }
 
 function getProgressWidth(used: number | undefined, limit: number | null | undefined): string {

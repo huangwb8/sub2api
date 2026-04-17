@@ -65,15 +65,16 @@ func generateRandomString(n int) string {
 }
 
 type CreateOrderRequest struct {
-	UserID      int64
-	Amount      float64
-	PaymentType string
-	ClientIP    string
-	IsMobile    bool
-	SrcHost     string
-	SrcURL      string
-	OrderType   string
-	PlanID      int64
+	UserID               int64
+	Amount               float64
+	PaymentType          string
+	ClientIP             string
+	IsMobile             bool
+	SrcHost              string
+	SrcURL               string
+	OrderType            string
+	PlanID               int64
+	SourceSubscriptionID int64
 }
 
 type CreateOrderResponse struct {

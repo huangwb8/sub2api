@@ -319,6 +319,30 @@ func TestAssignSubscriptionKeepsWorkingWhenIdempotencyStoreUnavailable(t *testin
 	require.Equal(t, 1, subRepo.createCalls, "semantic idempotent endpoint should not depend on idempotency store availability")
 }
 
+func TestAssignOrExtendSubscription_AllowsMissingPlanSnapshot(t *testing.T) {
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+	sub, reused, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       7001,
+		GroupID:      1,
+		ValidityDays: 30,
+		Notes:        "admin assigned",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+	require.NotNil(t, sub)
+	require.Nil(t, sub.CurrentPlanID)
+	require.Equal(t, "", sub.CurrentPlanName)
+	require.Nil(t, sub.CurrentPlanPriceCNY)
+	require.Nil(t, sub.CurrentPlanValidityDays)
+	require.Equal(t, "", sub.CurrentPlanValidityUnit)
+	require.Nil(t, sub.BillingCycleStartedAt)
+}
+
 func TestNormalizeAssignValidityDays(t *testing.T) {
 	require.Equal(t, 30, normalizeAssignValidityDays(0))
 	require.Equal(t, 30, normalizeAssignValidityDays(-5))
