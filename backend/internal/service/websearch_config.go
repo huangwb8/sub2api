@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync/atomic"
@@ -100,6 +101,16 @@ func (s *SettingService) loadWebSearchConfigFromDB() (*WebSearchEmulationConfig,
 
 	raw, err := s.settingRepo.GetValue(dbCtx, SettingKeyWebSearchEmulationConfig)
 	if err != nil {
+		// Keep the admin settings page fail-open for fresh deployments where the
+		// DB-backed web search config has never been initialized.
+		if errors.Is(err, ErrSettingNotFound) {
+			cfg := &WebSearchEmulationConfig{}
+			webSearchEmulationCache.Store(&cachedWebSearchEmulationConfig{
+				config:    cfg,
+				expiresAt: time.Now().Add(webSearchEmulationCacheTTL).UnixNano(),
+			})
+			return cfg, nil
+		}
 		webSearchEmulationCache.Store(&cachedWebSearchEmulationConfig{
 			config:    &WebSearchEmulationConfig{},
 			expiresAt: time.Now().Add(webSearchEmulationErrorTTL).UnixNano(),
