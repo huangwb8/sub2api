@@ -1041,6 +1041,15 @@ export default {
           action: 'Action'
         }
       },
+      profitability: {
+        title: 'Profitability',
+        description: 'Aggregates balance revenue, subscription revenue, and estimated cost for non-admin users at the selected time granularity to show the real-time extra profit rate.',
+        balanceRevenue: 'Balance Revenue',
+        subscriptionRevenue: 'Subscription Revenue',
+        estimatedCost: 'Estimated Cost',
+        profit: 'Profit',
+        extraProfitRate: 'Extra Profit Rate'
+      },
       failedToLoad: 'Failed to load dashboard statistics'
     },
 

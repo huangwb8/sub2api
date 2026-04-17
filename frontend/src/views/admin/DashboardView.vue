@@ -396,7 +396,7 @@
                     {{ t('admin.dashboard.profitability.balanceRevenue') }}
                   </div>
                   <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(latestProfitabilityPoint?.revenue_balance_cny ?? 0) }}
+                    {{ formatCny(profitabilitySummary.revenueBalanceCNY) }}
                   </div>
                 </div>
                 <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
@@ -404,7 +404,7 @@
                     {{ t('admin.dashboard.profitability.subscriptionRevenue') }}
                   </div>
                   <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(latestProfitabilityPoint?.revenue_subscription_cny ?? 0) }}
+                    {{ formatCny(profitabilitySummary.revenueSubscriptionCNY) }}
                   </div>
                 </div>
                 <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
@@ -412,7 +412,7 @@
                     {{ t('admin.dashboard.profitability.estimatedCost') }}
                   </div>
                   <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(latestProfitabilityPoint?.estimated_cost_cny ?? 0) }}
+                    {{ formatCny(profitabilitySummary.estimatedCostCNY) }}
                   </div>
                 </div>
                 <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
@@ -421,9 +421,9 @@
                   </div>
                   <div
                     class="mt-1 font-semibold"
-                    :class="(latestProfitabilityPoint?.profit_cny ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                    :class="profitabilitySummary.profitCNY >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
                   >
-                    {{ formatSignedCny(latestProfitabilityPoint?.profit_cny ?? 0) }}
+                    {{ formatSignedCny(profitabilitySummary.profitCNY) }}
                   </div>
                 </div>
                 <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
@@ -431,7 +431,7 @@
                     {{ t('admin.dashboard.profitability.extraProfitRate') }}
                   </div>
                   <div class="mt-1 font-semibold text-blue-600 dark:text-blue-400">
-                    {{ formatExtraProfitRate(latestProfitabilityPoint?.extra_profit_rate_percent) }}
+                    {{ formatExtraProfitRate(profitabilitySummary.extraProfitRatePercent) }}
                   </div>
                 </div>
               </div>
@@ -503,6 +503,10 @@ import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
+import {
+  buildProfitabilityChartData,
+  summarizeProfitabilityTrend
+} from './dashboardProfitability'
 
 import {
   Chart as ChartJS,
@@ -723,31 +727,10 @@ const userTrendChartData = computed(() => {
   }
 })
 
-const latestProfitabilityPoint = computed(() => {
-  if (!profitabilityTrend.value.length) {
-    return null
-  }
-  return profitabilityTrend.value[profitabilityTrend.value.length - 1]
-})
+const profitabilitySummary = computed(() => summarizeProfitabilityTrend(profitabilityTrend.value))
 
 const profitabilityChartData = computed(() => {
-  if (!profitabilityTrend.value.length) return null
-
-  return {
-    labels: profitabilityTrend.value.map(point => point.date),
-    datasets: [
-      {
-        label: t('admin.dashboard.profitability.extraProfitRate'),
-        data: profitabilityTrend.value.map(point => point.extra_profit_rate_percent ?? 0),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.16)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 2,
-        pointHoverRadius: 4
-      }
-    ]
-  }
+  return buildProfitabilityChartData(profitabilityTrend.value, t)
 })
 
 // Format helpers
@@ -807,14 +790,36 @@ const profitabilityLineOptions = computed(() => ({
   },
   plugins: {
     legend: {
-      display: false
+      labels: {
+        color: chartColors.value.text,
+        usePointStyle: true,
+        pointStyle: 'circle',
+        padding: 14,
+        font: {
+          size: 11
+        }
+      }
     },
     tooltip: {
       callbacks: {
-        label: (context: any) =>
-          `${t('admin.dashboard.profitability.extraProfitRate')}: ${formatExtraProfitRate(
-            typeof context?.raw === 'number' ? context.raw : Number(context?.parsed?.y ?? 0)
-          )}`
+        label: (context: any) => {
+          const rawValue = context?.raw
+          const numericValue = typeof rawValue === 'number'
+            ? rawValue
+            : rawValue == null
+              ? null
+              : Number(context?.parsed?.y ?? rawValue)
+
+          if (context?.dataset?.tooltipValueType === 'rate') {
+            return `${context.dataset.label}: ${formatExtraProfitRate(numericValue)}`
+          }
+
+          if (context?.dataset?.tooltipValueType === 'signedAmount') {
+            return `${context.dataset.label}: ${formatSignedCny(numericValue ?? 0)}`
+          }
+
+          return `${context.dataset.label}: ${formatCny(numericValue ?? 0)}`
+        }
       }
     }
   },
@@ -830,9 +835,22 @@ const profitabilityLineOptions = computed(() => ({
         }
       }
     },
-    y: {
+    yAmount: {
       grid: {
         color: chartColors.value.grid
+      },
+      ticks: {
+        color: chartColors.value.text,
+        font: {
+          size: 10
+        },
+        callback: (value: string | number) => formatCny(Number(value))
+      }
+    },
+    yRate: {
+      position: 'right' as const,
+      grid: {
+        drawOnChartArea: false
       },
       ticks: {
         color: chartColors.value.text,

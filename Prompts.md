@@ -39,6 +39,10 @@ version = ad64190bec3605f97e9e1805a0118aaa51f22b08
 
 ---
 
+目前， 盈利水平尽管选了所有时间，但是仍无法显示任何图能展示盈利水平。使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
 PlanMardkdown = docs/plans/2026-04-16-subscription-upgrade-difference-payment-plan.md
 
 根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
