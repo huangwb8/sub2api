@@ -6,7 +6,10 @@
 import { apiClient } from '../client'
 import type {
   DashboardStats,
+  DashboardRecommendationMetrics,
   DashboardRecommendationsResponse,
+  DashboardRecommendationsSummary,
+  DashboardCapacityPoolRecommendation,
   TrendDataPoint,
   ProfitabilityTrendPoint,
   ModelStat,
@@ -28,8 +31,92 @@ export async function getStats(): Promise<DashboardStats> {
 }
 
 export async function getRecommendations(): Promise<DashboardRecommendationsResponse> {
-  const { data } = await apiClient.get<DashboardRecommendationsResponse>('/admin/dashboard/recommendations')
-  return data
+  const { data } = await apiClient.get<DashboardRecommendationsResponse | LegacyDashboardRecommendationsResponse>('/admin/dashboard/recommendations')
+  return normalizeDashboardRecommendations(data)
+}
+
+interface LegacyDashboardRecommendationItem {
+  group_id: number
+  group_name: string
+  platform: string
+  plan_names: string[]
+  recommended_account_type: string
+  status: 'healthy' | 'watch' | 'action'
+  confidence_score: number
+  current_total_accounts: number
+  current_schedulable_accounts: number
+  recommended_total_accounts: number
+  recommended_additional_accounts: number
+  subscriber_headroom: number
+  reason: string
+  metrics: DashboardRecommendationMetrics
+}
+
+interface LegacyDashboardRecommendationsResponse {
+  generated_at: string
+  lookback_days: number
+  summary: {
+    group_count: number
+    current_schedulable_accounts: number
+    recommended_additional_accounts: number
+    urgent_group_count: number
+  }
+  items: LegacyDashboardRecommendationItem[]
+}
+
+const normalizeDashboardRecommendations = (
+  payload: DashboardRecommendationsResponse | LegacyDashboardRecommendationsResponse
+): DashboardRecommendationsResponse => {
+  if ('pools' in payload && Array.isArray(payload.pools)) {
+    return payload
+  }
+
+  const legacy = payload as LegacyDashboardRecommendationsResponse
+  const summary: DashboardRecommendationsSummary = {
+    pool_count: legacy.items.length,
+    group_count: legacy.summary.group_count,
+    current_schedulable_accounts: legacy.summary.current_schedulable_accounts,
+    recommended_additional_schedulable_accounts: legacy.summary.recommended_additional_accounts,
+    recoverable_unschedulable_accounts: 0,
+    urgent_pool_count: legacy.summary.urgent_group_count
+  }
+
+  const pools: DashboardCapacityPoolRecommendation[] = legacy.items.map((item) => {
+    const recoverableUnschedulableAccounts = Math.max(
+      item.current_total_accounts - item.current_schedulable_accounts,
+      0
+    )
+
+    return {
+      pool_key: `legacy-group-${item.group_id}`,
+      platform: item.platform,
+      group_names: [item.group_name],
+      plan_names: item.plan_names,
+      recommended_account_type: item.recommended_account_type,
+      status: item.status,
+      confidence_score: item.confidence_score,
+      current_total_accounts: item.current_total_accounts,
+      current_schedulable_accounts: item.current_schedulable_accounts,
+      recommended_schedulable_accounts: Math.max(
+        item.recommended_total_accounts,
+        item.current_schedulable_accounts
+      ),
+      recommended_additional_schedulable_accounts: item.recommended_additional_accounts,
+      recoverable_unschedulable_accounts: Math.min(
+        recoverableUnschedulableAccounts,
+        item.recommended_additional_accounts
+      ),
+      reason: item.reason,
+      metrics: item.metrics
+    }
+  })
+
+  return {
+    generated_at: legacy.generated_at,
+    lookback_days: legacy.lookback_days,
+    summary,
+    pools
+  }
 }
 
 /**

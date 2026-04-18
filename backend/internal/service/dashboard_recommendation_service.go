@@ -10,6 +10,8 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/account"
+	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 )
@@ -35,34 +37,38 @@ type DashboardCapacityRecommendationResponse struct {
 	GeneratedAt  time.Time                              `json:"generated_at"`
 	LookbackDays int                                    `json:"lookback_days"`
 	Summary      DashboardCapacityRecommendationSummary `json:"summary"`
-	Items        []DashboardGroupCapacityRecommendation `json:"items"`
+	Pools        []DashboardCapacityPoolRecommendation  `json:"pools"`
 }
 
 type DashboardCapacityRecommendationSummary struct {
-	GroupCount                    int `json:"group_count"`
-	CurrentSchedulableAccounts    int `json:"current_schedulable_accounts"`
-	RecommendedAdditionalAccounts int `json:"recommended_additional_accounts"`
-	UrgentGroupCount              int `json:"urgent_group_count"`
+	PoolCount                                int `json:"pool_count"`
+	GroupCount                               int `json:"group_count"`
+	CurrentSchedulableAccounts               int `json:"current_schedulable_accounts"`
+	RecommendedAdditionalSchedulableAccounts int `json:"recommended_additional_schedulable_accounts"`
+	RecoverableUnschedulableAccounts         int `json:"recoverable_unschedulable_accounts"`
+	UrgentPoolCount                          int `json:"urgent_pool_count"`
 }
 
-type DashboardGroupCapacityRecommendation struct {
-	GroupID                       int64                                       `json:"group_id"`
-	GroupName                     string                                      `json:"group_name"`
-	Platform                      string                                      `json:"platform"`
-	PlanNames                     []string                                    `json:"plan_names"`
-	RecommendedAccountType        string                                      `json:"recommended_account_type"`
-	Status                        string                                      `json:"status"`
-	ConfidenceScore               float64                                     `json:"confidence_score"`
-	CurrentTotalAccounts          int                                         `json:"current_total_accounts"`
-	CurrentSchedulableAccounts    int                                         `json:"current_schedulable_accounts"`
-	RecommendedTotalAccounts      int                                         `json:"recommended_total_accounts"`
-	RecommendedAdditionalAccounts int                                         `json:"recommended_additional_accounts"`
-	SubscriberHeadroom            int                                         `json:"subscriber_headroom"`
-	Reason                        string                                      `json:"reason"`
-	Metrics                       DashboardGroupCapacityRecommendationMetrics `json:"metrics"`
+type DashboardCapacityPoolRecommendation struct {
+	PoolKey                                  string                                     `json:"pool_key"`
+	Platform                                 string                                     `json:"platform"`
+	GroupNames                               []string                                   `json:"group_names"`
+	PlanNames                                []string                                   `json:"plan_names"`
+	RecommendedAccountType                   string                                     `json:"recommended_account_type"`
+	Status                                   string                                     `json:"status"`
+	ConfidenceScore                          float64                                    `json:"confidence_score"`
+	CurrentTotalAccounts                     int                                        `json:"current_total_accounts"`
+	CurrentSchedulableAccounts               int                                        `json:"current_schedulable_accounts"`
+	CurrentUnschedulableAccounts             int                                        `json:"current_unschedulable_accounts"`
+	RecommendedSchedulableAccounts           int                                        `json:"recommended_schedulable_accounts"`
+	RecommendedAdditionalSchedulableAccounts int                                        `json:"recommended_additional_schedulable_accounts"`
+	RecoverableUnschedulableAccounts         int                                        `json:"recoverable_unschedulable_accounts"`
+	NewAccountsRequired                      int                                        `json:"new_accounts_required"`
+	Reason                                   string                                     `json:"reason"`
+	Metrics                                  DashboardCapacityPoolRecommendationMetrics `json:"metrics"`
 }
 
-type DashboardGroupCapacityRecommendationMetrics struct {
+type DashboardCapacityPoolRecommendationMetrics struct {
 	ActiveSubscriptions              int                             `json:"active_subscriptions"`
 	ActiveUsers30d                   int                             `json:"active_users_30d"`
 	ActivationRate                   float64                         `json:"activation_rate"`
@@ -98,27 +104,7 @@ type dashboardRecommendationAggregateRow struct {
 	TotalActualCost30d     float64
 	TotalActualCost7d      float64
 	TotalActualCostPrev7d  float64
-	TotalAccounts          int
-	SchedulableAccounts    int
 	RecommendedAccountType string
-}
-
-type dashboardRecommendationInput struct {
-	GroupID                    int64
-	GroupName                  string
-	Platform                   string
-	PlanNames                  []string
-	ActiveSubscriptions        int
-	ActiveUsers30d             int
-	AvgDailyCost30d            float64
-	AvgDailyCostPerActiveUser  float64
-	CurrentTotalAccounts       int
-	CurrentSchedulableAccounts int
-	RecommendedAccountType     string
-	GrowthFactor               float64
-	ConcurrencyUtilization     float64
-	SessionsUtilization        float64
-	RPMUtilization             float64
 }
 
 type dashboardRecommendationCapacity struct {
@@ -160,7 +146,7 @@ func (s *DashboardRecommendationService) GetCapacityRecommendations(ctx context.
 			GeneratedAt:  time.Now().UTC(),
 			LookbackDays: dashboardRecommendationLookbackDays,
 			Summary:      DashboardCapacityRecommendationSummary{},
-			Items:        []DashboardGroupCapacityRecommendation{},
+			Pools:        []DashboardCapacityPoolRecommendation{},
 		}, nil
 	}
 	preferenceScore := defaultSubscriptionCapacityTightness
@@ -185,6 +171,10 @@ func (s *DashboardRecommendationService) GetCapacityRecommendations(ctx context.
 	if err != nil {
 		return nil, err
 	}
+	memberships, err := s.loadPoolMemberships(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
 
 	capacityByGroup := map[int64]dashboardRecommendationCapacity{}
 	if s.groupCapacityService != nil {
@@ -200,75 +190,109 @@ func (s *DashboardRecommendationService) GetCapacityRecommendations(ctx context.
 		}
 	}
 
-	inputs := make([]dashboardRecommendationInput, 0, len(groups))
+	snapshots := make([]dashboardRecommendationGroupSnapshot, 0, len(groups))
 	for _, grp := range groups {
 		agg := aggregates[grp.ID]
-		capacity := capacityByGroup[grp.ID]
-		totalActualCost30d := agg.TotalActualCost30d
-		avgDailyCost30d := totalActualCost30d / float64(dashboardRecommendationLookbackDays)
-		activeUsers := maxInt(agg.ActiveUsers30d, 0)
-		avgDailyCostPerActiveUser := 0.0
-		if activeUsers > 0 {
-			avgDailyCostPerActiveUser = avgDailyCost30d / float64(activeUsers)
-		}
-
-		inputs = append(inputs, dashboardRecommendationInput{
-			GroupID:                    grp.ID,
-			GroupName:                  grp.Name,
-			Platform:                   grp.Platform,
-			PlanNames:                  planNamesByGroup[grp.ID],
-			ActiveSubscriptions:        agg.ActiveSubscriptions,
-			ActiveUsers30d:             activeUsers,
-			AvgDailyCost30d:            avgDailyCost30d,
-			AvgDailyCostPerActiveUser:  avgDailyCostPerActiveUser,
-			CurrentTotalAccounts:       agg.TotalAccounts,
-			CurrentSchedulableAccounts: agg.SchedulableAccounts,
-			RecommendedAccountType:     normalizeRecommendedAccountType(agg.RecommendedAccountType),
-			GrowthFactor:               computeGrowthFactor(agg.TotalActualCost7d, agg.TotalActualCostPrev7d),
-			ConcurrencyUtilization:     capacity.ConcurrencyUtilization,
-			SessionsUtilization:        capacity.SessionsUtilization,
-			RPMUtilization:             capacity.RPMUtilization,
+		snapshots = append(snapshots, dashboardRecommendationGroupSnapshot{
+			GroupID:               grp.ID,
+			GroupName:             grp.Name,
+			Platform:              grp.Platform,
+			PlanNames:             planNamesByGroup[grp.ID],
+			ActiveSubscriptions:   agg.ActiveSubscriptions,
+			ActiveUsers30d:        maxInt(agg.ActiveUsers30d, 0),
+			TotalActualCost30d:    agg.TotalActualCost30d,
+			TotalActualCost7d:     agg.TotalActualCost7d,
+			TotalActualCostPrev7d: agg.TotalActualCostPrev7d,
+			Capacity:              capacityByGroup[grp.ID],
 		})
 	}
 
-	baselines := computeDashboardRecommendationBaselines(inputs)
-	items := make([]DashboardGroupCapacityRecommendation, 0, len(inputs))
-	summary := DashboardCapacityRecommendationSummary{GroupCount: len(inputs)}
+	pools := buildDashboardCapacityPools(snapshots, memberships)
+	inputs := buildDashboardPoolInputs(snapshots, pools)
+	baselines := computeDashboardPoolBaselines(inputs)
+	recommendations := make([]DashboardCapacityPoolRecommendation, 0, len(inputs))
+	summary := DashboardCapacityRecommendationSummary{
+		PoolCount:  len(pools),
+		GroupCount: len(groups),
+	}
 
 	for _, input := range inputs {
-		item := computeDashboardGroupCapacityRecommendation(
+		item := computeDashboardCapacityPoolRecommendation(
 			input,
 			baselines[input.Platform],
 			baselines[""],
 			preferenceProfile,
 		)
-		items = append(items, item)
+		recommendations = append(recommendations, item)
 		summary.CurrentSchedulableAccounts += item.CurrentSchedulableAccounts
-		summary.RecommendedAdditionalAccounts += item.RecommendedAdditionalAccounts
+		summary.RecommendedAdditionalSchedulableAccounts += item.RecommendedAdditionalSchedulableAccounts
+		summary.RecoverableUnschedulableAccounts += item.RecoverableUnschedulableAccounts
 		if item.Status == "action" {
-			summary.UrgentGroupCount++
+			summary.UrgentPoolCount++
 		}
 	}
 
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].RecommendedAdditionalAccounts != items[j].RecommendedAdditionalAccounts {
-			return items[i].RecommendedAdditionalAccounts > items[j].RecommendedAdditionalAccounts
+	sort.Slice(recommendations, func(i, j int) bool {
+		if recommendations[i].RecommendedAdditionalSchedulableAccounts != recommendations[j].RecommendedAdditionalSchedulableAccounts {
+			return recommendations[i].RecommendedAdditionalSchedulableAccounts > recommendations[j].RecommendedAdditionalSchedulableAccounts
 		}
-		if items[i].Metrics.CapacityUtilization != items[j].Metrics.CapacityUtilization {
-			return items[i].Metrics.CapacityUtilization > items[j].Metrics.CapacityUtilization
+		if recommendations[i].Metrics.CapacityUtilization != recommendations[j].Metrics.CapacityUtilization {
+			return recommendations[i].Metrics.CapacityUtilization > recommendations[j].Metrics.CapacityUtilization
 		}
-		if items[i].Metrics.ActiveSubscriptions != items[j].Metrics.ActiveSubscriptions {
-			return items[i].Metrics.ActiveSubscriptions > items[j].Metrics.ActiveSubscriptions
+		if recommendations[i].Metrics.ActiveSubscriptions != recommendations[j].Metrics.ActiveSubscriptions {
+			return recommendations[i].Metrics.ActiveSubscriptions > recommendations[j].Metrics.ActiveSubscriptions
 		}
-		return items[i].GroupID < items[j].GroupID
+		return recommendations[i].PoolKey < recommendations[j].PoolKey
 	})
 
 	return &DashboardCapacityRecommendationResponse{
 		GeneratedAt:  time.Now().UTC(),
 		LookbackDays: dashboardRecommendationLookbackDays,
 		Summary:      summary,
-		Items:        items,
+		Pools:        recommendations,
 	}, nil
+}
+
+func (s *DashboardRecommendationService) loadPoolMemberships(
+	ctx context.Context,
+	groupIDs []int64,
+) ([]dashboardRecommendationPoolMembership, error) {
+	if len(groupIDs) == 0 {
+		return nil, nil
+	}
+
+	now := time.Now().UTC()
+	entries, err := s.entClient.AccountGroup.Query().
+		Where(accountgroup.GroupIDIn(groupIDs...)).
+		Where(accountgroup.HasAccountWith(account.DeletedAtIsNil())).
+		WithAccount().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query dashboard recommendation pool memberships: %w", err)
+	}
+
+	memberships := make([]dashboardRecommendationPoolMembership, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Edges.Account == nil {
+			continue
+		}
+		acc := entry.Edges.Account
+		schedulable := acc.Status == StatusActive &&
+			acc.Schedulable &&
+			(!acc.AutoPauseOnExpired || acc.ExpiresAt == nil || acc.ExpiresAt.After(now)) &&
+			(acc.RateLimitResetAt == nil || !acc.RateLimitResetAt.After(now)) &&
+			(acc.OverloadUntil == nil || !acc.OverloadUntil.After(now)) &&
+			(acc.TempUnschedulableUntil == nil || !acc.TempUnschedulableUntil.After(now))
+
+		memberships = append(memberships, dashboardRecommendationPoolMembership{
+			GroupID:     entry.GroupID,
+			AccountID:   entry.AccountID,
+			AccountType: acc.Type,
+			Schedulable: schedulable,
+		})
+	}
+
+	return memberships, nil
 }
 
 func (s *DashboardRecommendationService) loadPlanNamesByGroup(ctx context.Context, groupIDs []int64) (map[int64][]string, error) {
@@ -416,6 +440,8 @@ WHERE g.deleted_at IS NULL
 	result := make(map[int64]dashboardRecommendationAggregateRow)
 	for rows.Next() {
 		var row dashboardRecommendationAggregateRow
+		var totalAccounts int
+		var schedulableAccounts int
 		if err := rows.Scan(
 			&row.GroupID,
 			&row.ActiveSubscriptions,
@@ -423,8 +449,8 @@ WHERE g.deleted_at IS NULL
 			&row.TotalActualCost30d,
 			&row.TotalActualCost7d,
 			&row.TotalActualCostPrev7d,
-			&row.TotalAccounts,
-			&row.SchedulableAccounts,
+			&totalAccounts,
+			&schedulableAccounts,
 			&row.RecommendedAccountType,
 		); err != nil {
 			return nil, fmt.Errorf("scan dashboard recommendation aggregate row: %w", err)
@@ -435,219 +461,6 @@ WHERE g.deleted_at IS NULL
 		return nil, fmt.Errorf("iterate dashboard recommendation aggregates: %w", err)
 	}
 	return result, nil
-}
-
-func computeDashboardRecommendationBaselines(inputs []dashboardRecommendationInput) map[string]DashboardRecommendationBaseline {
-	buckets := map[string]*struct {
-		platform               string
-		activeSubs             int
-		activeUsers            int
-		schedulableAccounts    int
-		avgDailyCost           float64
-		weightedActiveUserCost float64
-	}{}
-
-	addToBucket := func(key, platform string, input dashboardRecommendationInput) {
-		bucket := buckets[key]
-		if bucket == nil {
-			bucket = &struct {
-				platform               string
-				activeSubs             int
-				activeUsers            int
-				schedulableAccounts    int
-				avgDailyCost           float64
-				weightedActiveUserCost float64
-			}{platform: platform}
-			buckets[key] = bucket
-		}
-		if input.CurrentSchedulableAccounts > 0 {
-			bucket.activeSubs += input.ActiveSubscriptions
-			bucket.activeUsers += input.ActiveUsers30d
-			bucket.schedulableAccounts += input.CurrentSchedulableAccounts
-			bucket.avgDailyCost += input.AvgDailyCost30d
-			bucket.weightedActiveUserCost += input.AvgDailyCostPerActiveUser * float64(input.ActiveUsers30d)
-		}
-	}
-
-	for _, input := range inputs {
-		addToBucket("", "", input)
-		addToBucket(input.Platform, input.Platform, input)
-	}
-
-	result := make(map[string]DashboardRecommendationBaseline, len(buckets))
-	for key, bucket := range buckets {
-		activeSubsPerSchedulable := minCountBaselinePerSchedulable
-		activeUsersPerSchedulable := minCountBaselinePerSchedulable
-		dailyCostPerSchedulable := minCostBaselinePerSchedulable
-		activationRate := minActivationRate
-		avgDailyCostPerActiveUser := minDailyCostPerActiveUser
-
-		if bucket.schedulableAccounts > 0 {
-			activeSubsPerSchedulable = maxFloat(
-				float64(bucket.activeSubs)/float64(bucket.schedulableAccounts),
-				minCountBaselinePerSchedulable,
-			)
-			activeUsersPerSchedulable = maxFloat(
-				float64(bucket.activeUsers)/float64(bucket.schedulableAccounts),
-				minCountBaselinePerSchedulable,
-			)
-			dailyCostPerSchedulable = maxFloat(
-				bucket.avgDailyCost/float64(bucket.schedulableAccounts),
-				minCostBaselinePerSchedulable,
-			)
-		}
-		if bucket.activeSubs > 0 {
-			activationRate = clampFloat(
-				float64(bucket.activeUsers)/float64(bucket.activeSubs),
-				minActivationRate,
-				maxActivationRate,
-			)
-		}
-		if bucket.activeUsers > 0 {
-			avgDailyCostPerActiveUser = maxFloat(
-				bucket.weightedActiveUserCost/float64(bucket.activeUsers),
-				minDailyCostPerActiveUser,
-			)
-		}
-
-		result[key] = DashboardRecommendationBaseline{
-			Platform:                          bucket.platform,
-			ActiveSubscriptionsPerSchedulable: activeSubsPerSchedulable,
-			ActiveUsersPerSchedulable:         activeUsersPerSchedulable,
-			DailyCostPerSchedulable:           dailyCostPerSchedulable,
-			ActivationRate:                    activationRate,
-			AvgDailyCostPerActiveUser:         avgDailyCostPerActiveUser,
-		}
-	}
-
-	return result
-}
-
-func computeDashboardGroupCapacityRecommendation(
-	input dashboardRecommendationInput,
-	platformBaseline DashboardRecommendationBaseline,
-	globalBaseline DashboardRecommendationBaseline,
-	profile capacityRecommendationPreferenceProfile,
-) DashboardGroupCapacityRecommendation {
-	recommendedAccountType := normalizeRecommendedAccountType(input.RecommendedAccountType)
-	baseline := mergeDashboardRecommendationBaseline(platformBaseline, globalBaseline, input.Platform)
-	utilization := maxFloat(input.ConcurrencyUtilization, input.SessionsUtilization, input.RPMUtilization)
-	activationRate := ratio(input.ActiveUsers30d, input.ActiveSubscriptions)
-	blendedActivationRate := blendMetric(
-		activationRate,
-		baseline.ActivationRate,
-		float64(input.ActiveSubscriptions),
-		16,
-		minActivationRate,
-		maxActivationRate,
-	)
-	blendedAvgDailyCostPerActiveUser := blendMetric(
-		input.AvgDailyCostPerActiveUser,
-		baseline.AvgDailyCostPerActiveUser,
-		float64(input.ActiveUsers30d),
-		12,
-		minDailyCostPerActiveUser,
-		math.MaxFloat64,
-	)
-
-	projectedActiveUsers := maxFloat(float64(input.ActiveSubscriptions)*blendedActivationRate, 0)
-	projectedDailyCost := projectedActiveUsers * blendedAvgDailyCostPerActiveUser * input.GrowthFactor
-	if projectedDailyCost < input.AvgDailyCost30d {
-		projectedDailyCost = input.AvgDailyCost30d
-	}
-
-	expectedAccountsBySubscriptions := ceilDivFloat(
-		float64(input.ActiveSubscriptions),
-		baseline.ActiveSubscriptionsPerSchedulable*profile.BaselineScale,
-	)
-	expectedAccountsByActiveUsers := ceilDivFloat(
-		projectedActiveUsers,
-		baseline.ActiveUsersPerSchedulable*profile.BaselineScale,
-	)
-	expectedAccountsByCost := ceilDivFloat(
-		projectedDailyCost,
-		baseline.DailyCostPerSchedulable*profile.BaselineScale,
-	)
-	utilizationBuffer := 0
-	if utilization >= profile.ActionUtilizationThreshold {
-		utilizationBuffer = 1
-	}
-	if utilization >= profile.EmergencyUtilizationThreshold {
-		utilizationBuffer = 2
-	}
-
-	recommendedTotalAccounts := maxInt(
-		input.CurrentSchedulableAccounts,
-		expectedAccountsBySubscriptions,
-		expectedAccountsByActiveUsers,
-		expectedAccountsByCost,
-	)
-	if input.CurrentSchedulableAccounts > 0 {
-		recommendedTotalAccounts = maxInt(recommendedTotalAccounts, input.CurrentSchedulableAccounts+utilizationBuffer)
-	}
-	if input.CurrentSchedulableAccounts == 0 && (len(input.PlanNames) > 0 || input.ActiveSubscriptions > 0) {
-		recommendedTotalAccounts = maxInt(recommendedTotalAccounts, 1)
-	}
-
-	recommendedAdditional := maxInt(0, recommendedTotalAccounts-input.CurrentSchedulableAccounts)
-	subscriberHeadroom := 0
-	if baseline.ActiveSubscriptionsPerSchedulable > 0 {
-		subscriberHeadroom = maxInt(
-			0,
-			int(math.Floor(float64(recommendedTotalAccounts)*baseline.ActiveSubscriptionsPerSchedulable))-input.ActiveSubscriptions,
-		)
-	}
-
-	status := "healthy"
-	if recommendedAdditional > 0 || utilization >= profile.ActionUtilizationThreshold {
-		status = "action"
-	} else if utilization >= profile.WatchUtilizationThreshold || input.GrowthFactor >= 1.12 {
-		status = "watch"
-	}
-
-	confidenceScore := computeDashboardRecommendationConfidence(input.ActiveSubscriptions, input.ActiveUsers30d, input.CurrentSchedulableAccounts)
-
-	return DashboardGroupCapacityRecommendation{
-		GroupID:                       input.GroupID,
-		GroupName:                     input.GroupName,
-		Platform:                      input.Platform,
-		PlanNames:                     input.PlanNames,
-		RecommendedAccountType:        recommendedAccountType,
-		Status:                        status,
-		ConfidenceScore:               confidenceScore,
-		CurrentTotalAccounts:          input.CurrentTotalAccounts,
-		CurrentSchedulableAccounts:    input.CurrentSchedulableAccounts,
-		RecommendedTotalAccounts:      recommendedTotalAccounts,
-		RecommendedAdditionalAccounts: recommendedAdditional,
-		SubscriberHeadroom:            subscriberHeadroom,
-		Reason: buildDashboardRecommendationReason(
-			recommendedAccountType,
-			recommendedAdditional,
-			utilization,
-			input.ActiveSubscriptions,
-			projectedDailyCost,
-			input.GrowthFactor,
-		),
-		Metrics: DashboardGroupCapacityRecommendationMetrics{
-			ActiveSubscriptions:              input.ActiveSubscriptions,
-			ActiveUsers30d:                   input.ActiveUsers30d,
-			ActivationRate:                   activationRate,
-			BlendedActivationRate:            blendedActivationRate,
-			AvgDailyCost30d:                  input.AvgDailyCost30d,
-			AvgDailyCostPerActiveUser:        input.AvgDailyCostPerActiveUser,
-			BlendedAvgDailyCostPerActiveUser: blendedAvgDailyCostPerActiveUser,
-			GrowthFactor:                     input.GrowthFactor,
-			ProjectedDailyCost:               projectedDailyCost,
-			CapacityUtilization:              utilization,
-			ConcurrencyUtilization:           input.ConcurrencyUtilization,
-			SessionsUtilization:              input.SessionsUtilization,
-			RPMUtilization:                   input.RPMUtilization,
-			ExpectedAccountsBySubscriptions:  expectedAccountsBySubscriptions,
-			ExpectedAccountsByActiveUsers:    expectedAccountsByActiveUsers,
-			ExpectedAccountsByCost:           expectedAccountsByCost,
-			PlatformBaseline:                 baseline,
-		},
-	}
 }
 
 func mergeDashboardRecommendationBaseline(
@@ -689,32 +502,6 @@ func normalizeRecommendedAccountType(raw string) string {
 		return "schedulable"
 	}
 	return value
-}
-
-func buildDashboardRecommendationReason(
-	accountType string,
-	additional int,
-	utilization float64,
-	activeSubscriptions int,
-	projectedDailyCost float64,
-	growthFactor float64,
-) string {
-	if additional > 0 {
-		return fmt.Sprintf(
-			"建议补充 %d 个同类 %s 账号：当前 %.0f%% 容量利用率下，%d 个活跃订阅对应的预测日负载约为 $%.2f，近 7 天增长系数 %.2f。",
-			additional,
-			accountType,
-			utilization*100,
-			activeSubscriptions,
-			projectedDailyCost,
-			growthFactor,
-		)
-	}
-	return fmt.Sprintf(
-		"当前账号池还能承载同类用户画像，容量利用率 %.0f%%，预测日负载约 $%.2f，可继续观察。",
-		utilization*100,
-		projectedDailyCost,
-	)
 }
 
 func computeGrowthFactor(last7d, prev7d float64) float64 {

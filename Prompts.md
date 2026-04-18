@@ -5,7 +5,7 @@
 - 发布新的release
 
 ```
-version=1.0.14
+version=1.0.15
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -36,6 +36,14 @@ version = ad64190bec3605f97e9e1805a0118aaa51f22b08
 ```
 
 # 日常
+
+PlanMardkdown = docs/plans/2026-04-18-dashboard-capacity-recommendation-remediation-plan.md
+
+根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
+基于测试站点和管理员API，实地调查一下，站点实际展示的加号推荐的情况。 我感觉似乎过度地推荐帐号。 我的感觉是对的吗？
 
 ---
 
@@ -104,7 +112,7 @@ PlanMardkdown = docs/plans/2026-04-16-subscription-upgrade-difference-payment-pl
   - 辅助科研写作，比如标书写作、毕业论文、研究论文等
   - 稳定、性价比高； 支持先个人垫付+后发票报销
 
-使用 awesome-code skill 辅助重构、优化这个示例首页。如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。
+  使用 awesome-code skill 辅助重构、优化这个示例首页。如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。
 
 ---
 

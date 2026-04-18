@@ -12,12 +12,12 @@ const (
 )
 
 type capacityRecommendationPreferenceProfile struct {
-	Score                        int
-	BaselineScale                float64
-	WatchUtilizationThreshold    float64
-	ActionUtilizationThreshold   float64
+	Score                         int
+	BaselineScale                 float64
+	WatchUtilizationThreshold     float64
+	ActionUtilizationThreshold    float64
 	EmergencyUtilizationThreshold float64
-	EmailTargetMultiplier        float64
+	EmailTargetMultiplier         float64
 }
 
 func parseSubscriptionCapacityTightness(raw string) int {
@@ -32,7 +32,7 @@ func buildCapacityRecommendationPreferenceProfile(score int) capacityRecommendat
 	normalized := float64(clampInt(score, minSubscriptionCapacityTightness, maxSubscriptionCapacityTightness)) / 100
 	return capacityRecommendationPreferenceProfile{
 		Score:                         clampInt(score, minSubscriptionCapacityTightness, maxSubscriptionCapacityTightness),
-		BaselineScale:                 lerpFloat(1.2, 0.8, normalized),
+		BaselineScale:                 lerpFloat(1.2, 0.9, normalized),
 		WatchUtilizationThreshold:     lerpFloat(0.76, 0.60, normalized),
 		ActionUtilizationThreshold:    lerpFloat(0.92, 0.72, normalized),
 		EmergencyUtilizationThreshold: lerpFloat(0.99, 0.87, normalized),

@@ -611,6 +611,133 @@ func TestAPIContracts(t *testing.T) {
 			}`,
 		},
 		{
+			name: "GET /api/v1/admin/dashboard/recommendations",
+			setup: func(t *testing.T, deps *contractDeps) {
+				t.Helper()
+				deps.dashboardRecommendationService.response = &service.DashboardCapacityRecommendationResponse{
+					GeneratedAt:  time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC),
+					LookbackDays: 30,
+					Summary: service.DashboardCapacityRecommendationSummary{
+						PoolCount:                                1,
+						GroupCount:                               2,
+						CurrentSchedulableAccounts:               5,
+						RecommendedAdditionalSchedulableAccounts: 3,
+						RecoverableUnschedulableAccounts:         2,
+						UrgentPoolCount:                          1,
+					},
+					Pools: []service.DashboardCapacityPoolRecommendation{
+						{
+							PoolKey:                                  "openai:10-11",
+							Platform:                                 service.PlatformOpenAI,
+							GroupNames:                               []string{"OpenAI Shared A", "OpenAI Shared B"},
+							PlanNames:                                []string{"GPT-Standard", "GPT-Pro"},
+							RecommendedAccountType:                   service.AccountTypeOAuth,
+							Status:                                   "action",
+							ConfidenceScore:                          0.91,
+							CurrentTotalAccounts:                     7,
+							CurrentSchedulableAccounts:               5,
+							CurrentUnschedulableAccounts:             2,
+							RecommendedSchedulableAccounts:           8,
+							RecommendedAdditionalSchedulableAccounts: 3,
+							RecoverableUnschedulableAccounts:         2,
+							NewAccountsRequired:                      1,
+							Reason:                                   "建议补充 3 个可调度的 oauth 账号，其中 2 个可优先恢复现有不可调度账号，仍需新增 1 个；当前 87% 容量利用率、11 个活跃订阅对应的预测日负载约为 $15.40，近 7 天增长系数 1.12。",
+							Metrics: service.DashboardCapacityPoolRecommendationMetrics{
+								ActiveSubscriptions:              11,
+								ActiveUsers30d:                   8,
+								ActivationRate:                   0.73,
+								BlendedActivationRate:            0.71,
+								AvgDailyCost30d:                  12.8,
+								AvgDailyCostPerActiveUser:        1.6,
+								BlendedAvgDailyCostPerActiveUser: 1.5,
+								GrowthFactor:                     1.12,
+								ProjectedDailyCost:               15.4,
+								CapacityUtilization:              0.87,
+								ConcurrencyUtilization:           0.66,
+								SessionsUtilization:              0.58,
+								RPMUtilization:                   0.62,
+								ExpectedAccountsBySubscriptions:  6,
+								ExpectedAccountsByActiveUsers:    7,
+								ExpectedAccountsByCost:           8,
+								PlatformBaseline: service.DashboardRecommendationBaseline{
+									Platform:                          service.PlatformOpenAI,
+									ActiveSubscriptionsPerSchedulable: 2.2,
+									ActiveUsersPerSchedulable:         6.5,
+									DailyCostPerSchedulable:           3.1,
+									ActivationRate:                    0.68,
+									AvgDailyCostPerActiveUser:         1.4,
+								},
+							},
+						},
+					},
+				}
+			},
+			method:     http.MethodGet,
+			path:       "/api/v1/admin/dashboard/recommendations",
+			wantStatus: http.StatusOK,
+			wantJSON: `{
+				"code": 0,
+				"message": "success",
+				"data": {
+					"generated_at": "2025-01-02T03:04:05Z",
+					"lookback_days": 30,
+					"summary": {
+						"pool_count": 1,
+						"group_count": 2,
+						"current_schedulable_accounts": 5,
+						"recommended_additional_schedulable_accounts": 3,
+						"recoverable_unschedulable_accounts": 2,
+						"urgent_pool_count": 1
+					},
+					"pools": [
+						{
+							"pool_key": "openai:10-11",
+							"platform": "openai",
+							"group_names": ["OpenAI Shared A", "OpenAI Shared B"],
+							"plan_names": ["GPT-Standard", "GPT-Pro"],
+							"recommended_account_type": "oauth",
+							"status": "action",
+							"confidence_score": 0.91,
+							"current_total_accounts": 7,
+							"current_schedulable_accounts": 5,
+							"current_unschedulable_accounts": 2,
+							"recommended_schedulable_accounts": 8,
+							"recommended_additional_schedulable_accounts": 3,
+							"recoverable_unschedulable_accounts": 2,
+							"new_accounts_required": 1,
+							"reason": "建议补充 3 个可调度的 oauth 账号，其中 2 个可优先恢复现有不可调度账号，仍需新增 1 个；当前 87% 容量利用率、11 个活跃订阅对应的预测日负载约为 $15.40，近 7 天增长系数 1.12。",
+							"metrics": {
+								"active_subscriptions": 11,
+								"active_users_30d": 8,
+								"activation_rate": 0.73,
+								"blended_activation_rate": 0.71,
+								"avg_daily_cost_30d": 12.8,
+								"avg_daily_cost_per_active_user": 1.6,
+								"blended_avg_daily_cost_per_active_user": 1.5,
+								"growth_factor": 1.12,
+								"projected_daily_cost": 15.4,
+								"capacity_utilization": 0.87,
+								"concurrency_utilization": 0.66,
+								"sessions_utilization": 0.58,
+								"rpm_utilization": 0.62,
+								"expected_accounts_by_subscriptions": 6,
+								"expected_accounts_by_active_users": 7,
+								"expected_accounts_by_cost": 8,
+								"platform_baseline": {
+									"platform": "openai",
+									"active_subscriptions_per_schedulable": 2.2,
+									"active_users_per_schedulable": 6.5,
+									"daily_cost_per_schedulable": 3.1,
+									"activation_rate": 0.68,
+									"avg_daily_cost_per_active_user": 1.4
+								}
+							}
+						}
+					]
+				}
+			}`,
+		},
+		{
 			name:   "POST /api/v1/admin/accounts/bulk-update",
 			method: http.MethodPost,
 			path:   "/api/v1/admin/accounts/bulk-update",
@@ -651,14 +778,15 @@ func TestAPIContracts(t *testing.T) {
 }
 
 type contractDeps struct {
-	now         time.Time
-	router      http.Handler
-	apiKeyRepo  *stubApiKeyRepo
-	groupRepo   *stubGroupRepo
-	userSubRepo *stubUserSubscriptionRepo
-	usageRepo   *stubUsageLogRepo
-	settingRepo *stubSettingRepo
-	redeemRepo  *stubRedeemCodeRepo
+	now                            time.Time
+	router                         http.Handler
+	apiKeyRepo                     *stubApiKeyRepo
+	groupRepo                      *stubGroupRepo
+	userSubRepo                    *stubUserSubscriptionRepo
+	usageRepo                      *stubUsageLogRepo
+	settingRepo                    *stubSettingRepo
+	redeemRepo                     *stubRedeemCodeRepo
+	dashboardRecommendationService *stubDashboardRecommendationService
 }
 
 func newContractDeps(t *testing.T) *contractDeps {
@@ -711,6 +839,8 @@ func newContractDeps(t *testing.T) *contractDeps {
 
 	redeemService := service.NewRedeemService(redeemRepo, userRepo, subscriptionService, nil, nil, nil, nil)
 	redeemHandler := handler.NewRedeemHandler(redeemService)
+	dashboardRecommendationService := &stubDashboardRecommendationService{}
+	dashboardHandler := adminhandler.NewDashboardHandler(nil, dashboardRecommendationService, nil)
 
 	settingRepo := newStubSettingRepo()
 	settingService := service.NewSettingService(settingRepo, cfg)
@@ -769,17 +899,19 @@ func newContractDeps(t *testing.T) *contractDeps {
 	v1Admin := v1.Group("/admin")
 	v1Admin.Use(adminAuth)
 	v1Admin.GET("/settings", adminSettingHandler.GetSettings)
+	v1Admin.GET("/dashboard/recommendations", dashboardHandler.GetRecommendations)
 	v1Admin.POST("/accounts/bulk-update", adminAccountHandler.BulkUpdate)
 
 	return &contractDeps{
-		now:         now,
-		router:      r,
-		apiKeyRepo:  apiKeyRepo,
-		groupRepo:   groupRepo,
-		userSubRepo: userSubRepo,
-		usageRepo:   usageRepo,
-		settingRepo: settingRepo,
-		redeemRepo:  redeemRepo,
+		now:                            now,
+		router:                         r,
+		apiKeyRepo:                     apiKeyRepo,
+		groupRepo:                      groupRepo,
+		userSubRepo:                    userSubRepo,
+		usageRepo:                      usageRepo,
+		settingRepo:                    settingRepo,
+		redeemRepo:                     redeemRepo,
+		dashboardRecommendationService: dashboardRecommendationService,
 	}
 }
 
@@ -935,6 +1067,21 @@ func (stubApiKeyCache) PublishAuthCacheInvalidation(ctx context.Context, cacheKe
 
 func (stubApiKeyCache) SubscribeAuthCacheInvalidation(ctx context.Context, handler func(cacheKey string)) error {
 	return nil
+}
+
+type stubDashboardRecommendationService struct {
+	response *service.DashboardCapacityRecommendationResponse
+	err      error
+}
+
+func (s *stubDashboardRecommendationService) GetCapacityRecommendations(ctx context.Context) (*service.DashboardCapacityRecommendationResponse, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	if s.response == nil {
+		return &service.DashboardCapacityRecommendationResponse{}, nil
+	}
+	return s.response, nil
 }
 
 type stubGroupRepo struct {

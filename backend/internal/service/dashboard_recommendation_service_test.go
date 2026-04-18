@@ -2,12 +2,12 @@ package service
 
 import "testing"
 
-func TestComputeDashboardGroupCapacityRecommendation_Action(t *testing.T) {
-	input := dashboardRecommendationInput{
-		GroupID:                    1,
-		GroupName:                  "OpenAI Pro",
+func TestComputeDashboardCapacityPoolRecommendation_Action(t *testing.T) {
+	input := dashboardRecommendationPoolInput{
+		PoolKey:                    "openai:1-2",
 		Platform:                   PlatformOpenAI,
-		PlanNames:                  []string{"OpenAI Pro 30d"},
+		GroupNames:                 []string{"OpenAI Pro A", "OpenAI Pro B"},
+		PlanNames:                  []string{"OpenAI Pro 30d", "OpenAI Team 30d"},
 		ActiveSubscriptions:        36,
 		ActiveUsers30d:             30,
 		AvgDailyCost30d:            72,
@@ -30,27 +30,27 @@ func TestComputeDashboardGroupCapacityRecommendation_Action(t *testing.T) {
 	}
 	profile := buildCapacityRecommendationPreferenceProfile(70)
 
-	got := computeDashboardGroupCapacityRecommendation(input, baseline, baseline, profile)
+	got := computeDashboardCapacityPoolRecommendation(input, baseline, baseline, profile)
 
 	if got.Status != "action" {
 		t.Fatalf("status = %q, want action", got.Status)
 	}
-	if got.RecommendedAdditionalAccounts < 2 {
-		t.Fatalf("recommended additional accounts = %d, want >= 2", got.RecommendedAdditionalAccounts)
+	if got.RecommendedAdditionalSchedulableAccounts < 2 {
+		t.Fatalf("recommended additional schedulable accounts = %d, want >= 2", got.RecommendedAdditionalSchedulableAccounts)
 	}
 	if got.RecommendedAccountType != "oauth" {
 		t.Fatalf("recommended account type = %q, want oauth", got.RecommendedAccountType)
 	}
 }
 
-func TestComputeDashboardGroupCapacityRecommendation_SeedEmptySellableGroup(t *testing.T) {
-	input := dashboardRecommendationInput{
-		GroupID:                 2,
-		GroupName:               "Gemini Starter",
-		Platform:                PlatformGemini,
-		PlanNames:               []string{"Gemini Starter 30d"},
-		RecommendedAccountType:  "",
-		GrowthFactor:            1,
+func TestComputeDashboardCapacityPoolRecommendation_SeedEmptySellablePool(t *testing.T) {
+	input := dashboardRecommendationPoolInput{
+		PoolKey:                "gemini:2",
+		Platform:               PlatformGemini,
+		GroupNames:             []string{"Gemini Starter"},
+		PlanNames:              []string{"Gemini Starter 30d"},
+		RecommendedAccountType: "",
+		GrowthFactor:           1,
 	}
 	baseline := DashboardRecommendationBaseline{
 		Platform:                          PlatformGemini,
@@ -62,24 +62,24 @@ func TestComputeDashboardGroupCapacityRecommendation_SeedEmptySellableGroup(t *t
 	}
 	profile := buildCapacityRecommendationPreferenceProfile(50)
 
-	got := computeDashboardGroupCapacityRecommendation(input, baseline, baseline, profile)
+	got := computeDashboardCapacityPoolRecommendation(input, baseline, baseline, profile)
 
-	if got.RecommendedTotalAccounts != 1 {
-		t.Fatalf("recommended total accounts = %d, want 1", got.RecommendedTotalAccounts)
+	if got.RecommendedSchedulableAccounts != 1 {
+		t.Fatalf("recommended schedulable accounts = %d, want 1", got.RecommendedSchedulableAccounts)
 	}
-	if got.RecommendedAdditionalAccounts != 1 {
-		t.Fatalf("recommended additional accounts = %d, want 1", got.RecommendedAdditionalAccounts)
+	if got.RecommendedAdditionalSchedulableAccounts != 1 {
+		t.Fatalf("recommended additional schedulable accounts = %d, want 1", got.RecommendedAdditionalSchedulableAccounts)
 	}
 	if got.RecommendedAccountType != "schedulable" {
 		t.Fatalf("recommended account type = %q, want schedulable", got.RecommendedAccountType)
 	}
 }
 
-func TestComputeDashboardGroupCapacityRecommendation_Healthy(t *testing.T) {
-	input := dashboardRecommendationInput{
-		GroupID:                    3,
-		GroupName:                  "Claude Lite",
+func TestComputeDashboardCapacityPoolRecommendation_Healthy(t *testing.T) {
+	input := dashboardRecommendationPoolInput{
+		PoolKey:                    "anthropic:3",
 		Platform:                   PlatformAnthropic,
+		GroupNames:                 []string{"Claude Lite"},
 		PlanNames:                  []string{"Claude Lite 30d"},
 		ActiveSubscriptions:        9,
 		ActiveUsers30d:             6,
@@ -103,21 +103,62 @@ func TestComputeDashboardGroupCapacityRecommendation_Healthy(t *testing.T) {
 	}
 	profile := buildCapacityRecommendationPreferenceProfile(35)
 
-	got := computeDashboardGroupCapacityRecommendation(input, baseline, baseline, profile)
+	got := computeDashboardCapacityPoolRecommendation(input, baseline, baseline, profile)
 
 	if got.Status != "healthy" {
 		t.Fatalf("status = %q, want healthy", got.Status)
 	}
-	if got.RecommendedAdditionalAccounts != 0 {
-		t.Fatalf("recommended additional accounts = %d, want 0", got.RecommendedAdditionalAccounts)
+	if got.RecommendedAdditionalSchedulableAccounts != 0 {
+		t.Fatalf("recommended additional schedulable accounts = %d, want 0", got.RecommendedAdditionalSchedulableAccounts)
 	}
 }
 
-func TestComputeDashboardGroupCapacityRecommendation_SmallGroupConvergesAfterScaling(t *testing.T) {
-	input := dashboardRecommendationInput{
-		GroupID:                    4,
-		GroupName:                  "GPT-Standard",
+func TestComputeDashboardCapacityPoolRecommendation_PrioritizesRecoveryBeforeNewAccounts(t *testing.T) {
+	input := dashboardRecommendationPoolInput{
+		PoolKey:                    "openai:4",
 		Platform:                   PlatformOpenAI,
+		GroupNames:                 []string{"GPT-Standard"},
+		PlanNames:                  []string{"GPT-Standard"},
+		ActiveSubscriptions:        20,
+		ActiveUsers30d:             18,
+		AvgDailyCost30d:            36,
+		AvgDailyCostPerActiveUser:  2,
+		CurrentTotalAccounts:       5,
+		CurrentSchedulableAccounts: 3,
+		RecommendedAccountType:     "oauth",
+		GrowthFactor:               1.1,
+		ConcurrencyUtilization:     0.82,
+		SessionsUtilization:        0.76,
+		RPMUtilization:             0.7,
+	}
+	baseline := DashboardRecommendationBaseline{
+		Platform:                          PlatformOpenAI,
+		ActiveSubscriptionsPerSchedulable: 4,
+		ActiveUsersPerSchedulable:         3,
+		DailyCostPerSchedulable:           7,
+		ActivationRate:                    0.8,
+		AvgDailyCostPerActiveUser:         1.8,
+	}
+	profile := buildCapacityRecommendationPreferenceProfile(60)
+
+	got := computeDashboardCapacityPoolRecommendation(input, baseline, baseline, profile)
+
+	if got.RecommendedAdditionalSchedulableAccounts == 0 {
+		t.Fatalf("recommended additional schedulable accounts = %d, want > 0", got.RecommendedAdditionalSchedulableAccounts)
+	}
+	if got.RecoverableUnschedulableAccounts == 0 {
+		t.Fatalf("recoverable unschedulable accounts = %d, want > 0", got.RecoverableUnschedulableAccounts)
+	}
+	if got.NewAccountsRequired >= got.RecommendedAdditionalSchedulableAccounts {
+		t.Fatalf("new accounts required = %d, want smaller than total gap %d", got.NewAccountsRequired, got.RecommendedAdditionalSchedulableAccounts)
+	}
+}
+
+func TestComputeDashboardCapacityPoolRecommendation_SmallPoolConvergesAfterScaling(t *testing.T) {
+	input := dashboardRecommendationPoolInput{
+		PoolKey:                    "openai:5",
+		Platform:                   PlatformOpenAI,
+		GroupNames:                 []string{"GPT-Standard"},
 		PlanNames:                  []string{"GPT-Standard"},
 		ActiveSubscriptions:        2,
 		ActiveUsers30d:             2,
@@ -141,15 +182,15 @@ func TestComputeDashboardGroupCapacityRecommendation_SmallGroupConvergesAfterSca
 	}
 	profile := buildCapacityRecommendationPreferenceProfile(70)
 
-	got := computeDashboardGroupCapacityRecommendation(input, lowBaseline, lowBaseline, profile)
+	got := computeDashboardCapacityPoolRecommendation(input, lowBaseline, lowBaseline, profile)
 
 	if got.Status != "watch" && got.Status != "healthy" {
 		t.Fatalf("status = %q, want watch or healthy", got.Status)
 	}
-	if got.RecommendedAdditionalAccounts != 0 {
-		t.Fatalf("recommended additional accounts = %d, want 0", got.RecommendedAdditionalAccounts)
+	if got.RecommendedAdditionalSchedulableAccounts != 0 {
+		t.Fatalf("recommended additional schedulable accounts = %d, want 0", got.RecommendedAdditionalSchedulableAccounts)
 	}
-	if got.RecommendedTotalAccounts != input.CurrentSchedulableAccounts {
-		t.Fatalf("recommended total accounts = %d, want %d", got.RecommendedTotalAccounts, input.CurrentSchedulableAccounts)
+	if got.RecommendedSchedulableAccounts != input.CurrentSchedulableAccounts {
+		t.Fatalf("recommended schedulable accounts = %d, want %d", got.RecommendedSchedulableAccounts, input.CurrentSchedulableAccounts)
 	}
 }

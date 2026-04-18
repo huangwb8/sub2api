@@ -40,10 +40,41 @@ vi.mock('vue-router', () => ({
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  const messages: Record<string, string> = {
+    'admin.dashboard.recommendations.title': '加号推荐',
+    'admin.dashboard.recommendations.description': '描述',
+    'admin.dashboard.recommendations.pool': '容量池',
+    'admin.dashboard.recommendations.contributors': '涉及套餐',
+    'admin.dashboard.recommendations.status': '状态',
+    'admin.dashboard.recommendations.current': '当前可调度 / 总账号',
+    'admin.dashboard.recommendations.recommended': '建议可调度账号',
+    'admin.dashboard.recommendations.gap': '缺口',
+    'admin.dashboard.recommendations.utilization': '容量利用率',
+    'admin.dashboard.recommendations.reason': '推荐理由',
+    'admin.dashboard.recommendations.poolsAndGroups': '评估 {pools} 个容量池 / {groups} 个订阅分组',
+    'admin.dashboard.recommendations.toAddSchedulable': '全站建议补充 {count} 个可调度账号',
+    'admin.dashboard.recommendations.recoverable': '可优先恢复现有不可调度账号 {count} 个',
+    'admin.dashboard.recommendations.urgent': '需优先处理 {count} 个容量池',
+    'admin.dashboard.recommendations.subscriptions': '{count} 个活跃订阅',
+    'admin.dashboard.recommendations.addSchedulableCount': '建议补充 {count} 个可调度账号',
+    'admin.dashboard.recommendations.recoverableInline': '可先恢复 {count} 个不可调度账号',
+    'admin.dashboard.recommendations.newAccountsInline': '预计新增 {count} 个账号',
+    'admin.dashboard.recommendations.noAction': '无需动作',
+    'admin.dashboard.recommendations.projectedCost': '预计日负载 ${amount}',
+    'admin.dashboard.recommendations.empty': '暂无推荐',
+    'admin.dashboard.recommendations.statusMap.healthy': '健康',
+    'admin.dashboard.recommendations.statusMap.watch': '观察',
+    'admin.dashboard.recommendations.statusMap.action': '行动'
+  }
+
+  const interpolate = (template: string, params?: Record<string, unknown>) =>
+    template.replace(/\{(\w+)\}/g, (_, key: string) => String(params?.[key] ?? ''))
+
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key
+      t: (key: string, params?: Record<string, unknown>) =>
+        interpolate(messages[key] ?? key, params)
     })
   }
 })
@@ -132,13 +163,15 @@ describe('admin DashboardView', () => {
     getRecommendations.mockResolvedValue({
       generated_at: '',
       lookback_days: 30,
-      items: [],
       summary: {
+        pool_count: 0,
         group_count: 0,
         current_schedulable_accounts: 0,
-        recommended_additional_accounts: 0,
-        urgent_group_count: 0
-      }
+        recommended_additional_schedulable_accounts: 0,
+        recoverable_unschedulable_accounts: 0,
+        urgent_pool_count: 0
+      },
+      pools: []
     })
   })
 
@@ -197,5 +230,89 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(new Date()),
       granularity: 'day'
     })
+  })
+
+  it('renders recommendations with site + capacity pool semantics', async () => {
+    getRecommendations.mockResolvedValue({
+      generated_at: '2026-04-18T00:00:00Z',
+      lookback_days: 30,
+      summary: {
+        pool_count: 1,
+        group_count: 2,
+        current_schedulable_accounts: 5,
+        recommended_additional_schedulable_accounts: 3,
+        recoverable_unschedulable_accounts: 2,
+        urgent_pool_count: 1
+      },
+      pools: [
+        {
+          pool_key: 'openai-shared-pool-1',
+          platform: 'openai',
+          group_names: ['共享池-A', '共享池-B'],
+          plan_names: ['GPT-Standard', 'GPT-Pro'],
+          recommended_account_type: 'shared',
+          status: 'action',
+          confidence_score: 0.92,
+          current_total_accounts: 7,
+          current_schedulable_accounts: 5,
+          recommended_schedulable_accounts: 8,
+          recommended_additional_schedulable_accounts: 3,
+          recoverable_unschedulable_accounts: 2,
+          reason: '容量紧张，需要补充可调度账号',
+          metrics: {
+            active_subscriptions: 11,
+            active_users_30d: 88,
+            activation_rate: 0.66,
+            blended_activation_rate: 0.7,
+            avg_daily_cost_30d: 12.8,
+            avg_daily_cost_per_active_user: 0.15,
+            blended_avg_daily_cost_per_active_user: 0.16,
+            growth_factor: 1.12,
+            projected_daily_cost: 15.4,
+            capacity_utilization: 0.87,
+            concurrency_utilization: 0.58,
+            sessions_utilization: 0.52,
+            rpm_utilization: 0.6,
+            expected_accounts_by_subscriptions: 6,
+            expected_accounts_by_active_users: 7,
+            expected_accounts_by_cost: 8,
+            platform_baseline: {
+              platform: 'openai',
+              active_subscriptions_per_schedulable: 2.1,
+              active_users_per_schedulable: 12.5,
+              daily_cost_per_schedulable: 1.3,
+              activation_rate: 0.6,
+              avg_daily_cost_per_active_user: 0.1
+            }
+          }
+        }
+      ]
+    })
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('全站建议补充 3 个可调度账号')
+    expect(text).toContain('容量池')
+    expect(text).not.toContain('评估 2 个订阅分组')
+    expect(text).toContain('5 / 7')
+    expect(text).toContain('建议补充 3 个可调度账号')
+    expect(text).toContain('涉及套餐: GPT-Standard / GPT-Pro')
   })
 })

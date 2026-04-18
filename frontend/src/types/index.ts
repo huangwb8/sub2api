@@ -1207,33 +1207,37 @@ export interface DashboardRecommendationMetrics {
   platform_baseline: DashboardRecommendationBaseline
 }
 
-export interface DashboardRecommendationItem {
-  group_id: number
-  group_name: string
-  platform: GroupPlatform
+export interface DashboardCapacityPoolRecommendation {
+  pool_key: string
+  platform: GroupPlatform | string
+  group_names: string[]
   plan_names: string[]
   recommended_account_type: string
   status: 'healthy' | 'watch' | 'action'
   confidence_score: number
   current_total_accounts: number
   current_schedulable_accounts: number
-  recommended_total_accounts: number
-  recommended_additional_accounts: number
-  subscriber_headroom: number
+  recommended_schedulable_accounts: number
+  recommended_additional_schedulable_accounts: number
+  recoverable_unschedulable_accounts: number
   reason: string
   metrics: DashboardRecommendationMetrics
+}
+
+export interface DashboardRecommendationsSummary {
+  pool_count: number
+  group_count: number
+  current_schedulable_accounts: number
+  recommended_additional_schedulable_accounts: number
+  recoverable_unschedulable_accounts: number
+  urgent_pool_count: number
 }
 
 export interface DashboardRecommendationsResponse {
   generated_at: string
   lookback_days: number
-  summary: {
-    group_count: number
-    current_schedulable_accounts: number
-    recommended_additional_accounts: number
-    urgent_group_count: number
-  }
-  items: DashboardRecommendationItem[]
+  summary: DashboardRecommendationsSummary
+  pools: DashboardCapacityPoolRecommendation[]
 }
 
 export interface UsageStatsResponse {

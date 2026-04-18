@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -18,15 +19,19 @@ import (
 // DashboardHandler handles admin dashboard statistics
 type DashboardHandler struct {
 	dashboardService               *service.DashboardService
-	dashboardRecommendationService *service.DashboardRecommendationService
+	dashboardRecommendationService dashboardRecommendationProvider
 	aggregationService             *service.DashboardAggregationService
 	startTime                      time.Time // Server start time for uptime calculation
+}
+
+type dashboardRecommendationProvider interface {
+	GetCapacityRecommendations(ctx context.Context) (*service.DashboardCapacityRecommendationResponse, error)
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
 func NewDashboardHandler(
 	dashboardService *service.DashboardService,
-	dashboardRecommendationService *service.DashboardRecommendationService,
+	dashboardRecommendationService dashboardRecommendationProvider,
 	aggregationService *service.DashboardAggregationService,
 ) *DashboardHandler {
 	return &DashboardHandler{
