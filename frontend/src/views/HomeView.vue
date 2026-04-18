@@ -527,8 +527,14 @@ function resetHomeContentRuntime() {
   }
 }
 
+function getDocumentCSPNonce(): string {
+  const nonceSource = document.querySelector<HTMLScriptElement>('script[nonce]')
+  return nonceSource?.nonce || ''
+}
+
 async function executeHomeContentScripts(root: HTMLElement, token: number) {
   const scripts = Array.from(root.querySelectorAll('script'))
+  const cspNonce = getDocumentCSPNonce()
 
   for (const originalScript of scripts) {
     if (token !== homeContentRenderToken) return
@@ -540,6 +546,10 @@ async function executeHomeContentScripts(root: HTMLElement, token: number) {
 
     if (originalScript.textContent) {
       script.textContent = originalScript.textContent
+    }
+
+    if (cspNonce && !script.nonce) {
+      script.nonce = cspNonce
     }
 
     const parent = originalScript.parentNode
