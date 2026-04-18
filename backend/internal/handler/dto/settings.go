@@ -35,13 +35,13 @@ type SystemSettings struct {
 	TotpEnabled                      bool     `json:"totp_enabled"`                   // TOTP 双因素认证
 	TotpEncryptionKeyConfigured      bool     `json:"totp_encryption_key_configured"` // TOTP 加密密钥是否已配置
 
-	SMTPHost               string `json:"smtp_host"`
-	SMTPPort               int    `json:"smtp_port"`
-	SMTPUsername           string `json:"smtp_username"`
-	SMTPPasswordConfigured bool   `json:"smtp_password_configured"`
-	SMTPFrom               string `json:"smtp_from_email"`
-	SMTPFromName           string `json:"smtp_from_name"`
-	SMTPUseTLS             bool   `json:"smtp_use_tls"`
+	SMTPHost                      string `json:"smtp_host"`
+	SMTPPort                      int    `json:"smtp_port"`
+	SMTPUsername                  string `json:"smtp_username"`
+	SMTPPasswordConfigured        bool   `json:"smtp_password_configured"`
+	SMTPFrom                      string `json:"smtp_from_email"`
+	SMTPFromName                  string `json:"smtp_from_name"`
+	SMTPUseTLS                    bool   `json:"smtp_use_tls"`
 	SubscriptionNotificationEmail string `json:"subscription_notification_email"`
 
 	TurnstileEnabled             bool   `json:"turnstile_enabled"`
@@ -83,6 +83,8 @@ type SystemSettings struct {
 	ContactInfo                 string           `json:"contact_info"`
 	DocURL                      string           `json:"doc_url"`
 	HomeContent                 string           `json:"home_content"`
+	TermsOfServiceContent       string           `json:"terms_of_service_content"`
+	PrivacyPolicyContent        string           `json:"privacy_policy_content"`
 	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
@@ -91,18 +93,18 @@ type SystemSettings struct {
 	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
 	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
 
-	DefaultConcurrency   int                          `json:"default_concurrency"`
-	DefaultBalance       float64                      `json:"default_balance"`
-	DefaultSubscriptions []DefaultSubscriptionSetting `json:"default_subscriptions"`
-	SubscriptionCapacityTightness int                 `json:"subscription_capacity_tightness"`
-	BillingFXEnabled              bool                `json:"billing_fx_enabled"`
-	BillingFXProvider             string              `json:"billing_fx_provider"`
-	BillingFXFallbackRate         float64             `json:"billing_fx_fallback_rate"`
-	BillingFXCacheTTLSeconds      int                 `json:"billing_fx_cache_ttl_seconds"`
-	BillingFXTimeoutMS            int                 `json:"billing_fx_timeout_ms"`
-	BillingFXSafetyMargin         float64             `json:"billing_fx_safety_margin"`
-	BillingFXLastSuccessRate      *float64            `json:"billing_fx_last_success_rate,omitempty"`
-	BillingFXLastSuccessAt        *time.Time          `json:"billing_fx_last_success_at,omitempty"`
+	DefaultConcurrency            int                          `json:"default_concurrency"`
+	DefaultBalance                float64                      `json:"default_balance"`
+	DefaultSubscriptions          []DefaultSubscriptionSetting `json:"default_subscriptions"`
+	SubscriptionCapacityTightness int                          `json:"subscription_capacity_tightness"`
+	BillingFXEnabled              bool                         `json:"billing_fx_enabled"`
+	BillingFXProvider             string                       `json:"billing_fx_provider"`
+	BillingFXFallbackRate         float64                      `json:"billing_fx_fallback_rate"`
+	BillingFXCacheTTLSeconds      int                          `json:"billing_fx_cache_ttl_seconds"`
+	BillingFXTimeoutMS            int                          `json:"billing_fx_timeout_ms"`
+	BillingFXSafetyMargin         float64                      `json:"billing_fx_safety_margin"`
+	BillingFXLastSuccessRate      *float64                     `json:"billing_fx_last_success_rate,omitempty"`
+	BillingFXLastSuccessAt        *time.Time                   `json:"billing_fx_last_success_at,omitempty"`
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -180,6 +182,8 @@ type PublicSettings struct {
 	ContactInfo                      string           `json:"contact_info"`
 	DocURL                           string           `json:"doc_url"`
 	HomeContent                      string           `json:"home_content"`
+	TermsOfServiceContent            string           `json:"terms_of_service_content"`
+	PrivacyPolicyContent             string           `json:"privacy_policy_content"`
 	HideCcsImportButton              bool             `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool             `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string           `json:"purchase_subscription_url"`

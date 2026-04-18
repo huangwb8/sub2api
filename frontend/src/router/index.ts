@@ -130,6 +130,26 @@ const routes: RouteRecordRaw[] = [
       titleKey: 'pricing.title'
     }
   },
+  {
+    path: '/legal/terms',
+    name: 'LegalTerms',
+    component: () => import('@/views/LegalDocumentView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Terms of Service',
+      titleKey: 'legal.terms.title'
+    }
+  },
+  {
+    path: '/legal/privacy',
+    name: 'LegalPrivacy',
+    component: () => import('@/views/LegalDocumentView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Privacy Policy',
+      titleKey: 'legal.privacy.title'
+    }
+  },
 
   // ==================== User Routes ====================
   {

@@ -149,6 +149,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ContactInfo:                          settings.ContactInfo,
 		DocURL:                               settings.DocURL,
 		HomeContent:                          settings.HomeContent,
+		TermsOfServiceContent:                settings.TermsOfServiceContent,
+		PrivacyPolicyContent:                 settings.PrivacyPolicyContent,
 		HideCcsImportButton:                  settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
@@ -272,6 +274,8 @@ type UpdateSettingsRequest struct {
 	ContactInfo                 string                `json:"contact_info"`
 	DocURL                      string                `json:"doc_url"`
 	HomeContent                 string                `json:"home_content"`
+	TermsOfServiceContent       string                `json:"terms_of_service_content"`
+	PrivacyPolicyContent        string                `json:"privacy_policy_content"`
 	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
@@ -854,6 +858,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                      req.ContactInfo,
 		DocURL:                           req.DocURL,
 		HomeContent:                      req.HomeContent,
+		TermsOfServiceContent:            req.TermsOfServiceContent,
+		PrivacyPolicyContent:             req.PrivacyPolicyContent,
 		HideCcsImportButton:              req.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
@@ -906,8 +912,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.BillingFXSafetyMargin
 		}(),
-		BillingFXLastSuccessRate: previousSettings.BillingFXLastSuccessRate,
-		BillingFXLastSuccessAt:   previousSettings.BillingFXLastSuccessAt,
+		BillingFXLastSuccessRate:    previousSettings.BillingFXLastSuccessRate,
+		BillingFXLastSuccessAt:      previousSettings.BillingFXLastSuccessAt,
 		EnableModelFallback:         req.EnableModelFallback,
 		FallbackModelAnthropic:      req.FallbackModelAnthropic,
 		FallbackModelOpenAI:         req.FallbackModelOpenAI,
@@ -1080,6 +1086,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                          updatedSettings.ContactInfo,
 		DocURL:                               updatedSettings.DocURL,
 		HomeContent:                          updatedSettings.HomeContent,
+		TermsOfServiceContent:                updatedSettings.TermsOfServiceContent,
+		PrivacyPolicyContent:                 updatedSettings.PrivacyPolicyContent,
 		HideCcsImportButton:                  updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
@@ -1325,6 +1333,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.HomeContent != after.HomeContent {
 		changed = append(changed, "home_content")
+	}
+	if before.TermsOfServiceContent != after.TermsOfServiceContent {
+		changed = append(changed, "terms_of_service_content")
+	}
+	if before.PrivacyPolicyContent != after.PrivacyPolicyContent {
+		changed = append(changed, "privacy_policy_content")
 	}
 	if before.HideCcsImportButton != after.HideCcsImportButton {
 		changed = append(changed, "hide_ccs_import_button")

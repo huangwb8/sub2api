@@ -114,6 +114,27 @@ export default {
     }
   },
 
+  legal: {
+    badge: '法律文档',
+    entryHintTitle: '独立公开入口',
+    entryHintBody: '这些页面可以直接挂在首页、注册流程或任何外部站点上，方便用户随时查阅。',
+    notPublishedTitle: '该文档暂未发布',
+    notPublishedDescription: '{siteName} 暂时还没有发布“{document}”，稍后可以再来查看，或先返回首页。',
+    backHome: '返回首页',
+    terms: {
+      title: '服务条款',
+      shortTitle: '服务条款',
+      badge: '服务规则',
+      description: '在这里查看使用 {siteName} 时应遵守的服务规则、可接受行为范围以及账号责任。'
+    },
+    privacy: {
+      title: '隐私政策',
+      shortTitle: '隐私政策',
+      badge: '数据与隐私',
+      description: '在这里了解 {siteName} 会收集哪些数据、如何使用数据，以及平台如何保护相关信息。'
+    }
+  },
+
   pricing: {
     eyebrow: 'Public Pricing',
     title: '公开费用',
@@ -4560,6 +4581,21 @@ export default {
         defaultSubscriptionsDuplicate: '默认订阅存在重复分组：{groupId}。每个分组只能出现一次。',
         subscriptionGroup: '订阅分组',
         subscriptionValidityDays: '有效期（天）'
+      },
+      legal: {
+        title: '服务条款与隐私政策',
+        description: '在后台统一维护公开展示的法律文档，让首页链接有明确落点。',
+        publishHintTitle: '支持 Markdown',
+        publishHint: '保存后，这两份文档会以稳定的公开链接提供，首页页脚也可按配置自动展示入口。',
+        openLink: '打开链接',
+        copyLink: '复制链接',
+        linkCopied: '公开链接已复制',
+        publicPath: '公开地址',
+        markdownLabel: '文档内容',
+        termsHint: '建议写清楚平台使用规则、退款边界、禁止行为和账号责任。',
+        privacyHint: '建议说明会收集哪些数据、如何使用、保留多久，以及用户如何联系你处理隐私请求。',
+        termsPlaceholder: '# 服务条款\n\n## 使用资格\n说明哪些用户可以使用本服务。\n\n## 合理使用\n说明禁止的滥用、转售或攻击行为。\n\n## 计费与退款\n说明余额、订阅、退款边界及价格变更规则。',
+        privacyPlaceholder: '# 隐私政策\n\n## 我们收集的信息\n列出账号资料、使用记录、支付信息等数据类别。\n\n## 数据用途\n说明认证、计费、风控、客服支持等用途。\n\n## 联系方式\n告知用户如何发起隐私相关咨询或删除请求。'
       },
       claudeCode: {
         title: 'Claude Code 设置',

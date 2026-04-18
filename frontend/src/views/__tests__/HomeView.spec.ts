@@ -19,6 +19,8 @@ const appState = {
     site_logo: '',
     site_subtitle: '',
     doc_url: '',
+    terms_of_service_content: '',
+    privacy_policy_content: '',
   },
   siteName: 'BenszAPI',
   siteLogo: '',
@@ -72,6 +74,8 @@ describe('HomeView custom home content CSP handling', () => {
     appState.publicSettingsLoaded = true
     appState.fetchPublicSettings.mockReset()
     appState.cachedPublicSettings.home_content = ''
+    appState.cachedPublicSettings.terms_of_service_content = ''
+    appState.cachedPublicSettings.privacy_policy_content = ''
     delete (window as Window & typeof globalThis & { __HOME_CONTENT_NONCE_TEST__?: boolean }).__HOME_CONTENT_NONCE_TEST__
     document.head.querySelectorAll('[data-test-csp-nonce]').forEach(node => node.remove())
   })
@@ -92,7 +96,10 @@ describe('HomeView custom home content CSP handling', () => {
         stubs: {
           Icon: true,
           LocaleSwitcher: true,
-          'router-link': { template: '<a><slot /></a>' },
+          'router-link': {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to?.path"><slot /></a>'
+          },
         },
       },
     })
@@ -102,5 +109,36 @@ describe('HomeView custom home content CSP handling', () => {
     const inlineScript = wrapper.element.querySelector('script')
     expect(inlineScript).not.toBeNull()
     expect((inlineScript as HTMLScriptElement).nonce).toBe('test-csp-nonce')
+  })
+
+  it('shows legal links in the footer when public legal content is configured', async () => {
+    appState.cachedPublicSettings.terms_of_service_content = '# Terms'
+    appState.cachedPublicSettings.privacy_policy_content = '# Privacy'
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          Icon: true,
+          LocaleSwitcher: true,
+          'router-link': {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to?.path"><slot /></a>'
+          },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const links = Array.from(wrapper.findAll('a')).map((node) => ({
+      href: node.attributes('href'),
+      text: node.text()
+    }))
+    expect(links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ href: '/legal/terms', text: 'legal.terms.shortTitle' }),
+        expect.objectContaining({ href: '/legal/privacy', text: 'legal.privacy.shortTitle' })
+      ])
+    )
   })
 })

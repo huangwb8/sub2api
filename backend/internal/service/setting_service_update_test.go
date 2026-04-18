@@ -253,7 +253,7 @@ func TestSettingService_UpdateSettings_TablePreferences(t *testing.T) {
 	svc := NewSettingService(repo, &config.Config{})
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
-		TableDefaultPageSize:  50,
+		TableDefaultPageSize: 50,
 		TablePageSizeOptions: []int{20, 50, 100},
 	})
 	require.NoError(t, err)
@@ -261,10 +261,23 @@ func TestSettingService_UpdateSettings_TablePreferences(t *testing.T) {
 	require.Equal(t, "[20,50,100]", repo.updates[SettingKeyTablePageSizeOptions])
 
 	err = svc.UpdateSettings(context.Background(), &SystemSettings{
-		TableDefaultPageSize:  1000,
+		TableDefaultPageSize: 1000,
 		TablePageSizeOptions: []int{20, 100},
 	})
 	require.NoError(t, err)
 	require.Equal(t, "1000", repo.updates[SettingKeyTableDefaultPageSize])
 	require.Equal(t, "[20,100]", repo.updates[SettingKeyTablePageSizeOptions])
+}
+
+func TestSettingService_UpdateSettings_StoresLegalContentTrimmed(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		TermsOfServiceContent: "  # Terms  ",
+		PrivacyPolicyContent:  "\n# Privacy\n",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "# Terms", repo.updates[SettingKeyTermsOfServiceContent])
+	require.Equal(t, "# Privacy", repo.updates[SettingKeyPrivacyPolicyContent])
 }

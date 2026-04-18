@@ -48,6 +48,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		ContactInfo:                      settings.ContactInfo,
 		DocURL:                           settings.DocURL,
 		HomeContent:                      settings.HomeContent,
+		TermsOfServiceContent:            settings.TermsOfServiceContent,
+		PrivacyPolicyContent:             settings.PrivacyPolicyContent,
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,

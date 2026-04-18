@@ -269,6 +269,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
 		SettingKeyHomeContent,
+		SettingKeyTermsOfServiceContent,
+		SettingKeyPrivacyPolicyContent,
 		SettingKeyHideCcsImportButton,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
@@ -336,6 +338,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		TermsOfServiceContent:            strings.TrimSpace(settings[SettingKeyTermsOfServiceContent]),
+		PrivacyPolicyContent:             strings.TrimSpace(settings[SettingKeyPrivacyPolicyContent]),
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
@@ -388,6 +392,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactInfo                      string          `json:"contact_info,omitempty"`
 		DocURL                           string          `json:"doc_url,omitempty"`
 		HomeContent                      string          `json:"home_content,omitempty"`
+		TermsOfServiceContent            string          `json:"terms_of_service_content,omitempty"`
+		PrivacyPolicyContent             string          `json:"privacy_policy_content,omitempty"`
 		HideCcsImportButton              bool            `json:"hide_ccs_import_button"`
 		PurchaseSubscriptionEnabled      bool            `json:"purchase_subscription_enabled"`
 		PurchaseSubscriptionURL          string          `json:"purchase_subscription_url,omitempty"`
@@ -418,6 +424,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactInfo:                      settings.ContactInfo,
 		DocURL:                           settings.DocURL,
 		HomeContent:                      settings.HomeContent,
+		TermsOfServiceContent:            settings.TermsOfServiceContent,
+		PrivacyPolicyContent:             settings.PrivacyPolicyContent,
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
@@ -647,6 +655,8 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyContactInfo] = settings.ContactInfo
 	updates[SettingKeyDocURL] = settings.DocURL
 	updates[SettingKeyHomeContent] = settings.HomeContent
+	updates[SettingKeyTermsOfServiceContent] = strings.TrimSpace(settings.TermsOfServiceContent)
+	updates[SettingKeyPrivacyPolicyContent] = strings.TrimSpace(settings.PrivacyPolicyContent)
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
@@ -1105,6 +1115,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		TermsOfServiceContent:            strings.TrimSpace(settings[SettingKeyTermsOfServiceContent]),
+		PrivacyPolicyContent:             strings.TrimSpace(settings[SettingKeyPrivacyPolicyContent]),
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),

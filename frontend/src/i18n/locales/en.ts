@@ -114,6 +114,27 @@ export default {
     }
   },
 
+  legal: {
+    badge: 'Legal',
+    entryHintTitle: 'Independent public entry',
+    entryHintBody: 'These pages can be linked directly from your home page, onboarding flow, or any external site.',
+    notPublishedTitle: 'This document has not been published yet',
+    notPublishedDescription: '{siteName} has not published {document} yet. Please check back later or return to the home page.',
+    backHome: 'Back to Home',
+    terms: {
+      title: 'Terms of Service',
+      shortTitle: 'Terms',
+      badge: 'Service Terms',
+      description: 'Review the service rules, acceptable use expectations, and account responsibilities for using {siteName}.'
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      shortTitle: 'Privacy',
+      badge: 'Privacy Policy',
+      description: 'Learn how {siteName} collects, uses, stores, and protects data related to the platform and its API services.'
+    }
+  },
+
   pricing: {
     eyebrow: 'Public Pricing',
     title: 'Pricing',
@@ -4389,6 +4410,21 @@ export default {
           'Duplicate subscription group: {groupId}. Each group can only appear once.',
         subscriptionGroup: 'Subscription Group',
         subscriptionValidityDays: 'Validity (days)'
+      },
+      legal: {
+        title: 'Legal Document Defaults',
+        description: 'Maintain public-facing Terms of Service and Privacy Policy documents from one place.',
+        publishHintTitle: 'Markdown supported',
+        publishHint: 'After saving, these documents become available at stable public URLs and can be linked from the homepage footer.',
+        openLink: 'Open',
+        copyLink: 'Copy Link',
+        linkCopied: 'Public link copied',
+        publicPath: 'Public URL',
+        markdownLabel: 'Document Content',
+        termsHint: 'Describe platform usage rules, refund boundaries, prohibited behavior, and account responsibility.',
+        privacyHint: 'Explain what data is collected, how it is used, retention expectations, and contact channels.',
+        termsPlaceholder: '# Terms of Service\n\n## Eligibility\nDescribe who can use the service.\n\n## Acceptable Use\nExplain prohibited behaviors and abuse handling.\n\n## Billing\nOutline refunds, balance validity, and pricing changes.',
+        privacyPlaceholder: '# Privacy Policy\n\n## Data We Collect\nList account, usage, and payment data categories.\n\n## How We Use Data\nExplain authentication, billing, support, and security uses.\n\n## Contact\nTell users how to reach you for privacy requests.'
       },
       claudeCode: {
         title: 'Claude Code Settings',

@@ -12,14 +12,14 @@ type SystemSettings struct {
 	InvitationCodeEnabled            bool
 	TotpEnabled                      bool // TOTP 双因素认证
 
-	SMTPHost               string
-	SMTPPort               int
-	SMTPUsername           string
-	SMTPPassword           string
-	SMTPPasswordConfigured bool
-	SMTPFrom               string
-	SMTPFromName           string
-	SMTPUseTLS             bool
+	SMTPHost                      string
+	SMTPPort                      int
+	SMTPUsername                  string
+	SMTPPassword                  string
+	SMTPPasswordConfigured        bool
+	SMTPFrom                      string
+	SMTPFromName                  string
+	SMTPUseTLS                    bool
 	SubscriptionNotificationEmail string
 
 	TurnstileEnabled             bool
@@ -66,6 +66,8 @@ type SystemSettings struct {
 	ContactInfo                 string
 	DocURL                      string
 	HomeContent                 string
+	TermsOfServiceContent       string
+	PrivacyPolicyContent        string
 	HideCcsImportButton         bool
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
@@ -74,9 +76,9 @@ type SystemSettings struct {
 	CustomMenuItems             string // JSON array of custom menu items
 	CustomEndpoints             string // JSON array of custom endpoints
 
-	DefaultConcurrency   int
-	DefaultBalance       float64
-	DefaultSubscriptions []DefaultSubscriptionSetting
+	DefaultConcurrency            int
+	DefaultBalance                float64
+	DefaultSubscriptions          []DefaultSubscriptionSetting
 	SubscriptionCapacityTightness int
 	BillingFXEnabled              bool
 	BillingFXProvider             string
@@ -142,6 +144,8 @@ type PublicSettings struct {
 	ContactInfo                      string
 	DocURL                           string
 	HomeContent                      string
+	TermsOfServiceContent            string
+	PrivacyPolicyContent             string
 	HideCcsImportButton              bool
 
 	PurchaseSubscriptionEnabled bool

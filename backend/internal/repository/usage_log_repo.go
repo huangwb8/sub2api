@@ -106,12 +106,25 @@ var dateFormatWhitelist = map[string]string{
 	"month": "YYYY-MM",
 }
 
+const profitabilityNumericPattern = `^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$`
+
 // safeDateFormat 根据白名单获取 dateFormat，未匹配时返回默认值
 func safeDateFormat(granularity string) string {
 	if f, ok := dateFormatWhitelist[granularity]; ok {
 		return f
 	}
 	return "YYYY-MM-DD"
+}
+
+func profitabilitySafeNumericExpr(column string) string {
+	trimmed := fmt.Sprintf("NULLIF(BTRIM(%s::text), '')", column)
+	return fmt.Sprintf(
+		"CASE WHEN %s IS NULL THEN 0::numeric WHEN %s ~ '%s' THEN (%s)::numeric ELSE 0::numeric END",
+		trimmed,
+		trimmed,
+		profitabilityNumericPattern,
+		trimmed,
+	)
 }
 
 // appendRawUsageLogModelWhereCondition keeps direct model filters on the raw model column for backward
@@ -2966,14 +2979,17 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 
 func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTime, endTime time.Time, granularity string) ([]usagestats.ProfitabilityTrendPoint, error) {
 	dateFormat := safeDateFormat(granularity)
+	balanceRevenueExpr := profitabilitySafeNumericExpr("ul.charged_amount_cny")
+	estimatedCostExpr := profitabilitySafeNumericExpr("ul.estimated_cost_cny")
+	subscriptionRevenueExpr := profitabilitySafeNumericExpr("po.amount")
 
 	query := fmt.Sprintf(`
 		WITH balance_usage AS (
 			SELECT
-				created_at AS bucket_at,
-				COALESCE(charged_amount_cny, 0) AS revenue_balance_cny,
+				ul.created_at AS bucket_at,
+				%s AS revenue_balance_cny,
 				0::numeric AS revenue_subscription_cny,
-				COALESCE(estimated_cost_cny, 0) AS estimated_cost_cny
+				%s AS estimated_cost_cny
 			FROM usage_logs ul
 			INNER JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1
@@ -2984,7 +3000,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 			SELECT
 				COALESCE(po.completed_at, po.paid_at, po.created_at) AS bucket_at,
 				0::numeric AS revenue_balance_cny,
-				COALESCE(po.amount, 0) AS revenue_subscription_cny,
+				%s AS revenue_subscription_cny,
 				0::numeric AS estimated_cost_cny
 			FROM payment_orders po
 			INNER JOIN users u ON u.id = po.user_id
@@ -3006,7 +3022,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 		) profitability
 		GROUP BY date
 		ORDER BY date ASC
-	`, dateFormat)
+	`, balanceRevenueExpr, estimatedCostExpr, subscriptionRevenueExpr, dateFormat)
 
 	rows, err := r.sql.QueryContext(
 		ctx,

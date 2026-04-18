@@ -401,6 +401,20 @@
           &copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}
         </p>
         <div class="flex items-center gap-4">
+          <router-link
+            v-if="termsAvailable"
+            to="/legal/terms"
+            class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
+          >
+            {{ t('legal.terms.shortTitle') }}
+          </router-link>
+          <router-link
+            v-if="privacyAvailable"
+            to="/legal/privacy"
+            class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
+          >
+            {{ t('legal.privacy.shortTitle') }}
+          </router-link>
           <a
             v-if="docUrl"
             :href="docUrl"
@@ -461,7 +475,11 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
+const termsContent = computed(() => appStore.cachedPublicSettings?.terms_of_service_content?.trim() || '')
+const privacyContent = computed(() => appStore.cachedPublicSettings?.privacy_policy_content?.trim() || '')
 const showPricingNav = computed(() => !!appStore.cachedPublicSettings?.payment_enabled)
+const termsAvailable = computed(() => termsContent.value.length > 0)
+const privacyAvailable = computed(() => privacyContent.value.length > 0)
 const homeContentRoot = ref<HTMLElement | null>(null)
 const homeContentCleanup = ref<HomeContentCleanup[]>([])
 let homeContentRenderToken = 0

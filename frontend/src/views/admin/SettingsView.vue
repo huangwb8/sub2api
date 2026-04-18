@@ -1622,6 +1622,125 @@
             </div>
           </div>
         </div>
+
+        <div class="card overflow-hidden">
+          <div class="border-b border-gray-100 bg-gradient-to-r from-emerald-50 via-cyan-50 to-white px-6 py-4 dark:border-dark-700 dark:from-emerald-950/30 dark:via-cyan-950/20 dark:to-dark-900">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.settings.legal.title') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.legal.description') }}
+                </p>
+              </div>
+              <div class="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3 text-xs text-gray-500 shadow-sm dark:border-emerald-900/60 dark:bg-dark-800/80 dark:text-gray-400">
+                <p class="font-medium text-gray-700 dark:text-gray-200">
+                  {{ t('admin.settings.legal.publishHintTitle') }}
+                </p>
+                <p class="mt-1 max-w-xs leading-5">
+                  {{ t('admin.settings.legal.publishHint') }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 p-6 xl:grid-cols-2">
+            <div class="rounded-2xl border border-gray-200 bg-white/80 p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900/60">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                    {{ t('legal.terms.title') }}
+                  </h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.legal.termsHint') }}
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <a
+                    :href="publicTermsUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-secondary btn-sm"
+                  >
+                    {{ t('admin.settings.legal.openLink') }}
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="copyPublicLegalUrl(publicTermsUrl)"
+                  >
+                    {{ t('admin.settings.legal.copyLink') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/80 px-4 py-3 text-xs text-gray-500 dark:border-dark-600 dark:bg-dark-800/60 dark:text-gray-400">
+                <span class="font-medium text-gray-700 dark:text-gray-200">{{ t('admin.settings.legal.publicPath') }}</span>
+                <code class="ml-2 break-all text-emerald-600 dark:text-emerald-300">{{ publicTermsUrl }}</code>
+              </div>
+
+              <div class="mt-4">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.legal.markdownLabel') }}
+                </label>
+                <textarea
+                  v-model="form.terms_of_service_content"
+                  rows="14"
+                  class="input font-mono text-sm leading-6"
+                  :placeholder="t('admin.settings.legal.termsPlaceholder')"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white/80 p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900/60">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                    {{ t('legal.privacy.title') }}
+                  </h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.legal.privacyHint') }}
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <a
+                    :href="publicPrivacyUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-secondary btn-sm"
+                  >
+                    {{ t('admin.settings.legal.openLink') }}
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="copyPublicLegalUrl(publicPrivacyUrl)"
+                  >
+                    {{ t('admin.settings.legal.copyLink') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/80 px-4 py-3 text-xs text-gray-500 dark:border-dark-600 dark:bg-dark-800/60 dark:text-gray-400">
+                <span class="font-medium text-gray-700 dark:text-gray-200">{{ t('admin.settings.legal.publicPath') }}</span>
+                <code class="ml-2 break-all text-cyan-600 dark:text-cyan-300">{{ publicPrivacyUrl }}</code>
+              </div>
+
+              <div class="mt-4">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.legal.markdownLabel') }}
+                </label>
+                <textarea
+                  v-model="form.privacy_policy_content"
+                  rows="14"
+                  class="input font-mono text-sm leading-6"
+                  :placeholder="t('admin.settings.legal.privacyPlaceholder')"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
         </div><!-- /Tab: Users -->
 
         <!-- Tab: Gateway — Claude Code, Scheduling -->
@@ -2724,6 +2843,8 @@ const form = reactive<SettingsForm>({
   contact_info: '',
   doc_url: '',
   home_content: '',
+  terms_of_service_content: '',
+  privacy_policy_content: '',
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   payment_enabled: false,  payment_min_amount: 1,  payment_max_amount: 10000,  payment_daily_limit: 50000,  payment_max_pending_orders: 3,  payment_order_timeout_minutes: 30,  payment_balance_disabled: false,  payment_enabled_types: [],  payment_help_image_url: '',  payment_help_text: '',  payment_product_name_prefix: '',  payment_product_name_suffix: '',  payment_load_balance_strategy: 'round-robin',  payment_cancel_rate_limit_enabled: false,  payment_cancel_rate_limit_max: 10,  payment_cancel_rate_limit_window: 1,  payment_cancel_rate_limit_unit: 'day',  payment_cancel_rate_limit_window_mode: 'rolling',
@@ -2909,6 +3030,26 @@ async function setAndCopyOIDCRedirectUrl() {
 
   form.oidc_connect_redirect_url = url
   await copyToClipboard(url, t('admin.settings.oidc.redirectUrlSetAndCopied'))
+}
+
+const publicSiteOrigin = computed(() => {
+  const configured = form.frontend_url?.trim()
+  if (configured) {
+    try {
+      return new URL(configured).origin
+    } catch {
+      // ignore invalid frontend_url and fall back to current origin
+    }
+  }
+  if (typeof window === 'undefined') return ''
+  return window.location.origin || `${window.location.protocol}//${window.location.host}`
+})
+
+const publicTermsUrl = computed(() => `${publicSiteOrigin.value}/legal/terms`)
+const publicPrivacyUrl = computed(() => `${publicSiteOrigin.value}/legal/privacy`)
+
+async function copyPublicLegalUrl(url: string) {
+  await copyToClipboard(url, t('admin.settings.legal.linkCopied'))
 }
 
 // Custom menu item management
@@ -3142,6 +3283,8 @@ async function saveSettings() {
       contact_info: form.contact_info,
       doc_url: form.doc_url,
       home_content: form.home_content,
+      terms_of_service_content: form.terms_of_service_content,
+      privacy_policy_content: form.privacy_policy_content,
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
       table_default_page_size: form.table_default_page_size,
