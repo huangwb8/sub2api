@@ -24,6 +24,12 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('gemini-3-pro-image')
   })
 
+  it('claude 模型列表包含 Opus 4.7', () => {
+    const models = getModelsByPlatform('anthropic')
+
+    expect(models).toContain('claude-opus-4-7')
+  })
+
   it('gemini 模型列表包含原生生图模型', () => {
     const models = getModelsByPlatform('gemini')
 

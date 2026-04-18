@@ -165,7 +165,6 @@
         <button
           @click="handleClose"
           class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-300 dark:hover:bg-dark-500"
-          :disabled="status === 'connecting'"
         >
           {{ t('common.close') }}
         </button>
@@ -249,7 +248,7 @@ const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
 const testPrompt = ref('')
 const loadingModels = ref(false)
-let eventSource: EventSource | null = null
+let abortController: AbortController | null = null
 const generatedImages = ref<PreviewImage[]>([])
 const prioritizedGeminiModels = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.0-flash']
 const supportsGeminiImageTest = computed(() => {
@@ -329,18 +328,14 @@ const resetState = () => {
 }
 
 const handleClose = () => {
-  // 防止在连接测试进行中关闭对话框
-  if (status.value === 'connecting') {
-    return
-  }
   closeEventSource()
   emit('close')
 }
 
 const closeEventSource = () => {
-  if (eventSource) {
-    eventSource.close()
-    eventSource = null
+  if (abortController) {
+    abortController.abort()
+    abortController = null
   }
 }
 
@@ -366,6 +361,8 @@ const startTest = async () => {
   addLine('', 'text-gray-300')
 
   closeEventSource()
+  const currentAbortController = new AbortController()
+  abortController = currentAbortController
 
   try {
     // Create EventSource for SSE
@@ -374,6 +371,7 @@ const startTest = async () => {
     // Use fetch with streaming for SSE since EventSource doesn't support POST
     const response = await fetch(url, {
       method: 'POST',
+      signal: currentAbortController.signal,
       headers: {
         Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
         'Content-Type': 'application/json'
@@ -399,6 +397,7 @@ const startTest = async () => {
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
+      if (currentAbortController.signal.aborted) break
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -419,9 +418,17 @@ const startTest = async () => {
       }
     }
   } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      status.value = 'idle'
+      return
+    }
     status.value = 'error'
     errorMessage.value = error.message || 'Unknown error'
     addLine(`Error: ${errorMessage.value}`, 'text-red-400')
+  } finally {
+    if (abortController === currentAbortController) {
+      abortController = null
+    }
   }
 }
 
