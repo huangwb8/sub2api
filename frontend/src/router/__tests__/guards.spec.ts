@@ -157,6 +157,11 @@ describe('路由守卫逻辑', () => {
       const redirect = simulateGuard('/home', { requiresAuth: false }, authState)
       expect(redirect).toBeNull()
     })
+
+    it('访问 /pricing 公开页面允许通过', () => {
+      const redirect = simulateGuard('/pricing', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
+    })
   })
 
   // --- 已认证普通用户 ---

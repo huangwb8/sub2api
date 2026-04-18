@@ -110,6 +110,12 @@ func enhanceCSPPolicy(policy string) string {
 		policy = addToDirective(policy, "script-src", CloudflareInsightsDomain)
 	}
 
+	// Allow same-origin iframe embeds so custom menu items and built-in embedded pages
+	// can safely render internal routes such as /pricing.
+	if strings.Contains(policy, "frame-src") && !strings.Contains(policy, "frame-src 'self'") {
+		policy = addToDirective(policy, "frame-src", "'self'")
+	}
+
 	return policy
 }
 
@@ -122,6 +128,10 @@ func addToDirective(policy, directive, value string) string {
 
 	if idx == -1 {
 		// Directive not found, add it after default-src or at the beginning
+		directiveValue := "'self'"
+		if value != "" && value != "'self'" {
+			directiveValue += " " + value
+		}
 		defaultSrcIdx := strings.Index(policy, "default-src ")
 		if defaultSrcIdx != -1 {
 			// Find the end of default-src directive (next semicolon)
@@ -129,11 +139,11 @@ func addToDirective(policy, directive, value string) string {
 			if endIdx != -1 {
 				insertPos := defaultSrcIdx + endIdx + 1
 				// Insert new directive after default-src
-				return policy[:insertPos] + " " + directive + " 'self' " + value + ";" + policy[insertPos:]
+				return policy[:insertPos] + " " + directive + " " + directiveValue + ";" + policy[insertPos:]
 			}
 		}
 		// Fallback: prepend the directive
-		return directive + " 'self' " + value + "; " + policy
+		return directive + " " + directiveValue + "; " + policy
 	}
 
 	// Find the end of this directive (next semicolon or end of string)

@@ -4,6 +4,10 @@ export default {
     viewOnGithub: 'View on GitHub',
     viewDocs: 'View Documentation',
     docs: 'Docs',
+    nav: {
+      home: 'Home',
+      pricing: 'Pricing',
+    },
     switchToLight: 'Switch to Light Mode',
     switchToDark: 'Switch to Dark Mode',
     dashboard: 'Dashboard',
@@ -108,6 +112,20 @@ export default {
     footer: {
       allRightsReserved: 'All rights reserved.'
     }
+  },
+
+  pricing: {
+    eyebrow: 'Public Pricing',
+    title: 'Pricing',
+    subtitle: 'These plans come directly from the administrator-managed subscription catalog. Prices, quotas, and model access update with the current backend configuration.',
+    availableTitle: '{count} plans are currently available',
+    availableDescription: 'Select any plan to continue. Guests will be redirected to login before entering the checkout flow.',
+    ctaHint: 'All plans reflect the current for-sale backend setup',
+    emptyTitle: 'No plans are currently available',
+    emptyDescription: 'The administrator has not published any subscription plans for sale yet. Please check back later.',
+    disabledTitle: 'Pricing is currently unavailable',
+    disabledDescription: 'The site has not enabled built-in payment or subscription display, so there are no public plans to show right now.',
+    backHome: 'Back to Home',
   },
 
   // Key Usage Query Page

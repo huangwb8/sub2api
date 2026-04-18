@@ -22,11 +22,15 @@ export function buildEmbeddedUrl(
 ): string {
   if (!baseUrl) return baseUrl
   try {
-    const url = new URL(baseUrl)
-    if (userId) {
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : undefined
+    const isRelativeUrl = /^[/?#]/.test(baseUrl)
+    const url = isRelativeUrl ? new URL(baseUrl, currentOrigin) : new URL(baseUrl)
+    const isSameOrigin = !!currentOrigin && url.origin === currentOrigin
+
+    if (!isSameOrigin && userId) {
       url.searchParams.set(EMBEDDED_USER_ID_QUERY_KEY, String(userId))
     }
-    if (authToken) {
+    if (!isSameOrigin && authToken) {
       url.searchParams.set(EMBEDDED_AUTH_TOKEN_QUERY_KEY, authToken)
     }
     url.searchParams.set(EMBEDDED_THEME_QUERY_KEY, theme)

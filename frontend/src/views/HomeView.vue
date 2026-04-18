@@ -46,6 +46,26 @@
           </div>
         </div>
 
+        <div
+          v-if="showPricingNav"
+          class="hidden items-center gap-2 rounded-full border border-gray-200/70 bg-white/80 p-1 backdrop-blur md:flex dark:border-dark-700/60 dark:bg-dark-800/80"
+        >
+          <router-link
+            to="/home"
+            class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/home' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-dark-300 dark:hover:bg-dark-700 dark:hover:text-white'"
+          >
+            {{ t('home.nav.home') }}
+          </router-link>
+          <router-link
+            to="/pricing"
+            class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/pricing' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-dark-300 dark:hover:bg-dark-700 dark:hover:text-white'"
+          >
+            {{ t('home.nav.pricing') }}
+          </router-link>
+        </div>
+
         <!-- Nav Actions -->
         <div class="flex items-center gap-3">
           <!-- Language Switcher -->
@@ -407,6 +427,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -429,6 +450,7 @@ declare global {
 }
 
 const { t } = useI18n()
+const route = useRoute()
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -439,6 +461,7 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
+const showPricingNav = computed(() => !!appStore.cachedPublicSettings?.payment_enabled)
 const homeContentRoot = ref<HTMLElement | null>(null)
 const homeContentCleanup = ref<HomeContentCleanup[]>([])
 let homeContentRenderToken = 0

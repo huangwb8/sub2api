@@ -60,6 +60,20 @@ describe('embedded-url', () => {
     expect(buildEmbeddedUrl('not a url', 1, 'token')).toBe('not a url')
   })
 
+  it('supports same-origin relative urls without leaking auth params into the query', () => {
+    const result = buildEmbeddedUrl('/pricing?tab=plans', 42, 'token-123', 'dark', 'zh-CN')
+
+    const url = new URL(result)
+    expect(url.origin).toBe('https://app.example.com')
+    expect(url.pathname).toBe('/pricing')
+    expect(url.searchParams.get('tab')).toBe('plans')
+    expect(url.searchParams.get('theme')).toBe('dark')
+    expect(url.searchParams.get('lang')).toBe('zh-CN')
+    expect(url.searchParams.get('ui_mode')).toBe('embedded')
+    expect(url.searchParams.has('user_id')).toBe(false)
+    expect(url.searchParams.has('token')).toBe(false)
+  })
+
   it('detects dark mode from document root class', () => {
     document.documentElement.classList.add('dark')
     expect(detectTheme()).toBe('dark')

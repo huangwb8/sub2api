@@ -322,6 +322,13 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
 	})
 
+	t.Run("ensures_frame_src_allows_same_origin_embeds", func(t *testing.T) {
+		policy := "default-src 'self'; frame-src https://challenges.cloudflare.com"
+		enhanced := enhanceCSPPolicy(policy)
+
+		assert.Contains(t, enhanced, "frame-src https://challenges.cloudflare.com 'self'")
+	})
+
 	t.Run("preserves_existing_nonce", func(t *testing.T) {
 		policy := "script-src 'self' 'nonce-existing'"
 		enhanced := enhanceCSPPolicy(policy)

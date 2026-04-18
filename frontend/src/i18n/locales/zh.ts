@@ -4,6 +4,10 @@ export default {
     viewOnGithub: '在 GitHub 上查看',
     viewDocs: '查看文档',
     docs: '文档',
+    nav: {
+      home: '首页',
+      pricing: '费用',
+    },
     switchToLight: '切换到浅色模式',
     switchToDark: '切换到深色模式',
     dashboard: '控制台',
@@ -108,6 +112,20 @@ export default {
     footer: {
       allRightsReserved: '保留所有权利。'
     }
+  },
+
+  pricing: {
+    eyebrow: 'Public Pricing',
+    title: '公开费用',
+    subtitle: '这里展示的是管理员在后台当前上架的订阅套餐。价格、额度和可用模型会随着后台配置实时更新。',
+    availableTitle: '当前共有 {count} 个可选套餐',
+    availableDescription: '点击任意套餐即可继续开通；未登录用户会先跳转到登录页，再进入购买流程。',
+    ctaHint: '所有套餐均来自后台当前“可售”配置',
+    emptyTitle: '暂未上架任何套餐',
+    emptyDescription: '管理员还没有在后台发布可售订阅套餐，请稍后再来查看。',
+    disabledTitle: '费用展示暂未开启',
+    disabledDescription: '当前站点尚未启用内置支付或订阅展示能力，因此这里暂时没有可公开查看的套餐。',
+    backHome: '返回首页',
   },
 
   // Key Usage Query Page

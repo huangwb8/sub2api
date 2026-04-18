@@ -17,6 +17,11 @@ import type {
 import type { BasePaginationResponse } from '@/types'
 
 export const paymentAPI = {
+  /** Get publicly visible subscription plans */
+  getPublicPlans() {
+    return apiClient.get<SubscriptionPlan[]>('/payment/public/plans')
+  },
+
   /** Get payment configuration (enabled types, limits, etc.) */
   getConfig() {
     return apiClient.get<PaymentConfig>('/payment/config')
