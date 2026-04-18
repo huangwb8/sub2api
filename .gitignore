@@ -128,6 +128,8 @@ deploy/docker-compose.override.yml
 vite.config.js
 docs/*
 !docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md
+!docs/page-demo/
+!docs/page-demo/**
 !docs/plans/
 !docs/plans/*.md
 !docs/PAYMENT.md

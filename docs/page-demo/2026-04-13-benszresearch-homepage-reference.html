@@ -1,0 +1,1520 @@
+<!--
+  BenszResearch 主页
+  技术：纯 HTML + CSS + 少量原生 JS，兼容 sub2api 后台 home_content 渲染。
+  用法：将本文件内容整体复制到后台「首页内容」配置框中。
+  设计语言：Editorial-Tech — 学术严谨排版 + 现代科技精致感
+-->
+<style>
+  .bensz-home,
+  .bensz-home * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bensz-home {
+    --teal-900: #134e4a;
+    --teal-700: #0f766e;
+    --teal-600: #0d9488;
+    --teal-500: #14b8a6;
+    --teal-100: #ccfbf1;
+    --teal-50: #f0fdfa;
+    --gold-600: #d4940a;
+    --gold-500: #e5a04b;
+    --gold-400: #f0b95a;
+    --gold-100: #fef3c7;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --white: #ffffff;
+
+    --bg: var(--slate-50);
+    --surface: var(--white);
+    --text: var(--slate-900);
+    --text-2: var(--slate-600);
+    --text-3: var(--slate-500);
+    --text-4: var(--slate-400);
+    --accent: var(--teal-600);
+    --accent-dark: var(--teal-700);
+    --warm: var(--gold-500);
+    --border: rgba(15, 23, 42, 0.06);
+    --border-hover: rgba(15, 23, 42, 0.12);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.03);
+    --shadow-xl: 0 20px 56px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.03);
+
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    padding: 32px clamp(20px, 4vw, 56px) 48px;
+    color: var(--text);
+    background:
+      radial-gradient(ellipse 70% 50% at 10% 5%, rgba(20, 184, 166, 0.06), transparent),
+      radial-gradient(ellipse 50% 40% at 85% 90%, rgba(20, 184, 166, 0.04), transparent),
+      linear-gradient(168deg, var(--slate-50) 0%, #f5faf9 50%, var(--slate-50) 100%);
+    font-family: "Inter", "SF Pro Display", "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    isolation: isolate;
+  }
+
+  .bensz-home::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black, transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bensz-home__shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .bensz-home__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .bensz-home__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .bensz-home__seal {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 118, 110, 0.18);
+    background: linear-gradient(145deg, rgba(15, 118, 110, 0.12), rgba(15, 118, 110, 0.04));
+    color: var(--teal-700);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .bensz-home__brand-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  .bensz-home__brand-sub {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-4);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .bensz-home__nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(12px);
+  }
+
+  .bensz-home__nav-btn {
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .bensz-home__nav-btn:hover {
+    color: var(--accent-dark);
+    transform: translateY(-1px);
+  }
+
+  .bensz-home__nav-btn.is-active {
+    background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(15, 118, 110, 0.08));
+    color: var(--accent-dark);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .bensz-home__view[hidden] {
+    display: none !important;
+  }
+
+  .bensz-home__hero {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .bensz-home__main,
+  .bensz-home__side,
+  .bensz-home__pricing-shell {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+  }
+
+  .bensz-home__main,
+  .bensz-home__side {
+    padding: clamp(32px, 4.5vw, 44px);
+  }
+
+  .bensz-home__main {
+    background: linear-gradient(172deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.82) 100%);
+  }
+
+  .bensz-home__side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: linear-gradient(178deg, rgba(255, 255, 255, 0.94) 0%, rgba(245, 250, 249, 0.85) 100%);
+  }
+
+  .bensz-home__main::before,
+  .bensz-home__pricing-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), transparent 40%, rgba(15, 118, 110, 0.06));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .bensz-home__eyebrow,
+  .bensz-home__side-label,
+  .bensz-home__pricing-label {
+    display: inline-flex;
+    align-items: center;
+    color: var(--gold-600);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .bensz-home__eyebrow {
+    margin-bottom: 16px;
+  }
+
+  .bensz-home__title,
+  .bensz-home__side-title,
+  .bensz-home__pricing-title {
+    margin: 0 0 14px;
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  .bensz-home__title-line2 {
+    display: block;
+    margin-top: 0.06em;
+    background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bensz-home__lead,
+  .bensz-home__side-desc,
+  .bensz-home__pricing-desc {
+    color: var(--text-2);
+    font-size: clamp(0.94rem, 1.6vw, 1.05rem);
+    line-height: 1.8;
+    font-weight: 400;
+  }
+
+  .bensz-home__lead {
+    max-width: 54ch;
+  }
+
+  .bensz-home__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .bensz-home__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 28px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 200ms ease-out;
+  }
+
+  .bensz-home__cta--primary {
+    background: linear-gradient(135deg, var(--teal-700), var(--teal-600));
+    color: var(--white);
+    border-color: rgba(15, 118, 110, 0.2);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, var(--shadow-md), 0 8px 24px rgba(15, 118, 110, 0.18);
+  }
+
+  .bensz-home__cta--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, var(--shadow-lg), 0 14px 32px rgba(15, 118, 110, 0.24);
+  }
+
+  .bensz-home__cta--secondary {
+    background: var(--white);
+    color: var(--text);
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .bensz-home__cta--secondary:hover {
+    border-color: rgba(15, 23, 42, 0.18);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .bensz-home__microcopy {
+    width: 100%;
+    color: var(--text-4);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    margin-top: 4px;
+  }
+
+  .bensz-home__side-head {
+    position: relative;
+    z-index: 1;
+  }
+
+  .bensz-home__side-label {
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  .bensz-home__orbit {
+    position: relative;
+    flex: 1;
+    min-height: 240px;
+    border-radius: 18px;
+    background: radial-gradient(circle at 50% 50%, rgba(15, 118, 110, 0.05), transparent 50%), rgba(248, 250, 252, 0.6);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .bensz-home__orbit-ring {
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  .bensz-home__orbit-ring--inner {
+    width: 100px;
+    height: 100px;
+    left: calc(50% - 50px);
+    top: calc(50% - 50px);
+    border: 1px dashed rgba(15, 118, 110, 0.2);
+    animation: benszSpin 36s linear infinite;
+  }
+
+  .bensz-home__orbit-ring--mid {
+    width: 168px;
+    height: 168px;
+    left: calc(50% - 84px);
+    top: calc(50% - 84px);
+    border: 1px dashed rgba(15, 118, 110, 0.1);
+    animation: benszSpinR 56s linear infinite;
+  }
+
+  .bensz-home__orbit-ring--outer {
+    width: 236px;
+    height: 236px;
+    left: calc(50% - 118px);
+    top: calc(50% - 118px);
+    border: 1px solid rgba(15, 118, 110, 0.05);
+  }
+
+  .bensz-home__orbit-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .bensz-home__orbit-dot--a {
+    top: calc(50% - 50px - 3px);
+    left: calc(50% - 3px);
+    transform-origin: 3px 53px;
+    background: var(--teal-500);
+    box-shadow: 0 0 10px rgba(20, 184, 166, 0.55);
+    animation: benszSpin 36s linear infinite;
+  }
+
+  .bensz-home__orbit-dot--b {
+    top: calc(50% - 84px - 3px);
+    left: calc(50% - 3px);
+    transform-origin: 3px 87px;
+    background: var(--gold-400);
+    box-shadow: 0 0 10px rgba(229, 160, 75, 0.5);
+    animation: benszSpinR 56s linear infinite;
+  }
+
+  .bensz-home__orbit-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--teal-700), var(--teal-600));
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 10px rgba(15, 118, 110, 0.06), 0 0 0 22px rgba(15, 118, 110, 0.025), 0 12px 32px rgba(15, 118, 110, 0.18);
+  }
+
+  .bensz-home__node {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--slate-800);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+  }
+
+  .bensz-home__node::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .bensz-home__node--grant {
+    top: 20px;
+    left: 14px;
+  }
+
+  .bensz-home__node--grant::before {
+    background: var(--teal-500);
+    box-shadow: 0 0 5px rgba(20, 184, 166, 0.45);
+  }
+
+  .bensz-home__node--paper {
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .bensz-home__node--paper::before {
+    background: var(--gold-500);
+    box-shadow: 0 0 5px rgba(229, 160, 75, 0.5);
+  }
+
+  .bensz-home__node--review {
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+  }
+
+  .bensz-home__node--review::before {
+    background: var(--teal-700);
+    box-shadow: 0 0 5px rgba(15, 118, 110, 0.4);
+  }
+
+  .bensz-home__features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .bensz-home__feat {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 18px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.78);
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, background 200ms ease-out;
+  }
+
+  .bensz-home__feat:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: var(--shadow-md);
+  }
+
+  .bensz-home__feat-icon {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    font-size: 18px;
+    background: rgba(15, 118, 110, 0.05);
+    border: 1px solid rgba(15, 118, 110, 0.1);
+  }
+
+  .bensz-home__feat:nth-child(3) .bensz-home__feat-icon,
+  .bensz-home__feat:nth-child(4) .bensz-home__feat-icon {
+    background: rgba(212, 148, 10, 0.05);
+    border-color: rgba(212, 148, 10, 0.1);
+  }
+
+  .bensz-home__feat-title {
+    margin: 0 0 4px;
+    color: var(--slate-800);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .bensz-home__feat-desc {
+    margin: 0;
+    color: var(--text-3);
+    font-size: 12.5px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .bensz-home__eco-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .bensz-home__eco-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .bensz-home__eco-label {
+    flex-shrink: 0;
+    min-width: 110px;
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .bensz-home__eco-items {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .bensz-home__eco-chip,
+  .bensz-home__pricing-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--white);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-800);
+    letter-spacing: 0.01em;
+  }
+
+  .bensz-home__eco-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .bensz-home__eco-badge--live {
+    background: rgba(15, 118, 110, 0.08);
+    color: var(--teal-700);
+  }
+
+  .bensz-home__eco-badge--soon {
+    background: rgba(212, 148, 10, 0.08);
+    color: var(--gold-600);
+  }
+
+  .bensz-home__pricing-shell {
+    padding: clamp(28px, 4vw, 40px);
+    background: linear-gradient(178deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.88) 100%);
+  }
+
+  .bensz-home__pricing-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .bensz-home__pricing-copy {
+    max-width: 620px;
+  }
+
+  .bensz-home__pricing-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .bensz-home__pricing-note {
+    color: var(--text-3);
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  .bensz-home__pricing-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(15, 118, 110, 0.06);
+    color: var(--accent-dark);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .bensz-home__pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .bensz-home__pricing-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 100%;
+    padding: 22px 20px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-md);
+  }
+
+  .bensz-home__pricing-card--featured {
+    border-color: rgba(15, 118, 110, 0.18);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(15, 118, 110, 0.06);
+    transform: translateY(-3px);
+  }
+
+  .bensz-home__pricing-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .bensz-home__pricing-platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.06);
+    color: var(--accent-dark);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .bensz-home__pricing-platform::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.8;
+  }
+
+  .bensz-home__pricing-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(212, 148, 10, 0.08);
+    color: var(--gold-600);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .bensz-home__pricing-name {
+    margin: 12px 0 6px;
+    font-size: 1.15rem;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  .bensz-home__pricing-caption {
+    color: var(--text-3);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .bensz-home__pricing-amount {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .bensz-home__pricing-price {
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+    color: var(--accent-dark);
+  }
+
+  .bensz-home__pricing-original {
+    color: var(--text-4);
+    font-size: 14px;
+    text-decoration: line-through;
+  }
+
+  .bensz-home__pricing-duration {
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .bensz-home__pricing-block {
+    display: grid;
+    gap: 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .bensz-home__pricing-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .bensz-home__pricing-stat {
+    padding: 12px 12px 10px;
+    border-radius: 14px;
+    background: rgba(248, 250, 252, 0.92);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+  }
+
+  .bensz-home__pricing-stat-label {
+    color: var(--text-4);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .bensz-home__pricing-stat-value {
+    margin-top: 6px;
+    color: var(--slate-800);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .bensz-home__pricing-list {
+    display: grid;
+    gap: 10px;
+    list-style: none;
+  }
+
+  .bensz-home__pricing-list li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .bensz-home__pricing-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal-500), var(--gold-500));
+    transform: translateY(-50%);
+  }
+
+  .bensz-home__pricing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bensz-home__pricing-chip {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .bensz-home__pricing-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 4px;
+  }
+
+  .bensz-home__pricing-footer-copy {
+    color: var(--text-4);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .bensz-home__pricing-cta {
+    min-height: 42px;
+    padding: 0 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(15, 118, 110, 0.06));
+    color: var(--accent-dark);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .bensz-home__pricing-empty,
+  .bensz-home__pricing-loading,
+  .bensz-home__pricing-error {
+    padding: 32px 28px;
+    border: 1px dashed rgba(15, 23, 42, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.8;
+    text-align: center;
+  }
+
+  .bensz-home__pricing-error {
+    color: #b45309;
+    background: rgba(254, 243, 199, 0.36);
+    border-color: rgba(212, 148, 10, 0.2);
+  }
+
+  .bensz-home__pricing-retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    padding: 0 16px;
+    min-height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    background: var(--white);
+    color: var(--accent-dark);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bensz-home__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-4);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  .bensz-home__footer-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .bensz-home__footer-links a {
+    color: var(--text-4);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 200ms ease;
+  }
+
+  .bensz-home__footer-links a:hover {
+    color: var(--text-2);
+  }
+
+  @keyframes benszSpin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes benszSpinR {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .bensz-home__hero,
+    .bensz-home__pricing-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .bensz-home__pricing-card--featured {
+      transform: none;
+    }
+
+    .bensz-home__side {
+      min-height: 380px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .bensz-home {
+      padding: 20px 16px 36px;
+    }
+
+    .bensz-home__topbar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .bensz-home__nav {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .bensz-home__main,
+    .bensz-home__side,
+    .bensz-home__pricing-shell {
+      border-radius: 20px;
+      padding: 24px 20px;
+    }
+
+    .bensz-home__features {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .bensz-home__pricing-head,
+    .bensz-home__pricing-footer,
+    .bensz-home__footer {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .bensz-home__pricing-meta {
+      justify-content: flex-start;
+    }
+
+    .bensz-home__orbit {
+      min-height: 220px;
+    }
+
+    .bensz-home__node--grant {
+      top: 14px;
+      left: 10px;
+    }
+
+    .bensz-home__node--paper {
+      right: 8px;
+    }
+
+    .bensz-home__node--review {
+      bottom: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .bensz-home__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .bensz-home__cta,
+    .bensz-home__pricing-cta,
+    .bensz-home__pricing-retry {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .bensz-home__features,
+    .bensz-home__pricing-stats {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .bensz-home__feat {
+      padding: 16px 14px;
+    }
+  }
+</style>
+
+<section class="bensz-home" aria-label="BenszResearch 平台首页">
+  <div class="bensz-home__shell">
+    <header class="bensz-home__topbar">
+      <div class="bensz-home__brand">
+        <div class="bensz-home__seal" aria-hidden="true">BR</div>
+        <div>
+          <span class="bensz-home__brand-name">BenszResearch</span>
+          <span class="bensz-home__brand-sub">AI Research Infrastructure</span>
+        </div>
+      </div>
+
+      <nav class="bensz-home__nav" aria-label="页面导航">
+        <button class="bensz-home__nav-btn is-active" type="button" data-bensz-view-target="home" aria-controls="bensz-home-view-home" aria-selected="true">首页</button>
+        <button class="bensz-home__nav-btn" type="button" data-bensz-view-target="pricing" aria-controls="bensz-home-view-pricing" aria-selected="false">费用</button>
+      </nav>
+    </header>
+
+    <div class="bensz-home__view" id="bensz-home-view-home" data-bensz-view="home">
+      <div class="bensz-home__hero">
+        <article class="bensz-home__main">
+          <div class="bensz-home__eyebrow">For Researchers · 高校师生 · 科研机构</div>
+          <h1 class="bensz-home__title">
+            科研人员的
+            <span class="bensz-home__title-line2">AI 写作助手</span>
+          </h1>
+          <p class="bensz-home__lead">
+            专为科研人员设计的 AI API 服务平台，让学术写作更高效，经费报销更顺畅。
+          </p>
+
+          <div class="bensz-home__actions">
+            <a class="bensz-home__cta bensz-home__cta--primary" href="/dashboard">
+              进入控制台 &rarr;
+            </a>
+            <a class="bensz-home__cta bensz-home__cta--secondary" href="/login">
+              登录 / 注册
+            </a>
+            <div class="bensz-home__microcopy">
+              未登录时点击控制台，平台将自动引导完成认证流程
+            </div>
+          </div>
+
+          <div class="bensz-home__eco-inline">
+            <div class="bensz-home__eco-row">
+              <span class="bensz-home__eco-label">Vibe Coding</span>
+              <div class="bensz-home__eco-items">
+                <span class="bensz-home__eco-chip">Codex <span class="bensz-home__eco-badge bensz-home__eco-badge--live">已上线</span></span>
+                <span class="bensz-home__eco-chip">Claude Code <span class="bensz-home__eco-badge bensz-home__eco-badge--soon">待上线</span></span>
+              </div>
+            </div>
+            <div class="bensz-home__eco-row">
+              <span class="bensz-home__eco-label">AI 模型</span>
+              <div class="bensz-home__eco-items">
+                <span class="bensz-home__eco-chip">GPT <span class="bensz-home__eco-badge bensz-home__eco-badge--live">已上线</span></span>
+                <span class="bensz-home__eco-chip">Claude <span class="bensz-home__eco-badge bensz-home__eco-badge--soon">待上线</span></span>
+                <span class="bensz-home__eco-chip">Gemini <span class="bensz-home__eco-badge bensz-home__eco-badge--soon">待上线</span></span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="bensz-home__side" aria-label="平台核心">
+          <div class="bensz-home__side-head">
+            <div class="bensz-home__side-label">Research Gateway</div>
+            <h2 class="bensz-home__side-title">专注科研,<br>轻装上阵。</h2>
+            <p class="bensz-home__side-desc">
+              一个 API Key，覆盖标书申请到论文润色的完整学术写作链路
+            </p>
+          </div>
+
+          <div class="bensz-home__orbit" aria-hidden="true">
+            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--inner"></div>
+            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--mid"></div>
+            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--outer"></div>
+            <span class="bensz-home__orbit-dot bensz-home__orbit-dot--a"></span>
+            <span class="bensz-home__orbit-dot bensz-home__orbit-dot--b"></span>
+            <div class="bensz-home__orbit-core">BR</div>
+            <div class="bensz-home__node bensz-home__node--grant">标书写作</div>
+            <div class="bensz-home__node bensz-home__node--paper">论文润色</div>
+            <div class="bensz-home__node bensz-home__node--review">文献调研</div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="bensz-home__features" aria-label="平台核心功能">
+        <article class="bensz-home__feat">
+          <div class="bensz-home__feat-icon" aria-hidden="true">🎓</div>
+          <div>
+            <h3 class="bensz-home__feat-title">科研专属平台</h3>
+            <p class="bensz-home__feat-desc">面向高校师生与科研机构，贴合学术场景设计。</p>
+          </div>
+        </article>
+        <article class="bensz-home__feat">
+          <div class="bensz-home__feat-icon" aria-hidden="true">📝</div>
+          <div>
+            <h3 class="bensz-home__feat-title">AI 辅助学术写作</h3>
+            <p class="bensz-home__feat-desc">标书、论文、毕业论文，从框架搭建到语言润色。</p>
+          </div>
+        </article>
+        <article class="bensz-home__feat">
+          <div class="bensz-home__feat-icon" aria-hidden="true">🧾</div>
+          <div>
+            <h3 class="bensz-home__feat-title">垫付 + 发票报销</h3>
+            <p class="bensz-home__feat-desc">平台开具正规发票，符合科研经费管理规范。</p>
+          </div>
+        </article>
+        <article class="bensz-home__feat">
+          <div class="bensz-home__feat-icon" aria-hidden="true">⚡</div>
+          <div>
+            <h3 class="bensz-home__feat-title">稳定 · 性价比高</h3>
+            <p class="bensz-home__feat-desc">定价透明，服务稳定，专为长期使用优化。</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="bensz-home__view" id="bensz-home-view-pricing" data-bensz-view="pricing" hidden>
+      <section class="bensz-home__pricing-shell" aria-label="订阅费用">
+        <div class="bensz-home__pricing-head">
+          <div class="bensz-home__pricing-copy">
+            <div class="bensz-home__pricing-label">Subscription Pricing</div>
+            <h2 class="bensz-home__pricing-title">管理员上架什么套餐，这里就展示什么套餐。</h2>
+            <p class="bensz-home__pricing-desc">
+              费用页自动读取后台当前可售订阅套餐，无需重复维护静态卡片。套餐停售、调整价格或新增品类后，这里会同步反映最新结果。
+            </p>
+          </div>
+
+          <div class="bensz-home__pricing-meta">
+            <div class="bensz-home__pricing-summary" data-pricing-summary>
+              正在同步套餐信息
+            </div>
+            <div class="bensz-home__pricing-note">
+              套餐价格以人民币展示；额度与模型范围按后台真实配置自动适配。
+            </div>
+          </div>
+        </div>
+
+        <div class="bensz-home__pricing-loading" data-pricing-loading>
+          正在读取已上线套餐，请稍候...
+        </div>
+
+        <div class="bensz-home__pricing-error" data-pricing-error hidden>
+          套餐信息暂时加载失败，请稍后重试。
+          <div>
+            <button class="bensz-home__pricing-retry" type="button" data-pricing-retry>重新加载</button>
+          </div>
+        </div>
+
+        <div class="bensz-home__pricing-empty" data-pricing-empty hidden>
+          当前暂未上架可售套餐。管理员在后台开启套餐售卖后，这里会自动展示。
+        </div>
+
+        <div class="bensz-home__pricing-grid" data-pricing-grid hidden></div>
+      </section>
+    </div>
+
+    <footer class="bensz-home__footer">
+      <span>&copy; 2026 BenszResearch</span>
+      <div class="bensz-home__footer-links">
+        <a href="/terms">服务条款</a>
+        <a href="/privacy">隐私政策</a>
+        <a href="/dashboard">控制台</a>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var runtime = window.__SUB2API_HOME_CONTENT__ || {};
+    var currentScript = document.currentScript;
+    var root = runtime.root;
+    if (!root && currentScript) {
+      if (
+        currentScript.previousElementSibling &&
+        currentScript.previousElementSibling.classList &&
+        currentScript.previousElementSibling.classList.contains('bensz-home')
+      ) {
+        root = currentScript.previousElementSibling;
+      } else if (typeof currentScript.closest === 'function') {
+        root = currentScript.closest('.bensz-home');
+      }
+    }
+    if (!root) return;
+
+    var apiBase = String(runtime.apiBase || '/api/v1').replace(/\/$/, '');
+    var cleanupTasks = [];
+    var navButtons = Array.prototype.slice.call(root.querySelectorAll('[data-bensz-view-target]'));
+    var viewPanels = Array.prototype.slice.call(root.querySelectorAll('[data-bensz-view]'));
+    var pricingGrid = root.querySelector('[data-pricing-grid]');
+    var pricingLoading = root.querySelector('[data-pricing-loading]');
+    var pricingError = root.querySelector('[data-pricing-error]');
+    var pricingEmpty = root.querySelector('[data-pricing-empty]');
+    var pricingSummary = root.querySelector('[data-pricing-summary]');
+    var pricingRetry = root.querySelector('[data-pricing-retry]');
+    var abortController = null;
+    var loaded = false;
+
+    function registerCleanup(task) {
+      if (typeof task === 'function') {
+        cleanupTasks.push(task);
+      }
+    }
+
+    if (typeof runtime.onCleanup === 'function') {
+      runtime.onCleanup(function () {
+        while (cleanupTasks.length) {
+          var task = cleanupTasks.pop();
+          try {
+            task();
+          } catch (error) {
+            console.error('[bensz-home] cleanup failed:', error);
+          }
+        }
+      });
+    }
+
+    function setView(view) {
+      for (var i = 0; i < navButtons.length; i += 1) {
+        var button = navButtons[i];
+        var active = button.getAttribute('data-bensz-view-target') === view;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+
+      for (var j = 0; j < viewPanels.length; j += 1) {
+        var panel = viewPanels[j];
+        panel.hidden = panel.getAttribute('data-bensz-view') !== view;
+      }
+
+      if (view === 'pricing' && !loaded) {
+        loadPlans();
+      }
+    }
+
+    function onNavClick(event) {
+      var target = event.currentTarget.getAttribute('data-bensz-view-target');
+      if (target) {
+        setView(target);
+      }
+    }
+
+    for (var i = 0; i < navButtons.length; i += 1) {
+      navButtons[i].addEventListener('click', onNavClick);
+    }
+
+    registerCleanup(function () {
+      for (var k = 0; k < navButtons.length; k += 1) {
+        navButtons[k].removeEventListener('click', onNavClick);
+      }
+    });
+
+    function showState(state) {
+      if (pricingLoading) pricingLoading.hidden = state !== 'loading';
+      if (pricingError) pricingError.hidden = state !== 'error';
+      if (pricingEmpty) pricingEmpty.hidden = state !== 'empty';
+      if (pricingGrid) pricingGrid.hidden = state !== 'ready';
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeFeatures(features) {
+      if (Array.isArray(features)) {
+        return features.map(function (item) { return String(item).trim(); }).filter(Boolean);
+      }
+      if (typeof features === 'string') {
+        return features
+          .split(/\n|,/)
+          .map(function (item) { return item.trim(); })
+          .filter(Boolean);
+      }
+      return [];
+    }
+
+    function formatPrice(value) {
+      return new Intl.NumberFormat('zh-CN', {
+        style: 'currency',
+        currency: 'CNY',
+        minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+      }).format(Number(value) || 0);
+    }
+
+    function formatUSD(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+      }).format(Number(value) || 0);
+    }
+
+    function formatDuration(plan) {
+      var unit = String(plan.validity_unit || 'day').toLowerCase();
+      var value = Number(plan.validity_days) || 0;
+      if (unit === 'month') return value + ' 个月';
+      if (unit === 'year') return value + ' 年';
+      if (unit === 'week') return value + ' 周';
+      return value + ' 天';
+    }
+
+    function buildQuotaItems(plan) {
+      var items = [];
+      if (plan.daily_limit_usd != null) items.push('日额度 ' + formatUSD(plan.daily_limit_usd));
+      if (plan.weekly_limit_usd != null) items.push('周额度 ' + formatUSD(plan.weekly_limit_usd));
+      if (plan.monthly_limit_usd != null) items.push('月额度 ' + formatUSD(plan.monthly_limit_usd));
+      if (!items.length) items.push('额度按后台策略执行，无固定封顶值');
+      return items;
+    }
+
+    function renderPlanCard(plan, index) {
+      var features = normalizeFeatures(plan.features);
+      var modelScopes = Array.isArray(plan.supported_model_scopes) ? plan.supported_model_scopes.filter(Boolean) : [];
+      var quotaItems = buildQuotaItems(plan);
+      var featured = index === 0;
+      var rateMultiplier = Number(plan.rate_multiplier);
+      var platformLabel = plan.group_platform ? String(plan.group_platform).toUpperCase() : 'AI';
+      var description = plan.description ? escapeHtml(plan.description) : '适合需要稳定、规范化接入科研 AI 工作流的使用场景。';
+      var originalPrice = plan.original_price != null ? '<span class="bensz-home__pricing-original">' + escapeHtml(formatPrice(plan.original_price)) + '</span>' : '';
+      var stats = [
+        {
+          label: '有效期',
+          value: formatDuration(plan)
+        },
+        {
+          label: '倍率',
+          value: isFinite(rateMultiplier) && rateMultiplier > 0 ? '×' + rateMultiplier : '×1'
+        }
+      ];
+
+      var featureList = features.length ? features : ['自动对接后台上架套餐', '适合科研写作场景的稳定入口', '套餐停售或调整后会自动同步'];
+      var modelTags = modelScopes.length
+        ? modelScopes.slice(0, 6).map(function (item) {
+            return '<span class="bensz-home__pricing-chip">' + escapeHtml(item) + '</span>';
+          }).join('')
+        : '<span class="bensz-home__pricing-chip">模型范围以后台配置为准</span>';
+
+      return [
+        '<article class="bensz-home__pricing-card' + (featured ? ' bensz-home__pricing-card--featured' : '') + '">',
+        '  <div>',
+        '    <div class="bensz-home__pricing-card-top">',
+        '      <span class="bensz-home__pricing-platform">' + escapeHtml(platformLabel) + '</span>',
+        featured ? '      <span class="bensz-home__pricing-badge">推荐</span>' : '      <span class="bensz-home__pricing-badge">已上线</span>',
+        '    </div>',
+        '    <h3 class="bensz-home__pricing-name">' + escapeHtml(plan.name || '未命名套餐') + '</h3>',
+        '    <p class="bensz-home__pricing-caption">' + description + '</p>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-amount">',
+        '    <span class="bensz-home__pricing-price">' + escapeHtml(formatPrice(plan.price)) + '</span>',
+        originalPrice,
+        '    <span class="bensz-home__pricing-duration">/ ' + escapeHtml(formatDuration(plan)) + '</span>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-block">',
+        '    <div class="bensz-home__pricing-stats">',
+              stats.map(function (stat) {
+                return [
+                  '<div class="bensz-home__pricing-stat">',
+                  '  <div class="bensz-home__pricing-stat-label">' + escapeHtml(stat.label) + '</div>',
+                  '  <div class="bensz-home__pricing-stat-value">' + escapeHtml(stat.value) + '</div>',
+                  '</div>'
+                ].join('');
+              }).join(''),
+        '    </div>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-block">',
+        '    <ul class="bensz-home__pricing-list">',
+              featureList.slice(0, 4).map(function (item) {
+                return '<li>' + escapeHtml(item) + '</li>';
+              }).join(''),
+              quotaItems.map(function (item) {
+                return '<li>' + escapeHtml(item) + '</li>';
+              }).join(''),
+        '    </ul>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-block">',
+        '    <div class="bensz-home__pricing-tags">' + modelTags + '</div>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-footer">',
+        '    <div class="bensz-home__pricing-footer-copy">进入控制台后即可选择套餐并完成购买。</div>',
+        '    <a class="bensz-home__pricing-cta" href="/payment?tab=subscription">查看详情</a>',
+        '  </div>',
+        '</article>'
+      ].join('');
+    }
+
+    function unwrapPlans(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (payload && Array.isArray(payload.data)) return payload.data;
+      if (payload && payload.code === 0 && Array.isArray(payload.data)) return payload.data;
+      return [];
+    }
+
+    async function loadPlans() {
+      loaded = true;
+      showState('loading');
+      if (pricingSummary) {
+        pricingSummary.textContent = '正在同步套餐信息';
+      }
+
+      if (abortController) {
+        abortController.abort();
+      }
+      abortController = typeof AbortController === 'function' ? new AbortController() : null;
+
+      try {
+        var response = await fetch(apiBase + '/payment/public/plans', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json'
+          },
+          signal: abortController ? abortController.signal : undefined
+        });
+
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        var payload = await response.json();
+        var plans = unwrapPlans(payload)
+          .filter(function (plan) { return plan && plan.for_sale !== false; })
+          .sort(function (left, right) {
+            var leftOrder = Number(left.sort_order) || 0;
+            var rightOrder = Number(right.sort_order) || 0;
+            if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+            return (Number(left.id) || 0) - (Number(right.id) || 0);
+          });
+
+        if (!plans.length) {
+          showState('empty');
+          if (pricingSummary) {
+            pricingSummary.textContent = '当前暂无可售套餐';
+          }
+          return;
+        }
+
+        if (pricingGrid) {
+          pricingGrid.innerHTML = plans.map(renderPlanCard).join('');
+        }
+        if (pricingSummary) {
+          pricingSummary.textContent = '当前已上线 ' + plans.length + ' 个套餐';
+        }
+        showState('ready');
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        console.error('[bensz-home] failed to load pricing plans:', error);
+        showState('error');
+        if (pricingSummary) {
+          pricingSummary.textContent = '套餐同步失败';
+        }
+      }
+    }
+
+    if (pricingRetry) {
+      pricingRetry.addEventListener('click', loadPlans);
+      registerCleanup(function () {
+        pricingRetry.removeEventListener('click', loadPlans);
+      });
+    }
+
+    registerCleanup(function () {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+    });
+
+    setView('home');
+  })();
+</script>
