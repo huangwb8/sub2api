@@ -437,21 +437,14 @@
               </div>
             </div>
 
-            <div class="mt-4 h-64">
-              <div v-if="profitabilityLoading" class="flex h-full items-center justify-center">
-                <LoadingSpinner size="md" />
-              </div>
-              <Line
-                v-else-if="profitabilityChartData"
-                :data="profitabilityChartData"
-                :options="profitabilityLineOptions"
+            <div class="mt-4 h-72">
+              <ProfitabilityTrendChart
+                :trend-data="profitabilityTrend"
+                :loading="profitabilityLoading"
+                :granularity="profitabilityGranularity"
+                :start-date="profitabilityStartDate"
+                :end-date="profitabilityEndDate"
               />
-              <div
-                v-else
-                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
-              >
-                {{ t('admin.dashboard.noDataAvailable') }}
-              </div>
             </div>
           </div>
 
@@ -502,9 +495,9 @@ import Icon from '@/components/icons/Icon.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
+import ProfitabilityTrendChart from '@/components/charts/ProfitabilityTrendChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import {
-  buildProfitabilityChartData,
   summarizeProfitabilityTrend
 } from './dashboardProfitability'
 
@@ -729,10 +722,6 @@ const userTrendChartData = computed(() => {
 
 const profitabilitySummary = computed(() => summarizeProfitabilityTrend(profitabilityTrend.value))
 
-const profitabilityChartData = computed(() => {
-  return buildProfitabilityChartData(profitabilityTrend.value, t)
-})
-
 // Format helpers
 const formatTokens = (value: number | undefined): string => {
   if (value === undefined || value === null) return '0'
@@ -780,88 +769,6 @@ const formatDuration = (ms: number): string => {
 }
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`
-
-const profitabilityLineOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    intersect: false,
-    mode: 'index' as const
-  },
-  plugins: {
-    legend: {
-      labels: {
-        color: chartColors.value.text,
-        usePointStyle: true,
-        pointStyle: 'circle',
-        padding: 14,
-        font: {
-          size: 11
-        }
-      }
-    },
-    tooltip: {
-      callbacks: {
-        label: (context: any) => {
-          const rawValue = context?.raw
-          const numericValue = typeof rawValue === 'number'
-            ? rawValue
-            : rawValue == null
-              ? null
-              : Number(context?.parsed?.y ?? rawValue)
-
-          if (context?.dataset?.tooltipValueType === 'rate') {
-            return `${context.dataset.label}: ${formatExtraProfitRate(numericValue)}`
-          }
-
-          if (context?.dataset?.tooltipValueType === 'signedAmount') {
-            return `${context.dataset.label}: ${formatSignedCny(numericValue ?? 0)}`
-          }
-
-          return `${context.dataset.label}: ${formatCny(numericValue ?? 0)}`
-        }
-      }
-    }
-  },
-  scales: {
-    x: {
-      grid: {
-        color: chartColors.value.grid
-      },
-      ticks: {
-        color: chartColors.value.text,
-        font: {
-          size: 10
-        }
-      }
-    },
-    yAmount: {
-      grid: {
-        color: chartColors.value.grid
-      },
-      ticks: {
-        color: chartColors.value.text,
-        font: {
-          size: 10
-        },
-        callback: (value: string | number) => formatCny(Number(value))
-      }
-    },
-    yRate: {
-      position: 'right' as const,
-      grid: {
-        drawOnChartArea: false
-      },
-      ticks: {
-        color: chartColors.value.text,
-        font: {
-          size: 10
-        },
-        callback: (value: string | number) => `${Number(value).toFixed(0)}%`
-      }
-    }
-  }
-}))
 
 const recommendationStatusClass = (status: 'healthy' | 'watch' | 'action') => {
   if (status === 'action') {

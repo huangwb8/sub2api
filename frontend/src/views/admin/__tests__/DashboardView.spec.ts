@@ -152,6 +152,7 @@ describe('admin DashboardView', () => {
           DateRangePicker: true,
           Select: true,
           ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
           TokenUsageTrend: true,
           Line: true
         }
@@ -181,6 +182,7 @@ describe('admin DashboardView', () => {
           DateRangePicker: true,
           Select: true,
           ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
           TokenUsageTrend: true,
           Line: true
         }
