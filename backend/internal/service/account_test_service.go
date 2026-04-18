@@ -515,12 +515,6 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 			_ = s.accountRepo.UpdateExtra(ctx, account.ID, updates)
 			mergeAccountExtra(account, updates)
 		}
-		if snapshot := ParseCodexRateLimitHeaders(resp.Header); snapshot != nil {
-			if resetAt := codexRateLimitResetAtFromSnapshot(snapshot, time.Now()); resetAt != nil {
-				_ = s.accountRepo.SetRateLimited(ctx, account.ID, *resetAt)
-				account.RateLimitResetAt = resetAt
-			}
-		}
 	}
 
 	if resp.StatusCode != http.StatusOK {

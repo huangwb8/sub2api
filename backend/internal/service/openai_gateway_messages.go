@@ -121,6 +121,23 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 		}
 	}
 
+	if account.Type == AccountTypeAPIKey {
+		if trimmedKey := strings.TrimSpace(promptCacheKey); trimmedKey != "" {
+			var reqBody map[string]any
+			if err := json.Unmarshal(responsesBody, &reqBody); err != nil {
+				return nil, fmt.Errorf("unmarshal for prompt cache key injection: %w", err)
+			}
+			if existing, ok := reqBody["prompt_cache_key"].(string); !ok || strings.TrimSpace(existing) == "" {
+				reqBody["prompt_cache_key"] = trimmedKey
+				updated, err := json.Marshal(reqBody)
+				if err != nil {
+					return nil, fmt.Errorf("remarshal after prompt cache key injection: %w", err)
+				}
+				responsesBody = updated
+			}
+		}
+	}
+
 	// 5. Get access token
 	token, _, err := s.GetAccessToken(ctx, account)
 	if err != nil {
@@ -270,6 +287,7 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 
 	var finalResponse *apicompat.ResponsesResponse
 	var usage OpenAIUsage
+	acc := apicompat.NewBufferedResponseAccumulator()
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -288,8 +306,11 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 			continue
 		}
 
+		acc.ProcessEvent(&event)
+
 		// Terminal events carry the complete ResponsesResponse with output + usage.
-		if (event.Type == "response.completed" || event.Type == "response.incomplete" || event.Type == "response.failed") &&
+		if (event.Type == "response.completed" || event.Type == "response.done" ||
+			event.Type == "response.incomplete" || event.Type == "response.failed") &&
 			event.Response != nil {
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
@@ -317,6 +338,8 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 		writeAnthropicError(c, http.StatusBadGateway, "api_error", "Upstream stream ended without a terminal response event")
 		return nil, fmt.Errorf("upstream stream ended without terminal event")
 	}
+
+	acc.SupplementResponseOutput(finalResponse)
 
 	anthropicResp := apicompat.ResponsesToAnthropic(finalResponse, originalModel)
 

@@ -5120,19 +5120,8 @@ func (s *GatewayService) handleNonStreamingResponseAnthropicAPIKeyPassthrough(
 		s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
 	}
 
-	maxBytes := resolveUpstreamResponseReadLimit(s.cfg)
-	body, err := readUpstreamResponseBodyLimited(resp.Body, maxBytes)
+	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, anthropicTooLargeError)
 	if err != nil {
-		if errors.Is(err, ErrUpstreamResponseBodyTooLarge) {
-			setOpsUpstreamError(c, http.StatusBadGateway, "upstream response too large", "")
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream response too large",
-				},
-			})
-		}
 		return nil, err
 	}
 

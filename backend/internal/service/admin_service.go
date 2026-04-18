@@ -128,16 +128,16 @@ type UpdateUserInput struct {
 }
 
 type CreateGroupInput struct {
-	Name             string
-	Description      string
-	Platform         string
-	RateMultiplier   float64
+	Name                   string
+	Description            string
+	Platform               string
+	RateMultiplier         float64
 	ExtraProfitRatePercent *float64
-	IsExclusive      bool
-	SubscriptionType string   // standard/subscription
-	DailyLimitUSD    *float64 // 日限额 (USD)
-	WeeklyLimitUSD   *float64 // 周限额 (USD)
-	MonthlyLimitUSD  *float64 // 月限额 (USD)
+	IsExclusive            bool
+	SubscriptionType       string   // standard/subscription
+	DailyLimitUSD          *float64 // 日限额 (USD)
+	WeeklyLimitUSD         *float64 // 周限额 (USD)
+	MonthlyLimitUSD        *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	ImagePrice1K    *float64
 	ImagePrice2K    *float64
@@ -163,17 +163,17 @@ type CreateGroupInput struct {
 }
 
 type UpdateGroupInput struct {
-	Name             string
-	Description      string
-	Platform         string
-	RateMultiplier   *float64 // 使用指针以支持设置为0
+	Name                   string
+	Description            string
+	Platform               string
+	RateMultiplier         *float64 // 使用指针以支持设置为0
 	ExtraProfitRatePercent *float64
-	IsExclusive      *bool
-	Status           string
-	SubscriptionType string   // standard/subscription
-	DailyLimitUSD    *float64 // 日限额 (USD)
-	WeeklyLimitUSD   *float64 // 周限额 (USD)
-	MonthlyLimitUSD  *float64 // 月限额 (USD)
+	IsExclusive            *bool
+	Status                 string
+	SubscriptionType       string   // standard/subscription
+	DailyLimitUSD          *float64 // 日限额 (USD)
+	WeeklyLimitUSD         *float64 // 周限额 (USD)
+	MonthlyLimitUSD        *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	ImagePrice1K    *float64
 	ImagePrice2K    *float64
@@ -1484,10 +1484,6 @@ func (s *adminServiceImpl) ListAccounts(ctx context.Context, page, pageSize int,
 	accounts, result, err := s.accountRepo.ListWithFilters(ctx, params, platform, accountType, status, search, groupID, privacyMode)
 	if err != nil {
 		return nil, 0, err
-	}
-	now := time.Now()
-	for i := range accounts {
-		syncOpenAICodexRateLimitFromExtra(ctx, s.accountRepo, &accounts[i], now)
 	}
 	return accounts, result.Total, nil
 }
