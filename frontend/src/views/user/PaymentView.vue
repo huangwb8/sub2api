@@ -806,7 +806,13 @@ onMounted(async () => {
           selectUpgradeOptionForCheckout(result.options[0], result, sourceSubscriptionId)
         }
       }
-      if (route.query.group) {
+      if (route.query.plan) {
+        const planId = Number(route.query.plan)
+        const matchedPlan = checkout.value.plans.find(plan => plan.id === planId)
+        if (matchedPlan) {
+          selectPlan(matchedPlan)
+        }
+      } else if (route.query.group) {
         const groupId = Number(route.query.group)
         const groupPlans = checkout.value.plans.filter(p => p.group_id === groupId)
         if (groupPlans.length === 1) {
