@@ -8,6 +8,7 @@
 
 ### Changed（变更）
 - 恢复了 OpenAI 账号 `WS mode` 的 `ctx_pool` 前端可选项：创建账号、编辑账号与批量编辑现在都会展示完整的 `off / ctx_pool / passthrough` 三态选项，避免已配置 `ctx_pool` 的账号在编辑时出现下拉框空白。
+- 补充了 `docs/关键模型参数设置.md` 中 API Key 账号错误处理参数的教程：新增 `池模式`、`自定义错误码`、`临时不可调度` 的推荐配置、互斥关系与典型场景，便于管理员按“官方直连 / 上游号池 / 第三方代理”三类来源选择更稳妥的默认值。
 
 ### Fixed（修复）
 - 修复了 OpenAI `ctx_pool` 模式在管理后台被前端隐藏的问题：此前 `EditAccountModal`、`CreateAccountModal` 中的选项被注释掉，`BulkEditAccountModal` 也缺少该选项；现已统一补齐并新增回归测试覆盖，防止后续再次回退。
