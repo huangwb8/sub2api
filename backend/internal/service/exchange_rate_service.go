@@ -262,7 +262,7 @@ func defaultBillingFXSettingsFromConfig(cfg *config.Config) billingFXDefaults {
 		Enabled:         true,
 		Provider:        "default",
 		FallbackRate:    7.2,
-		CacheTTLSeconds: 600,
+		CacheTTLSeconds: 24 * 60 * 60,
 		TimeoutMS:       3000,
 		SafetyMargin:    0.02,
 		LiveURL:         "https://open.er-api.com/v6/latest/USD",

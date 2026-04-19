@@ -1196,7 +1196,7 @@ func setDefaults() {
 	viper.SetDefault("billing.fx.enabled", true)
 	viper.SetDefault("billing.fx.provider", "default")
 	viper.SetDefault("billing.fx.fallback_rate", 7.2)
-	viper.SetDefault("billing.fx.cache_ttl_seconds", 600)
+	viper.SetDefault("billing.fx.cache_ttl_seconds", 86400)
 	viper.SetDefault("billing.fx.timeout_ms", 3000)
 	viper.SetDefault("billing.fx.safety_margin", 0.02)
 	viper.SetDefault("billing.fx.default_live_url", "https://open.er-api.com/v6/latest/USD")

@@ -138,6 +138,38 @@ func TestSettingService_GetAllSettings_DefaultSubscriptionCapacityTightnessFallb
 	require.Equal(t, defaultSubscriptionCapacityTightness, settings.SubscriptionCapacityTightness)
 }
 
+func TestSettingService_GetAllSettings_DefaultBillingFXCacheTTLIs24Hours(t *testing.T) {
+	repo := &settingUpdateRepoStub{
+		values: map[string]string{},
+	}
+	svc := NewSettingService(repo, &config.Config{
+		Default: config.DefaultConfig{
+			UserConcurrency: 1,
+			UserBalance:     0,
+		},
+	})
+
+	settings, err := svc.GetAllSettings(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 24*60*60, settings.BillingFXCacheTTLSeconds)
+}
+
+func TestSettingService_UpdateSettings_StoresBillingFXCacheTTLSeconds(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		BillingFXEnabled:         true,
+		BillingFXProvider:        "default",
+		BillingFXFallbackRate:    7.2,
+		BillingFXCacheTTLSeconds: 24 * 60 * 60,
+		BillingFXTimeoutMS:       3000,
+		BillingFXSafetyMargin:    0.02,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "86400", repo.updates[SettingKeyBillingFXCacheTTLSeconds])
+}
+
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	groupReader := &defaultSubGroupReaderStub{

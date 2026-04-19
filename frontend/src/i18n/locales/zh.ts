@@ -5101,6 +5101,12 @@ export default {
         presetOpusOnlyDesc: 'Opus 透传，其他模型过滤',
         commonPatterns: '常用模式'
       },
+      billingFx: {
+        title: '汇率缓存',
+        description: '配置后台缓存在线汇率结果的时长。更长的缓存可以减少外部汇率接口访问频率，并提高结算链路稳定性。',
+        cacheTTLSeconds: '汇率缓存时长（秒）',
+        cacheTTLSecondsHint: '默认 86400 秒（24 小时）。值越大，汇率刷新越慢，但更稳定，也更省外部请求。'
+      },
       saveSettings: '保存设置',
       saving: '保存中...',
       settingsSaved: '设置保存成功',

@@ -1815,6 +1815,35 @@
           </div>
         </div>
 
+        <!-- Billing FX Cache Settings -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.billingFx.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.billingFx.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.settings.billingFx.cacheTTLSeconds') }}
+              </label>
+              <input
+                v-model.number="form.billing_fx_cache_ttl_seconds"
+                type="number"
+                min="1"
+                step="1"
+                class="input w-56"
+              />
+              <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.billingFx.cacheTTLSecondsHint') }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- Gateway Forwarding Behavior -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -2836,6 +2865,7 @@ const form = reactive<SettingsForm>({
   default_concurrency: 1,
   default_subscriptions: [],
   subscription_capacity_tightness: 50,
+  billing_fx_cache_ttl_seconds: 24 * 60 * 60,
   site_name: 'Sub2API',
   site_logo: '',
   site_subtitle: 'Subscription to API Conversion Platform',
@@ -3276,6 +3306,7 @@ async function saveSettings() {
       default_concurrency: form.default_concurrency,
       default_subscriptions: normalizedDefaultSubscriptions,
       subscription_capacity_tightness: Math.min(100, Math.max(0, Math.round(Number(form.subscription_capacity_tightness) || 0))),
+      billing_fx_cache_ttl_seconds: Math.max(1, Math.floor(Number(form.billing_fx_cache_ttl_seconds) || 24 * 60 * 60)),
       site_name: form.site_name,
       site_logo: form.site_logo,
       site_subtitle: form.site_subtitle,

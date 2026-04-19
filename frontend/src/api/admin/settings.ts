@@ -30,6 +30,7 @@ export interface SystemSettings {
   default_concurrency: number
   default_subscriptions: DefaultSubscriptionSetting[]
   subscription_capacity_tightness: number
+  billing_fx_cache_ttl_seconds: number
   // OEM settings
   site_name: string
   site_logo: string
@@ -153,6 +154,7 @@ export interface UpdateSettingsRequest {
   default_concurrency?: number
   default_subscriptions?: DefaultSubscriptionSetting[]
   subscription_capacity_tightness?: number
+  billing_fx_cache_ttl_seconds?: number
   site_name?: string
   site_logo?: string
   site_subtitle?: string

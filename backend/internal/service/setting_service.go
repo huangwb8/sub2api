@@ -134,7 +134,7 @@ func (s *SettingService) defaultBillingFXSettings() BillingFXSettings {
 		Enabled:         true,
 		Provider:        "default",
 		FallbackRate:    7.2,
-		CacheTTLSeconds: 600,
+		CacheTTLSeconds: 24 * 60 * 60,
 		TimeoutMS:       3000,
 		SafetyMargin:    0.02,
 	}
@@ -682,7 +682,11 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyBillingFXEnabled] = strconv.FormatBool(settings.BillingFXEnabled)
 	updates[SettingKeyBillingFXProvider] = strings.TrimSpace(settings.BillingFXProvider)
 	updates[SettingKeyBillingFXFallbackRate] = strconv.FormatFloat(settings.BillingFXFallbackRate, 'f', 10, 64)
-	updates[SettingKeyBillingFXCacheTTLSeconds] = strconv.Itoa(settings.BillingFXCacheTTLSeconds)
+	billingFXCacheTTLSeconds := settings.BillingFXCacheTTLSeconds
+	if billingFXCacheTTLSeconds <= 0 {
+		billingFXCacheTTLSeconds = s.defaultBillingFXSettings().CacheTTLSeconds
+	}
+	updates[SettingKeyBillingFXCacheTTLSeconds] = strconv.Itoa(billingFXCacheTTLSeconds)
 	updates[SettingKeyBillingFXTimeoutMS] = strconv.Itoa(settings.BillingFXTimeoutMS)
 	updates[SettingKeyBillingFXSafetyMargin] = strconv.FormatFloat(settings.BillingFXSafetyMargin, 'f', 6, 64)
 	if settings.BillingFXLastSuccessRate != nil && *settings.BillingFXLastSuccessRate > 0 {

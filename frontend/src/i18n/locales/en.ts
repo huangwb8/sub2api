@@ -4931,6 +4931,12 @@ export default {
         presetOpusOnlyDesc: 'Pass for Opus, filter others',
         commonPatterns: 'Common patterns'
       },
+      billingFx: {
+        title: 'FX Cache',
+        description: 'Configure how long the backend caches live exchange-rate results. A longer cache reduces external FX lookups and improves billing-path stability.',
+        cacheTTLSeconds: 'FX Cache TTL (seconds)',
+        cacheTTLSecondsHint: 'Default is 86400 seconds (24 hours). Larger values refresh FX rates less often, but improve stability and reduce external requests.'
+      },
       saveSettings: 'Save Settings',
       saving: 'Saving...',
       settingsSaved: 'Settings saved successfully',
