@@ -169,6 +169,33 @@ describe('BulkEditAccountModal', () => {
     })
   })
 
+  it('OpenAI OAuth 批量编辑应提供并可提交 ctx_pool WS mode', async () => {
+    const wrapper = mountModal({
+      selectedPlatforms: ['openai'],
+      selectedTypes: ['oauth']
+    })
+
+    const wsModeSelect = wrapper.get('[data-testid="bulk-edit-openai-ws-mode-select"]')
+    expect(wsModeSelect.findAll('option').map((option) => option.element.getAttribute('value'))).toEqual([
+      'off',
+      'ctx_pool',
+      'passthrough'
+    ])
+
+    await wrapper.get('#bulk-edit-openai-ws-mode-enabled').setValue(true)
+    await wsModeSelect.setValue('ctx_pool')
+    await wrapper.get('#bulk-edit-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledTimes(1)
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledWith([1, 2], {
+      extra: {
+        openai_oauth_responses_websockets_v2_mode: 'ctx_pool',
+        openai_oauth_responses_websockets_v2_enabled: true
+      }
+    })
+  })
+
   it('OpenAI API Key 批量编辑不显示 WS mode 入口', () => {
     const wrapper = mountModal({
       selectedPlatforms: ['openai'],

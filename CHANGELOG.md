@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+### Changed（变更）
+- 恢复了 OpenAI 账号 `WS mode` 的 `ctx_pool` 前端可选项：创建账号、编辑账号与批量编辑现在都会展示完整的 `off / ctx_pool / passthrough` 三态选项，避免已配置 `ctx_pool` 的账号在编辑时出现下拉框空白。
+
+### Fixed（修复）
+- 修复了 OpenAI `ctx_pool` 模式在管理后台被前端隐藏的问题：此前 `EditAccountModal`、`CreateAccountModal` 中的选项被注释掉，`BulkEditAccountModal` 也缺少该选项；现已统一补齐并新增回归测试覆盖，防止后续再次回退。
+
 ## [1.0.19] - 2026-04-19
 
 ### Added（新增）

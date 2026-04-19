@@ -53,6 +53,12 @@ version1 = ad64190bec3605f97e9e1805a0118aaa51f22b08
 
 ---
 
+PlanMardkdown = docs/plans/2026-04-19-ws-ctx-pool-ui-unhide-plan.md
+
+根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
 PlanMardkdown = docs/plans/2026-04-19-profitability-cost-gap-remediation-plan.md
 
 根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。

@@ -57,6 +57,31 @@ const BaseDialogStub = defineComponent({
   template: '<div v-if="show"><slot /><slot name="footer" /></div>'
 })
 
+const SelectStub = defineComponent({
+  name: 'UiSelectStub',
+  props: {
+    modelValue: {
+      type: String,
+      default: ''
+    },
+    options: {
+      type: Array,
+      default: () => []
+    }
+  },
+  emits: ['update:modelValue'],
+  template: `
+    <select
+      :value="modelValue"
+      @change="$emit('update:modelValue', $event.target.value)"
+    >
+      <option v-for="option in options" :key="option.value" :value="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+  `
+})
+
 const ModelWhitelistSelectorStub = defineComponent({
   name: 'ModelWhitelistSelector',
   props: {
@@ -119,7 +144,7 @@ function mountModal(account = buildAccount()) {
     global: {
       stubs: {
         BaseDialog: BaseDialogStub,
-        Select: true,
+        Select: SelectStub,
         Icon: true,
         ProxySelector: true,
         GroupSelector: true,
@@ -130,6 +155,25 @@ function mountModal(account = buildAccount()) {
 }
 
 describe('EditAccountModal', () => {
+  it('OpenAI 账号编辑时应展示并回显 ctx_pool WS mode', () => {
+    const wrapper = mountModal({
+      ...buildAccount(),
+      extra: {
+        openai_apikey_responses_websockets_v2_mode: 'ctx_pool'
+      }
+    })
+
+    const wsModeSelect = wrapper.findAll('select').find((select) => select.find('option[value="ctx_pool"]').exists())
+
+    expect(wsModeSelect).toBeTruthy()
+    expect(wsModeSelect!.findAll('option').map((option) => option.element.getAttribute('value'))).toEqual([
+      'off',
+      'ctx_pool',
+      'passthrough'
+    ])
+    expect((wsModeSelect!.element as HTMLSelectElement).value).toBe('ctx_pool')
+  })
+
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {
     const account = buildAccount()
     updateAccountMock.mockReset()
