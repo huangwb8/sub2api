@@ -129,6 +129,7 @@ vite.config.js
 docs/*
 !docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md
 !docs/关键模型参数设置.md
+!docs/汇率波动如何影响用户购买行为与权益.md
 !docs/page-demo/
 !docs/page-demo/**
 !docs/plans/
