@@ -5,7 +5,7 @@
 - 发布新的release
 
 ```
-version=1.0.19
+version=1.0.20
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -50,6 +50,10 @@ version1 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
 ```
 
 # 日常
+
+---
+
+根据 docs/plans/2026-04-19-upstream-6c73b62-to-51af8df-optimization-plan.md ，将上游项目的新特性的优点吸收在本项目里；这个过程应该是在你彻底了解新特性的源代码以及本项目的源代码的前提下进行。本项目有不少我独有的开发功能，你千万不要干扰； 如果上游项目的新特性与我的个性化功能有冲突，以保我的个性化功能为首要前提。上述过程比较复杂， 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

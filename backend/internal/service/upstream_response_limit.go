@@ -12,13 +12,11 @@ import (
 
 var ErrUpstreamResponseBodyTooLarge = errors.New("upstream response body too large")
 
-const defaultUpstreamResponseReadMaxBytes int64 = 8 * 1024 * 1024
-
 func resolveUpstreamResponseReadLimit(cfg *config.Config) int64 {
 	if cfg != nil && cfg.Gateway.UpstreamResponseReadMaxBytes > 0 {
 		return cfg.Gateway.UpstreamResponseReadMaxBytes
 	}
-	return defaultUpstreamResponseReadMaxBytes
+	return config.DefaultUpstreamResponseReadMaxBytes
 }
 
 func readUpstreamResponseBodyLimited(reader io.Reader, maxBytes int64) ([]byte, error) {
@@ -26,7 +24,7 @@ func readUpstreamResponseBodyLimited(reader io.Reader, maxBytes int64) ([]byte, 
 		return nil, errors.New("response body is nil")
 	}
 	if maxBytes <= 0 {
-		maxBytes = defaultUpstreamResponseReadMaxBytes
+		maxBytes = config.DefaultUpstreamResponseReadMaxBytes
 	}
 
 	body, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))

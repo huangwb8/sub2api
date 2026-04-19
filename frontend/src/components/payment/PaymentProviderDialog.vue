@@ -88,13 +88,24 @@
               v-model="config[field.key]"
               rows="3"
               class="input font-mono text-xs"
+              autocomplete="new-password"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore="true"
+              spellcheck="false"
+              :placeholder="editing ? t('admin.accounts.leaveEmptyToKeep') : ''"
             />
             <div v-else-if="field.sensitive" class="relative">
               <input
                 :type="visibleFields[field.key] ? 'text' : 'password'"
                 v-model="config[field.key]"
                 class="input pr-10"
-                :placeholder="field.defaultValue || ''"
+                autocomplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore="true"
+                spellcheck="false"
+                :placeholder="editing ? t('admin.accounts.leaveEmptyToKeep') : (field.defaultValue || '')"
               />
               <button
                 type="button"
@@ -401,6 +412,7 @@ function handleSave() {
   // Validate required config fields — all non-optional fields must be filled
   for (const f of PROVIDER_CONFIG_FIELDS[form.provider_key] || []) {
     if (f.optional) continue
+    if (props.editing && f.sensitive) continue
     const val = (config[f.key] || '').trim()
     if (!val) {
       const label = f.label || t(`admin.settings.payment.field_${f.key}`)

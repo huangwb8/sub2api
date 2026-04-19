@@ -75,7 +75,7 @@ import { usePaymentStore } from '@/stores/payment'
 import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { POPUP_WINDOW_FEATURES } from '@/components/payment/providerConfig'
+import { getPaymentPopupFeatures } from '@/components/payment/providerConfig'
 import type { PaymentOrder } from '@/types/payment'
 import { formatPaymentAmount } from '@/utils/format'
 import QRCode from 'qrcode'
@@ -144,7 +144,7 @@ function getLogoForType(): string | null {
 
 function reopenPopup() {
   if (props.payUrl) {
-    window.open(props.payUrl, 'paymentPopup', POPUP_WINDOW_FEATURES)
+    window.open(props.payUrl, 'paymentPopup', getPaymentPopupFeatures())
   }
 }
 

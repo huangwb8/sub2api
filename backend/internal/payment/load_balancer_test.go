@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -47,11 +48,60 @@ func mustEncryptConfig(t *testing.T, cfg map[string]string) string {
 	if err != nil {
 		t.Fatalf("marshal config: %v", err)
 	}
+	//nolint:staticcheck // test covers legacy compatibility
 	encrypted, err := Encrypt(string(data), []byte("12345678901234567890123456789012"))
 	if err != nil {
 		t.Fatalf("encrypt config: %v", err)
 	}
 	return encrypted
+}
+
+func TestDefaultLoadBalancerDecryptConfigCompatibility(t *testing.T) {
+	t.Parallel()
+
+	lb := &DefaultLoadBalancer{
+		encryptionKey: []byte("12345678901234567890123456789012"),
+	}
+	cfg := map[string]string{
+		"pid":   "123",
+		"pkey":  "secret",
+		"label": "provider",
+	}
+
+	t.Run("plaintext json config", func(t *testing.T) {
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("marshal config: %v", err)
+		}
+
+		got, err := lb.decryptConfig(string(raw))
+		if err != nil {
+			t.Fatalf("decryptConfig returned error: %v", err)
+		}
+		if !reflect.DeepEqual(got, cfg) {
+			t.Fatalf("decryptConfig returned %v, want %v", got, cfg)
+		}
+	})
+
+	t.Run("legacy aes ciphertext", func(t *testing.T) {
+		got, err := lb.decryptConfig(mustEncryptConfig(t, cfg))
+		if err != nil {
+			t.Fatalf("decryptConfig returned error: %v", err)
+		}
+		if !reflect.DeepEqual(got, cfg) {
+			t.Fatalf("decryptConfig returned %v, want %v", got, cfg)
+		}
+	})
+
+	t.Run("unreadable config becomes empty", func(t *testing.T) {
+		got, err := lb.decryptConfig("not-json-not-ciphertext")
+		if err != nil {
+			t.Fatalf("decryptConfig returned error: %v", err)
+		}
+		if got != nil {
+			t.Fatalf("decryptConfig returned %v, want nil", got)
+		}
+	})
 }
 
 func TestInstanceSupportsType(t *testing.T) {

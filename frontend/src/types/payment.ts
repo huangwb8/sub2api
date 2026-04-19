@@ -159,6 +159,7 @@ export interface CreateOrderRequest {
   order_type: string
   plan_id?: number
   source_subscription_id?: number
+  is_mobile?: boolean
 }
 
 export interface CreateOrderResult {

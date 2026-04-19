@@ -155,6 +155,17 @@ function mountModal(account = buildAccount()) {
 }
 
 describe('EditAccountModal', () => {
+  it('API Key 输入框应禁用密码管理器自动填充', () => {
+    const wrapper = mountModal()
+    const apiKeyInput = wrapper.find('input[type="password"].font-mono')
+
+    expect(apiKeyInput.exists()).toBe(true)
+    expect(apiKeyInput.attributes('autocomplete')).toBe('new-password')
+    expect(apiKeyInput.attributes('data-1p-ignore')).toBeDefined()
+    expect(apiKeyInput.attributes('data-lpignore')).toBe('true')
+    expect(apiKeyInput.attributes('data-bwignore')).toBe('true')
+  })
+
   it('OpenAI 账号编辑时应展示并回显 ctx_pool WS mode', () => {
     const wrapper = mountModal({
       ...buildAccount(),

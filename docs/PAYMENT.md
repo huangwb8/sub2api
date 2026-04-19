@@ -98,6 +98,8 @@ Each provider type requires different credentials. Select the type when adding a
 
 > **Callback URLs are auto-generated**: When adding a provider, the Notify URL and Return URL are automatically constructed from your site domain. You only need to confirm the domain is correct.
 
+> **Sensitive credentials are write-only**: Private keys, merchant secrets, and webhook secrets are no longer sent back to the browser by the admin API. When editing an existing provider, leaving those fields empty means "keep the current value"; only fill them again when rotating credentials.
+
 ### EasyPay
 
 Compatible with any payment service that implements the EasyPay protocol.
@@ -112,7 +114,7 @@ Compatible with any payment service that implements the EasyPay protocol.
 
 ### Alipay (Direct)
 
-Direct integration with Alipay Open Platform. Supports PC page pay and H5 mobile pay.
+Direct integration with Alipay Open Platform. Supports PC page pay and H5 mobile pay. On desktop, the checkout now opens Alipay's hosted cashier page directly instead of rendering a fake in-app QR code from the cashier URL.
 
 | Parameter | Description | Required |
 |-----------|-------------|----------|

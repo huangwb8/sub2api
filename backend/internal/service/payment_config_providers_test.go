@@ -3,8 +3,10 @@
 package service
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -97,41 +99,43 @@ func TestValidateProviderRequest(t *testing.T) {
 	}
 }
 
-func TestIsSensitiveConfigField(t *testing.T) {
+func TestIsSensitiveProviderConfigField(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		field    string
-		wantSen bool
+		providerKey string
+		field       string
+		wantSen     bool
 	}{
-		// Sensitive fields (contain key/secret/private/password/pkey patterns)
-		{"secretKey", true},
-		{"apiSecret", true},
-		{"pkey", true},
-		{"privateKey", true},
-		{"apiPassword", true},
-		{"appKey", true},
-		{"SECRET_TOKEN", true},
-		{"PrivateData", true},
-		{"PASSWORD", true},
-		{"mySecretValue", true},
-
-		// Non-sensitive fields
-		{"appId", false},
-		{"mchId", false},
-		{"apiBase", false},
-		{"endpoint", false},
-		{"merchantNo", false},
-		{"paymentMode", false},
-		{"notifyUrl", false},
+		{"stripe", "secretKey", true},
+		{"stripe", "webhookSecret", true},
+		{"stripe", "SecretKey", true},
+		{"stripe", "publishableKey", false},
+		{"stripe", "appId", false},
+		{"alipay", "privateKey", true},
+		{"alipay", "publicKey", true},
+		{"alipay", "alipayPublicKey", true},
+		{"alipay", "appId", false},
+		{"alipay", "notifyUrl", false},
+		{"wxpay", "privateKey", true},
+		{"wxpay", "apiV3Key", true},
+		{"wxpay", "publicKey", true},
+		{"wxpay", "publicKeyId", false},
+		{"wxpay", "certSerial", false},
+		{"wxpay", "mchId", false},
+		{"easypay", "pkey", true},
+		{"easypay", "pid", false},
+		{"easypay", "apiBase", false},
+		{"unknown", "secretKey", false},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.field, func(t *testing.T) {
+		tc := tc
+		t.Run(tc.providerKey+"/"+tc.field, func(t *testing.T) {
 			t.Parallel()
 
-			got := isSensitiveConfigField(tc.field)
-			assert.Equal(t, tc.wantSen, got, "isSensitiveConfigField(%q)", tc.field)
+			got := isSensitiveProviderConfigField(tc.providerKey, tc.field)
+			assert.Equal(t, tc.wantSen, got, "isSensitiveProviderConfigField(%q, %q)", tc.providerKey, tc.field)
 		})
 	}
 }
@@ -184,4 +188,90 @@ func TestJoinTypes(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestPaymentConfigEncryptionCompatibility(t *testing.T) {
+	t.Parallel()
+
+	svc := &PaymentConfigService{
+		encryptionKey: []byte("12345678901234567890123456789012"),
+	}
+	cfg := map[string]string{
+		"appId":      "app-1",
+		"privateKey": "secret-value",
+	}
+
+	t.Run("new writes use plaintext json", func(t *testing.T) {
+		stored, err := svc.encryptConfig(cfg)
+		require.NoError(t, err)
+		require.JSONEq(t, `{"appId":"app-1","privateKey":"secret-value"}`, stored)
+
+		decoded, err := svc.decryptConfig(stored)
+		require.NoError(t, err)
+		require.Equal(t, cfg, decoded)
+	})
+
+	t.Run("legacy aes ciphertext still reads", func(t *testing.T) {
+		raw, err := json.Marshal(cfg)
+		require.NoError(t, err)
+
+		//nolint:staticcheck // test covers legacy compatibility
+		legacy, err := payment.Encrypt(string(raw), svc.encryptionKey)
+		require.NoError(t, err)
+
+		decoded, err := svc.decryptConfig(legacy)
+		require.NoError(t, err)
+		require.Equal(t, cfg, decoded)
+	})
+
+	t.Run("unreadable value falls back to empty config", func(t *testing.T) {
+		decoded, err := svc.decryptConfig("definitely-not-json-or-ciphertext")
+		require.NoError(t, err)
+		require.Nil(t, decoded)
+	})
+}
+
+func TestDecryptAndMaskConfig(t *testing.T) {
+	t.Parallel()
+
+	svc := &PaymentConfigService{}
+	cfg := map[string]string{
+		"appId":             "app-1",
+		"privateKey":        "secret-value",
+		"publicKey":         "public-secret",
+		"notifyUrl":         "https://example.com/notify",
+		"publishableKey":    "pk_live_visible",
+		"webhookSecret":     "whsec-hidden",
+		"alipayPublicKey":   "ali-public",
+		"nonSensitiveField": "visible",
+	}
+
+	stored, err := json.Marshal(cfg)
+	require.NoError(t, err)
+
+	t.Run("alipay omits sensitive fields", func(t *testing.T) {
+		masked, err := svc.decryptAndMaskConfig("alipay", string(stored))
+		require.NoError(t, err)
+		require.Equal(t, map[string]string{
+			"appId":             "app-1",
+			"notifyUrl":         "https://example.com/notify",
+			"publishableKey":    "pk_live_visible",
+			"webhookSecret":     "whsec-hidden",
+			"nonSensitiveField": "visible",
+		}, masked)
+	})
+
+	t.Run("stripe keeps publishable key but hides secrets", func(t *testing.T) {
+		masked, err := svc.decryptAndMaskConfig("stripe", string(stored))
+		require.NoError(t, err)
+		require.Equal(t, map[string]string{
+			"appId":             "app-1",
+			"privateKey":        "secret-value",
+			"publicKey":         "public-secret",
+			"notifyUrl":         "https://example.com/notify",
+			"publishableKey":    "pk_live_visible",
+			"alipayPublicKey":   "ali-public",
+			"nonSensitiveField": "visible",
+		}, masked)
+	})
 }

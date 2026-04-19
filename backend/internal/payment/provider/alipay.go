@@ -79,7 +79,12 @@ func (a *Alipay) SupportedTypes() []payment.PaymentType {
 	return []payment.PaymentType{payment.TypeAlipay}
 }
 
-// CreatePayment creates an Alipay payment page URL.
+// CreatePayment creates an Alipay payment using redirect-only flow:
+//   - Mobile (H5): alipay.trade.wap.pay — returns a URL the browser jumps to.
+//   - PC: alipay.trade.page.pay — returns a gateway URL the browser opens in a
+//     new window; Alipay's own page then shows login/QR. We intentionally do
+//     NOT encode the URL into a QR on the client because that URL is not a
+//     scannable payment payload.
 func (a *Alipay) CreatePayment(_ context.Context, req payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
 	client, err := a.getClient()
 	if err != nil {
@@ -136,7 +141,6 @@ func (a *Alipay) createTrade(client *alipay.Client, req payment.CreatePaymentReq
 	return &payment.CreatePaymentResponse{
 		TradeNo: req.OrderID,
 		PayURL:  payURL.String(),
-		QRCode:  payURL.String(),
 	}, nil
 }
 

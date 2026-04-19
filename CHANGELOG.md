@@ -6,12 +6,20 @@
 
 ## [Unreleased]
 
+## [1.0.20] - 2026-04-19
+
 ### Changed（变更）
 - 恢复了 OpenAI 账号 `WS mode` 的 `ctx_pool` 前端可选项：创建账号、编辑账号与批量编辑现在都会展示完整的 `off / ctx_pool / passthrough` 三态选项，避免已配置 `ctx_pool` 的账号在编辑时出现下拉框空白。
-- 补充了 `docs/关键模型参数设置.md` 中 API Key 账号错误处理参数的教程：新增 `池模式`、`自定义错误码`、`临时不可调度` 的推荐配置、互斥关系与典型场景，便于管理员按“官方直连 / 上游号池 / 第三方代理”三类来源选择更稳妥的默认值。
+- 补充了 `docs/关键模型参数设置.md` 中 API Key 账号错误处理参数的教程：新增 `池模式`、`自定义错误码`、`临时不可调度` 的推荐配置、互斥关系与典型场景，便于管理员按”官方直连 / 上游号池 / 第三方代理”三类来源选择更稳妥的默认值。
+- 调整了支付 provider 配置存储与读取路径：新写入改为明文 JSON，读取端改为”JSON 优先 + 旧 AES 密文兼容回退 + 坏数据 fail-open 为空配置”，避免支付配置依赖 `TOTP_ENCRYPTION_KEY` 才能在重启后读回。
+- 优化了支付前端交互：支付宝官方直连桌面端改为纯跳转收银台，不再把收银台 URL 当作二维码渲染；支付弹窗尺寸改为按可用屏幕动态计算，并把前端识别的 `is_mobile` 显式传给后端以提升 H5/PC 分流准确性。
+- 提高了网关默认上游响应体读取上限：`gateway.upstream_response_read_max_bytes` 的默认值从 `8MB` 提升到 `128MB`，并收口到配置层共享常量，减少大图/多模态响应被误判为上游异常的概率。
 
 ### Fixed（修复）
 - 修复了 OpenAI `ctx_pool` 模式在管理后台被前端隐藏的问题：此前 `EditAccountModal`、`CreateAccountModal` 中的选项被注释掉，`BulkEditAccountModal` 也缺少该选项；现已统一补齐并新增回归测试覆盖，防止后续再次回退。
+- 修复了管理端支付 provider 配置泄露敏感字段的问题：服务端现在会按 provider 类型剔除 `privateKey`、`secretKey`、`apiV3Key`、`webhookSecret` 等写入型凭据，编辑时空敏感字段默认表示”保持原值”。
+- 修复了订阅计费绕过倍率的问题：订阅配额消耗改为按 `ActualCost` 结算，分组倍率、用户专属倍率以及 `0x` 免费订阅现在会真实反映到订阅用量。
+- 修复了管理员编辑 API Key 账号时浏览器密码管理器误填的问题：账号 API Key 输入框已补充 `autocomplete=”new-password”` 以及 1Password / LastPass / Bitwarden 的忽略属性。
 
 ## [1.0.19] - 2026-04-19
 

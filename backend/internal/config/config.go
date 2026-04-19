@@ -19,6 +19,11 @@ const (
 	RunModeSimple   = "simple"
 )
 
+// DefaultUpstreamResponseReadMaxBytes is the default read limit for non-streaming
+// upstream bodies. 128 MB covers large multimodal/image responses while staying
+// below the gateway request-body cap.
+const DefaultUpstreamResponseReadMaxBytes int64 = 128 * 1024 * 1024
+
 // 使用量记录队列溢出策略
 const (
 	UsageRecordOverflowPolicyDrop   = "drop"
@@ -1425,7 +1430,7 @@ func setDefaults() {
 	viper.SetDefault("gateway.antigravity_fallback_cooldown_minutes", 1)
 	viper.SetDefault("gateway.antigravity_extra_retries", 10)
 	viper.SetDefault("gateway.max_body_size", int64(256*1024*1024))
-	viper.SetDefault("gateway.upstream_response_read_max_bytes", int64(8*1024*1024))
+	viper.SetDefault("gateway.upstream_response_read_max_bytes", DefaultUpstreamResponseReadMaxBytes)
 	viper.SetDefault("gateway.proxy_probe_response_read_max_bytes", int64(1024*1024))
 	viper.SetDefault("gateway.gemini_debug_response_headers", false)
 	viper.SetDefault("gateway.connection_pool_isolation", ConnectionPoolIsolationAccountProxy)
