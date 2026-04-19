@@ -29,14 +29,14 @@ version=1.0.19
 
 ```
 version2 = 
-version1 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
+version1 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
 ```
 
 - 吸收源项目的优势
 
 ```
-version2 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
-version1 = ad64190bec3605f97e9e1805a0118aaa51f22b08
+version2 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
+version1 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
 - 这些变化对目前我的个人sub2api项目有没有启发？你觉得那些优化我有必要吸收吗？如果有，先不要改本项目的源代码； 而是在 ./docs/plans 里写一个优化计划。
