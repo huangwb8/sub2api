@@ -52,7 +52,7 @@ func TestUsageLogRepositoryGetProfitabilityTrend_ComputesProfitAndRate(t *testin
 	start := time.Date(2026, 4, 13, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
 
-	mock.ExpectQuery("WITH balance_usage AS").
+	mock.ExpectQuery("WITH\\s+account_cost_allocation AS").
 		WithArgs(
 			start,
 			end,
@@ -94,11 +94,11 @@ func TestUsageLogRepositoryGetProfitabilityTrend_FallsBackSubscriptionCostFromAc
 	end := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
 
 	mock.ExpectQuery(
-		"ul\\.billing_type = 1[\\s\\S]*"+
-			"ul\\.actual_cost[\\s\\S]*"+
+		"WITH\\s+account_cost_allocation AS[\\s\\S]*"+
 			"a\\.actual_cost_cny[\\s\\S]*"+
-			"a\\.actual_cost_usage_usd[\\s\\S]*"+
-			"LEFT JOIN accounts a ON a\\.id = ul\\.account_id",
+			"ul\\.billing_type = 1[\\s\\S]*"+
+			"aca\\.total_account_usage_usd[\\s\\S]*"+
+			"LEFT JOIN account_cost_allocation aca ON aca\\.account_id = ul\\.account_id",
 	).
 		WithArgs(
 			start,

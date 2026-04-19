@@ -6,6 +6,14 @@
 
 ## [Unreleased]
 
+### Changed（变更）
+- 调整了 OpenAI API Key 自定义 `base_url` 的 Responses 端点拼接策略：官方 `api.openai.com` 根地址继续走 `/v1/responses`，而第三方兼容上游在未显式填写 `/v1` 时改为按字面 `base_url + /responses` 组装，避免把所有非官方地址一律强行补成 `/v1/responses`。
+- 重构了盈利面板订阅成本回退查询：`/api/v1/admin/dashboard/profitability` 现在会基于查询时间窗内的账号 `actual_cost_cny` 与该账号窗口总 `actual_cost` 做比例分摊，不再依赖会持续漂移的 `accounts.actual_cost_usage_usd` 作为累计分母。
+
+### Fixed（修复）
+- 修复了 OpenAI API Key 账号“后台测试能通过、真实网关请求却失败”的路径不一致问题：账号测试链路现在复用与真实网关一致的 Responses URL 构造逻辑，避免第三方上游因 `/responses` 与 `/v1/responses` 语义不兼容而出现假阳性测试结果。
+- 修复了盈利面板真实成本失真的问题：订阅请求的成本展示现在按所选时间范围内的账号真实成本占比分摊，缓解了历史累计分母导致的早期成本虚高与跨周期混淆。
+
 ## [1.0.20] - 2026-04-19
 
 ### Changed（变更）

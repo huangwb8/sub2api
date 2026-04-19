@@ -2983,38 +2983,45 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 	estimatedCostExpr := profitabilitySafeNumericExpr("ul.estimated_cost_cny")
 	actualCostExpr := profitabilitySafeNumericExpr("ul.actual_cost")
 	accountActualCostCNYExpr := profitabilitySafeNumericExpr("a.actual_cost_cny")
-	accountActualCostUsageUSDExpr := profitabilitySafeNumericExpr("a.actual_cost_usage_usd")
 	estimatedCostWithSubscriptionFallbackExpr := fmt.Sprintf(
 		`CASE
-			WHEN %s > 0 THEN %s
 			WHEN ul.billing_type = %d
 				AND %s > 0
-				AND %s > 0
-				AND %s > 0
-			THEN ROUND(%s * (%s / %s), 8)
+				AND aca.actual_cost_cny > 0
+				AND aca.total_account_usage_usd > 0
+			THEN ROUND(aca.actual_cost_cny * (%s / aca.total_account_usage_usd), 8)
+			WHEN %s > 0 THEN %s
 			ELSE 0::numeric
 		END`,
-		estimatedCostExpr,
-		estimatedCostExpr,
 		service.BillingTypeSubscription,
 		actualCostExpr,
-		accountActualCostCNYExpr,
-		accountActualCostUsageUSDExpr,
 		actualCostExpr,
-		accountActualCostCNYExpr,
-		accountActualCostUsageUSDExpr,
+		estimatedCostExpr,
+		estimatedCostExpr,
 	)
 	subscriptionRevenueExpr := profitabilitySafeNumericExpr("po.amount")
 
 	query := fmt.Sprintf(`
-		WITH balance_usage AS (
+		WITH account_cost_allocation AS (
+			SELECT
+				ul.account_id,
+				MAX(%s) AS actual_cost_cny,
+				COALESCE(SUM(CASE WHEN %s > 0 THEN %s ELSE 0::numeric END), 0) AS total_account_usage_usd
+			FROM usage_logs ul
+			LEFT JOIN accounts a ON a.id = ul.account_id
+			WHERE ul.created_at >= $1
+				AND ul.created_at < $2
+				AND ul.account_id IS NOT NULL
+			GROUP BY ul.account_id
+		),
+		balance_usage AS (
 			SELECT
 				ul.created_at AS bucket_at,
 				%s AS revenue_balance_cny,
 				0::numeric AS revenue_subscription_cny,
 				%s AS estimated_cost_cny
 			FROM usage_logs ul
-			LEFT JOIN accounts a ON a.id = ul.account_id
+			LEFT JOIN account_cost_allocation aca ON aca.account_id = ul.account_id
 			INNER JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1
 				AND ul.created_at < $2
@@ -3046,7 +3053,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 		) profitability
 		GROUP BY date
 		ORDER BY date ASC
-	`, balanceRevenueExpr, estimatedCostWithSubscriptionFallbackExpr, subscriptionRevenueExpr, dateFormat)
+	`, accountActualCostCNYExpr, actualCostExpr, actualCostExpr, balanceRevenueExpr, estimatedCostWithSubscriptionFallbackExpr, subscriptionRevenueExpr, dateFormat)
 
 	rows, err := r.sql.QueryContext(
 		ctx,
