@@ -1469,6 +1469,28 @@ func TestOpenAIResponsesRequestPathSuffix(t *testing.T) {
 	}
 }
 
+func TestBuildOpenAIResponsesURL(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{name: "official root adds v1", base: "https://api.openai.com", want: "https://api.openai.com/v1/responses"},
+		{name: "official v1 keeps v1", base: "https://api.openai.com/v1", want: "https://api.openai.com/v1/responses"},
+		{name: "custom root keeps literal base", base: "https://api-slb.packyapi.com", want: "https://api-slb.packyapi.com/responses"},
+		{name: "custom v1 appends responses", base: "https://example.com/v1", want: "https://example.com/v1/responses"},
+		{name: "custom responses stays as is", base: "https://example.com/responses", want: "https://example.com/responses"},
+		{name: "custom nested path keeps literal base", base: "https://example.com/openai", want: "https://example.com/openai/responses"},
+		{name: "custom explicit v1 responses stays as is", base: "https://example.com/v1/responses", want: "https://example.com/v1/responses"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, buildOpenAIResponsesURL(tt.base))
+		})
+	}
+}
+
 func TestOpenAIBuildUpstreamRequestOpenAIPassthroughPreservesCompactPath(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()

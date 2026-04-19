@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
@@ -141,4 +142,51 @@ func TestAccountTestService_OpenAI429PersistsSnapshotWithoutRateLimit(t *testing
 	require.Zero(t, repo.rateLimitedID)
 	require.Nil(t, repo.rateLimitedAt)
 	require.Nil(t, account.RateLimitResetAt)
+}
+
+func TestAccountTestService_OpenAIApiKeyUsesResolvedResponsesURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseURL string
+		wantURL string
+	}{
+		{name: "official root adds v1", baseURL: "https://api.openai.com", wantURL: "https://api.openai.com/v1/responses"},
+		{name: "custom root keeps literal base", baseURL: "https://api-slb.packyapi.com", wantURL: "https://api-slb.packyapi.com/responses"},
+		{name: "custom v1 appends responses", baseURL: "https://example.com/v1", wantURL: "https://example.com/v1/responses"},
+		{name: "custom responses stays as is", baseURL: "https://example.com/responses", wantURL: "https://example.com/responses"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, recorder := newTestContext()
+			resp := newJSONResponse(http.StatusOK, "")
+			resp.Body = io.NopCloser(strings.NewReader("data: {\"type\":\"response.completed\"}\n\n"))
+
+			upstream := &queuedHTTPUpstream{responses: []*http.Response{resp}}
+			svc := &AccountTestService{
+				httpUpstream: upstream,
+				cfg: &config.Config{
+					Security: config.SecurityConfig{
+						URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+					},
+				},
+			}
+			account := &Account{
+				ID:          90,
+				Platform:    PlatformOpenAI,
+				Type:        AccountTypeAPIKey,
+				Concurrency: 1,
+				Credentials: map[string]any{
+					"api_key":  "sk-test",
+					"base_url": tt.baseURL,
+				},
+			}
+
+			err := svc.testOpenAIAccountConnection(ctx, account, "gpt-5.4")
+			require.NoError(t, err)
+			require.Len(t, upstream.requests, 1)
+			require.Equal(t, tt.wantURL, upstream.requests[0].URL.String())
+			require.Contains(t, recorder.Body.String(), "test_complete")
+		})
+	}
 }

@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -4155,18 +4156,22 @@ func (s *OpenAIGatewayService) validateUpstreamBaseURL(raw string) (string, erro
 }
 
 // buildOpenAIResponsesURL 组装 OpenAI Responses 端点。
-// - base 以 /v1 结尾：追加 /responses
 // - base 已是 /responses：原样返回
-// - 其他情况：追加 /v1/responses
+// - 官方 OpenAI 根地址：追加 /v1/responses
+// - base 以 /v1 结尾：追加 /responses
+// - 其他自定义 base：按字面地址追加 /responses，避免强行补 /v1 导致第三方兼容上游路由错误
 func buildOpenAIResponsesURL(base string) string {
 	normalized := strings.TrimRight(strings.TrimSpace(base), "/")
 	if strings.HasSuffix(normalized, "/responses") {
 		return normalized
 	}
+	if parsed, err := url.Parse(normalized); err == nil && strings.EqualFold(parsed.Hostname(), "api.openai.com") && (parsed.Path == "" || parsed.Path == "/") {
+		return normalized + "/v1/responses"
+	}
 	if strings.HasSuffix(normalized, "/v1") {
 		return normalized + "/responses"
 	}
-	return normalized + "/v1/responses"
+	return normalized + "/responses"
 }
 
 func trimOpenAIEncryptedReasoningItems(reqBody map[string]any) bool {
