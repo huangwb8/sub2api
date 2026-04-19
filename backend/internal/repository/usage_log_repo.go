@@ -2981,6 +2981,29 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 	dateFormat := safeDateFormat(granularity)
 	balanceRevenueExpr := profitabilitySafeNumericExpr("ul.charged_amount_cny")
 	estimatedCostExpr := profitabilitySafeNumericExpr("ul.estimated_cost_cny")
+	actualCostExpr := profitabilitySafeNumericExpr("ul.actual_cost")
+	accountActualCostCNYExpr := profitabilitySafeNumericExpr("a.actual_cost_cny")
+	accountActualCostUsageUSDExpr := profitabilitySafeNumericExpr("a.actual_cost_usage_usd")
+	estimatedCostWithSubscriptionFallbackExpr := fmt.Sprintf(
+		`CASE
+			WHEN %s > 0 THEN %s
+			WHEN ul.billing_type = %d
+				AND %s > 0
+				AND %s > 0
+				AND %s > 0
+			THEN ROUND(%s * (%s / %s), 8)
+			ELSE 0::numeric
+		END`,
+		estimatedCostExpr,
+		estimatedCostExpr,
+		service.BillingTypeSubscription,
+		actualCostExpr,
+		accountActualCostCNYExpr,
+		accountActualCostUsageUSDExpr,
+		actualCostExpr,
+		accountActualCostCNYExpr,
+		accountActualCostUsageUSDExpr,
+	)
 	subscriptionRevenueExpr := profitabilitySafeNumericExpr("po.amount")
 
 	query := fmt.Sprintf(`
@@ -2991,6 +3014,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 				0::numeric AS revenue_subscription_cny,
 				%s AS estimated_cost_cny
 			FROM usage_logs ul
+			LEFT JOIN accounts a ON a.id = ul.account_id
 			INNER JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1
 				AND ul.created_at < $2
@@ -3022,7 +3046,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 		) profitability
 		GROUP BY date
 		ORDER BY date ASC
-	`, balanceRevenueExpr, estimatedCostExpr, subscriptionRevenueExpr, dateFormat)
+	`, balanceRevenueExpr, estimatedCostWithSubscriptionFallbackExpr, subscriptionRevenueExpr, dateFormat)
 
 	rows, err := r.sql.QueryContext(
 		ctx,

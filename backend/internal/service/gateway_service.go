@@ -7778,6 +7778,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		billingType = BillingTypeSubscription
 	}
 	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
+	estimatedCostCNY, hasEstimatedCostCNY := resolveProfitabilityEstimatedCostCNY(account, cost.TotalCost)
 	var profitabilityCharge *standardBalanceChargeResolution
 	if !isSubscriptionBilling {
 		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
@@ -7791,8 +7792,8 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	accountRateMultiplier := account.BillingRateMultiplier()
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
 		requestedModel, multiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, chargeSnapshot, opts)
-	if profitabilityCharge != nil {
-		usageLog.EstimatedCostCNY = &profitabilityCharge.EstimatedCostCNY
+	if hasEstimatedCostCNY {
+		usageLog.EstimatedCostCNY = &estimatedCostCNY
 	}
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {

@@ -27,20 +27,20 @@ describe('dashboardProfitability', () => {
       startDate: '2025-01-10',
       endDate: '2025-01-10'
     })
+    const summary = summarizeProfitabilityTrend(trend)
 
     expect(chartData).not.toBeNull()
     expect(chartData?.datasets.map(dataset => dataset.label)).toEqual([
       'admin.dashboard.profitability.balanceRevenue',
       'admin.dashboard.profitability.subscriptionRevenue',
       'admin.dashboard.profitability.estimatedCost',
-      'admin.dashboard.profitability.profit',
-      'admin.dashboard.profitability.extraProfitRate'
+      'admin.dashboard.profitability.profit'
     ])
     expect(chartData?.datasets[0].type).toBe('bar')
     expect(chartData?.datasets[3].type).toBe('line')
     expect(chartData?.datasets[0].data).toEqual([88])
     expect(chartData?.datasets[3].data).toEqual([88])
-    expect(chartData?.datasets[4].data).toEqual([null])
+    expect(summary.extraProfitRatePercent).toBeNull()
   })
 
   it('fills missing profitability buckets inside the selected range with zero-value points', () => {

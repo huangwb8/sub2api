@@ -1096,12 +1096,13 @@ export default {
       },
       profitability: {
         title: '盈利水平',
-        description: '按当前时间粒度汇总非管理员用户的余额收入、订阅收入与估算成本，展示实时额外盈利率。',
+        description: '按当前时间粒度汇总非管理员用户的余额收入、订阅收入与估算成本；额外盈利率按面板利润/成本实时计算，没有可计算成本时不显示。',
         balanceRevenue: '余额收入',
         subscriptionRevenue: '订阅收入',
         estimatedCost: '估算成本',
         profit: '利润',
-        extraProfitRate: '额外盈利率'
+        extraProfitRate: '额外盈利率',
+        extraProfitRateUnavailableHint: '当前区间没有可计算成本，利润率暂不显示'
       },
       last7Days: '近 7 天',
       noUsageRecords: '暂无使用记录',

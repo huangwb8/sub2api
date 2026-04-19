@@ -20,6 +20,13 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	var applied int
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM schema_migrations").Scan(&applied))
 	require.GreaterOrEqual(t, applied, 7, "expected schema_migrations to contain applied migrations")
+	var hasProfitabilityBackfill bool
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE filename = $1)",
+		"109_backfill_subscription_profitability_cost.sql",
+	).Scan(&hasProfitabilityBackfill))
+	require.True(t, hasProfitabilityBackfill, "expected profitability backfill migration to be applied")
 
 	// users: columns required by repository queries
 	requireColumn(t, tx, "users", "username", "character varying", 100, false)

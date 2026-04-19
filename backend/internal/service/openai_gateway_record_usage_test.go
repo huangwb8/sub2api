@@ -1062,6 +1062,45 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	require.Equal(t, 0, userRepo.deductCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingPersistsEstimatedCostCNY(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	subscription := &UserSubscription{ID: 199}
+	actualCostCNY := 45.0
+	actualCostUsageUSD := 5.0
+	usage := OpenAIUsage{InputTokens: 10, OutputTokens: 5}
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_subscription_estimated_cost",
+			Usage:     usage,
+			Model:     "gpt-5.1",
+			Duration:  time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      100,
+			GroupID: i64p(88),
+			Group:   &Group{ID: 88, SubscriptionType: SubscriptionTypeSubscription},
+		},
+		User:         &User{ID: 200},
+		Account:      &Account{ID: 300, ActualCostCNY: &actualCostCNY, ActualCostUsageUSD: &actualCostUsageUSD},
+		Subscription: subscription,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeSubscription, usageRepo.lastLog.BillingType)
+	require.NotNil(t, usageRepo.lastLog.EstimatedCostCNY)
+	expectedCost := expectedOpenAICost(t, svc, "gpt-5.1", usage, svc.cfg.Default.RateMultiplier)
+	expectedEstimatedCost := roundTo(expectedCost.TotalCost*(actualCostCNY/actualCostUsageUSD), 8)
+	require.InDelta(t, expectedEstimatedCost, *usageRepo.lastLog.EstimatedCostCNY, 1e-12)
+	require.Equal(t, 1, subRepo.incrementCalls)
+	require.Equal(t, 0, userRepo.deductCalls)
+	require.Nil(t, usageRepo.lastLog.ChargedAmountCNY)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_SimpleModeSkipsBillingAfterPersist(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

@@ -5,8 +5,14 @@
 - 发布新的release
 
 ```
-version=1.0.17
+version=1.0.18
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
+```
+
+- 结合布署项目进行优化
+
+```
+如图，估算成本一直都是0； 而且额外盈利率一直都是0% ~ 1%，这好像也不太对？ 请基于remote.env 实际地调研实地布署的站，结合项目的源代码，分析这种错误的具体原因在哪。 先不要修改任何源码，而是先在 docs/plans 里写一个发现问题和优化bug的计划。
 ```
 
 - 支付安全性
@@ -44,6 +50,12 @@ version1 = ad64190bec3605f97e9e1805a0118aaa51f22b08
 ```
 
 # 日常
+
+---
+
+PlanMardkdown = docs/plans/2026-04-19-profitability-cost-gap-remediation-plan.md
+
+根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

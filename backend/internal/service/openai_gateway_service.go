@@ -4475,6 +4475,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		billingType = BillingTypeSubscription
 	}
 	chargeSnapshot := s.resolveUsageChargeSnapshot(ctx, cost, isSubscriptionBilling)
+	estimatedCostCNY, hasEstimatedCostCNY := resolveProfitabilityEstimatedCostCNY(account, cost.TotalCost)
 	var profitabilityCharge *standardBalanceChargeResolution
 	if !isSubscriptionBilling {
 		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
@@ -4523,8 +4524,8 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.ActualCost = cost.ActualCost
 	}
 	usageLog.ApplyChargeSnapshot(chargeSnapshot)
-	if profitabilityCharge != nil {
-		usageLog.EstimatedCostCNY = &profitabilityCharge.EstimatedCostCNY
+	if hasEstimatedCostCNY {
+		usageLog.EstimatedCostCNY = &estimatedCostCNY
 	}
 	usageLog.RateMultiplier = multiplier
 	usageLog.AccountRateMultiplier = &accountRateMultiplier

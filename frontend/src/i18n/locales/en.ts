@@ -1086,12 +1086,13 @@ export default {
       },
       profitability: {
         title: 'Profitability',
-        description: 'Aggregates balance revenue, subscription revenue, and estimated cost for non-admin users at the selected time granularity to show the real-time extra profit rate.',
+        description: 'Aggregates balance revenue, subscription revenue, and estimated cost for non-admin users at the selected time granularity. The extra profit rate is calculated from panel profit and cost in real time and stays hidden when no cost can be computed.',
         balanceRevenue: 'Balance Revenue',
         subscriptionRevenue: 'Subscription Revenue',
         estimatedCost: 'Estimated Cost',
         profit: 'Profit',
-        extraProfitRate: 'Extra Profit Rate'
+        extraProfitRate: 'Extra Profit Rate',
+        extraProfitRateUnavailableHint: 'No computable cost is available in this range, so the rate is hidden.'
       },
       failedToLoad: 'Failed to load dashboard statistics'
     },

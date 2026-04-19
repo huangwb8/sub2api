@@ -71,6 +71,10 @@ const chartData = computed<ChartData<'bar'> | null>(() => buildProfitabilityChar
   endDate: props.endDate
 }) as ChartData<'bar'> | null)
 
+const hasRateDataset = computed(() =>
+  Boolean(chartData.value?.datasets.some(dataset => (dataset as { yAxisID?: string }).yAxisID === 'yRate'))
+)
+
 const formatCost = (value: number): string => {
   if (value >= 1000) {
     return `${(value / 1000).toFixed(2)}K`
@@ -186,6 +190,7 @@ const options = computed(() => ({
       }
     },
     yRate: {
+      display: hasRateDataset.value,
       position: 'right' as const,
       grid: {
         drawOnChartArea: false

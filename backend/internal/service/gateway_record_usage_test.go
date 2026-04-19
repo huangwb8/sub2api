@@ -449,3 +449,46 @@ func TestGatewayServiceRecordUsage_ReasoningEffortNil(t *testing.T) {
 	require.NotNil(t, usageRepo.lastLog)
 	require.Nil(t, usageRepo.lastLog.ReasoningEffort)
 }
+
+func TestGatewayServiceRecordUsage_SubscriptionBillingPersistsEstimatedCostCNY(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, subRepo)
+	subscription := &UserSubscription{ID: 88}
+	actualCostCNY := 54.0
+	actualCostUsageUSD := 6.0
+	usage := ClaudeUsage{InputTokens: 10, OutputTokens: 6}
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID: "gateway_subscription_estimated_cost",
+			Usage:     usage,
+			Model:     "claude-sonnet-4",
+			Duration:  time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      1001,
+			GroupID: i64p(77),
+			Group:   &Group{ID: 77, SubscriptionType: SubscriptionTypeSubscription},
+		},
+		User:         &User{ID: 2001},
+		Account:      &Account{ID: 3001, ActualCostCNY: &actualCostCNY, ActualCostUsageUSD: &actualCostUsageUSD},
+		Subscription: subscription,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeSubscription, usageRepo.lastLog.BillingType)
+	require.NotNil(t, usageRepo.lastLog.EstimatedCostCNY)
+	expectedCost, costErr := svc.billingService.CalculateCost("claude-sonnet-4", UsageTokens{
+		InputTokens:  usage.InputTokens,
+		OutputTokens: usage.OutputTokens,
+	}, svc.cfg.Default.RateMultiplier)
+	require.NoError(t, costErr)
+	expectedEstimatedCost := roundTo(expectedCost.TotalCost*(actualCostCNY/actualCostUsageUSD), 8)
+	require.InDelta(t, expectedEstimatedCost, *usageRepo.lastLog.EstimatedCostCNY, 1e-12)
+	require.Equal(t, 1, subRepo.incrementCalls)
+	require.Equal(t, 0, userRepo.deductCalls)
+	require.Nil(t, usageRepo.lastLog.ChargedAmountCNY)
+}

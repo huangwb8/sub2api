@@ -17,6 +17,29 @@ export interface ProfitabilitySummary {
   extraProfitRatePercent: number | null
 }
 
+interface ProfitabilityChartDataset {
+  type: 'bar' | 'line'
+  label: string
+  data: Array<number | null>
+  borderColor: string
+  backgroundColor: string
+  tooltipValueType: 'amount' | 'signedAmount' | 'rate'
+  yAxisID: 'yAmount' | 'yRate'
+  stack?: 'revenue' | 'cost'
+  order: number
+  borderRadius?: number
+  barPercentage?: number
+  categoryPercentage?: number
+  maxBarThickness?: number
+  tension?: number
+  fill?: boolean
+  borderWidth?: number
+  pointRadius?: number
+  pointHoverRadius?: number
+  borderDash?: number[]
+  spanGaps?: boolean
+}
+
 const roundTo = (value: number, digits: number): number => {
   const factor = 10 ** digits
   return Math.round(value * factor) / factor
@@ -146,86 +169,92 @@ export function buildProfitabilityChartData(
   }
 
   const pointRadius = normalizedTrend.length <= 1 ? 5 : normalizedTrend.length <= 7 ? 3 : 2
+  const hasRateData = normalizedTrend.some(point => point.extra_profit_rate_percent != null)
+
+  const datasets: ProfitabilityChartDataset[] = [
+    {
+      type: 'bar',
+      label: t('admin.dashboard.profitability.balanceRevenue'),
+      data: normalizedTrend.map(point => point.revenue_balance_cny),
+      borderColor: '#059669',
+      backgroundColor: 'rgba(5, 150, 105, 0.72)',
+      tooltipValueType: 'amount',
+      yAxisID: 'yAmount',
+      stack: 'revenue',
+      order: 3,
+      borderRadius: 4,
+      barPercentage: 0.72,
+      categoryPercentage: 0.7,
+      maxBarThickness: 18
+    },
+    {
+      type: 'bar',
+      label: t('admin.dashboard.profitability.subscriptionRevenue'),
+      data: normalizedTrend.map(point => point.revenue_subscription_cny),
+      borderColor: '#d97706',
+      backgroundColor: 'rgba(245, 158, 11, 0.72)',
+      tooltipValueType: 'amount',
+      yAxisID: 'yAmount',
+      stack: 'revenue',
+      order: 3,
+      borderRadius: 4,
+      barPercentage: 0.72,
+      categoryPercentage: 0.7,
+      maxBarThickness: 18
+    },
+    {
+      type: 'bar',
+      label: t('admin.dashboard.profitability.estimatedCost'),
+      data: normalizedTrend.map(point => point.estimated_cost_cny),
+      borderColor: '#dc2626',
+      backgroundColor: 'rgba(248, 113, 113, 0.7)',
+      tooltipValueType: 'amount',
+      yAxisID: 'yAmount',
+      stack: 'cost',
+      order: 2,
+      borderRadius: 4,
+      barPercentage: 0.72,
+      categoryPercentage: 0.7,
+      maxBarThickness: 18
+    },
+    {
+      type: 'line',
+      label: t('admin.dashboard.profitability.profit'),
+      data: normalizedTrend.map(point => point.profit_cny),
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37, 99, 235, 0.16)',
+      tooltipValueType: 'signedAmount',
+      yAxisID: 'yAmount',
+      tension: 0.28,
+      fill: false,
+      borderWidth: 3,
+      order: 0,
+      pointRadius,
+      pointHoverRadius: pointRadius + 2
+    }
+  ]
+
+  if (hasRateData) {
+    datasets.push({
+      type: 'line',
+      label: t('admin.dashboard.profitability.extraProfitRate'),
+      data: normalizedTrend.map(point => point.extra_profit_rate_percent ?? null),
+      borderColor: '#7c3aed',
+      backgroundColor: 'rgba(124, 58, 237, 0.10)',
+      tooltipValueType: 'rate',
+      yAxisID: 'yRate',
+      tension: 0.28,
+      borderDash: [6, 4],
+      borderWidth: 2,
+      order: 1,
+      pointRadius,
+      pointHoverRadius: pointRadius + 2,
+      spanGaps: true
+    })
+  }
 
   return {
     labels: normalizedTrend.map(point => point.date),
-    datasets: [
-      {
-        type: 'bar',
-        label: t('admin.dashboard.profitability.balanceRevenue'),
-        data: normalizedTrend.map(point => point.revenue_balance_cny),
-        borderColor: '#059669',
-        backgroundColor: 'rgba(5, 150, 105, 0.72)',
-        tooltipValueType: 'amount',
-        yAxisID: 'yAmount',
-        stack: 'revenue',
-        order: 3,
-        borderRadius: 4,
-        barPercentage: 0.72,
-        categoryPercentage: 0.7,
-        maxBarThickness: 18
-      },
-      {
-        type: 'bar',
-        label: t('admin.dashboard.profitability.subscriptionRevenue'),
-        data: normalizedTrend.map(point => point.revenue_subscription_cny),
-        borderColor: '#d97706',
-        backgroundColor: 'rgba(245, 158, 11, 0.72)',
-        tooltipValueType: 'amount',
-        yAxisID: 'yAmount',
-        stack: 'revenue',
-        order: 3,
-        borderRadius: 4,
-        barPercentage: 0.72,
-        categoryPercentage: 0.7,
-        maxBarThickness: 18
-      },
-      {
-        type: 'bar',
-        label: t('admin.dashboard.profitability.estimatedCost'),
-        data: normalizedTrend.map(point => point.estimated_cost_cny),
-        borderColor: '#dc2626',
-        backgroundColor: 'rgba(248, 113, 113, 0.7)',
-        tooltipValueType: 'amount',
-        yAxisID: 'yAmount',
-        stack: 'cost',
-        order: 2,
-        borderRadius: 4,
-        barPercentage: 0.72,
-        categoryPercentage: 0.7,
-        maxBarThickness: 18
-      },
-      {
-        type: 'line',
-        label: t('admin.dashboard.profitability.profit'),
-        data: normalizedTrend.map(point => point.profit_cny),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.16)',
-        tooltipValueType: 'signedAmount',
-        yAxisID: 'yAmount',
-        tension: 0.28,
-        fill: false,
-        borderWidth: 3,
-        order: 0,
-        pointRadius,
-        pointHoverRadius: pointRadius + 2
-      },
-      {
-        type: 'line',
-        label: t('admin.dashboard.profitability.extraProfitRate'),
-        data: normalizedTrend.map(point => point.extra_profit_rate_percent ?? null),
-        borderColor: '#7c3aed',
-        backgroundColor: 'rgba(124, 58, 237, 0.10)',
-        tooltipValueType: 'rate',
-        yAxisID: 'yRate',
-        tension: 0.28,
-        borderDash: [6, 4],
-        borderWidth: 2,
-        order: 1,
-        pointRadius,
-        pointHoverRadius: pointRadius + 2,
-        spanGaps: true
-      }
-    ]
+    datasets
   }
 }

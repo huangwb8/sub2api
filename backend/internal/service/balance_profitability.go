@@ -11,6 +11,24 @@ type standardBalanceChargeResolution struct {
 	ChargeCostUSD    float64
 }
 
+func resolveProfitabilityEstimatedCostCNY(account *Account, totalCostUSD float64) (float64, bool) {
+	if totalCostUSD <= 0 || account == nil || !account.HasActualCostPricing() {
+		return 0, false
+	}
+
+	unitCostCNYPerUSD := account.ActualCostUnitPriceCNYPerUSD()
+	if unitCostCNYPerUSD <= 0 {
+		return 0, false
+	}
+
+	estimatedCostCNY := roundTo(totalCostUSD*unitCostCNYPerUSD, 8)
+	if estimatedCostCNY <= 0 {
+		return 0, false
+	}
+
+	return estimatedCostCNY, true
+}
+
 func resolveStandardBalanceCharge(
 	ctx context.Context,
 	account *Account,
@@ -18,10 +36,10 @@ func resolveStandardBalanceCharge(
 	totalCostUSD float64,
 	fxService ExchangeRateService,
 ) *standardBalanceChargeResolution {
-	if totalCostUSD <= 0 || account == nil || group == nil || fxService == nil {
+	if group == nil || fxService == nil {
 		return nil
 	}
-	if !group.HasExtraProfitRateConfigured() || !account.HasActualCostPricing() {
+	if !group.HasExtraProfitRateConfigured() {
 		return nil
 	}
 
@@ -30,13 +48,8 @@ func resolveStandardBalanceCharge(
 		return nil
 	}
 
-	unitCostCNYPerUSD := account.ActualCostUnitPriceCNYPerUSD()
-	if unitCostCNYPerUSD <= 0 {
-		return nil
-	}
-
-	estimatedCostCNY := roundTo(totalCostUSD*unitCostCNYPerUSD, 8)
-	if estimatedCostCNY <= 0 {
+	estimatedCostCNY, ok := resolveProfitabilityEstimatedCostCNY(account, totalCostUSD)
+	if !ok {
 		return nil
 	}
 	chargedAmountCNY := roundTo(estimatedCostCNY*(1+extraProfitRate/100), 8)

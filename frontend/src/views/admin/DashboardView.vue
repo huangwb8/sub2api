@@ -463,6 +463,12 @@
                   <div class="mt-1 font-semibold text-blue-600 dark:text-blue-400">
                     {{ formatExtraProfitRate(profitabilitySummary.extraProfitRatePercent) }}
                   </div>
+                  <div
+                    v-if="profitabilitySummary.extraProfitRatePercent == null"
+                    class="mt-1 text-[11px] text-gray-500 dark:text-gray-400"
+                  >
+                    {{ t('admin.dashboard.profitability.extraProfitRateUnavailableHint') }}
+                  </div>
                 </div>
               </div>
             </div>
