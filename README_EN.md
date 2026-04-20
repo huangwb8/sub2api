@@ -7,8 +7,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
-
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fsub2api | Trendshift" width="250" height="55"/></a>
+[![License](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
 **An integrated AI API gateway for subscription distribution and API quota management**
 
@@ -16,17 +15,34 @@
 
 </div>
 
-> **Sub2API officially uses only the domains `sub2api.org` and `pincc.ai`. Other websites using the Sub2API name may be third-party deployments or services and are not affiliated with this project. Please verify independently.**
+## 🙏 Acknowledgements
 
-## Positioning
+This project is forked from [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api). Many thanks to the original author for the open-source contribution. If you find this project useful, please consider giving the **[upstream project](https://github.com/Wei-Shaw/sub2api)** a Star. And if you also appreciate the improvements in this fork, a [Star for this repo](https://github.com/huangwb8/sub2api) would be greatly appreciated.
 
-Sub2API is an AI API gateway built for subscription-backed resource distribution. It connects upstream accounts, user API keys, billing, scheduling, payments, subscriptions, self-service purchasing, and admin operations into one workflow.
+## ✨ What This Fork Offers
 
-For a maintained fork, the project is now much more than a thin relay layer. It is closer to a production-ready AI API Gateway SaaS foundation.
+Maintained and improved on top of the upstream project:
 
-## What It Does Now
+- **Profitability panel refactor**: Subscription costs are now proportionally allocated within the query time window, fixing inflated costs and cross-cycle confusion caused by historical cumulative denominators
+- **Subscription billing multiplier fix**: Subscription quota consumption now settles by ActualCost, making group multipliers and user-specific multipliers actually effective
+- **Payment security hardening**: Admin-side payment provider responses strip sensitive credentials (privateKey, secretKey, etc.); empty sensitive fields during edits mean "keep original value"
+- **Third-party upstream compatibility**: Differentiates URL construction for OpenAI official vs. third-party compatible upstreams, fixing false-positive test results
+- **OpenAI ctx_pool fix**: Restored the full off / ctx_pool / passthrough frontend options with regression test coverage
+- **Terms of service & privacy policy**: Built-in legal document pages with Markdown editing in the admin panel and auto-generated public links at `/legal/terms` and `/legal/privacy`
+- **Exchange rate transparency**: Added exchange rate volatility analysis docs, parameter best practices, and admin cache TTL settings
+- **Subscription estimated cost**: Automatically calculates estimated_cost_cny for subscription usage, enabling complete cost curves in the profitability panel
+- **Payment UX improvements**: Alipay desktop flow changed to direct redirect; payment modal dynamically sized to screen; frontend is_mobile flag passed to backend for better H5/PC routing
+- **Improved operational docs**: Key model parameter settings, exchange rate impact analysis, and admin parameter best practices
 
-- Unified multi-upstream account access with OAuth and API key based credentials
+See [CHANGELOG.md](CHANGELOG.md) for the full change history.
+
+## 🎯 What It Does
+
+Sub2API is an AI API gateway platform designed for subscription-backed resource distribution. It connects upstream accounts, user API keys, billing, scheduling, payments, subscriptions, self-service purchasing, and admin operations into one workflow.
+
+### Core Capabilities
+
+- Unified multi-upstream account access with OAuth and API key credentials
 - User API key issuance with group, quota, rate limit, and concurrency isolation
 - Token-level billing, usage tracking, cost accounting, and reporting
 - Smart scheduling with sticky sessions, account rotation, failover, and model mapping
@@ -36,109 +52,46 @@ For a maintained fork, the project is now much more than a thin relay layer. It 
 - External page embedding through iframe for tickets, docs, purchase flows, and custom integrations
 - Online update checks, release automation, Docker image publishing, and data-management integration
 
-## Typical Use Cases
+### Who Is This For
 
 - Centralize Claude, Codex, Gemini, and other upstream accounts and issue API keys to a team
 - Sell API access, subscription plans, and balance-based services to end users
 - Apply different model permissions, pricing strategies, and concurrency limits by user group
 - Operate account pools, orders, payments, announcements, and settings from one admin backend
 
-## Demo
+## 🚀 Quick Start
 
-Try it here: **[https://demo.sub2api.org/](https://demo.sub2api.org/)**
-
-Demo account for the shared environment only:
-
-| Email | Password |
-|------|------|
-| admin@sub2api.org | admin123 |
-
-## Quick Start
-
-### Option 1: One-Command Docker Compose
-
-This is the recommended deployment method for most users.
+### Docker Compose
 
 ```bash
 mkdir -p sub2api-deploy && cd sub2api-deploy
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/huangwb8/sub2api/main/deploy/docker-deploy.sh | bash
 docker compose up -d
 ```
 
-This prepares:
-
-- `docker-compose.yml`
-- `.env`
-- PostgreSQL / Redis / Sub2API containers
-- generated security secrets
-
-For full deployment details, see `deploy/README.md`.
-
-### Option 2: Binary Install Script
-
-For a more traditional Linux + systemd deployment:
+### Binary Install Script
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/huangwb8/sub2api/main/deploy/install.sh | sudo bash
 sudo systemctl enable --now sub2api
 ```
 
-After first start, finish initialization through the web setup wizard.
+> For a live demo, visit the upstream project's demo site: [https://demo.sub2api.org/](https://demo.sub2api.org/) (admin@sub2api.org / admin123)
 
-## Documentation Map
+See [deploy/README.md](deploy/README.md) for full deployment details.
+
+## 📄 Documentation
 
 | Document | Purpose |
 |------|------|
-| `deploy/README.md` | Deployment overview, Docker and binary install, release automation |
-| `docs/PAYMENT_CN.md` | Chinese payment guide covering top-up, subscriptions, webhook, and provider config |
-| `docs/PAYMENT.md` | English payment guide |
-| `deploy/DATAMANAGEMENTD_CN.md` | Host-side integration for the data management feature |
-| `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md` | GitHub Release and Docker image automation setup |
-| `CHANGELOG.md` | Version history and important project changes |
+| [deploy/README.md](deploy/README.md) | Deployment overview, Docker and binary install, release automation |
+| [docs/PAYMENT_CN.md](docs/PAYMENT_CN.md) | Chinese payment guide (top-up, subscriptions, webhook, provider config) |
+| [docs/PAYMENT.md](docs/PAYMENT.md) | English payment guide |
+| [deploy/DATAMANAGEMENTD_CN.md](deploy/DATAMANAGEMENTD_CN.md) | Host-side integration for the data management feature |
+| [docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md](docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md) | GitHub Release and Docker image automation setup |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and important project changes |
 
-## Capabilities Worth Highlighting
-
-### Self-Service Subscription Flow
-
-Built-in payments now cover more than balance top-ups. End users can directly purchase, renew, and upgrade subscription plans with difference payment.
-
-- Subscription products can be managed directly in the admin panel
-- Users get purchase, payment, result, and order pages out of the box
-- Delayed webhook scenarios can recover through active order verification
-- Balance payment for subscriptions is supported to reduce unnecessary third-party redirects
-- Higher-tier upgrades within the same upgrade family can reuse the remaining value of the current billing cycle as credit
-- Legacy subscriptions without plan snapshots are clearly marked as not upgradeable to keep billing traceable
-- User balances and payment amounts are shown in CNY, while API usage, quota, and limit data stay in USD to keep the two money semantics separate
-
-See `docs/PAYMENT_CN.md` for detailed payment and subscription configuration.
-
-### Built-In Payments Instead of an External Add-On
-
-Payment no longer needs to live in a separate companion service. Sub2API now keeps the payment loop inside the main system, reducing deployment, reconciliation, and integration overhead.
-
-Available providers:
-
-- EasyPay
-- Official Alipay
-- Official WeChat Pay
-- Stripe
-
-### More Complete Ops and Release Flow
-
-The repository now has a version-driven release flow centered around `backend/cmd/server/VERSION`, including:
-
-- version sync checks
-- GitHub Release creation
-- Docker image publishing and backfill
-- local verification with `make verify-release-automation`
-
-This is especially useful if you are maintaining your own fork long term.
-
-### Data Management Integration
-
-If you want to enable the admin-side data management capability, deploy the host process `datamanagementd`. The main service enables the feature through a Unix socket handshake. See `deploy/DATAMANAGEMENTD_CN.md`.
-
-## Tech Stack
+## 🛠 Tech Stack
 
 | Layer | Technology |
 |------|------|
@@ -148,7 +101,7 @@ If you want to enable the admin-side data management capability, deploy the host
 | Cache | Redis 7+ |
 | Deployment | Docker Compose, systemd, GoReleaser |
 
-## Local Development
+## 💻 Local Development
 
 ### Backend
 
@@ -159,11 +112,10 @@ go test -tags=unit ./...
 go test -tags=integration ./...
 ```
 
-If you change `backend/ent/schema/*.go`, regenerate Ent:
+After modifying `backend/ent/schema/*.go`, regenerate:
 
 ```bash
-cd backend
-go generate ./ent
+cd backend && go generate ./ent
 ```
 
 ### Frontend
@@ -179,11 +131,10 @@ pnpm run typecheck
 ### Full Checks
 
 ```bash
-make build
-make test
+make build && make test
 ```
 
-## Nginx Reverse Proxy Note
+## ⚠️ Nginx Reverse Proxy Note
 
 If you proxy Sub2API through Nginx and need headers containing underscores such as `session_id`, enable this in the `http` block:
 
@@ -193,51 +144,13 @@ underscores_in_headers on;
 
 Otherwise Nginx drops those headers by default, which can break sticky session routing in multi-account setups.
 
-## Ecosystem
+## 🔗 Ecosystem
 
 | Project | Description |
 |------|------|
-| ~~[Sub2ApiPay](https://github.com/touwaeriol/sub2apipay)~~ | Its role is now largely covered by Sub2API built-in payments |
+| [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) | Upstream project, the source of this fork |
 | [sub2api-mobile](https://github.com/ckken/sub2api-mobile) | Mobile admin console with multi-backend switching |
 
-## ❤️ Sponsors
+## 📜 License
 
-> [Want to appear here?](mailto:support@pincc.ai)
-
-<table>
-<tr>
-<td width="180" align="center" valign="middle"><a href="https://shop.pincc.ai/"><img src="assets/partners/logos/pincc-logo.png" alt="pincc" width="150"></a></td>
-<td valign="middle"><b><a href="https://shop.pincc.ai/">PinCC</a></b> is the official relay service built on Sub2API, offering stable access to Claude Code, Codex, Gemini, and other popular models.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://www.packyapi.com/register?aff=sub2api"><img src="assets/partners/logos/packycode.png" alt="PackyCode" width="150"></a></td>
-<td>Thanks to PackyCode for supporting this project. Register through <a href="https://www.packyapi.com/register?aff=sub2api">this link</a> and use promo code `sub2api` on your first top-up for a discount.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://poixe.com/i/sub2api"><img src="assets/partners/logos/poixe.png" alt="PoixeAI" width="150"></a></td>
-<td>Thanks to Poixe AI for supporting this project. Register via the <a href="https://poixe.com/i/sub2api">referral link</a> for an extra bonus.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://ctok.ai"><img src="assets/partners/logos/ctok.png" alt="CTok" width="150"></a></td>
-<td>Thanks to CTok.ai for supporting this project with AI programming services and developer community resources.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://code.silkapi.com/"><img src="assets/partners/logos/silkapi.png" alt="silkapi" width="150"></a></td>
-<td>Thanks to SilkAPI for supporting this project with high-speed Codex relay services built on Sub2API.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://ylscode.com/"><img src="assets/partners/logos/ylscode.png" alt="ylscode" width="150"></a></td>
-<td>Thanks to YLS Code for supporting this project with enterprise-grade Coding Agent services and multi-model plans.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=KMVZQM"><img src="assets/partners/logos/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>Thanks to AICodeMirror for supporting this project with user benefits and enterprise technical support.</td>
-</tr>
-
-</table>
+This project is licensed under the [GNU Lesser General Public License v3.0](LICENSE).

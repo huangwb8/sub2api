@@ -5,7 +5,7 @@
 - 发布新的release
 
 ```
-version=1.0.20
+version=1.0.21
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -28,18 +28,19 @@ version=1.0.20
 - 源项目最新的历史版本
 
 ```
-version2 = 
+version2 = 23def40bc5415c04ca3a05bb6d67a6ff1e4a3566
 version1 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
 ```
 
 - 吸收源项目的优势
 
 ```
-version2 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
-version1 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
-请问：
+version2 = 23def40bc5415c04ca3a05bb6d67a6ff1e4a3566
+version1 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
+我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
 - 这些变化对目前我的个人sub2api项目有没有启发？你觉得那些优化我有必要吸收吗？如果有，先不要改本项目的源代码； 而是在 ./docs/plans 里写一个优化计划。
+- 如果源项目的license变化了，我这边也要跟着变。
 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 ```
 
@@ -50,6 +51,19 @@ version1 = 6c73b6212cee5bb78fb4a70ead7a4ab70ee6102b
 ```
 
 # 日常
+
+---
+
+重构本项目的readme系列文档:
+
+- 现在的readme仍然是原作者写的。 请重构为符合现fork版本的模样。 大致是： 
+  - 感谢原项目的开源工作
+  - 介绍本项目的特色之处（vs. 源项目）
+  - 建议大家star源项目； 如果可以，当然也可以star本项目，我会表示感谢
+- 以中文文档为主，英文文档为辅助。
+- 相关样式，可以参考 huangwb8/skills 项目
+
+---
 
 PlanMardkdown = docs/plans/2026-04-20-packycode-01-remote-investigation.md  docs/plans/2026-04-20-profitability-true-cost-allocation-plan.md 
 
