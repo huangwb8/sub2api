@@ -1094,6 +1094,50 @@ export default {
           action: '行动'
         }
       },
+      oversell: {
+        title: '超售数学测算',
+        description: '基于当前轻度用户占比估算与手动参数，快速评估建议套餐单价和启动用户池规模。',
+        estimateTitle: '系统估算条件',
+        estimateDescription: '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
+        sampleUsers: '样本用户 {count}',
+        updatedAt: '更新于 {time}',
+        noEstimate: '暂无足够样本，等待后端完成当前站点的轻度用户占比估算后再计算。',
+        form: {
+          plannedPrice: '计划套餐售价',
+          procurementCost: '单个实际商品采购成本',
+          capacity: '单个实际商品承载理论商品数',
+          profitRate: '目标盈利率',
+          profitMode: '盈利口径',
+          targetProfit: '目标盈利总额',
+          heavyUsage: '重度用户月消耗上限',
+          confidence: '把握度',
+          costPlus: '成本加成',
+          netMargin: '净利率',
+          cnyPerMonth: '元 / 月',
+          cnyPerItem: '元 / 个',
+          units: '个',
+          percent: '%',
+          confidence95: '95%',
+          confidence99: '99%'
+        },
+        metrics: {
+          meanUpperBound: '保守人均消耗上界',
+          unitCost: '理论商品单位成本',
+          floorPrice: '保底套餐价'
+        },
+        result: {
+          recommendedPrice: '建议套餐单价',
+          minimumUsers: '至少纳入用户数',
+          profitDrivenPrice: '按目标盈利推导',
+          riskDrivenUsers: '按计划售价推导',
+          lossRisk: '亏损风险上限 {risk}',
+          infiniteUsers: '当前计划售价无法形成稳定超售池，请先提高售价或放宽盈利目标。',
+          buffer: '安全垫 {value}',
+          helper: '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
+          note: 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
+          users: '{count} 人'
+        }
+      },
       profitability: {
         title: '盈利水平',
         description: '按当前时间粒度汇总非管理员用户的余额收入、订阅收入与估算成本；额外盈利率按面板利润/成本实时计算，没有可计算成本时不显示。',

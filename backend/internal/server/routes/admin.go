@@ -198,6 +198,8 @@ func registerDashboardRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		dashboard.GET("/profitability/bounds", h.Admin.Dashboard.GetProfitabilityBounds)
 		dashboard.GET("/profitability", h.Admin.Dashboard.GetProfitabilityTrend)
 		dashboard.GET("/recommendations", h.Admin.Dashboard.GetRecommendations)
+		dashboard.GET("/oversell-calculator", h.Admin.Dashboard.GetOversellCalculator)
+		dashboard.POST("/oversell-calculator", h.Admin.Dashboard.CalculateOversellCalculator)
 		dashboard.GET("/models", h.Admin.Dashboard.GetModelStats)
 		dashboard.GET("/groups", h.Admin.Dashboard.GetGroupStats)
 		dashboard.GET("/api-keys-trend", h.Admin.Dashboard.GetAPIKeyUsageTrend)

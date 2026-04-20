@@ -6,6 +6,8 @@
 import { apiClient } from '../client'
 import type {
   DashboardStats,
+  DashboardOversellCalculatorRequest,
+  DashboardOversellCalculatorResponse,
   DashboardRecommendationMetrics,
   DashboardRecommendationsResponse,
   DashboardRecommendationsSummary,
@@ -33,6 +35,21 @@ export async function getStats(): Promise<DashboardStats> {
 export async function getRecommendations(): Promise<DashboardRecommendationsResponse> {
   const { data } = await apiClient.get<DashboardRecommendationsResponse | LegacyDashboardRecommendationsResponse>('/admin/dashboard/recommendations')
   return normalizeDashboardRecommendations(data)
+}
+
+export async function getOversellCalculator(): Promise<DashboardOversellCalculatorResponse> {
+  const { data } = await apiClient.get<DashboardOversellCalculatorResponse>('/admin/dashboard/oversell-calculator')
+  return data
+}
+
+export async function calculateOversellCalculator(
+  payload: DashboardOversellCalculatorRequest
+): Promise<DashboardOversellCalculatorResponse> {
+  const { data } = await apiClient.post<DashboardOversellCalculatorResponse>(
+    '/admin/dashboard/oversell-calculator',
+    payload
+  )
+  return data
 }
 
 interface LegacyDashboardRecommendationItem {
@@ -438,6 +455,8 @@ export async function getBatchApiKeysUsage(
 export const dashboardAPI = {
   getStats,
   getRecommendations,
+  getOversellCalculator,
+  calculateOversellCalculator,
   getRealtimeMetrics,
   getUsageTrend,
   getProfitabilityBounds,

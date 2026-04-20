@@ -738,6 +738,245 @@ func TestAPIContracts(t *testing.T) {
 			}`,
 		},
 		{
+			name: "GET /api/v1/admin/dashboard/oversell-calculator",
+			setup: func(t *testing.T, deps *contractDeps) {
+				t.Helper()
+				deps.dashboardRecommendationService.oversellResponse = &service.DashboardOversellCalculatorResponse{
+					GeneratedAt: time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC),
+					Defaults: service.DashboardOversellCalculatorRequest{
+						ActualCostCNY:           168,
+						CapacityUnitsPerProduct: 3,
+						ConfidenceLevel:         0.95,
+						ProfitRatePercent:       20,
+						ProfitMode:              "net_margin",
+						TargetProfitTotalCNY:    60,
+					},
+					Input: service.DashboardOversellCalculatorRequest{
+						ActualCostCNY:           168,
+						CapacityUnitsPerProduct: 3,
+						ConfidenceLevel:         0.95,
+						ProfitRatePercent:       20,
+						ProfitMode:              "net_margin",
+						TargetProfitTotalCNY:    60,
+					},
+					Estimate: service.DashboardOversellEstimate{
+						LightUserThresholdUnits:     0.3,
+						EstimatedLightUserRatio:     0.74,
+						SampledSubscriptionCount:    50,
+						LightUserCount:              37,
+						EstimatedFromLiveData:       true,
+						FallbackApplied:             false,
+						Basis:                       "按当前活跃订阅的已用额度 / 当前周期额度估算轻度用户占比",
+						CurrentCheapestMonthlyPrice: 79,
+						CurrentCheapestPlanName:     "Lite 月付",
+					},
+					Result: service.DashboardOversellCalculationResult{
+						Feasible:                       true,
+						MinimumUsers:                   12,
+						RecommendedMonthlyPriceCNY:     74.5,
+						CurrentCheapestMonthlyPriceCNY: 79,
+						MonthlyPriceGapCNY:             4.5,
+						ExpectedMeanUnits:              1.00,
+						RiskAdjustedMeanUnits:          2.02,
+						ConfidenceLevel:                0.95,
+						PriceMultiplier:                1.25,
+						Reason:                         "按当前最便宜月均套餐价 ¥79.00 反推，至少需要 12 个用户",
+					},
+					Plans: []service.DashboardOversellPlanRecommendation{
+						{
+							PlanID:                     101,
+							GroupID:                    201,
+							GroupName:                  "OpenAI Plus",
+							PlanName:                   "Lite 月付",
+							ValidityDays:               30,
+							ValidityUnit:               "day",
+							DurationDaysEquivalent:     30,
+							CurrentPriceCNY:            79,
+							CurrentMonthlyPriceCNY:     79,
+							RecommendedPriceCNY:        74.5,
+							RecommendedMonthlyPriceCNY: 74.5,
+							PriceDeltaCNY:              -4.5,
+						},
+					},
+				}
+			},
+			method:     http.MethodGet,
+			path:       "/api/v1/admin/dashboard/oversell-calculator",
+			wantStatus: http.StatusOK,
+			wantJSON: `{
+				"code": 0,
+				"message": "success",
+				"data": {
+					"generated_at": "2025-01-02T03:04:05Z",
+					"defaults": {
+						"actual_cost_cny": 168,
+						"capacity_units_per_product": 3,
+						"confidence_level": 0.95,
+						"profit_rate_percent": 20,
+						"profit_mode": "net_margin",
+						"target_profit_total_cny": 60
+					},
+					"input": {
+						"actual_cost_cny": 168,
+						"capacity_units_per_product": 3,
+						"confidence_level": 0.95,
+						"profit_rate_percent": 20,
+						"profit_mode": "net_margin",
+						"target_profit_total_cny": 60
+					},
+					"estimate": {
+						"light_user_threshold_units": 0.3,
+						"estimated_light_user_ratio": 0.74,
+						"sampled_subscription_count": 50,
+						"light_user_count": 37,
+						"estimated_from_live_data": true,
+						"fallback_applied": false,
+						"basis": "按当前活跃订阅的已用额度 / 当前周期额度估算轻度用户占比",
+						"current_cheapest_monthly_price_cny": 79,
+						"current_cheapest_plan_name": "Lite 月付"
+					},
+					"result": {
+						"feasible": true,
+						"minimum_users": 12,
+						"recommended_monthly_price_cny": 74.5,
+						"current_cheapest_monthly_price_cny": 79,
+						"monthly_price_gap_cny": 4.5,
+						"expected_mean_units": 1.0,
+						"risk_adjusted_mean_units": 2.02,
+						"confidence_level": 0.95,
+						"price_multiplier": 1.25,
+						"reason": "按当前最便宜月均套餐价 ¥79.00 反推，至少需要 12 个用户"
+					},
+					"plans": [
+						{
+							"plan_id": 101,
+							"group_id": 201,
+							"group_name": "OpenAI Plus",
+							"plan_name": "Lite 月付",
+							"validity_days": 30,
+							"validity_unit": "day",
+							"duration_days_equivalent": 30,
+							"current_price_cny": 79,
+							"current_monthly_price_cny": 79,
+							"recommended_price_cny": 74.5,
+							"recommended_monthly_price_cny": 74.5,
+							"price_delta_cny": -4.5
+						}
+					]
+				}
+			}`,
+		},
+		{
+			name: "POST /api/v1/admin/dashboard/oversell-calculator",
+			setup: func(t *testing.T, deps *contractDeps) {
+				t.Helper()
+				deps.dashboardRecommendationService.oversellResponse = &service.DashboardOversellCalculatorResponse{
+					GeneratedAt: time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC),
+					Defaults: service.DashboardOversellCalculatorRequest{
+						ActualCostCNY:           160,
+						CapacityUnitsPerProduct: 3,
+						ConfidenceLevel:         0.95,
+						ProfitRatePercent:       20,
+						ProfitMode:              "net_margin",
+						TargetProfitTotalCNY:    0,
+					},
+					Estimate: service.DashboardOversellEstimate{
+						LightUserThresholdUnits:     0.3,
+						EstimatedLightUserRatio:     0.7,
+						SampledSubscriptionCount:    40,
+						LightUserCount:              28,
+						EstimatedFromLiveData:       true,
+						FallbackApplied:             false,
+						Basis:                       "按当前活跃订阅的已用额度 / 当前周期额度估算轻度用户占比",
+						CurrentCheapestMonthlyPrice: 86,
+						CurrentCheapestPlanName:     "Lite 月付",
+					},
+					Result: service.DashboardOversellCalculationResult{
+						Feasible:                       true,
+						MinimumUsers:                   14,
+						RecommendedMonthlyPriceCNY:     82,
+						CurrentCheapestMonthlyPriceCNY: 86,
+						MonthlyPriceGapCNY:             4,
+						ExpectedMeanUnits:              1.11,
+						RiskAdjustedMeanUnits:          2.04,
+						ConfidenceLevel:                0.99,
+						PriceMultiplier:                1.25,
+						Reason:                         "按当前最便宜月均套餐价 ¥86.00 反推，至少需要 14 个用户",
+					},
+					Plans: []service.DashboardOversellPlanRecommendation{},
+					Input: service.DashboardOversellCalculatorRequest{
+						ActualCostCNY:           180,
+						CapacityUnitsPerProduct: 3,
+						ConfidenceLevel:         0.99,
+						ProfitRatePercent:       25,
+						ProfitMode:              "markup",
+						TargetProfitTotalCNY:    88,
+					},
+				}
+			},
+			method: http.MethodPost,
+			path:   "/api/v1/admin/dashboard/oversell-calculator",
+			body: `{
+				"actual_cost_cny": 180,
+				"capacity_units_per_product": 3,
+				"confidence_level": 0.99,
+				"profit_rate_percent": 25,
+				"profit_mode": "markup",
+				"target_profit_total_cny": 88
+			}`,
+			headers: map[string]string{
+				"Content-Type": "application/json",
+			},
+			wantStatus: http.StatusOK,
+			wantJSON: `{
+				"code": 0,
+				"message": "success",
+				"data": {
+					"generated_at": "2025-01-02T03:04:05Z",
+					"defaults": {
+						"actual_cost_cny": 160,
+						"capacity_units_per_product": 3,
+						"confidence_level": 0.95,
+						"profit_rate_percent": 20,
+						"profit_mode": "net_margin",
+						"target_profit_total_cny": 0
+					},
+					"input": {
+						"actual_cost_cny": 180,
+						"capacity_units_per_product": 3,
+						"confidence_level": 0.99,
+						"profit_rate_percent": 25,
+						"profit_mode": "markup",
+						"target_profit_total_cny": 88
+					},
+					"estimate": {
+						"light_user_threshold_units": 0.3,
+						"estimated_light_user_ratio": 0.7,
+						"sampled_subscription_count": 40,
+						"light_user_count": 28,
+						"estimated_from_live_data": true,
+						"fallback_applied": false,
+						"basis": "按当前活跃订阅的已用额度 / 当前周期额度估算轻度用户占比",
+						"current_cheapest_monthly_price_cny": 86,
+						"current_cheapest_plan_name": "Lite 月付"
+					},
+					"result": {
+						"feasible": true,
+						"minimum_users": 14,
+						"recommended_monthly_price_cny": 82,
+						"current_cheapest_monthly_price_cny": 86,
+						"monthly_price_gap_cny": 4,
+						"expected_mean_units": 1.11,
+						"risk_adjusted_mean_units": 2.04,
+						"confidence_level": 0.99,
+						"price_multiplier": 1.25,
+						"reason": "按当前最便宜月均套餐价 ¥86.00 反推，至少需要 14 个用户"
+					},
+					"plans": []
+				}
+			}`,
+		},
+		{
 			name:   "POST /api/v1/admin/accounts/bulk-update",
 			method: http.MethodPost,
 			path:   "/api/v1/admin/accounts/bulk-update",
@@ -900,6 +1139,8 @@ func newContractDeps(t *testing.T) *contractDeps {
 	v1Admin.Use(adminAuth)
 	v1Admin.GET("/settings", adminSettingHandler.GetSettings)
 	v1Admin.GET("/dashboard/recommendations", dashboardHandler.GetRecommendations)
+	v1Admin.GET("/dashboard/oversell-calculator", dashboardHandler.GetOversellCalculator)
+	v1Admin.POST("/dashboard/oversell-calculator", dashboardHandler.CalculateOversellCalculator)
 	v1Admin.POST("/accounts/bulk-update", adminAccountHandler.BulkUpdate)
 
 	return &contractDeps{
@@ -1070,8 +1311,9 @@ func (stubApiKeyCache) SubscribeAuthCacheInvalidation(ctx context.Context, handl
 }
 
 type stubDashboardRecommendationService struct {
-	response *service.DashboardCapacityRecommendationResponse
-	err      error
+	response         *service.DashboardCapacityRecommendationResponse
+	oversellResponse *service.DashboardOversellCalculatorResponse
+	err              error
 }
 
 func (s *stubDashboardRecommendationService) GetCapacityRecommendations(ctx context.Context) (*service.DashboardCapacityRecommendationResponse, error) {
@@ -1082,6 +1324,28 @@ func (s *stubDashboardRecommendationService) GetCapacityRecommendations(ctx cont
 		return &service.DashboardCapacityRecommendationResponse{}, nil
 	}
 	return s.response, nil
+}
+
+func (s *stubDashboardRecommendationService) GetOversellCalculator(ctx context.Context) (*service.DashboardOversellCalculatorResponse, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	if s.oversellResponse == nil {
+		return &service.DashboardOversellCalculatorResponse{}, nil
+	}
+	return s.oversellResponse, nil
+}
+
+func (s *stubDashboardRecommendationService) CalculateOversellCalculator(ctx context.Context, req service.DashboardOversellCalculatorRequest) (*service.DashboardOversellCalculatorResponse, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	if s.oversellResponse == nil {
+		return &service.DashboardOversellCalculatorResponse{Input: req}, nil
+	}
+	response := *s.oversellResponse
+	response.Input = req
+	return &response, nil
 }
 
 type stubGroupRepo struct {

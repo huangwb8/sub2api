@@ -1242,6 +1242,64 @@ export interface DashboardRecommendationsResponse {
   pools: DashboardCapacityPoolRecommendation[]
 }
 
+export interface DashboardOversellCalculatorRequest {
+  actual_cost_cny: number
+  capacity_units_per_product: number
+  confidence_level: number
+  profit_rate_percent: number
+  profit_mode: 'markup' | 'net_margin' | string
+  target_profit_total_cny: number
+}
+
+export interface DashboardOversellEstimate {
+  light_user_threshold_units: number
+  estimated_light_user_ratio: number
+  sampled_subscription_count: number
+  light_user_count: number
+  estimated_from_live_data: boolean
+  fallback_applied: boolean
+  basis: string
+  current_cheapest_monthly_price_cny: number
+  current_cheapest_plan_name: string
+}
+
+export interface DashboardOversellCalculationResult {
+  feasible: boolean
+  minimum_users: number
+  recommended_monthly_price_cny: number
+  current_cheapest_monthly_price_cny: number
+  monthly_price_gap_cny: number
+  expected_mean_units: number
+  risk_adjusted_mean_units: number
+  confidence_level: number
+  price_multiplier: number
+  reason: string
+}
+
+export interface DashboardOversellPlanRecommendation {
+  plan_id: number
+  group_id: number
+  group_name: string
+  plan_name: string
+  validity_days: number
+  validity_unit: string
+  duration_days_equivalent: number
+  current_price_cny: number
+  current_monthly_price_cny: number
+  recommended_price_cny: number
+  recommended_monthly_price_cny: number
+  price_delta_cny: number
+}
+
+export interface DashboardOversellCalculatorResponse {
+  generated_at: string
+  defaults: DashboardOversellCalculatorRequest
+  input: DashboardOversellCalculatorRequest
+  estimate: DashboardOversellEstimate
+  result: DashboardOversellCalculationResult
+  plans: DashboardOversellPlanRecommendation[]
+}
+
 export interface UsageStatsResponse {
   period?: string
   total_requests: number

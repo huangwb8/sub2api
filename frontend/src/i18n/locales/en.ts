@@ -1084,6 +1084,50 @@ export default {
           action: 'Action'
         }
       },
+      oversell: {
+        title: 'Oversell Math',
+        description: 'Combines the current light-user share estimate with manual inputs to suggest package pricing and launch pool size.',
+        estimateTitle: 'System Estimate',
+        estimateDescription: 'Within the last {days} days of samples, {share} of users stayed within {threshold} theoretical units per month.',
+        sampleUsers: '{count} sampled users',
+        updatedAt: 'Updated {time}',
+        noEstimate: 'There is not enough sample data yet. Wait for the backend to finish estimating the light-user share before using this calculator.',
+        form: {
+          plannedPrice: 'Planned package price',
+          procurementCost: 'Procurement cost per actual item',
+          capacity: 'Theoretical units per actual item',
+          profitRate: 'Target profit rate',
+          profitMode: 'Profit basis',
+          targetProfit: 'Target total profit',
+          heavyUsage: 'Heavy-user monthly usage ceiling',
+          confidence: 'Confidence',
+          costPlus: 'Cost plus',
+          netMargin: 'Net margin',
+          cnyPerMonth: 'CNY / month',
+          cnyPerItem: 'CNY / item',
+          units: 'units',
+          percent: '%',
+          confidence95: '95%',
+          confidence99: '99%'
+        },
+        metrics: {
+          meanUpperBound: 'Conservative mean upper bound',
+          unitCost: 'Unit cost per theoretical item',
+          floorPrice: 'Floor package price'
+        },
+        result: {
+          recommendedPrice: 'Suggested package price',
+          minimumUsers: 'Minimum users to onboard',
+          profitDrivenPrice: 'Derived from target profit',
+          riskDrivenUsers: 'Derived from planned price',
+          lossRisk: 'Loss-risk ceiling {risk}',
+          infiniteUsers: 'The planned price cannot sustain a stable oversell pool yet. Raise the price or loosen the profit target first.',
+          buffer: 'Safety buffer {value}',
+          helper: 'The suggested price takes the higher value between the floor package price and the target-profit-derived price.',
+          note: 'The Hoeffding upper bound estimates the risk that the user-pool average exceeds the affordable threshold at the selected confidence.',
+          users: '{count} users'
+        }
+      },
       profitability: {
         title: 'Profitability',
         description: 'Aggregates balance revenue, subscription revenue, and estimated cost for non-admin users at the selected time granularity. The extra profit rate is calculated from panel profit and cost in real time and stays hidden when no cost can be computed.',

@@ -26,6 +26,8 @@ type DashboardHandler struct {
 
 type dashboardRecommendationProvider interface {
 	GetCapacityRecommendations(ctx context.Context) (*service.DashboardCapacityRecommendationResponse, error)
+	GetOversellCalculator(ctx context.Context) (*service.DashboardOversellCalculatorResponse, error)
+	CalculateOversellCalculator(ctx context.Context, req service.DashboardOversellCalculatorRequest) (*service.DashboardOversellCalculatorResponse, error)
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
@@ -154,6 +156,46 @@ func (h *DashboardHandler) GetRecommendations(c *gin.Context) {
 	}
 
 	response.Success(c, recommendations)
+}
+
+// GetOversellCalculator handles getting dashboard oversell calculator defaults and estimate.
+// GET /api/v1/admin/dashboard/oversell-calculator
+func (h *DashboardHandler) GetOversellCalculator(c *gin.Context) {
+	if h.dashboardRecommendationService == nil {
+		response.InternalError(c, "Dashboard recommendation service not available")
+		return
+	}
+
+	calculator, err := h.dashboardRecommendationService.GetOversellCalculator(c.Request.Context())
+	if err != nil {
+		response.Error(c, 500, "Failed to get dashboard oversell calculator")
+		return
+	}
+
+	response.Success(c, calculator)
+}
+
+// CalculateOversellCalculator handles recalculating dashboard oversell suggestions.
+// POST /api/v1/admin/dashboard/oversell-calculator
+func (h *DashboardHandler) CalculateOversellCalculator(c *gin.Context) {
+	if h.dashboardRecommendationService == nil {
+		response.InternalError(c, "Dashboard recommendation service not available")
+		return
+	}
+
+	var req service.DashboardOversellCalculatorRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	calculator, err := h.dashboardRecommendationService.CalculateOversellCalculator(c.Request.Context(), req)
+	if err != nil {
+		response.Error(c, 500, "Failed to calculate dashboard oversell suggestions")
+		return
+	}
+
+	response.Success(c, calculator)
 }
 
 type DashboardAggregationBackfillRequest struct {

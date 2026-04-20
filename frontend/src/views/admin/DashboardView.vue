@@ -345,6 +345,240 @@
           </div>
         </div>
 
+        <div class="card p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.dashboard.oversell.title') }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.oversell.description') }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="oversellLoading" class="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
+          </div>
+          <div v-else class="mt-4 space-y-4">
+            <div class="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-dark-700/50">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.estimateTitle') }}
+                  </p>
+                  <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                    {{ oversellEstimateSummary || t('admin.dashboard.oversell.noEstimate') }}
+                  </p>
+                </div>
+                <div
+                  v-if="oversellCalculator?.estimate"
+                  class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+                >
+                  <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                    {{
+                      t('admin.dashboard.oversell.sampleUsers', {
+                        count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
+                      })
+                    }}
+                  </span>
+                  <span
+                    v-if="oversellCalculator.generated_at"
+                    class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700"
+                  >
+                    {{ t('admin.dashboard.oversell.updatedAt', { time: formatShortDateTime(oversellCalculator.generated_at) }) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.95fr)]">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.plannedPrice') }}</label>
+                  <input
+                    v-model.number="oversellForm.plannedPrice"
+                    data-testid="oversell-planned-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
+                  <input
+                    v-model.number="oversellForm.procurementCost"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.cnyPerItem') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.capacity') }}</label>
+                  <input
+                    v-model.number="oversellForm.capacityPerItem"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.units') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.heavyUsage') }}</label>
+                  <input
+                    v-model.number="oversellForm.heavyUsage"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.units') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
+                  <input
+                    v-model.number="oversellForm.profitRatePercent"
+                    type="number"
+                    min="0"
+                    max="95"
+                    step="1"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.percent') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.profitMode') }}</label>
+                  <select v-model="oversellForm.profitMode" class="input mt-2">
+                    <option value="costPlus">{{ t('admin.dashboard.oversell.form.costPlus') }}</option>
+                    <option value="netMargin">{{ t('admin.dashboard.oversell.form.netMargin') }}</option>
+                  </select>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.targetProfit') }}</label>
+                  <input
+                    v-model.number="oversellForm.targetProfit"
+                    data-testid="oversell-target-profit"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="input mt-2"
+                  />
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                  <label class="input-label">{{ t('admin.dashboard.oversell.form.confidence') }}</label>
+                  <select v-model.number="oversellForm.confidenceLevel" class="input mt-2">
+                    <option :value="95">{{ t('admin.dashboard.oversell.form.confidence95') }}</option>
+                    <option :value="99">{{ t('admin.dashboard.oversell.form.confidence99') }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div class="rounded-xl border border-emerald-100 bg-emerald-50/80 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/10">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }}
+                  </p>
+                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ oversellScenario ? `${formatDecimal(oversellScenario.meanUpperBound, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-blue-100 bg-blue-50/80 p-3 dark:border-blue-900/40 dark:bg-blue-900/10">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                    {{ t('admin.dashboard.oversell.metrics.unitCost') }}
+                  </p>
+                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ oversellScenario ? formatCny(oversellScenario.unitCostPerTheoretical) : '--' }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border border-amber-100 bg-amber-50/80 p-3 dark:border-amber-900/40 dark:bg-amber-900/10">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
+                  </p>
+                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ oversellScenario ? formatCny(oversellScenario.floorPrice) : '--' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
+                </p>
+                <p
+                  data-testid="oversell-recommended-price"
+                  class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
+                >
+                  {{ oversellScenario ? formatCny(oversellScenario.recommendedPrice) : '--' }}
+                </p>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {{ t('admin.dashboard.oversell.result.profitDrivenPrice') }}:
+                  {{ oversellScenario ? formatCny(oversellScenario.targetProfitDrivenPrice) : '--' }}
+                </p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.oversell.result.helper') }}
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.oversell.result.minimumUsers') }}
+                </p>
+                <template v-if="oversellScenario && oversellScenario.minimumUsers !== null">
+                  <p
+                    data-testid="oversell-min-users"
+                    class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
+                  >
+                    {{ t('admin.dashboard.oversell.result.users', { count: oversellScenario.minimumUsers }) }}
+                  </p>
+                  <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                    {{ t('admin.dashboard.oversell.result.lossRisk', { risk: oversellScenario.lossRiskLabel }) }}
+                  </p>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.result.buffer', { value: formatDecimal(oversellScenario.safetyBuffer, 3) }) }}
+                  </p>
+                </template>
+                <template v-else>
+                  <p data-testid="oversell-min-users" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
+                    {{ t('admin.dashboard.oversell.result.infiniteUsers') }}
+                  </p>
+                </template>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.oversell.result.note') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Charts Section -->
         <div class="space-y-6">
           <!-- Date Range Filter -->
@@ -509,7 +743,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
@@ -518,6 +752,7 @@ const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
 import type {
   DashboardStats,
+  DashboardOversellCalculatorResponse,
   DashboardRecommendationsResponse,
   TrendDataPoint,
   ProfitabilityTrendPoint,
@@ -571,6 +806,21 @@ const profitabilityLoading = ref(false)
 const rankingLoading = ref(false)
 const rankingError = ref(false)
 const recommendations = ref<DashboardRecommendationsResponse | null>(null)
+const oversellLoading = ref(false)
+const oversellCalculator = ref<DashboardOversellCalculatorResponse | null>(null)
+
+type OversellProfitMode = 'costPlus' | 'netMargin'
+
+const oversellForm = reactive({
+  plannedPrice: 50,
+  procurementCost: 50,
+  capacityPerItem: 3,
+  profitRatePercent: 20,
+  profitMode: 'costPlus' as OversellProfitMode,
+  targetProfit: 120,
+  heavyUsage: 3,
+  confidenceLevel: 99 as 95 | 99
+})
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -757,6 +1007,72 @@ const userTrendChartData = computed(() => {
 })
 
 const profitabilitySummary = computed(() => summarizeProfitabilityTrend(profitabilityTrend.value))
+const oversellEstimateSummary = computed(() => {
+  const estimate = oversellCalculator.value?.estimate
+  if (!estimate || !Number.isFinite(estimate.estimated_light_user_ratio)) {
+    return ''
+  }
+
+  return t('admin.dashboard.oversell.estimateDescription', {
+    days: 30,
+    share: formatPercentDetailed(estimate.estimated_light_user_ratio, 0),
+    threshold: formatDecimal(estimate.light_user_threshold_units, 2)
+  })
+})
+
+const oversellScenario = computed(() => {
+  const estimate = oversellCalculator.value?.estimate
+  if (!estimate || !Number.isFinite(estimate.estimated_light_user_ratio)) {
+    return null
+  }
+
+  const lightUserShare = Math.min(Math.max(estimate.estimated_light_user_ratio, 0), 1)
+  const lightUserThreshold = Math.max(estimate.light_user_threshold_units, 0)
+  const heavyUsage = Math.max(oversellForm.heavyUsage || 0, lightUserThreshold)
+  const rangeWidth = Math.max(heavyUsage, 0.0001)
+  const procurementCost = Math.max(oversellForm.procurementCost || 0, 0)
+  const capacityPerItem = Math.max(oversellForm.capacityPerItem || 0, 0.0001)
+  const plannedPrice = Math.max(oversellForm.plannedPrice || 0, 0)
+  const targetProfit = Math.max(oversellForm.targetProfit || 0, 0)
+  const profitRate = Math.min(Math.max((oversellForm.profitRatePercent || 0) / 100, 0), 0.95)
+  const unitCostPerTheoretical = procurementCost / capacityPerItem
+  const meanUpperBound = lightUserShare * lightUserThreshold + (1 - lightUserShare) * heavyUsage
+  const expectedCostPerUser = unitCostPerTheoretical * meanUpperBound
+  const floorPrice =
+    oversellForm.profitMode === 'netMargin'
+      ? expectedCostPerUser / Math.max(1 - profitRate, 0.0001)
+      : expectedCostPerUser * (1 + profitRate)
+  const affordableUsageThreshold =
+    oversellForm.profitMode === 'netMargin'
+      ? (plannedPrice * Math.max(1 - profitRate, 0.0001)) / Math.max(unitCostPerTheoretical, 0.0001)
+      : plannedPrice / Math.max(unitCostPerTheoretical * (1 + profitRate), 0.0001)
+  const safetyBuffer = affordableUsageThreshold - meanUpperBound
+  const lossRisk = oversellForm.confidenceLevel === 99 ? 0.01 : 0.05
+
+  let minimumUsers: number | null = null
+  if (Number.isFinite(safetyBuffer) && safetyBuffer > 0) {
+    minimumUsers = Math.max(
+      1,
+      Math.ceil((Math.log(1 / lossRisk) * rangeWidth * rangeWidth) / (2 * safetyBuffer * safetyBuffer))
+    )
+  }
+
+  const targetProfitDrivenPrice =
+    minimumUsers == null ? floorPrice : expectedCostPerUser + targetProfit / minimumUsers
+  const recommendedPrice = Math.max(floorPrice, targetProfitDrivenPrice)
+
+  return {
+    meanUpperBound,
+    unitCostPerTheoretical,
+    floorPrice,
+    targetProfitDrivenPrice,
+    recommendedPrice,
+    affordableUsageThreshold,
+    safetyBuffer,
+    minimumUsers,
+    lossRiskLabel: formatPercentDetailed(lossRisk, 0)
+  }
+})
 
 // Format helpers
 const formatTokens = (value: number | undefined): string => {
@@ -795,6 +1111,31 @@ const formatExtraProfitRate = (value: number | null | undefined): string => {
     return '--'
   }
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+}
+
+const formatDecimal = (value: number, digits = 2): string => {
+  if (!Number.isFinite(value)) {
+    return '--'
+  }
+
+  return value.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')
+}
+
+const formatPercentDetailed = (value: number, digits = 1): string => {
+  if (!Number.isFinite(value)) {
+    return '--'
+  }
+
+  return `${formatDecimal(value * 100, digits)}%`
+}
+
+const formatShortDateTime = (value: string): string => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString()
 }
 
 const formatDuration = (ms: number): string => {
@@ -1016,6 +1357,28 @@ const loadRecommendations = async () => {
   }
 }
 
+const loadOversellMathBaseline = async () => {
+  oversellLoading.value = true
+  try {
+    const response = await adminAPI.dashboard.getOversellCalculator()
+    oversellCalculator.value = response
+
+    const initialInput = response.input || response.defaults
+    oversellForm.procurementCost = initialInput.actual_cost_cny
+    oversellForm.capacityPerItem = initialInput.capacity_units_per_product
+    oversellForm.profitRatePercent = initialInput.profit_rate_percent
+    oversellForm.profitMode = initialInput.profit_mode === 'net_margin' ? 'netMargin' : 'costPlus'
+    oversellForm.targetProfit = initialInput.target_profit_total_cny
+    oversellForm.confidenceLevel = initialInput.confidence_level === 95 ? 95 : 99
+    oversellForm.plannedPrice = response.estimate.current_cheapest_monthly_price_cny || oversellForm.plannedPrice
+  } catch (error) {
+    console.error('Error loading oversell math baseline:', error)
+    oversellCalculator.value = null
+  } finally {
+    oversellLoading.value = false
+  }
+}
+
 const loadDashboardStats = async () => {
   if (!profitabilityBoundsLoaded.value) {
     await loadProfitabilityBounds()
@@ -1023,6 +1386,7 @@ const loadDashboardStats = async () => {
   await Promise.all([
     loadDashboardSnapshot(true),
     loadRecommendations(),
+    loadOversellMathBaseline(),
     loadProfitabilityTrend(),
     loadUsersTrend(),
     loadUserSpendingRanking()

@@ -4,13 +4,22 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
 
-const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking, getProfitabilityTrend, getProfitabilityBounds, getRecommendations } = vi.hoisted(() => ({
+const {
+  getSnapshotV2,
+  getUserUsageTrend,
+  getUserSpendingRanking,
+  getProfitabilityTrend,
+  getProfitabilityBounds,
+  getRecommendations,
+  getOversellCalculator
+} = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
   getUserUsageTrend: vi.fn(),
   getUserSpendingRanking: vi.fn(),
   getProfitabilityTrend: vi.fn(),
   getProfitabilityBounds: vi.fn(),
-  getRecommendations: vi.fn()
+  getRecommendations: vi.fn(),
+  getOversellCalculator: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -21,7 +30,8 @@ vi.mock('@/api/admin', () => ({
       getUserSpendingRanking,
       getProfitabilityTrend,
       getProfitabilityBounds,
-      getRecommendations
+      getRecommendations,
+      getOversellCalculator
     }
   }
 }))
@@ -64,7 +74,44 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.recommendations.empty': '暂无推荐',
     'admin.dashboard.recommendations.statusMap.healthy': '健康',
     'admin.dashboard.recommendations.statusMap.watch': '观察',
-    'admin.dashboard.recommendations.statusMap.action': '行动'
+    'admin.dashboard.recommendations.statusMap.action': '行动',
+    'admin.dashboard.oversell.title': '超售数学测算',
+    'admin.dashboard.oversell.description': '基于当前轻度用户占比估算与手动参数，给出建议套餐单价和启动用户数。',
+    'admin.dashboard.oversell.estimateTitle': '系统估算条件',
+    'admin.dashboard.oversell.estimateDescription': '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
+    'admin.dashboard.oversell.sampleUsers': '样本用户 {count}',
+    'admin.dashboard.oversell.updatedAt': '更新于 {time}',
+    'admin.dashboard.oversell.noEstimate': '暂无足够样本，先等待后端完成估算。',
+    'admin.dashboard.oversell.form.plannedPrice': '计划套餐售价',
+    'admin.dashboard.oversell.form.procurementCost': '单个实际商品采购成本',
+    'admin.dashboard.oversell.form.capacity': '单个实际商品承载理论商品数',
+    'admin.dashboard.oversell.form.profitRate': '目标盈利率',
+    'admin.dashboard.oversell.form.profitMode': '盈利口径',
+    'admin.dashboard.oversell.form.targetProfit': '目标盈利总额',
+    'admin.dashboard.oversell.form.heavyUsage': '重度用户月消耗上限',
+    'admin.dashboard.oversell.form.confidence': '把握度',
+    'admin.dashboard.oversell.form.costPlus': '成本加成',
+    'admin.dashboard.oversell.form.netMargin': '净利率',
+    'admin.dashboard.oversell.form.cnyPerMonth': '元 / 月',
+    'admin.dashboard.oversell.form.cnyPerItem': '元 / 个',
+    'admin.dashboard.oversell.form.units': '个',
+    'admin.dashboard.oversell.form.percent': '%',
+    'admin.dashboard.oversell.form.confidence95': '95%',
+    'admin.dashboard.oversell.form.confidence99': '99%',
+    'admin.dashboard.oversell.metrics.meanUpperBound': '保守人均消耗上界',
+    'admin.dashboard.oversell.metrics.unitCost': '理论商品单位成本',
+    'admin.dashboard.oversell.metrics.floorPrice': '保底套餐价',
+    'admin.dashboard.oversell.result.recommendedPrice': '建议套餐单价',
+    'admin.dashboard.oversell.result.minimumUsers': '至少纳入用户数',
+    'admin.dashboard.oversell.result.profitDrivenPrice': '按目标盈利推导',
+    'admin.dashboard.oversell.result.riskDrivenUsers': '按计划售价推导',
+    'admin.dashboard.oversell.result.lossRisk': '亏损风险上限 {risk}',
+    'admin.dashboard.oversell.result.infiniteUsers': '当前计划售价无法形成稳定超售池，请先提高售价或放宽盈利目标。',
+    'admin.dashboard.oversell.result.buffer': '安全垫 {value}',
+    'admin.dashboard.oversell.result.helper': '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
+    'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
+    'admin.dashboard.oversell.result.currency': '¥{value}',
+    'admin.dashboard.oversell.result.users': '{count} 人'
   }
 
   const interpolate = (template: string, params?: Record<string, unknown>) =>
@@ -130,6 +177,7 @@ describe('admin DashboardView', () => {
     getProfitabilityTrend.mockReset()
     getProfitabilityBounds.mockReset()
     getRecommendations.mockReset()
+    getOversellCalculator.mockReset()
 
     getSnapshotV2.mockResolvedValue({
       stats: createDashboardStats(),
@@ -172,6 +220,49 @@ describe('admin DashboardView', () => {
         urgent_pool_count: 0
       },
       pools: []
+    })
+    getOversellCalculator.mockResolvedValue({
+      generated_at: '2026-04-20T09:30:00Z',
+      defaults: {
+        actual_cost_cny: 50,
+        capacity_units_per_product: 3,
+        confidence_level: 99,
+        profit_rate_percent: 20,
+        profit_mode: 'markup',
+        target_profit_total_cny: 120
+      },
+      input: {
+        actual_cost_cny: 50,
+        capacity_units_per_product: 3,
+        confidence_level: 99,
+        profit_rate_percent: 20,
+        profit_mode: 'markup',
+        target_profit_total_cny: 120
+      },
+      estimate: {
+        light_user_threshold_units: 0.3,
+        estimated_light_user_ratio: 0.73,
+        sampled_subscription_count: 126,
+        light_user_count: 92,
+        estimated_from_live_data: true,
+        fallback_applied: false,
+        basis: 'last_30_days',
+        current_cheapest_monthly_price_cny: 50,
+        current_cheapest_plan_name: '月付基础版'
+      },
+      result: {
+        feasible: true,
+        minimum_users: 10,
+        recommended_monthly_price_cny: 29.15,
+        current_cheapest_monthly_price_cny: 50,
+        monthly_price_gap_cny: -20.85,
+        expected_mean_units: 1.029,
+        risk_adjusted_mean_units: 2.5,
+        confidence_level: 99,
+        price_multiplier: 0.583,
+        reason: 'test'
+      },
+      plans: []
     })
   })
 
@@ -314,5 +405,37 @@ describe('admin DashboardView', () => {
     expect(text).toContain('5 / 7')
     expect(text).toContain('建议补充 3 个可调度账号')
     expect(text).toContain('涉及套餐: GPT-Standard / GPT-Pro')
+  })
+
+  it('renders oversell math panel with readonly estimate and derived recommendation', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(getOversellCalculator).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('超售数学测算')
+    expect(wrapper.text()).toContain('73%')
+    expect(wrapper.text()).toContain('样本用户 126')
+
+    const targetProfitInput = wrapper.get('[data-testid="oversell-target-profit"]')
+    await targetProfitInput.setValue('150')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).toContain('¥32.15')
+    expect(wrapper.get('[data-testid="oversell-min-users"]').text()).toContain('10 人')
   })
 })
