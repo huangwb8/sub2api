@@ -451,15 +451,20 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	}
 
 	var txClient *dbent.Client
+	txSQL := r.sql
 	if err == nil {
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
+		txSQL = tx
 	} else {
 		// 已处于外部事务中（ErrTxStarted），复用当前 client
 		txClient = r.client
 	}
 
 	if _, err := txClient.AccountGroup.Delete().Where(dbaccountgroup.AccountIDEQ(id)).Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := txSQL.ExecContext(ctx, `DELETE FROM scheduled_test_plans WHERE account_id = $1`, id); err != nil {
 		return err
 	}
 	if _, err := txClient.Account.Delete().Where(dbaccount.IDEQ(id)).Exec(ctx); err != nil {

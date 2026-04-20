@@ -1150,6 +1150,11 @@ func TestParseGatewayRequest_OutputEffort(t *testing.T) {
 			wantEffort: "max",
 		},
 		{
+			name:       "output_config.effort xhigh",
+			body:       `{"model":"claude-opus-4-6","output_config":{"effort":"xhigh"},"messages":[]}`,
+			wantEffort: "xhigh",
+		},
+		{
 			name:       "output_config without effort",
 			body:       `{"model":"claude-opus-4-6","output_config":{},"messages":[]}`,
 			wantEffort: "",
@@ -1183,12 +1188,13 @@ func TestNormalizeClaudeOutputEffort(t *testing.T) {
 		{"medium", strPtr("medium")},
 		{"high", strPtr("high")},
 		{"max", strPtr("max")},
+		{"xhigh", strPtr("xhigh")},
 		{"LOW", strPtr("low")},
 		{"Max", strPtr("max")},
+		{"XHIGH", strPtr("xhigh")},
 		{" medium ", strPtr("medium")},
 		{"", nil},
 		{"unknown", nil},
-		{"xhigh", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {

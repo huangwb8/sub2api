@@ -4,6 +4,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -192,6 +193,32 @@ func (s *AccountRepoSuite) TestDelete_WithGroupBindings() {
 	count, err := s.client.AccountGroup.Query().Where(accountgroup.AccountIDEQ(account.ID)).Count(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Zero(count, "expected bindings to be removed")
+}
+
+func (s *AccountRepoSuite) TestDelete_RemovesScheduledTestPlans() {
+	account := mustCreateAccount(s.T(), s.client, &service.Account{
+		Name: "acc-scheduled-plan-delete",
+		Type: service.AccountTypeAPIKey,
+	})
+
+	_, err := s.repo.sql.ExecContext(s.ctx, `
+		INSERT INTO scheduled_test_plans (account_id, model_id, cron_expression, enabled, max_results, auto_recover, next_run_at, created_at, updated_at)
+		VALUES ($1, $2, $3, true, 5, false, NOW(), NOW(), NOW())
+	`, account.ID, "claude-sonnet-4-5", "*/5 * * * *")
+	s.Require().NoError(err)
+
+	err = s.repo.Delete(s.ctx, account.ID)
+	s.Require().NoError(err)
+
+	var count int
+	err = scanSingleRow(s.ctx, s.repo.sql, `SELECT COUNT(*) FROM scheduled_test_plans WHERE account_id = $1`, []any{account.ID}, &count)
+	s.Require().NoError(err)
+	s.Require().Zero(count, "expected scheduled test plans to be removed with account")
+
+	var deletedAt sql.NullTime
+	err = scanSingleRow(s.ctx, s.repo.sql, `SELECT deleted_at FROM accounts WHERE id = $1`, []any{account.ID}, &deletedAt)
+	s.Require().NoError(err)
+	s.Require().True(deletedAt.Valid, "expected account to be soft deleted")
 }
 
 // --- List / ListWithFilters ---

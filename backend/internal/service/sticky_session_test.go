@@ -51,6 +51,20 @@ func TestShouldClearStickySession(t *testing.T) {
 		{name: "schedulable false", account: &Account{Status: StatusActive, Schedulable: false}, requestedModel: "", want: true},
 		{name: "temp unschedulable", account: &Account{Status: StatusActive, Schedulable: true, TempUnschedulableUntil: &future}, requestedModel: "", want: true},
 		{name: "temp unschedulable expired", account: &Account{Status: StatusActive, Schedulable: true, TempUnschedulableUntil: &past}, requestedModel: "", want: false},
+		{
+			name: "quota exceeded apikey",
+			account: &Account{
+				Status:      StatusActive,
+				Type:        AccountTypeAPIKey,
+				Schedulable: true,
+				Extra: map[string]any{
+					"quota_limit": 100.0,
+					"quota_used":  100.0,
+				},
+			},
+			requestedModel: "",
+			want:           true,
+		},
 		{name: "active schedulable", account: &Account{Status: StatusActive, Schedulable: true}, requestedModel: "", want: false},
 		// 模型限流测试：有限流即清除
 		{

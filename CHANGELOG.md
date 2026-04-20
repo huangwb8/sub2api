@@ -6,6 +6,17 @@
 
 ## [Unreleased]
 
+## [1.0.22] - 2026-04-20
+
+### Changed（变更）
+- 统一了账号可调度性的配额语义：API Key / Bedrock 账号现在会把额度超限纳入 `Account.IsSchedulable()` 单一真相，粘性会话清理与后台状态展示同步复用这套判定，减少调度、sticky 与 UI 三处语义漂移。
+- 调整了 Claude `reasoning effort` 展示：前端使用记录中的 `xhigh` 现在统一展示为 `XHigh`，与后端新增的 `xhigh` 归一化兼容保持一致。
+
+### Fixed（修复）
+- 修复了删除账号后 `scheduled_test_plans` 可能残留孤儿记录的问题：账号删除事务现已显式清理关联定时测试计划，避免软删除场景下数据库级联失效留下脏数据。
+- 修复了 Claude Messages `output_config.effort=xhigh` 在当前 fork 中无法被后端识别的问题：网关请求解析、使用记录归一化与相关测试现已补齐。
+- 修复了后台账号状态对 API Key / Bedrock 配额超限的提示不清问题：不可调度且已超限的账号现在会明确显示”配额超限”，不再和普通手动暂停混淆。
+
 ## [1.0.21] - 2026-04-20
 
 ### Added（新增）

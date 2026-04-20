@@ -3,6 +3,13 @@ import { mount } from '@vue/test-utils'
 import AccountStatusIndicator from '../AccountStatusIndicator.vue'
 import type { Account } from '@/types'
 
+vi.mock('@/utils/format', () => ({
+  formatCountdown: () => '5m',
+  formatDateTime: (value: string | null | undefined) => value ?? '-',
+  formatCountdownWithSuffix: () => '30s',
+  formatTime: (value: string | null | undefined) => value ?? '-'
+}))
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -43,6 +50,45 @@ function makeAccount(overrides: Partial<Account>): Account {
 }
 
 describe('AccountStatusIndicator', () => {
+  it('不可调度且配额超限时显示 quota exceeded，而不是 paused', () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          type: 'apikey',
+          schedulable: false,
+          quota_limit: 100,
+          quota_used: 100
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('admin.accounts.status.quotaExceeded')
+    expect(wrapper.text()).not.toContain('admin.accounts.status.paused')
+  })
+
+  it('临时不可调度时点击 badge 会发出 show-temp-unsched', async () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          temp_unschedulable_until: '2099-03-15T00:00:00Z'
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.emitted('show-temp-unsched')).toHaveLength(1)
+  })
+
   it('模型限流 + overages 启用 + 无 AICredits key → 显示 ⚡ (credits_active)', () => {
     const wrapper = mount(AccountStatusIndicator, {
       props: {
@@ -122,7 +168,7 @@ describe('AccountStatusIndicator', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('account.creditsExhausted')
+    expect(wrapper.text()).toContain('admin.accounts.status.creditsExhausted')
   })
 
   it('模型限流 + overages 启用 + AICredits key 生效 → 普通限流样式（积分耗尽，无 ⚡）', () => {
@@ -157,6 +203,6 @@ describe('AccountStatusIndicator', () => {
     expect(wrapper.text()).toContain('CSon45')
     expect(wrapper.text()).not.toContain('⚡')
     // AICredits 积分耗尽状态应显示
-    expect(wrapper.text()).toContain('account.creditsExhausted')
+    expect(wrapper.text()).toContain('admin.accounts.status.creditsExhausted')
   })
 })

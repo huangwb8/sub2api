@@ -448,10 +448,7 @@ func shouldClearStickySession(account *Account, requestedModel string) bool {
 	if account == nil {
 		return false
 	}
-	if account.Status == StatusError || account.Status == StatusDisabled || !account.Schedulable {
-		return true
-	}
-	if account.TempUnschedulableUntil != nil && time.Now().Before(*account.TempUnschedulableUntil) {
+	if account.Status == StatusError || account.Status == StatusDisabled || !account.IsSchedulable() {
 		return true
 	}
 	// 检查模型限流和 scope 限流，有限流即清除粘性会话

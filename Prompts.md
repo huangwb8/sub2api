@@ -5,7 +5,7 @@
 - 发布新的release
 
 ```
-version=1.0.21
+version=1.0.22
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -51,6 +51,12 @@ version1 = 51af8df31d12fbce6b91c1dc940b5559f7abcdbc
 ```
 
 # 日常
+
+---
+
+PlanMardkdown = docs/plans/2026-04-20-upstream-51af8df-to-23def40-optimization-plan.md
+
+根据 {PlanMardkdown} 改良代码， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

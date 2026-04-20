@@ -279,6 +279,49 @@ const isTempUnschedulable = computed(() => {
   return new Date(props.account.temp_unschedulable_until) > new Date()
 })
 
+const quotaExtra = computed(() => props.account.extra as Record<string, unknown> | undefined)
+
+const isQuotaResetExpired = (startKey: 'quota_daily_start' | 'quota_weekly_start', resetAtKey: 'quota_daily_reset_at' | 'quota_weekly_reset_at') => {
+  const extra = quotaExtra.value
+  const now = new Date()
+  const isDaily = startKey === 'quota_daily_start'
+  const mode = isDaily
+    ? ((extra?.['quota_daily_reset_mode'] as string) || 'rolling')
+    : ((extra?.['quota_weekly_reset_mode'] as string) || 'rolling')
+
+  if (mode === 'fixed') {
+    const resetAt = extra?.[resetAtKey] as string | undefined
+    if (!resetAt) return true
+    const resetAtDate = new Date(resetAt)
+    if (Number.isNaN(resetAtDate.getTime())) return true
+    return resetAtDate <= now
+  }
+
+  const start = extra?.[startKey] as string | undefined
+  if (!start) return true
+  const startDate = new Date(start)
+  if (Number.isNaN(startDate.getTime())) return true
+  const periodMs = isDaily ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000
+  return startDate.getTime() + periodMs <= now.getTime()
+}
+
+const hasQuotaExceededStatus = computed(() => {
+  if (props.account.schedulable) return false
+  if (props.account.type !== 'apikey' && props.account.type !== 'bedrock') return false
+
+  if ((props.account.quota_limit ?? 0) > 0 && (props.account.quota_used ?? 0) >= (props.account.quota_limit ?? 0)) {
+    return true
+  }
+  if ((props.account.quota_daily_limit ?? 0) > 0 && !isQuotaResetExpired('quota_daily_start', 'quota_daily_reset_at')) {
+    return (props.account.quota_daily_used ?? 0) >= (props.account.quota_daily_limit ?? 0)
+  }
+  if ((props.account.quota_weekly_limit ?? 0) > 0 && !isQuotaResetExpired('quota_weekly_start', 'quota_weekly_reset_at')) {
+    return (props.account.quota_weekly_used ?? 0) >= (props.account.quota_weekly_limit ?? 0)
+  }
+
+  return false
+})
+
 // Computed: has error status
 const hasError = computed(() => {
   return props.account.status === 'error'
@@ -307,6 +350,9 @@ const statusClass = computed(() => {
   if (isTempUnschedulable.value) {
     return 'badge-warning'
   }
+  if (hasQuotaExceededStatus.value) {
+    return 'badge-warning'
+  }
   if (!props.account.schedulable) {
     return 'badge-gray'
   }
@@ -329,6 +375,9 @@ const statusText = computed(() => {
   }
   if (isTempUnschedulable.value) {
     return t('admin.accounts.status.tempUnschedulable')
+  }
+  if (hasQuotaExceededStatus.value) {
+    return t('admin.accounts.status.quotaExceeded')
   }
   if (!props.account.schedulable) {
     return t('admin.accounts.status.paused')
