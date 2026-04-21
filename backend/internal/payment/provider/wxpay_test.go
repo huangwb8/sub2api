@@ -3,10 +3,15 @@
 package provider
 
 import (
-	"strings"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMapWxState(t *testing.T) {
@@ -100,6 +105,23 @@ func strPtr(s string) *string {
 	return &s
 }
 
+func generateTestKeyPair(t *testing.T) (string, string) {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	privateDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	require.NoError(t, err)
+	publicDER, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	require.NoError(t, err)
+
+	privatePEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privateDER})
+	publicPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER})
+
+	return string(privatePEM), string(publicPEM)
+}
+
 func TestFormatPEM(t *testing.T) {
 	t.Parallel()
 
@@ -149,12 +171,13 @@ func TestFormatPEM(t *testing.T) {
 func TestNewWxpay(t *testing.T) {
 	t.Parallel()
 
+	privateKey, publicKey := generateTestKeyPair(t)
 	validConfig := map[string]string{
 		"appId":       "wx1234567890",
 		"mchId":       "1234567890",
-		"privateKey":  "fake-private-key",
-		"apiV3Key":    "12345678901234567890123456789012", // exactly 32 bytes
-		"publicKey":   "fake-public-key",
+		"privateKey":  privateKey,
+		"apiV3Key":    "12345678901234567890123456789012",
+		"publicKey":   publicKey,
 		"publicKeyId": "key-id-001",
 		"certSerial":  "SERIAL001",
 	}
@@ -172,63 +195,106 @@ func TestNewWxpay(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		config    map[string]string
-		wantErr   bool
-		errSubstr string
+		name         string
+		config       map[string]string
+		wantReason   string
+		wantMetadata map[string]string
 	}{
 		{
-			name:    "valid config succeeds",
-			config:  validConfig,
-			wantErr: false,
+			name:   "valid config succeeds",
+			config: validConfig,
 		},
 		{
-			name:      "missing appId",
-			config:    withOverride(map[string]string{"appId": ""}),
-			wantErr:   true,
-			errSubstr: "appId",
+			name:       "missing appId",
+			config:     withOverride(map[string]string{"appId": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "appId",
+			},
 		},
 		{
-			name:      "missing mchId",
-			config:    withOverride(map[string]string{"mchId": ""}),
-			wantErr:   true,
-			errSubstr: "mchId",
+			name:       "missing mchId",
+			config:     withOverride(map[string]string{"mchId": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "mchId",
+			},
 		},
 		{
-			name:      "missing privateKey",
-			config:    withOverride(map[string]string{"privateKey": ""}),
-			wantErr:   true,
-			errSubstr: "privateKey",
+			name:       "missing privateKey",
+			config:     withOverride(map[string]string{"privateKey": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "privateKey",
+			},
 		},
 		{
-			name:      "missing apiV3Key",
-			config:    withOverride(map[string]string{"apiV3Key": ""}),
-			wantErr:   true,
-			errSubstr: "apiV3Key",
+			name:       "missing apiV3Key",
+			config:     withOverride(map[string]string{"apiV3Key": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "apiV3Key",
+			},
 		},
 		{
-			name:      "missing publicKey",
-			config:    withOverride(map[string]string{"publicKey": ""}),
-			wantErr:   true,
-			errSubstr: "publicKey",
+			name:       "missing publicKey",
+			config:     withOverride(map[string]string{"publicKey": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "publicKey",
+			},
 		},
 		{
-			name:      "missing publicKeyId",
-			config:    withOverride(map[string]string{"publicKeyId": ""}),
-			wantErr:   true,
-			errSubstr: "publicKeyId",
+			name:       "missing publicKeyId",
+			config:     withOverride(map[string]string{"publicKeyId": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "publicKeyId",
+			},
 		},
 		{
-			name:      "apiV3Key too short",
-			config:    withOverride(map[string]string{"apiV3Key": "short"}),
-			wantErr:   true,
-			errSubstr: "exactly 32 bytes",
+			name:       "missing certSerial",
+			config:     withOverride(map[string]string{"certSerial": ""}),
+			wantReason: "WXPAY_CONFIG_MISSING_KEY",
+			wantMetadata: map[string]string{
+				"key": "certSerial",
+			},
 		},
 		{
-			name:      "apiV3Key too long",
-			config:    withOverride(map[string]string{"apiV3Key": "123456789012345678901234567890123"}), // 33 bytes
-			wantErr:   true,
-			errSubstr: "exactly 32 bytes",
+			name:       "apiV3Key too short",
+			config:     withOverride(map[string]string{"apiV3Key": "short"}),
+			wantReason: "WXPAY_CONFIG_INVALID_KEY_LENGTH",
+			wantMetadata: map[string]string{
+				"key":      "apiV3Key",
+				"expected": "32",
+				"actual":   "5",
+			},
+		},
+		{
+			name:       "apiV3Key too long",
+			config:     withOverride(map[string]string{"apiV3Key": "123456789012345678901234567890123"}),
+			wantReason: "WXPAY_CONFIG_INVALID_KEY_LENGTH",
+			wantMetadata: map[string]string{
+				"key":      "apiV3Key",
+				"expected": "32",
+				"actual":   "33",
+			},
+		},
+		{
+			name:       "invalid private key pem",
+			config:     withOverride(map[string]string{"privateKey": "not-a-private-key"}),
+			wantReason: "WXPAY_CONFIG_INVALID_KEY",
+			wantMetadata: map[string]string{
+				"key": "privateKey",
+			},
+		},
+		{
+			name:       "invalid public key pem",
+			config:     withOverride(map[string]string{"publicKey": "not-a-public-key"}),
+			wantReason: "WXPAY_CONFIG_INVALID_KEY",
+			wantMetadata: map[string]string{
+				"key": "publicKey",
+			},
 		},
 	}
 
@@ -236,24 +302,16 @@ func TestNewWxpay(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := NewWxpay("test-instance", tt.config)
-			if tt.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				if tt.errSubstr != "" && !strings.Contains(err.Error(), tt.errSubstr) {
-					t.Errorf("error %q should contain %q", err.Error(), tt.errSubstr)
-				}
+			if tt.wantReason != "" {
+				require.Error(t, err)
+				appErr := infraerrors.FromError(err)
+				require.Equal(t, tt.wantReason, appErr.Reason)
+				require.Equal(t, tt.wantMetadata, appErr.Metadata)
 				return
 			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if got == nil {
-				t.Fatal("expected non-nil Wxpay instance")
-			}
-			if got.instanceID != "test-instance" {
-				t.Errorf("instanceID = %q, want %q", got.instanceID, "test-instance")
-			}
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			require.Equal(t, "test-instance", got.instanceID)
 		})
 	}
 }
@@ -261,21 +319,19 @@ func TestNewWxpay(t *testing.T) {
 func TestWxpaySupportedTypes_ShouldRegisterWxpay(t *testing.T) {
 	t.Parallel()
 
+	privateKey, publicKey := generateTestKeyPair(t)
 	p, err := NewWxpay("test-instance", map[string]string{
 		"appId":       "wx123",
 		"mchId":       "1900000000",
-		"privateKey":  "fake-private-key",
+		"privateKey":  privateKey,
 		"apiV3Key":    "12345678901234567890123456789012",
-		"publicKey":   "fake-public-key",
+		"publicKey":   publicKey,
 		"publicKeyId": "pub-key-id",
 		"certSerial":  "SERIAL123",
 	})
-	if err != nil {
-		t.Fatalf("NewWxpay() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	got := p.SupportedTypes()
-	if len(got) != 1 || got[0] != payment.TypeWxpay {
-		t.Fatalf("SupportedTypes() = %v, want [%s]", got, payment.TypeWxpay)
-	}
+	require.Len(t, got, 1)
+	require.Equal(t, payment.TypeWxpay, got[0])
 }

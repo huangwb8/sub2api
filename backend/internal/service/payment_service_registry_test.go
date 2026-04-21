@@ -2,6 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"testing"
 	"time"
@@ -9,6 +13,26 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 )
+
+func generateTestWxpayKeyPair(t *testing.T) (string, string) {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate rsa key: %v", err)
+	}
+	privateDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("marshal private key: %v", err)
+	}
+	publicDER, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		t.Fatalf("marshal public key: %v", err)
+	}
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privateDER})),
+		string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER}))
+}
 
 type stubPaymentLoadBalancer struct {
 	configByInstance map[int64]map[string]string
@@ -60,6 +84,7 @@ func TestPaymentService_RefreshProviders_RegistersCheckoutTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create stripe instance: %v", err)
 	}
+	wxPrivateKey, wxPublicKey := generateTestWxpayKeyPair(t)
 
 	svc := &PaymentService{
 		entClient: client,
@@ -69,9 +94,9 @@ func TestPaymentService_RefreshProviders_RegistersCheckoutTypes(t *testing.T) {
 				int64(wxInst.ID): {
 					"appId":       "wx123",
 					"mchId":       "1900000000",
-					"privateKey":  "fake-private-key",
+					"privateKey":  wxPrivateKey,
 					"apiV3Key":    "12345678901234567890123456789012",
-					"publicKey":   "fake-public-key",
+					"publicKey":   wxPublicKey,
 					"publicKeyId": "pub-key-id",
 					"certSerial":  "SERIAL123",
 				},

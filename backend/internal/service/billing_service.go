@@ -664,7 +664,11 @@ func (s *BillingService) shouldApplySessionLongContextPricing(tokens UsageTokens
 }
 
 func isOpenAIGPT54Model(model string) bool {
-	normalized := normalizeCodexModel(strings.TrimSpace(strings.ToLower(model)))
+	trimmed := strings.TrimSpace(strings.ToLower(model))
+	if !strings.Contains(trimmed, "gpt-5") && !strings.Contains(trimmed, "codex") {
+		return false
+	}
+	normalized := normalizeCodexModel(trimmed)
 	return normalized == "gpt-5.4"
 }
 

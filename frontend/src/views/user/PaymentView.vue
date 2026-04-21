@@ -293,7 +293,7 @@ import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { SubscriptionPlan, CheckoutInfoResponse } from '@/types/payment'
 import type { SubscriptionUpgradeOption, SubscriptionUpgradeOptionsResult } from '@/types'
@@ -755,15 +755,7 @@ async function createOrder(orderAmount: number, orderType: string, planId?: numb
       appStore.showError(errorMessage.value)
     }
   } catch (err: unknown) {
-    const apiErr = err as Record<string, unknown>
-    if (apiErr.reason === 'TOO_MANY_PENDING') {
-      const metadata = apiErr.metadata as Record<string, unknown> | undefined
-      errorMessage.value = t('payment.errors.tooManyPending', { max: metadata?.max || '' })
-    } else if (apiErr.reason === 'CANCEL_RATE_LIMITED') {
-      errorMessage.value = t('payment.errors.cancelRateLimited')
-    } else {
-      errorMessage.value = extractApiErrorMessage(err, t('payment.result.failed'))
-    }
+    errorMessage.value = extractI18nErrorMessage(err, t, 'payment.errors', t('payment.result.failed'))
     appStore.showError(errorMessage.value)
   } finally {
     submitting.value = false

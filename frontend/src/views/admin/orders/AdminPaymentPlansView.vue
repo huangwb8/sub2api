@@ -181,7 +181,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminPaymentAPI } from '@/api/admin/payment'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractI18nErrorMessage } from '@/utils/apiError'
 import adminAPI from '@/api/admin'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
@@ -293,7 +293,7 @@ async function loadPlans() {
     const loadedPlans = await adminPaymentAPI.getPlans()
     plans.value = sortSubscriptionPlans((loadedPlans || []).map(plan => normalizeSubscriptionPlan(plan)))
   }
-  catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
+  catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { plansLoading.value = false }
 }
 
@@ -401,7 +401,7 @@ async function handleSavePlan() {
     appStore.showSuccess(t('common.saved'))
     showPlanDialog.value = false
     await loadPlans()
-  } catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
+  } catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { planSaving.value = false }
 }
 
@@ -411,7 +411,7 @@ async function toggleForSale(plan: SubscriptionPlan) {
     const updatedPlan = await adminPaymentAPI.updatePlan(plan.id, { for_sale: !plan.for_sale })
     upsertPlan(updatedPlan)
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
   }
 }
 
@@ -425,7 +425,7 @@ async function handleDeletePlan() {
     showDeletePlanDialog.value = false
     await loadPlans()
   }
-  catch (err: unknown) { appStore.showError(extractApiErrorMessage(err, t('common.error'))) }
+  catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
 }
 
 // ==================== Lifecycle ====================

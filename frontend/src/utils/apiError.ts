@@ -27,8 +27,60 @@ interface ApiErrorLike {
 export function extractApiErrorCode(err: unknown): string | undefined {
   if (!err || typeof err !== 'object') return undefined
   const e = err as ApiErrorLike
-  const code = e.code ?? e.reason ?? e.response?.data?.code
+  const code = e.reason ?? e.code ?? e.response?.data?.code
   return code != null ? String(code) : undefined
+}
+
+/**
+ * Extract metadata (interpolation params) from an API error object.
+ */
+export function extractApiErrorMetadata(err: unknown): Record<string, unknown> | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const e = err as ApiErrorLike
+  return e.metadata
+}
+
+type TranslateFn = (key: string, params?: Record<string, unknown>) => string
+type TranslateWithExistsFn = TranslateFn & { te?: (key: string) => boolean }
+
+function tryTranslate(t: TranslateFn, key: string, fallback: string): string {
+  const translated = t(key)
+  if (translated === key) return fallback
+  const te = (t as TranslateWithExistsFn).te
+  if (te && !te(key)) return fallback
+  return translated
+}
+
+function localizeMetadata(metadata: Record<string, unknown>, t: TranslateFn): Record<string, unknown> {
+  const localized: Record<string, unknown> = { ...metadata }
+  if (typeof localized.key === 'string') {
+    localized.key = tryTranslate(t, `admin.settings.payment.field_${localized.key}`, localized.key)
+  }
+  if (typeof localized.keys === 'string') {
+    localized.keys = localized.keys
+      .split('/')
+      .map(key => tryTranslate(t, `admin.settings.payment.field_${key}`, key))
+      .join(' / ')
+  }
+  return localized
+}
+
+export function extractI18nErrorMessage(
+  err: unknown,
+  t: TranslateFn,
+  namespace: string,
+  fallback: string,
+): string {
+  const code = extractApiErrorCode(err)
+  if (code) {
+    const key = `${namespace}.${code}`
+    const metadata = localizeMetadata(extractApiErrorMetadata(err) ?? {}, t)
+    const translated = t(key, metadata)
+    if (translated !== key) return translated
+    const te = (t as TranslateWithExistsFn).te
+    if (te && te(key)) return translated
+  }
+  return extractApiErrorMessage(err, fallback)
 }
 
 /**

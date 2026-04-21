@@ -126,6 +126,8 @@ Direct integration with Alipay Open Platform. Supports PC page pay and H5 mobile
 
 Direct integration with WeChat Pay APIv3. Supports Native QR code and H5 payment.
 
+> Enabled WeChat provider instances are validated immediately when saved. The admin form now checks required fields, `APIv3 Key` length, and `privateKey/publicKey` PEM validity up front, so configuration mistakes fail in the dialog instead of during a user's first order. Disabled instances can still be saved as drafts.
+
 | Parameter | Description | Required |
 |-----------|-------------|----------|
 | **AppID** | WeChat Pay AppID | Yes |
@@ -135,6 +137,8 @@ Direct integration with WeChat Pay APIv3. Supports Native QR code and H5 payment
 | **WeChat Pay Public Key** | WeChat Pay public key (PEM format) | Yes |
 | **WeChat Pay Public Key ID** | WeChat Pay public key ID | Yes |
 | **Certificate Serial Number** | Merchant certificate serial number | Yes |
+
+> If the admin UI reports a missing field or invalid key format, first verify `WeChat Pay Public Key ID`, `Certificate Serial Number`, and that both keys are valid PEM content.
 
 ### Stripe
 

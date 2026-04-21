@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -204,9 +205,47 @@ func (s *PaymentService) checkDailyLimit(ctx context.Context, tx *dbent.Tx, user
 		used += o.Amount
 	}
 	if used+amount > limit {
-		return infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", fmt.Sprintf("daily recharge limit reached, remaining: %.2f", math.Max(0, limit-used)))
+		return infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily_limit_exceeded").
+			WithMetadata(map[string]string{"remaining": fmt.Sprintf("%.2f", math.Max(0, limit-used))})
 	}
 	return nil
+}
+
+func enrichPaymentProviderError(err error, providerKey, instanceID string) error {
+	var appErr *infraerrors.ApplicationError
+	if !errors.As(err, &appErr) {
+		return nil
+	}
+	metadata := map[string]string{}
+	if providerKey != "" {
+		metadata["provider"] = providerKey
+	}
+	if instanceID != "" {
+		metadata["instance_id"] = instanceID
+	}
+	for k, v := range appErr.Metadata {
+		metadata[k] = v
+	}
+	if len(metadata) == 0 {
+		return appErr
+	}
+	return appErr.WithMetadata(metadata)
+}
+
+func wrapPaymentProviderInitError(err error, providerKey, instanceID string) error {
+	if enriched := enrichPaymentProviderError(err, providerKey, instanceID); enriched != nil {
+		return enriched
+	}
+	return infraerrors.ServiceUnavailable("PAYMENT_PROVIDER_MISCONFIGURED", "payment_provider_misconfigured").
+		WithMetadata(map[string]string{"provider": providerKey, "instance_id": instanceID})
+}
+
+func wrapPaymentProviderRuntimeError(err error, providerKey, instanceID string) error {
+	if enriched := enrichPaymentProviderError(err, providerKey, instanceID); enriched != nil {
+		return enriched
+	}
+	return infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", "payment_gateway_error").
+		WithMetadata(map[string]string{"provider": providerKey, "instance_id": instanceID})
 }
 
 func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan) (*CreateOrderResponse, error) {
@@ -215,18 +254,19 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		return nil, fmt.Errorf("select provider instance: %w", err)
 	}
 	if sel == nil {
-		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no available payment instance")
+		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no_available_instance")
 	}
 	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
-		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", "payment method is temporarily unavailable")
+		slog.Error("[PaymentService] CreateProvider failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
+		return nil, wrapPaymentProviderInitError(err, sel.ProviderKey, sel.InstanceID)
 	}
 	subject := s.buildPaymentSubject(plan, payAmountStr, cfg)
 	outTradeNo := order.OutTradeNo
 	pr, err := prov.CreatePayment(ctx, payment.CreatePaymentRequest{OrderID: outTradeNo, Amount: payAmountStr, PaymentType: req.PaymentType, Subject: subject, ClientIP: req.ClientIP, IsMobile: req.IsMobile, InstanceSubMethods: sel.SupportedTypes})
 	if err != nil {
 		slog.Error("[PaymentService] CreatePayment failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
-		return nil, infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", fmt.Sprintf("payment gateway error: %s", err.Error()))
+		return nil, wrapPaymentProviderRuntimeError(err, sel.ProviderKey, sel.InstanceID)
 	}
 	_, err = s.entClient.PaymentOrder.UpdateOneID(order.ID).SetNillablePaymentTradeNo(psNilIfEmpty(pr.TradeNo)).SetNillablePayURL(psNilIfEmpty(pr.PayURL)).SetNillableQrCode(psNilIfEmpty(pr.QRCode)).SetNillableProviderInstanceID(psNilIfEmpty(sel.InstanceID)).Save(ctx)
 	if err != nil {

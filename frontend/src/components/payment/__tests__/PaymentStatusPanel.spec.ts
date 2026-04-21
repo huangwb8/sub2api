@@ -8,6 +8,17 @@ const { pollOrderStatus, cancelOrder, verifyOrder, showError } = vi.hoisted(() =
   showError: vi.fn(),
 }))
 
+const localStorageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+}
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+})
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -39,6 +50,11 @@ vi.mock('@/api/payment', () => ({
 
 vi.mock('@/utils/apiError', () => ({
   extractApiErrorMessage: () => 'error',
+  extractI18nErrorMessage: () => 'error',
+}))
+
+vi.mock('@/utils/format', () => ({
+  formatPaymentAmount: (amount: number) => `¥${Number(amount).toFixed(2)}`,
 }))
 
 vi.mock('qrcode', () => ({

@@ -19,6 +19,8 @@ func TestShouldAutoInjectPromptCacheKeyForCompat(t *testing.T) {
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.3-codex"))
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.3-codex-spark"))
 	require.False(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-4o"))
+	require.False(t, shouldAutoInjectPromptCacheKeyForCompat("claude-opus-4.6"))
+	require.False(t, shouldAutoInjectPromptCacheKeyForCompat("gemini-3-flash-preview"))
 }
 
 func TestDeriveCompatPromptCacheKey_StableAcrossLaterTurns(t *testing.T) {

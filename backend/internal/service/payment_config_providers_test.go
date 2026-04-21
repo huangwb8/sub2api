@@ -3,10 +3,12 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -274,4 +276,85 @@ func TestDecryptAndMaskConfig(t *testing.T) {
 			"nonSensitiveField": "visible",
 		}, masked)
 	})
+}
+
+func TestPaymentConfigService_CreateProviderInstance_ValidatesEnabledWxpayConfig(t *testing.T) {
+	t.Parallel()
+
+	svc, _ := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+	privateKey, publicKey := generateTestWxpayKeyPair(t)
+
+	_, err := svc.CreateProviderInstance(ctx, CreateProviderInstanceRequest{
+		ProviderKey:    payment.TypeWxpay,
+		Name:           "wxpay-enabled-invalid",
+		Enabled:        true,
+		SupportedTypes: []string{payment.TypeWxpay},
+		Config: map[string]string{
+			"appId":       "wx123",
+			"mchId":       "1900000000",
+			"privateKey":  privateKey,
+			"apiV3Key":    "12345678901234567890123456789012",
+			"publicKey":   publicKey + "broken",
+			"publicKeyId": "pub-key-id",
+			"certSerial":  "SERIAL123",
+		},
+	})
+	require.Error(t, err)
+
+	appErr := infraerrors.FromError(err)
+	require.Equal(t, "WXPAY_CONFIG_INVALID_KEY", appErr.Reason)
+	require.Equal(t, map[string]string{"key": "publicKey"}, appErr.Metadata)
+}
+
+func TestPaymentConfigService_CreateProviderInstance_AllowsDisabledWxpayDraft(t *testing.T) {
+	t.Parallel()
+
+	svc, _ := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	inst, err := svc.CreateProviderInstance(ctx, CreateProviderInstanceRequest{
+		ProviderKey:    payment.TypeWxpay,
+		Name:           "wxpay-disabled-draft",
+		Enabled:        false,
+		SupportedTypes: []string{payment.TypeWxpay},
+		Config: map[string]string{
+			"appId":    "wx123",
+			"mchId":    "1900000000",
+			"apiV3Key": "short",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, inst)
+	require.False(t, inst.Enabled)
+}
+
+func TestPaymentConfigService_UpdateProviderInstance_ValidatesFinalEnabledWxpayConfig(t *testing.T) {
+	t.Parallel()
+
+	svc, _ := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	inst, err := svc.CreateProviderInstance(ctx, CreateProviderInstanceRequest{
+		ProviderKey:    payment.TypeWxpay,
+		Name:           "wxpay-disabled-draft",
+		Enabled:        false,
+		SupportedTypes: []string{payment.TypeWxpay},
+		Config: map[string]string{
+			"appId":    "wx123",
+			"mchId":    "1900000000",
+			"apiV3Key": "short",
+		},
+	})
+	require.NoError(t, err)
+
+	enabled := true
+	_, err = svc.UpdateProviderInstance(ctx, int64(inst.ID), UpdateProviderInstanceRequest{
+		Enabled: &enabled,
+	})
+	require.Error(t, err)
+
+	appErr := infraerrors.FromError(err)
+	require.Equal(t, "WXPAY_CONFIG_MISSING_KEY", appErr.Reason)
+	require.Equal(t, map[string]string{"key": "privateKey"}, appErr.Metadata)
 }

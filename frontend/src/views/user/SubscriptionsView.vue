@@ -305,7 +305,7 @@ import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import subscriptionsAPI from '@/api/subscriptions'
 import type { UserSubscription, SubscriptionUpgradeOptionsResult } from '@/types'
-import { extractApiErrorMessage } from '@/utils/apiError'
+import { extractI18nErrorMessage } from '@/utils/apiError'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateOnly, formatPaymentAmount, formatUsageCost } from '@/utils/format'
@@ -368,7 +368,7 @@ async function toggleUpgradePanel(subscription: UserSubscription) {
   try {
     await subscriptionStore.fetchUpgradeOptions(subscription.id)
   } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('payment.upgrade.unsupported')))
+    appStore.showError(extractI18nErrorMessage(error, t, 'payment.errors', t('payment.upgrade.unsupported')))
   } finally {
     upgradeLoadingId.value = null
   }

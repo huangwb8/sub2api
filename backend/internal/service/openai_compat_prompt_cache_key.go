@@ -10,7 +10,11 @@ import (
 const compatPromptCacheKeyPrefix = "compat_cc_"
 
 func shouldAutoInjectPromptCacheKeyForCompat(model string) bool {
-	switch normalizeCodexModel(strings.TrimSpace(model)) {
+	trimmed := strings.TrimSpace(strings.ToLower(model))
+	if !strings.Contains(trimmed, "gpt-5") && !strings.Contains(trimmed, "codex") {
+		return false
+	}
+	switch normalizeCodexModel(trimmed) {
 	case "gpt-5.4", "gpt-5.3-codex":
 		return true
 	default:

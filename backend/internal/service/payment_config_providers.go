@@ -12,10 +12,16 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
 // --- Provider Instance CRUD ---
+
+func (s *PaymentConfigService) validateProviderConfig(providerKey string, config map[string]string) error {
+	_, err := provider.CreateProvider(providerKey, "_validate_", config)
+	return err
+}
 
 func (s *PaymentConfigService) ListProviderInstances(ctx context.Context) ([]*dbent.PaymentProviderInstance, error) {
 	return s.entClient.PaymentProviderInstance.Query().Order(paymentproviderinstance.BySortOrder()).All(ctx)
@@ -134,6 +140,11 @@ func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req C
 	if err := validateProviderRequest(req.ProviderKey, req.Name, typesStr); err != nil {
 		return nil, err
 	}
+	if req.Enabled {
+		if err := s.validateProviderConfig(req.ProviderKey, req.Config); err != nil {
+			return nil, err
+		}
+	}
 	enc, err := s.encryptConfig(req.Config)
 	if err != nil {
 		return nil, err
@@ -207,16 +218,45 @@ func (s *PaymentConfigService) UpdateProviderInstance(ctx context.Context, id in
 				WithMetadata(map[string]string{"count": strconv.Itoa(count)})
 		}
 	}
+	inst, err := loadInst()
+	if err != nil {
+		return nil, err
+	}
+	finalEnabled := inst.Enabled
+	if req.Enabled != nil {
+		finalEnabled = *req.Enabled
+	}
+	var mergedConfig map[string]string
+	if req.Config != nil {
+		mergedConfig, err = s.mergeConfig(ctx, id, req.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if finalEnabled {
+		configToValidate := mergedConfig
+		if configToValidate == nil {
+			configToValidate, err = s.decryptConfig(inst.Config)
+			if err != nil {
+				return nil, fmt.Errorf("decrypt existing config: %w", err)
+			}
+		}
+		if err := s.validateProviderConfig(inst.ProviderKey, configToValidate); err != nil {
+			return nil, err
+		}
+	}
 	u := s.entClient.PaymentProviderInstance.UpdateOneID(id)
 	if req.Name != nil {
 		u.SetName(*req.Name)
 	}
 	if req.Config != nil {
-		merged, err := s.mergeConfig(ctx, id, req.Config)
-		if err != nil {
-			return nil, err
+		if mergedConfig == nil {
+			mergedConfig, err = s.mergeConfig(ctx, id, req.Config)
+			if err != nil {
+				return nil, err
+			}
 		}
-		enc, err := s.encryptConfig(merged)
+		enc, err := s.encryptConfig(mergedConfig)
 		if err != nil {
 			return nil, err
 		}

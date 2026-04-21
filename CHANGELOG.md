@@ -6,6 +6,20 @@
 
 ## [Unreleased]
 
+## [1.0.24] - 2026-04-22
+
+### Added（新增）
+- 新增了 `docs/plans/2026-04-22-upstream-23def40-to-78f691-optimization-plan.md`：基于上游 `23def40b..78f691d2` 的提交区间，沉淀对当前 fork 在微信支付配置前置校验、支付错误国际化、OpenAI 模型矩阵治理与 License 跟随判断上的选择性吸收计划。
+
+### Changed（变更）
+- 调整了支付错误处理链路：后端微信支付配置改为在保存启用中的服务商实例时就执行结构化校验并透传 `reason/metadata`，前端支付相关页面统一改为优先按 `payment.errors.*` 做国际化渲染，同时保留现有支付流程、服务商排序与个性化 UI 逻辑不变。
+- 更新了 `docs/PAYMENT.md` 与 `docs/PAYMENT_CN.md`：补充微信官方服务商”保存即校验”的后台行为说明，以及常见字段/PEM 配置错误的排查提示。
+
+### Fixed（修复）
+- 修复了微信支付配置”保存时静默、下单时爆炸”的问题：现在缺少 `publicKeyId/certSerial`、`APIv3 Key` 长度错误或 PEM 非法都会在后台保存启用实例时立即暴露，不再拖到用户首单。
+- 修复了支付错误国际化链路不完整的问题：支付页面和管理端支付页面现在会优先消费后端返回的结构化 `reason/metadata`，不再依赖局部手写分支或单一 `PENDING_ORDERS` 映射。
+- 修复了 OpenAI 兼容守卫对非 GPT-5/Codex 模型的潜在误判风险：`prompt_cache_key` 自动注入与 GPT-5.4 长上下文倍率判定现在都先经过显式前缀守卫，避免未来模型 fallback 调整时误伤你现有的模型矩阵。
+
 ## [1.0.23] - 2026-04-21
 
 ### Added（新增）
