@@ -1,6 +1,16 @@
 # General
 
+- Awesome-code
+
+```
 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+```
+
+- Auto-test-code
+
+```
+使用 auto-test-code skill 对本项目进行2次优化
+```
 
 - 发布新的release
 
