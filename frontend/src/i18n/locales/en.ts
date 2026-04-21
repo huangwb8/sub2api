@@ -1084,6 +1084,52 @@ export default {
           action: 'Action'
         }
       },
+      pricingStrategy: {
+        title: 'Pricing Strategy Advisor',
+        description: 'Based on auto-estimated user consumption patterns, calculate the package pricing and minimum user count needed to reach your profit target.',
+        estimateInfo: 'Within the last 30 days of samples, {share} of users stayed within {threshold} theoretical units per month ({count} active subscriptions sampled)',
+        fallbackInfo: 'Insufficient sample data; using conservative default estimate (70% light users)',
+        costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
+        form: {
+          targetProfit: 'Target monthly profit',
+          profitRate: 'Target profit rate',
+          profitMode: 'Profit basis',
+          costPlus: 'Cost plus',
+          netMargin: 'Net margin',
+          confidence: 'Confidence level',
+          confidence95: '95% (trial)',
+          confidence99: '99% (production)',
+          cnyPerMonth: 'CNY / month',
+          percent: '%'
+        },
+        result: {
+          recommendedPrice: 'Suggested monthly price',
+          minimumUsers: 'Minimum users needed',
+          profitPerUser: 'Expected profit per user',
+          safetyBuffer: 'Safety buffer',
+          floorPriceHint: 'Floor ¥{floor}',
+          profitShareHint: 'Profit share ¥{share}',
+          users: '{count} users',
+          bufferValue: '{value} units/user',
+          noResult: 'Cannot derive a reasonable price with current parameters. Adjust the profit target or profit rate.'
+        },
+        scenarios: {
+          title: 'User Count × Pricing Scenarios',
+          users: 'Users',
+          pricePerUser: 'Price',
+          monthlyRevenue: 'Revenue',
+          monthlyCost: 'Cost',
+          monthlyProfit: 'Profit',
+          recommended: 'Recommended'
+        },
+        table: {
+          plan: 'Plan',
+          duration: 'Duration',
+          currentPrice: 'Current price',
+          recommendedPrice: 'Suggested price',
+          delta: 'Delta'
+        }
+      },
       oversell: {
         title: 'Oversell Math',
         description: 'Combines the current light-user share estimate with manual inputs to suggest package pricing and launch pool size.',
@@ -1126,6 +1172,12 @@ export default {
           helper: 'The suggested price takes the higher value between the floor package price and the target-profit-derived price.',
           note: 'The Hoeffding upper bound estimates the risk that the user-pool average exceeds the affordable threshold at the selected confidence.',
           users: '{count} users'
+        },
+        table: {
+          plan: 'Plan',
+          currentPrice: 'Current price',
+          recommendedPrice: 'Suggested price',
+          delta: 'Adjustment'
         }
       },
       profitability: {

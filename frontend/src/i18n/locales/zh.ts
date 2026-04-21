@@ -1094,6 +1094,52 @@ export default {
           action: '行动'
         }
       },
+      pricingStrategy: {
+        title: '定价策略建议',
+        description: '基于系统自动估算的用户消耗分布，计算达到目标利润所需的套餐定价和最低用户数。',
+        estimateInfo: '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅）',
+        fallbackInfo: '暂无足够样本，使用保守默认估算（70% 轻度用户）',
+        costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
+        form: {
+          targetProfit: '目标月利润',
+          profitRate: '目标盈利率',
+          profitMode: '盈利口径',
+          costPlus: '成本加成',
+          netMargin: '净利率',
+          confidence: '置信水平',
+          confidence95: '95%（试水）',
+          confidence99: '99%（正式）',
+          cnyPerMonth: '元 / 月',
+          percent: '%'
+        },
+        result: {
+          recommendedPrice: '建议月费单价',
+          minimumUsers: '至少需要用户',
+          profitPerUser: '每用户预期利润',
+          safetyBuffer: '安全余量',
+          floorPriceHint: '保本价 ¥{floor}',
+          profitShareHint: '利润分摊 ¥{share}',
+          users: '{count} 人',
+          bufferValue: '{value} 个/人',
+          noResult: '当前参数下无法推导合理定价，请调整利润目标或盈利率。'
+        },
+        scenarios: {
+          title: '用户规模 × 定价情景',
+          users: '用户数',
+          pricePerUser: '单价',
+          monthlyRevenue: '月收入',
+          monthlyCost: '月成本',
+          monthlyProfit: '月利润',
+          recommended: '推荐'
+        },
+        table: {
+          plan: '套餐',
+          duration: '时长',
+          currentPrice: '当前单价',
+          recommendedPrice: '建议单价',
+          delta: '差额'
+        }
+      },
       oversell: {
         title: '超售数学测算',
         description: '基于当前轻度用户占比估算与手动参数，快速评估建议套餐单价和启动用户池规模。',
@@ -1136,6 +1182,12 @@ export default {
           helper: '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
           note: 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
           users: '{count} 人'
+        },
+        table: {
+          plan: '套餐',
+          currentPrice: '当前单价',
+          recommendedPrice: '建议单价',
+          delta: '调价幅度'
         }
       },
       profitability: {

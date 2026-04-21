@@ -349,6 +349,237 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.dashboard.pricingStrategy.title') }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.pricingStrategy.description') }}
+              </p>
+            </div>
+            <div
+              v-if="oversellCalculator?.estimate"
+              class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+            >
+              <span
+                v-if="Number.isFinite(oversellCalculator.estimate.estimated_light_user_ratio)"
+                class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+              >
+                {{
+                  oversellCalculator.estimate.estimated_from_live_data
+                    ? t('admin.dashboard.pricingStrategy.estimateInfo', {
+                        share: formatPercentDetailed(oversellCalculator.estimate.estimated_light_user_ratio, 0),
+                        threshold: formatDecimal(oversellCalculator.estimate.light_user_threshold_units, 2),
+                        count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
+                      })
+                    : t('admin.dashboard.pricingStrategy.fallbackInfo')
+                }}
+              </span>
+              <span class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700">
+                {{
+                  t('admin.dashboard.pricingStrategy.costBadge', {
+                    cost: formatCost(oversellCalculator.defaults.actual_cost_cny),
+                    capacity: formatDecimal(oversellCalculator.defaults.capacity_units_per_product, 1)
+                  })
+                }}
+              </span>
+            </div>
+          </div>
+
+          <div v-if="oversellLoading" class="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
+          </div>
+          <div v-else-if="oversellCalculator?.estimate" class="mt-4 space-y-4">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.targetProfit') }}</label>
+                <input
+                  v-model.number="pricingForm.targetProfit"
+                  data-testid="pricing-target-profit"
+                  type="number"
+                  min="0"
+                  step="10"
+                  class="input mt-2"
+                />
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.pricingStrategy.form.cnyPerMonth') }}
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.profitRate') }}</label>
+                <input
+                  v-model.number="pricingForm.profitRatePercent"
+                  type="number"
+                  min="0"
+                  max="95"
+                  step="1"
+                  class="input mt-2"
+                />
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.pricingStrategy.form.percent') }}
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.profitMode') }}</label>
+                <select v-model="pricingForm.profitMode" class="input mt-2">
+                  <option value="costPlus">{{ t('admin.dashboard.pricingStrategy.form.costPlus') }}</option>
+                  <option value="netMargin">{{ t('admin.dashboard.pricingStrategy.form.netMargin') }}</option>
+                </select>
+              </div>
+
+              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.confidence') }}</label>
+                <select v-model.number="pricingForm.confidenceLevel" class="input mt-2">
+                  <option :value="95">{{ t('admin.dashboard.pricingStrategy.form.confidence95') }}</option>
+                  <option :value="99">{{ t('admin.dashboard.pricingStrategy.form.confidence99') }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div class="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/40 dark:bg-blue-900/10">
+                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                  {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
+                </p>
+                <p
+                  data-testid="pricing-recommended-price"
+                  class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
+                >
+                  {{ pricingScenario ? formatCny(pricingScenario.recommendedPrice) : '--' }}
+                </p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span v-if="pricingScenario">
+                    {{ t('admin.dashboard.pricingStrategy.result.floorPriceHint', { floor: formatCost(pricingScenario.floorPrice) }) }}
+                    ·
+                    {{ t('admin.dashboard.pricingStrategy.result.profitShareHint', { share: formatCost(pricingScenario.profitPerUser) }) }}
+                  </span>
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/10">
+                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  {{ t('admin.dashboard.pricingStrategy.result.minimumUsers') }}
+                </p>
+                <template v-if="pricingScenario && pricingScenario.minimumUsers !== null">
+                  <p
+                    data-testid="pricing-min-users"
+                    class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
+                  >
+                    {{ t('admin.dashboard.pricingStrategy.result.users', { count: pricingScenario.minimumUsers }) }}
+                  </p>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
+                    {{ t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) }}
+                  </p>
+                </template>
+                <p v-else data-testid="pricing-min-users" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
+                  {{ t('admin.dashboard.pricingStrategy.result.noResult') }}
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                  {{ t('admin.dashboard.pricingStrategy.result.profitPerUser') }}
+                </p>
+                <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ pricingScenario ? formatCny(pricingScenario.profitPerUser) : '--' }}
+                </p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
+                  {{ pricingScenario ? t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) : '--' }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              v-if="pricingSensitivityRows.length > 0"
+              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
+            >
+              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.users') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.pricePerUser') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyRevenue') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyCost') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyProfit') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tr
+                    v-for="row in pricingSensitivityRows"
+                    :key="row.users"
+                    :class="row.isRecommended ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
+                  >
+                    <td class="px-3 py-3">
+                      <span class="font-medium text-gray-900 dark:text-white">
+                        {{ row.users }}
+                      </span>
+                      <span
+                        v-if="row.isRecommended"
+                        class="ml-1.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        {{ t('admin.dashboard.pricingStrategy.scenarios.recommended') }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">{{ formatCny(row.price) }}</td>
+                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(row.revenue) }}</td>
+                    <td class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ formatCny(row.cost) }}</td>
+                    <td
+                      class="px-3 py-3 font-medium"
+                      :class="row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                    >
+                      {{ formatSignedCny(row.profit) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div
+              v-if="pricingPlanRecommendations.length > 0"
+              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
+            >
+              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.plan') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.duration') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.currentPrice') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.delta') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tr v-for="plan in pricingPlanRecommendations" :key="plan.plan_id">
+                    <td class="px-3 py-3">
+                      <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
+                    </td>
+                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
+                      {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
+                    </td>
+                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(plan.current_price_cny) }}</td>
+                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">
+                      {{ formatCny(plan.derived_recommended_price_cny) }}
+                    </td>
+                    <td
+                      class="px-3 py-3"
+                      :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                    >
+                      {{ formatSignedCny(plan.price_delta_cny) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('admin.dashboard.oversell.title') }}
               </h3>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -575,6 +806,44 @@
                   {{ t('admin.dashboard.oversell.result.note') }}
                 </p>
               </div>
+            </div>
+
+            <div
+              v-if="oversellPlanRecommendations.length > 0"
+              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
+            >
+              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentPrice') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.recommendedPrice') }}</th>
+                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.delta') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tr v-for="plan in oversellPlanRecommendations" :key="plan.plan_id">
+                    <td class="px-3 py-3">
+                      <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ plan.group_name }}
+                      </div>
+                    </td>
+                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
+                      {{ formatCny(plan.current_price_cny) }}
+                    </td>
+                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">
+                      {{ formatCny(plan.derived_recommended_price_cny) }}
+                    </td>
+                    <td
+                      class="px-3 py-3"
+                      :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                    >
+                      {{ formatSignedCny(plan.price_delta_cny) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -819,6 +1088,15 @@ const oversellForm = reactive({
   profitMode: 'costPlus' as OversellProfitMode,
   targetProfit: 120,
   heavyUsage: 3,
+  confidenceLevel: 99 as 95 | 99
+})
+
+type PricingProfitMode = 'costPlus' | 'netMargin'
+
+const pricingForm = reactive({
+  targetProfit: 120,
+  profitRatePercent: 20,
+  profitMode: 'costPlus' as PricingProfitMode,
   confidenceLevel: 99 as 95 | 99
 })
 
@@ -1072,6 +1350,200 @@ const oversellScenario = computed(() => {
     minimumUsers,
     lossRiskLabel: formatPercentDetailed(lossRisk, 0)
   }
+})
+
+const oversellPlanRecommendations = computed(() => {
+  const plans = oversellCalculator.value?.plans ?? []
+  const recommendedMonthlyPrice = oversellScenario.value?.recommendedPrice ?? 0
+
+  return plans.map((plan) => {
+    const derivedRecommendedPrice =
+      recommendedMonthlyPrice > 0
+        ? (recommendedMonthlyPrice * plan.duration_days_equivalent) / 30
+        : 0
+
+    return {
+      ...plan,
+      derived_recommended_price_cny: derivedRecommendedPrice,
+      price_delta_cny: derivedRecommendedPrice - plan.current_price_cny
+    }
+  })
+})
+
+const pricingScenario = computed(() => {
+  const estimate = oversellCalculator.value?.estimate
+  if (!estimate || !Number.isFinite(estimate.estimated_light_user_ratio)) return null
+
+  const defaults = oversellCalculator.value?.defaults
+  if (!defaults) return null
+
+  const procurementCost = Math.max(defaults.actual_cost_cny, 0)
+  const capacityPerItem = Math.max(defaults.capacity_units_per_product, 0.0001)
+  if (procurementCost <= 0) return null
+
+  const heavyUsage = capacityPerItem
+  const lightUserShare = Math.min(Math.max(estimate.estimated_light_user_ratio, 0), 1)
+  const lightUserThreshold = Math.max(estimate.light_user_threshold_units, 0)
+
+  const unitCost = procurementCost / capacityPerItem
+  const meanUpperBound = lightUserShare * lightUserThreshold + (1 - lightUserShare) * heavyUsage
+  const costPerUser = unitCost * meanUpperBound
+  const rangeWidth = heavyUsage
+
+  const profitRate = Math.min(Math.max(pricingForm.profitRatePercent / 100, 0), 0.95)
+  const profitMode = pricingForm.profitMode
+  const targetProfit = Math.max(pricingForm.targetProfit, 0)
+  const lossRisk = pricingForm.confidenceLevel === 99 ? 0.01 : 0.05
+
+  const multiplier = profitMode === 'netMargin'
+    ? 1 / Math.max(1 - profitRate, 0.05)
+    : 1 + profitRate
+
+  const floorPrice = costPerUser * multiplier
+
+  let minimumUsers: number | null = null
+  let recommendedPrice = floorPrice
+  let safetyBuffer = 0
+
+  // Find minimum N where profit-driven price >= safety-driven price
+  for (let N = 1; N <= 500; N++) {
+    const riskBuf = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / (2 * N))
+    const safePrice = unitCost * (meanUpperBound + riskBuf) * multiplier
+    const profitPrice = costPerUser + targetProfit / N
+
+    if (profitPrice >= safePrice) {
+      minimumUsers = N
+      recommendedPrice = profitPrice
+      safetyBuffer = safePrice > 0 ? (profitPrice / multiplier / unitCost) - meanUpperBound : 0
+      break
+    }
+  }
+
+  // If crossover not found, find smallest N where safe price yields enough profit
+  if (minimumUsers === null) {
+    for (let N = 1; N <= 500; N++) {
+      const riskBuf = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / (2 * N))
+      const safePrice = unitCost * (meanUpperBound + riskBuf) * multiplier
+      const profit = (safePrice - costPerUser) * N
+      if (profit >= targetProfit) {
+        minimumUsers = N
+        recommendedPrice = safePrice
+        const affordableThreshold = profitMode === 'netMargin'
+          ? safePrice * (1 - profitRate) / unitCost
+          : safePrice / (unitCost * multiplier)
+        safetyBuffer = affordableThreshold - meanUpperBound
+        break
+      }
+    }
+  }
+
+  if (minimumUsers === null) {
+    const riskBuf = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / 1000)
+    const affordableThreshold = profitMode === 'netMargin'
+      ? floorPrice * (1 - profitRate) / unitCost
+      : floorPrice / (unitCost * multiplier)
+    safetyBuffer = affordableThreshold - meanUpperBound + riskBuf
+    return {
+      unitCost,
+      meanUpperBound,
+      costPerUser,
+      floorPrice,
+      minimumUsers: null as number | null,
+      recommendedPrice: floorPrice,
+      profitPerUser: 0,
+      safetyBuffer
+    }
+  }
+
+  const profitPerUser = recommendedPrice - costPerUser
+
+  return {
+    unitCost,
+    meanUpperBound,
+    costPerUser,
+    floorPrice,
+    minimumUsers,
+    recommendedPrice,
+    profitPerUser,
+    safetyBuffer
+  }
+})
+
+interface PricingSensitivityRow {
+  users: number
+  price: number
+  revenue: number
+  cost: number
+  profit: number
+  isRecommended: boolean
+}
+
+const pricingSensitivityRows = computed((): PricingSensitivityRow[] => {
+  const scenario = pricingScenario.value
+  if (!scenario || scenario.minimumUsers === null) return []
+
+  const estimate = oversellCalculator.value?.estimate
+  const defaults = oversellCalculator.value?.defaults
+  if (!estimate || !defaults) return []
+
+  const procurementCost = Math.max(defaults.actual_cost_cny, 0)
+  const capacityPerItem = Math.max(defaults.capacity_units_per_product, 0.0001)
+  const unitCost = procurementCost / capacityPerItem
+  const heavyUsage = capacityPerItem
+  const lightUserShare = Math.min(Math.max(estimate.estimated_light_user_ratio, 0), 1)
+  const lightUserThreshold = Math.max(estimate.light_user_threshold_units, 0)
+  const meanUpperBound = lightUserShare * lightUserThreshold + (1 - lightUserShare) * heavyUsage
+  const costPerUser = unitCost * meanUpperBound
+  const rangeWidth = heavyUsage
+  const profitRate = Math.min(Math.max(pricingForm.profitRatePercent / 100, 0), 0.95)
+  const multiplier = pricingForm.profitMode === 'netMargin'
+    ? 1 / Math.max(1 - profitRate, 0.05)
+    : 1 + profitRate
+  const targetProfit = Math.max(pricingForm.targetProfit, 0)
+  const lossRisk = pricingForm.confidenceLevel === 99 ? 0.01 : 0.05
+
+  const minN = scenario.minimumUsers
+  const nMultipliers = [1, 2, 3, 5, 10]
+  const rows: PricingSensitivityRow[] = []
+
+  for (const mult of nMultipliers) {
+    const N = minN * mult
+    const riskBuf = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / (2 * N))
+    const safePrice = unitCost * (meanUpperBound + riskBuf) * multiplier
+    const profitPrice = costPerUser + targetProfit / N
+    const price = Math.max(safePrice, profitPrice)
+    const revenue = price * N
+    const cost = costPerUser * N
+
+    rows.push({
+      users: N,
+      price,
+      revenue,
+      cost,
+      profit: revenue - cost,
+      isRecommended: mult === 1
+    })
+  }
+
+  return rows
+})
+
+const pricingPlanRecommendations = computed(() => {
+  const plans = oversellCalculator.value?.plans ?? []
+  const recommendedMonthlyPrice = pricingScenario.value?.recommendedPrice ?? 0
+
+  return plans.map((plan) => {
+    const derivedRecommendedPrice =
+      recommendedMonthlyPrice > 0
+        ? (recommendedMonthlyPrice * plan.duration_days_equivalent) / 30
+        : 0
+
+    return {
+      ...plan,
+      derived_recommended_price_cny: derivedRecommendedPrice,
+      price_delta_cny: derivedRecommendedPrice - plan.current_price_cny
+    }
+  })
 })
 
 // Format helpers
@@ -1366,10 +1838,11 @@ const loadOversellMathBaseline = async () => {
     const initialInput = response.input || response.defaults
     oversellForm.procurementCost = initialInput.actual_cost_cny
     oversellForm.capacityPerItem = initialInput.capacity_units_per_product
+    oversellForm.heavyUsage = initialInput.capacity_units_per_product
     oversellForm.profitRatePercent = initialInput.profit_rate_percent
     oversellForm.profitMode = initialInput.profit_mode === 'net_margin' ? 'netMargin' : 'costPlus'
     oversellForm.targetProfit = initialInput.target_profit_total_cny
-    oversellForm.confidenceLevel = initialInput.confidence_level === 95 ? 95 : 99
+    oversellForm.confidenceLevel = initialInput.confidence_level >= 0.99 ? 99 : 95
     oversellForm.plannedPrice = response.estimate.current_cheapest_monthly_price_cny || oversellForm.plannedPrice
   } catch (error) {
     console.error('Error loading oversell math baseline:', error)
