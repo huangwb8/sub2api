@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/enttest"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/repository"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"
@@ -87,11 +87,11 @@ func newPaymentServiceSQLite(t *testing.T) (*PaymentService, *dbent.Client) {
 		},
 	}
 
-	userRepo := repository.NewUserRepository(client, db)
-	groupRepo := repository.NewGroupRepository(client, db)
-	userSubRepo := repository.NewUserSubscriptionRepository(client)
+	userRepo := &paymentTestUserRepo{client: client}
+	groupRepo := &paymentTestGroupRepo{client: client}
+	userSubRepo := &paymentTestUserSubscriptionRepo{client: client}
 	subscriptionSvc := NewSubscriptionService(groupRepo, userSubRepo, nil, client, nil)
-	redeemRepo := repository.NewRedeemCodeRepository(client)
+	redeemRepo := &redeemRepoStub{}
 	redeemSvc := NewRedeemService(redeemRepo, userRepo, subscriptionSvc, nil, nil, client, nil)
 	configSvc := NewPaymentConfigService(client, settingRepo, nil)
 

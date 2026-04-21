@@ -91,10 +91,12 @@ func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float
 	if instErr != nil {
 		slog.Warn("refund: provider instance not found", "orderID", oid, "error", instErr)
 	}
+	balanceSubscriptionRefund := o.PaymentType == payment.TypeBalance &&
+		(o.OrderType == payment.OrderTypeSubscription || o.OrderType == payment.OrderTypeSubscriptionUpgrade)
 	if inst != nil && !inst.RefundEnabled {
 		return nil, nil, infraerrors.Forbidden("REFUND_DISABLED", "refund is not enabled for this provider")
 	}
-	if inst == nil && instErr == nil {
+	if inst == nil && instErr == nil && !balanceSubscriptionRefund {
 		return nil, nil, infraerrors.Forbidden("REFUND_DISABLED", "refund is not available for this order")
 	}
 	if math.IsNaN(amt) || math.IsInf(amt, 0) {
