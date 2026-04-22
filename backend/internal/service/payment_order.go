@@ -58,11 +58,15 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	feeRate := s.getFeeRate(req.PaymentType)
 	payAmountStr := payment.CalculatePayAmount(amount, feeRate)
 	payAmount, _ := strconv.ParseFloat(payAmountStr, 64)
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, amount, feeRate, payAmount)
+	sel, err := s.selectPaymentInstance(ctx, req.PaymentType, cfg, payAmount)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.invokeProvider(ctx, order, req, cfg, payAmountStr, payAmount, plan)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, amount, feeRate, payAmount, sel)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.invokeProvider(ctx, order, req, cfg, payAmountStr, payAmount, plan, sel)
 	if err != nil {
 		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 			SetStatus(OrderStatusFailed).
@@ -116,7 +120,59 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	return plan, nil
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, amount, feeRate, payAmount float64) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) selectPaymentInstance(ctx context.Context, paymentType string, cfg *PaymentConfig, payAmount float64) (*payment.InstanceSelection, error) {
+	sel, err := s.loadBalancer.SelectInstance(ctx, paymentType, cfg.EnabledTypes, payment.Strategy(cfg.LoadBalanceStrategy), payAmount)
+	if err != nil {
+		return nil, fmt.Errorf("select provider instance: %w", err)
+	}
+	if sel == nil {
+		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no_available_instance")
+	}
+	return sel, nil
+}
+
+func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection) map[string]any {
+	if sel == nil {
+		return nil
+	}
+
+	snapshot := map[string]any{
+		"schema_version": 1,
+	}
+	if instanceID := strings.TrimSpace(sel.InstanceID); instanceID != "" {
+		snapshot["provider_instance_id"] = instanceID
+	}
+	if providerKey := strings.TrimSpace(sel.ProviderKey); providerKey != "" {
+		snapshot["provider_key"] = providerKey
+		switch providerKey {
+		case payment.TypeWxpay:
+			if appID := strings.TrimSpace(sel.Config["appId"]); appID != "" {
+				snapshot["merchant_app_id"] = appID
+			}
+			if merchantID := strings.TrimSpace(sel.Config["mchId"]); merchantID != "" {
+				snapshot["merchant_id"] = merchantID
+			}
+			snapshot["currency"] = "CNY"
+		case payment.TypeAlipay:
+			if appID := strings.TrimSpace(sel.Config["appId"]); appID != "" {
+				snapshot["merchant_app_id"] = appID
+			}
+		case payment.TypeEasyPay:
+			if merchantID := strings.TrimSpace(sel.Config["pid"]); merchantID != "" {
+				snapshot["merchant_id"] = merchantID
+			}
+		}
+	}
+	if paymentMode := strings.TrimSpace(sel.PaymentMode); paymentMode != "" {
+		snapshot["payment_mode"] = paymentMode
+	}
+	if len(snapshot) == 1 {
+		return nil
+	}
+	return snapshot
+}
+
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, amount, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -152,6 +208,17 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		SetExpiresAt(exp).
 		SetClientIP(req.ClientIP).
 		SetSrcHost(req.SrcHost)
+	if sel != nil {
+		if instanceID := strings.TrimSpace(sel.InstanceID); instanceID != "" {
+			b.SetProviderInstanceID(instanceID)
+		}
+		if providerKey := strings.TrimSpace(sel.ProviderKey); providerKey != "" {
+			b.SetProviderKey(providerKey)
+		}
+		if snapshot := buildPaymentOrderProviderSnapshot(sel); snapshot != nil {
+			b.SetProviderSnapshot(snapshot)
+		}
+	}
 	if req.SrcURL != "" {
 		b.SetSrcURL(req.SrcURL)
 	}
@@ -248,14 +315,7 @@ func wrapPaymentProviderRuntimeError(err error, providerKey, instanceID string) 
 		WithMetadata(map[string]string{"provider": providerKey, "instance_id": instanceID})
 }
 
-func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan) (*CreateOrderResponse, error) {
-	sel, err := s.loadBalancer.SelectInstance(ctx, req.PaymentType, cfg.EnabledTypes, payment.Strategy(cfg.LoadBalanceStrategy), payAmount)
-	if err != nil {
-		return nil, fmt.Errorf("select provider instance: %w", err)
-	}
-	if sel == nil {
-		return nil, infraerrors.TooManyRequests("NO_AVAILABLE_INSTANCE", "no_available_instance")
-	}
+func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
 	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
 		slog.Error("[PaymentService] CreateProvider failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
@@ -268,7 +328,16 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		slog.Error("[PaymentService] CreatePayment failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
 		return nil, wrapPaymentProviderRuntimeError(err, sel.ProviderKey, sel.InstanceID)
 	}
-	_, err = s.entClient.PaymentOrder.UpdateOneID(order.ID).SetNillablePaymentTradeNo(psNilIfEmpty(pr.TradeNo)).SetNillablePayURL(psNilIfEmpty(pr.PayURL)).SetNillableQrCode(psNilIfEmpty(pr.QRCode)).SetNillableProviderInstanceID(psNilIfEmpty(sel.InstanceID)).Save(ctx)
+	update := s.entClient.PaymentOrder.UpdateOneID(order.ID).
+		SetNillablePaymentTradeNo(psNilIfEmpty(pr.TradeNo)).
+		SetNillablePayURL(psNilIfEmpty(pr.PayURL)).
+		SetNillableQrCode(psNilIfEmpty(pr.QRCode)).
+		SetNillableProviderInstanceID(psNilIfEmpty(sel.InstanceID)).
+		SetNillableProviderKey(psNilIfEmpty(sel.ProviderKey))
+	if snapshot := buildPaymentOrderProviderSnapshot(sel); snapshot != nil {
+		update.SetProviderSnapshot(snapshot)
+	}
+	_, err = update.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update order with payment details: %w", err)
 	}
@@ -445,11 +514,15 @@ func (s *PaymentService) createSubscriptionUpgradeOrder(ctx context.Context, req
 	feeRate := s.getFeeRate(req.PaymentType)
 	payAmountStr := payment.CalculatePayAmount(amount, feeRate)
 	payAmount, _ := strconv.ParseFloat(payAmountStr, 64)
-	order, err := s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, feeRate, payAmount, OrderStatusPending, nil)
+	sel, err := s.selectPaymentInstance(ctx, req.PaymentType, cfg, payAmount)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.invokeProvider(ctx, order, req, cfg, payAmountStr, payAmount, plan)
+	order, err := s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, feeRate, payAmount, OrderStatusPending, nil, sel)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.invokeProvider(ctx, order, req, cfg, payAmountStr, payAmount, plan, sel)
 	if err != nil {
 		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 			SetStatus(OrderStatusFailed).
@@ -478,7 +551,7 @@ func (s *PaymentService) ensureNoPendingUpgradeOrder(ctx context.Context, source
 
 func (s *PaymentService) createZeroSubscriptionUpgradeOrder(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig) (*dbent.PaymentOrder, error) {
 	now := time.Now()
-	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, 0, 0, 0, OrderStatusPaid, &now)
+	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, 0, 0, 0, OrderStatusPaid, &now, nil)
 }
 
 func (s *PaymentService) createBalanceSubscriptionUpgradeOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig, amount float64) (*dbent.PaymentOrder, error) {
@@ -492,10 +565,10 @@ func (s *PaymentService) createBalanceSubscriptionUpgradeOrderInTx(ctx context.C
 		}
 	}
 	now := time.Now()
-	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, 0, amount, OrderStatusPaid, &now)
+	return s.createSubscriptionUpgradeOrderInTx(ctx, req, user, plan, quote, cfg, amount, 0, amount, OrderStatusPaid, &now, nil)
 }
 
-func (s *PaymentService) createSubscriptionUpgradeOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig, amount, feeRate, payAmount float64, initialStatus string, paidAt *time.Time) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) createSubscriptionUpgradeOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig, amount, feeRate, payAmount float64, initialStatus string, paidAt *time.Time, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -555,6 +628,17 @@ func (s *PaymentService) createSubscriptionUpgradeOrderInTx(ctx context.Context,
 		SetExpiresAt(expiresAt).
 		SetClientIP(req.ClientIP).
 		SetSrcHost(req.SrcHost)
+	if sel != nil {
+		if instanceID := strings.TrimSpace(sel.InstanceID); instanceID != "" {
+			builder.SetProviderInstanceID(instanceID)
+		}
+		if providerKey := strings.TrimSpace(sel.ProviderKey); providerKey != "" {
+			builder.SetProviderKey(providerKey)
+		}
+		if snapshot := buildPaymentOrderProviderSnapshot(sel); snapshot != nil {
+			builder.SetProviderSnapshot(snapshot)
+		}
+	}
 	if req.SrcURL != "" {
 		builder.SetSrcURL(req.SrcURL)
 	}

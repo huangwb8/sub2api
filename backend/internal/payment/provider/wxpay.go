@@ -229,6 +229,32 @@ func mapWxState(s string) string {
 	}
 }
 
+func buildWxpayTransactionMetadata(tx *payments.Transaction) map[string]string {
+	if tx == nil {
+		return nil
+	}
+
+	metadata := map[string]string{}
+	if appID := wxSV(tx.Appid); appID != "" {
+		metadata["appid"] = appID
+	}
+	if merchantID := wxSV(tx.Mchid); merchantID != "" {
+		metadata["mchid"] = merchantID
+	}
+	if tradeState := wxSV(tx.TradeState); tradeState != "" {
+		metadata["trade_state"] = tradeState
+	}
+	if tx.Amount != nil {
+		if currency := wxSV(tx.Amount.Currency); currency != "" {
+			metadata["currency"] = currency
+		}
+	}
+	if len(metadata) == 0 {
+		return nil
+	}
+	return metadata
+}
+
 func (w *Wxpay) QueryOrder(ctx context.Context, tradeNo string) (*payment.QueryOrderResponse, error) {
 	c, err := w.ensureClient()
 	if err != nil {
@@ -253,7 +279,13 @@ func (w *Wxpay) QueryOrder(ctx context.Context, tradeNo string) (*payment.QueryO
 	if tx.SuccessTime != nil {
 		pa = *tx.SuccessTime
 	}
-	return &payment.QueryOrderResponse{TradeNo: id, Status: mapWxState(wxSV(tx.TradeState)), Amount: amt, PaidAt: pa}, nil
+	return &payment.QueryOrderResponse{
+		TradeNo:  id,
+		Status:   mapWxState(wxSV(tx.TradeState)),
+		Amount:   amt,
+		PaidAt:   pa,
+		Metadata: buildWxpayTransactionMetadata(tx),
+	}, nil
 }
 
 func (w *Wxpay) VerifyNotification(ctx context.Context, rawBody string, headers map[string]string) (*payment.PaymentNotification, error) {
@@ -284,8 +316,12 @@ func (w *Wxpay) VerifyNotification(ctx context.Context, rawBody string, headers 
 		st = payment.ProviderStatusSuccess
 	}
 	return &payment.PaymentNotification{
-		TradeNo: wxSV(tx.TransactionId), OrderID: wxSV(tx.OutTradeNo),
-		Amount: amt, Status: st, RawData: rawBody,
+		TradeNo:  wxSV(tx.TransactionId),
+		OrderID:  wxSV(tx.OutTradeNo),
+		Amount:   amt,
+		Status:   st,
+		RawData:  rawBody,
+		Metadata: buildWxpayTransactionMetadata(&tx),
 	}, nil
 }
 

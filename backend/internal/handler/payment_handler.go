@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -390,12 +391,24 @@ func (h *PaymentHandler) VerifyOrder(c *gin.Context) {
 // PublicOrderResult is the limited order info returned by the public verify endpoint.
 // No user details are exposed — only payment status information.
 type PublicOrderResult struct {
-	ID          int64   `json:"id"`
-	OutTradeNo  string  `json:"out_trade_no"`
-	Amount      float64 `json:"amount"`
-	PayAmount   float64 `json:"pay_amount"`
-	PaymentType string  `json:"payment_type"`
-	Status      string  `json:"status"`
+	ID                  int64      `json:"id"`
+	OutTradeNo          string     `json:"out_trade_no"`
+	Amount              float64    `json:"amount"`
+	PayAmount           float64    `json:"pay_amount"`
+	FeeRate             float64    `json:"fee_rate"`
+	PaymentType         string     `json:"payment_type"`
+	OrderType           string     `json:"order_type"`
+	Status              string     `json:"status"`
+	CreatedAt           time.Time  `json:"created_at"`
+	ExpiresAt           time.Time  `json:"expires_at"`
+	PaidAt              *time.Time `json:"paid_at,omitempty"`
+	CompletedAt         *time.Time `json:"completed_at,omitempty"`
+	RefundAmount        float64    `json:"refund_amount"`
+	RefundReason        *string    `json:"refund_reason,omitempty"`
+	RefundRequestedAt   *time.Time `json:"refund_requested_at,omitempty"`
+	RefundRequestedBy   *string    `json:"refund_requested_by,omitempty"`
+	RefundRequestReason *string    `json:"refund_request_reason,omitempty"`
+	PlanID              *int64     `json:"plan_id,omitempty"`
 }
 
 // VerifyOrderPublic verifies payment status without requiring authentication.
@@ -413,12 +426,24 @@ func (h *PaymentHandler) VerifyOrderPublic(c *gin.Context) {
 		return
 	}
 	response.Success(c, PublicOrderResult{
-		ID:          order.ID,
-		OutTradeNo:  order.OutTradeNo,
-		Amount:      order.Amount,
-		PayAmount:   order.PayAmount,
-		PaymentType: order.PaymentType,
-		Status:      order.Status,
+		ID:                  order.ID,
+		OutTradeNo:          order.OutTradeNo,
+		Amount:              order.Amount,
+		PayAmount:           order.PayAmount,
+		FeeRate:             order.FeeRate,
+		PaymentType:         order.PaymentType,
+		OrderType:           order.OrderType,
+		Status:              order.Status,
+		CreatedAt:           order.CreatedAt,
+		ExpiresAt:           order.ExpiresAt,
+		PaidAt:              order.PaidAt,
+		CompletedAt:         order.CompletedAt,
+		RefundAmount:        order.RefundAmount,
+		RefundReason:        order.RefundReason,
+		RefundRequestedAt:   order.RefundRequestedAt,
+		RefundRequestedBy:   order.RefundRequestedBy,
+		RefundRequestReason: order.RefundRequestReason,
+		PlanID:              order.PlanID,
 	})
 }
 

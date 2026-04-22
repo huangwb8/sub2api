@@ -12,6 +12,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 )
 
 func TestMapWxState(t *testing.T) {
@@ -334,4 +335,27 @@ func TestWxpaySupportedTypes_ShouldRegisterWxpay(t *testing.T) {
 	got := p.SupportedTypes()
 	require.Len(t, got, 1)
 	require.Equal(t, payment.TypeWxpay, got[0])
+}
+
+func TestBuildWxpayTransactionMetadata(t *testing.T) {
+	t.Parallel()
+
+	appID := "wx-app"
+	merchantID := "mch-1"
+	tradeState := "SUCCESS"
+	currency := "CNY"
+	tx := &payments.Transaction{
+		Appid:      &appID,
+		Mchid:      &merchantID,
+		TradeState: &tradeState,
+		Amount:     &payments.TransactionAmount{Currency: &currency},
+	}
+
+	require.Equal(t, map[string]string{
+		"appid":       appID,
+		"mchid":       merchantID,
+		"trade_state": tradeState,
+		"currency":    currency,
+	}, buildWxpayTransactionMetadata(tx))
+	require.Nil(t, buildWxpayTransactionMetadata(nil))
 }

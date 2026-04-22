@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Changed（变更）
+- 优化了 `docs/page-demo/2026-04-13-benszresearch-homepage-reference.html` 这份首页参考模板：左上角品牌位现在会优先读取后台公开设置中的 `site_logo`，右下角法律链接同步对齐到管理员在“用户默认设置”中维护并公开发布的 `/legal/terms` 与 `/legal/privacy` 页面；未发布对应文档时会自动隐藏入口，减少示例页与真实站点配置脱节。
+- 吸收了上游支付正确性强化中的低风险核心能力：支付订单现在会在创建时固定记录 `provider_instance_id / provider_key / provider_snapshot`，支付结果页公开校验接口同步补齐手续费与订单阶段信息，便于在不影响现有个性化支付/订阅流程的前提下提升历史订单可追溯性与结果页一致性。
+
+### Fixed（修复）
+- 修复了支付成功回调仍可能“串 provider”或误认微信商户的风险：后端现在会按订单绑定的 provider 进行来源校验，并对微信支付回调/补单结果额外校验 `appid / mchid / currency / trade_state` 与订单快照是否一致，降低配置变更或多实例并存时的误履约概率。
+
 ## [1.0.25] - 2026-04-22
 
 ### Changed（变更）

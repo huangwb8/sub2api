@@ -13167,6 +13167,8 @@ type PaymentOrderMutation struct {
 	upgrade_remaining_ratio    *float64
 	addupgrade_remaining_ratio *float64
 	provider_instance_id       *string
+	provider_key               *string
+	provider_snapshot          *map[string]interface{}
 	status                     *string
 	refund_amount              *float64
 	addrefund_amount           *float64
@@ -14553,6 +14555,104 @@ func (m *PaymentOrderMutation) ResetProviderInstanceID() {
 	delete(m.clearedFields, paymentorder.FieldProviderInstanceID)
 }
 
+// SetProviderKey sets the "provider_key" field.
+func (m *PaymentOrderMutation) SetProviderKey(s string) {
+	m.provider_key = &s
+}
+
+// ProviderKey returns the value of the "provider_key" field in the mutation.
+func (m *PaymentOrderMutation) ProviderKey() (r string, exists bool) {
+	v := m.provider_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderKey returns the old "provider_key" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldProviderKey(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderKey: %w", err)
+	}
+	return oldValue.ProviderKey, nil
+}
+
+// ClearProviderKey clears the value of the "provider_key" field.
+func (m *PaymentOrderMutation) ClearProviderKey() {
+	m.provider_key = nil
+	m.clearedFields[paymentorder.FieldProviderKey] = struct{}{}
+}
+
+// ProviderKeyCleared returns if the "provider_key" field was cleared in this mutation.
+func (m *PaymentOrderMutation) ProviderKeyCleared() bool {
+	_, ok := m.clearedFields[paymentorder.FieldProviderKey]
+	return ok
+}
+
+// ResetProviderKey resets all changes to the "provider_key" field.
+func (m *PaymentOrderMutation) ResetProviderKey() {
+	m.provider_key = nil
+	delete(m.clearedFields, paymentorder.FieldProviderKey)
+}
+
+// SetProviderSnapshot sets the "provider_snapshot" field.
+func (m *PaymentOrderMutation) SetProviderSnapshot(value map[string]interface{}) {
+	m.provider_snapshot = &value
+}
+
+// ProviderSnapshot returns the value of the "provider_snapshot" field in the mutation.
+func (m *PaymentOrderMutation) ProviderSnapshot() (r map[string]interface{}, exists bool) {
+	v := m.provider_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderSnapshot returns the old "provider_snapshot" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldProviderSnapshot(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderSnapshot: %w", err)
+	}
+	return oldValue.ProviderSnapshot, nil
+}
+
+// ClearProviderSnapshot clears the value of the "provider_snapshot" field.
+func (m *PaymentOrderMutation) ClearProviderSnapshot() {
+	m.provider_snapshot = nil
+	m.clearedFields[paymentorder.FieldProviderSnapshot] = struct{}{}
+}
+
+// ProviderSnapshotCleared returns if the "provider_snapshot" field was cleared in this mutation.
+func (m *PaymentOrderMutation) ProviderSnapshotCleared() bool {
+	_, ok := m.clearedFields[paymentorder.FieldProviderSnapshot]
+	return ok
+}
+
+// ResetProviderSnapshot resets all changes to the "provider_snapshot" field.
+func (m *PaymentOrderMutation) ResetProviderSnapshot() {
+	m.provider_snapshot = nil
+	delete(m.clearedFields, paymentorder.FieldProviderSnapshot)
+}
+
 // SetStatus sets the "status" field.
 func (m *PaymentOrderMutation) SetStatus(s string) {
 	m.status = &s
@@ -15412,7 +15512,7 @@ func (m *PaymentOrderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PaymentOrderMutation) Fields() []string {
-	fields := make([]string, 0, 42)
+	fields := make([]string, 0, 44)
 	if m.user != nil {
 		fields = append(fields, paymentorder.FieldUserID)
 	}
@@ -15484,6 +15584,12 @@ func (m *PaymentOrderMutation) Fields() []string {
 	}
 	if m.provider_instance_id != nil {
 		fields = append(fields, paymentorder.FieldProviderInstanceID)
+	}
+	if m.provider_key != nil {
+		fields = append(fields, paymentorder.FieldProviderKey)
+	}
+	if m.provider_snapshot != nil {
+		fields = append(fields, paymentorder.FieldProviderSnapshot)
 	}
 	if m.status != nil {
 		fields = append(fields, paymentorder.FieldStatus)
@@ -15595,6 +15701,10 @@ func (m *PaymentOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.UpgradeRemainingRatio()
 	case paymentorder.FieldProviderInstanceID:
 		return m.ProviderInstanceID()
+	case paymentorder.FieldProviderKey:
+		return m.ProviderKey()
+	case paymentorder.FieldProviderSnapshot:
+		return m.ProviderSnapshot()
 	case paymentorder.FieldStatus:
 		return m.Status()
 	case paymentorder.FieldRefundAmount:
@@ -15688,6 +15798,10 @@ func (m *PaymentOrderMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldUpgradeRemainingRatio(ctx)
 	case paymentorder.FieldProviderInstanceID:
 		return m.OldProviderInstanceID(ctx)
+	case paymentorder.FieldProviderKey:
+		return m.OldProviderKey(ctx)
+	case paymentorder.FieldProviderSnapshot:
+		return m.OldProviderSnapshot(ctx)
 	case paymentorder.FieldStatus:
 		return m.OldStatus(ctx)
 	case paymentorder.FieldRefundAmount:
@@ -15900,6 +16014,20 @@ func (m *PaymentOrderMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProviderInstanceID(v)
+		return nil
+	case paymentorder.FieldProviderKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderKey(v)
+		return nil
+	case paymentorder.FieldProviderSnapshot:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderSnapshot(v)
 		return nil
 	case paymentorder.FieldStatus:
 		v, ok := value.(string)
@@ -16243,6 +16371,12 @@ func (m *PaymentOrderMutation) ClearedFields() []string {
 	if m.FieldCleared(paymentorder.FieldProviderInstanceID) {
 		fields = append(fields, paymentorder.FieldProviderInstanceID)
 	}
+	if m.FieldCleared(paymentorder.FieldProviderKey) {
+		fields = append(fields, paymentorder.FieldProviderKey)
+	}
+	if m.FieldCleared(paymentorder.FieldProviderSnapshot) {
+		fields = append(fields, paymentorder.FieldProviderSnapshot)
+	}
 	if m.FieldCleared(paymentorder.FieldRefundReason) {
 		fields = append(fields, paymentorder.FieldRefundReason)
 	}
@@ -16325,6 +16459,12 @@ func (m *PaymentOrderMutation) ClearField(name string) error {
 		return nil
 	case paymentorder.FieldProviderInstanceID:
 		m.ClearProviderInstanceID()
+		return nil
+	case paymentorder.FieldProviderKey:
+		m.ClearProviderKey()
+		return nil
+	case paymentorder.FieldProviderSnapshot:
+		m.ClearProviderSnapshot()
 		return nil
 	case paymentorder.FieldRefundReason:
 		m.ClearRefundReason()
@@ -16435,6 +16575,12 @@ func (m *PaymentOrderMutation) ResetField(name string) error {
 		return nil
 	case paymentorder.FieldProviderInstanceID:
 		m.ResetProviderInstanceID()
+		return nil
+	case paymentorder.FieldProviderKey:
+		m.ResetProviderKey()
+		return nil
+	case paymentorder.FieldProviderSnapshot:
+		m.ResetProviderSnapshot()
 		return nil
 	case paymentorder.FieldStatus:
 		m.ResetStatus()
