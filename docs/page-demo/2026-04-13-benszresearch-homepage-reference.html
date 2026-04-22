@@ -102,8 +102,10 @@
   .bensz-home__seal {
     display: grid;
     place-items: center;
+    position: relative;
     width: 44px;
     height: 44px;
+    overflow: hidden;
     border-radius: 12px;
     border: 1px solid rgba(15, 118, 110, 0.18);
     background: linear-gradient(145deg, rgba(15, 118, 110, 0.12), rgba(15, 118, 110, 0.04));
@@ -112,6 +114,22 @@
     font-weight: 800;
     letter-spacing: 0.08em;
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .bensz-home__seal-img,
+  .bensz-home__seal-fallback {
+    grid-area: 1 / 1;
+  }
+
+  .bensz-home__seal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .bensz-home__seal[data-has-logo="true"] .bensz-home__seal-fallback {
+    display: none;
   }
 
   .bensz-home__brand-name {
@@ -986,7 +1004,10 @@
   <div class="bensz-home__shell">
     <header class="bensz-home__topbar">
       <div class="bensz-home__brand">
-        <div class="bensz-home__seal" aria-hidden="true">BR</div>
+        <div class="bensz-home__seal" data-site-logo-shell data-has-logo="false">
+          <img class="bensz-home__seal-img" data-site-logo alt="站点 Logo" hidden>
+          <span class="bensz-home__seal-fallback" aria-hidden="true">BR</span>
+        </div>
         <div>
           <span class="bensz-home__brand-name">BenszResearch</span>
           <span class="bensz-home__brand-sub">AI Research Infrastructure</span>
@@ -1121,8 +1142,8 @@
     <footer class="bensz-home__footer">
       <span>&copy; 2026 BenszResearch</span>
       <div class="bensz-home__footer-links">
-        <a href="/terms">服务条款</a>
-        <a href="/privacy">隐私政策</a>
+        <a href="/legal/terms" data-legal-link="terms">服务条款</a>
+        <a href="/legal/privacy" data-legal-link="privacy">隐私政策</a>
         <a href="/dashboard">控制台</a>
       </div>
     </footer>
@@ -1156,12 +1177,98 @@
     var pricingError = root.querySelector('[data-pricing-error]');
     var pricingEmpty = root.querySelector('[data-pricing-empty]');
     var pricingRetry = root.querySelector('[data-pricing-retry]');
+    var siteLogoShell = root.querySelector('[data-site-logo-shell]');
+    var siteLogoImage = root.querySelector('[data-site-logo]');
+    var legalLinks = {
+      terms: root.querySelector('[data-legal-link="terms"]'),
+      privacy: root.querySelector('[data-legal-link="privacy"]')
+    };
     var abortController = null;
+    var settingsAbortController = null;
     var loaded = false;
 
     function registerCleanup(task) {
       if (typeof task === 'function') {
         cleanupTasks.push(task);
+      }
+    }
+
+    function getAppConfigSettings() {
+      if (runtime.publicSettings && typeof runtime.publicSettings === 'object') {
+        return runtime.publicSettings;
+      }
+      if (window.__APP_CONFIG__ && typeof window.__APP_CONFIG__ === 'object') {
+        return window.__APP_CONFIG__;
+      }
+      return null;
+    }
+
+    function setSiteLogo(logoUrl) {
+      if (!siteLogoShell || !siteLogoImage) return;
+
+      var normalizedUrl = typeof logoUrl === 'string' ? logoUrl.trim() : '';
+      var hasLogo = !!normalizedUrl;
+
+      siteLogoShell.setAttribute('data-has-logo', hasLogo ? 'true' : 'false');
+      siteLogoImage.hidden = !hasLogo;
+
+      if (hasLogo) {
+        siteLogoImage.src = normalizedUrl;
+      } else {
+        siteLogoImage.removeAttribute('src');
+      }
+    }
+
+    function setLegalLink(type, enabled) {
+      var link = legalLinks[type];
+      if (!link) return;
+
+      var path = type === 'privacy' ? '/legal/privacy' : '/legal/terms';
+      link.href = path;
+      link.hidden = enabled === false;
+    }
+
+    function applyPublicSettings(settings) {
+      var safeSettings = settings && typeof settings === 'object' ? settings : {};
+      setSiteLogo(safeSettings.site_logo);
+      setLegalLink('terms', !!String(safeSettings.terms_of_service_content || '').trim());
+      setLegalLink('privacy', !!String(safeSettings.privacy_policy_content || '').trim());
+    }
+
+    async function ensurePublicSettings() {
+      var cachedSettings = getAppConfigSettings();
+      if (cachedSettings) {
+        applyPublicSettings(cachedSettings);
+        return cachedSettings;
+      }
+
+      if (settingsAbortController) {
+        settingsAbortController.abort();
+      }
+      settingsAbortController = typeof AbortController === 'function' ? new AbortController() : null;
+
+      try {
+        var response = await fetch(apiBase + '/settings/public', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json'
+          },
+          signal: settingsAbortController ? settingsAbortController.signal : undefined
+        });
+
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        var settings = await response.json();
+        applyPublicSettings(settings);
+        return settings;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return null;
+        console.error('[bensz-home] failed to load public settings:', error);
+        applyPublicSettings(null);
+        return null;
       }
     }
 
@@ -1437,8 +1544,13 @@
         abortController.abort();
         abortController = null;
       }
+      if (settingsAbortController) {
+        settingsAbortController.abort();
+        settingsAbortController = null;
+      }
     });
 
+    void ensurePublicSettings();
     setView('home');
   })();
 </script>
