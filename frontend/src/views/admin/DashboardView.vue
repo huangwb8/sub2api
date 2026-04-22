@@ -347,17 +347,22 @@
 
         <div class="card p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('admin.dashboard.pricingStrategy.title') }}
-              </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.pricingStrategy.description') }}
-              </p>
+            <div class="flex items-start gap-3">
+              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 sm:flex">
+                <Icon name="lightbulb" size="md" :stroke-width="2" />
+              </div>
+              <div>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.dashboard.pricingStrategy.title') }}
+                </h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.pricingStrategy.description') }}
+                </p>
+              </div>
             </div>
             <div
               v-if="oversellCalculator?.estimate"
-              class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+              class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
             >
               <span
                 v-if="Number.isFinite(oversellCalculator.estimate.estimated_light_user_ratio)"
@@ -387,464 +392,722 @@
           <div v-if="oversellLoading" class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
           </div>
-          <div v-else-if="oversellCalculator?.estimate" class="mt-4 space-y-4">
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.targetProfit') }}</label>
-                <input
-                  v-model.number="pricingForm.targetProfit"
-                  data-testid="pricing-target-profit"
-                  type="number"
-                  min="0"
-                  step="10"
-                  class="input mt-2"
-                />
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.pricingStrategy.form.cnyPerMonth') }}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.profitRate') }}</label>
-                <input
-                  v-model.number="pricingForm.profitRatePercent"
-                  type="number"
-                  min="0"
-                  max="95"
-                  step="1"
-                  class="input mt-2"
-                />
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.pricingStrategy.form.percent') }}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.profitMode') }}</label>
-                <select v-model="pricingForm.profitMode" class="input mt-2">
-                  <option value="costPlus">{{ t('admin.dashboard.pricingStrategy.form.costPlus') }}</option>
-                  <option value="netMargin">{{ t('admin.dashboard.pricingStrategy.form.netMargin') }}</option>
-                </select>
-              </div>
-
-              <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                <label class="input-label">{{ t('admin.dashboard.pricingStrategy.form.confidence') }}</label>
-                <select v-model.number="pricingForm.confidenceLevel" class="input mt-2">
-                  <option :value="95">{{ t('admin.dashboard.pricingStrategy.form.confidence95') }}</option>
-                  <option :value="99">{{ t('admin.dashboard.pricingStrategy.form.confidence99') }}</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <div class="rounded-xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/40 dark:bg-blue-900/10">
-                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                  {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
-                </p>
-                <p
-                  data-testid="pricing-recommended-price"
-                  class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
-                >
-                  {{ pricingScenario ? formatCny(pricingScenario.recommendedPrice) : '--' }}
-                </p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span v-if="pricingScenario">
-                    {{ t('admin.dashboard.pricingStrategy.result.floorPriceHint', { floor: formatCost(pricingScenario.floorPrice) }) }}
-                    ·
-                    {{ t('admin.dashboard.pricingStrategy.result.profitShareHint', { share: formatCost(pricingScenario.profitPerUser) }) }}
-                  </span>
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/10">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                  {{ t('admin.dashboard.pricingStrategy.result.minimumUsers') }}
-                </p>
-                <template v-if="pricingScenario && pricingScenario.minimumUsers !== null">
-                  <p
-                    data-testid="pricing-min-users"
-                    class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
-                  >
-                    {{ t('admin.dashboard.pricingStrategy.result.users', { count: pricingScenario.minimumUsers }) }}
-                  </p>
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
-                    {{ t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) }}
-                  </p>
-                </template>
-                <p v-else data-testid="pricing-min-users" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
-                  {{ t('admin.dashboard.pricingStrategy.result.noResult') }}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                  {{ t('admin.dashboard.pricingStrategy.result.profitPerUser') }}
-                </p>
-                <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
-                  {{ pricingScenario ? formatCny(pricingScenario.profitPerUser) : '--' }}
-                </p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
-                  {{ pricingScenario ? t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) : '--' }}
-                </p>
-              </div>
-            </div>
-
-            <div
-              v-if="pricingSensitivityRows.length > 0"
-              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
-            >
-              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
-                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
-                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.users') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.pricePerUser') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyRevenue') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyCost') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyProfit') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                  <tr
-                    v-for="row in pricingSensitivityRows"
-                    :key="row.users"
-                    :class="row.isRecommended ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''"
-                  >
-                    <td class="px-3 py-3">
-                      <span class="font-medium text-gray-900 dark:text-white">
-                        {{ row.users }}
-                      </span>
-                      <span
-                        v-if="row.isRecommended"
-                        class="ml-1.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+          <div v-else-if="oversellCalculator?.estimate" class="mt-5 space-y-5">
+            <!-- 参数输入组 -->
+            <section>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.pricingStrategy.form.targetProfit') }} · {{ t('admin.dashboard.pricingStrategy.form.profitRate') }}
+              </h4>
+              <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.targetProfit') }}</label>
+                      <HelpTooltip
+                        data-testid="pricing-target-profit-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.pricingStrategy.tooltips.targetProfit')"
                       >
-                        {{ t('admin.dashboard.pricingStrategy.scenarios.recommended') }}
-                      </span>
-                    </td>
-                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">{{ formatCny(row.price) }}</td>
-                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(row.revenue) }}</td>
-                    <td class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ formatCny(row.cost) }}</td>
-                    <td
-                      class="px-3 py-3 font-medium"
-                      :class="row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-                    >
-                      {{ formatSignedCny(row.profit) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="pricingForm.targetProfit"
+                      data-testid="pricing-target-profit"
+                      type="number"
+                      min="0"
+                      step="10"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.form.cnyPerMonth') }}
+                    </p>
+                  </div>
 
-            <div
-              v-if="pricingPlanRecommendations.length > 0"
-              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
-            >
-              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
-                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
-                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.plan') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.duration') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.currentPrice') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.delta') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                  <tr v-for="plan in pricingPlanRecommendations" :key="plan.plan_id">
-                    <td class="px-3 py-3">
-                      <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
-                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
-                    </td>
-                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
-                      {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
-                    </td>
-                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(plan.current_price_cny) }}</td>
-                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">
-                      {{ formatCny(plan.derived_recommended_price_cny) }}
-                    </td>
-                    <td
-                      class="px-3 py-3"
-                      :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.profitRate') }}</label>
+                      <HelpTooltip
+                        data-testid="pricing-profit-rate-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.pricingStrategy.tooltips.profitRate')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="pricingForm.profitRatePercent"
+                      type="number"
+                      min="0"
+                      max="95"
+                      step="1"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.form.percent') }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.profitMode') }}</label>
+                      <HelpTooltip
+                        data-testid="pricing-profit-mode-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.pricingStrategy.tooltips.profitMode')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <select v-model="pricingForm.profitMode" class="input">
+                      <option value="costPlus">{{ t('admin.dashboard.pricingStrategy.form.costPlus') }}</option>
+                      <option value="netMargin">{{ t('admin.dashboard.pricingStrategy.form.netMargin') }}</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">&nbsp;</p>
+                  </div>
+
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.confidence') }}</label>
+                      <HelpTooltip
+                        data-testid="pricing-confidence-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.pricingStrategy.tooltips.confidence')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <select v-model.number="pricingForm.confidenceLevel" class="input">
+                      <option :value="95">{{ t('admin.dashboard.pricingStrategy.form.confidence95') }}</option>
+                      <option :value="99">{{ t('admin.dashboard.pricingStrategy.form.confidence99') }}</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">&nbsp;</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 关键结果 -->
+            <section>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
+              </h4>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-primary-300 hover:shadow dark:border-dark-700 dark:bg-dark-800/40 dark:hover:border-primary-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-primary-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-primary-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
+                    </p>
+                  </div>
+                  <p
+                    data-testid="pricing-recommended-price"
+                    class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
+                  >
+                    {{ pricingScenario ? formatCny(pricingScenario.recommendedPrice) : '--' }}
+                  </p>
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <span v-if="pricingScenario">
+                      {{ t('admin.dashboard.pricingStrategy.result.floorPriceHint', { floor: formatCost(pricingScenario.floorPrice) }) }}
+                      ·
+                      {{ t('admin.dashboard.pricingStrategy.result.profitShareHint', { share: formatCost(pricingScenario.profitPerUser) }) }}
+                    </span>
+                    <span v-else>&nbsp;</span>
+                  </p>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-emerald-300 hover:shadow dark:border-dark-700 dark:bg-dark-800/40 dark:hover:border-emerald-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.result.minimumUsers') }}
+                    </p>
+                  </div>
+                  <template v-if="pricingScenario && pricingScenario.minimumUsers !== null">
+                    <p
+                      data-testid="pricing-min-users"
+                      class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
                     >
-                      {{ formatSignedCny(plan.price_delta_cny) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                      {{ t('admin.dashboard.pricingStrategy.result.users', { count: pricingScenario.minimumUsers }) }}
+                    </p>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
+                      {{ t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) }}
+                    </p>
+                  </template>
+                  <p
+                    v-else
+                    data-testid="pricing-min-users"
+                    class="mt-2 text-sm leading-relaxed text-rose-600 dark:text-rose-300"
+                  >
+                    {{ t('admin.dashboard.pricingStrategy.result.noResult') }}
+                  </p>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow dark:border-dark-700 dark:bg-dark-800/40 dark:hover:border-amber-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-amber-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.pricingStrategy.result.profitPerUser') }}
+                    </p>
+                  </div>
+                  <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ pricingScenario ? formatCny(pricingScenario.profitPerUser) : '--' }}
+                  </p>
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.pricingStrategy.result.safetyBuffer') }}:
+                    {{ pricingScenario ? t('admin.dashboard.pricingStrategy.result.bufferValue', { value: formatDecimal(pricingScenario.safetyBuffer, 3) }) : '--' }}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <!-- 用户规模 × 定价情景 -->
+            <section v-if="pricingSensitivityRows.length > 0">
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.pricingStrategy.scenarios.title') }}
+              </h4>
+              <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
+                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
+                  <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                    <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.users') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.pricePerUser') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyRevenue') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyCost') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.scenarios.monthlyProfit') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                    <tr
+                      v-for="row in pricingSensitivityRows"
+                      :key="row.users"
+                      class="transition-colors hover:bg-gray-50 dark:hover:bg-dark-800/30"
+                      :class="row.isRecommended ? 'bg-primary-50/40 dark:bg-primary-900/10' : ''"
+                    >
+                      <td class="px-4 py-3">
+                        <span class="font-medium text-gray-900 dark:text-white">
+                          {{ row.users }}
+                        </span>
+                        <span
+                          v-if="row.isRecommended"
+                          class="ml-1.5 inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                        >
+                          {{ t('admin.dashboard.pricingStrategy.scenarios.recommended') }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">{{ formatCny(row.price) }}</td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(row.revenue) }}</td>
+                      <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ formatCny(row.cost) }}</td>
+                      <td
+                        class="px-4 py-3 font-semibold"
+                        :class="row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                      >
+                        {{ formatSignedCny(row.profit) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- 套餐建议 -->
+            <section v-if="pricingPlanRecommendations.length > 0">
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.pricingStrategy.table.plan') }} · {{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}
+              </h4>
+              <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
+                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
+                  <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                    <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.plan') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.duration') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.currentPrice') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.delta') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                    <tr
+                      v-for="plan in pricingPlanRecommendations"
+                      :key="plan.plan_id"
+                      class="transition-colors hover:bg-gray-50 dark:hover:bg-dark-800/30"
+                    >
+                      <td class="px-4 py-3">
+                        <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
+                      </td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
+                      </td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(plan.current_price_cny) }}</td>
+                      <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                        {{ formatCny(plan.derived_recommended_price_cny) }}
+                      </td>
+                      <td
+                        class="px-4 py-3 font-semibold"
+                        :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                      >
+                        {{ formatSignedCny(plan.price_delta_cny) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </div>
 
         <div class="card p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('admin.dashboard.oversell.title') }}
-              </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.description') }}
-              </p>
+            <div class="flex items-start gap-3">
+              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400 sm:flex">
+                <Icon name="calculator" size="md" :stroke-width="2" />
+              </div>
+              <div>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.dashboard.oversell.title') }}
+                </h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.oversell.description') }}
+                </p>
+              </div>
+            </div>
+            <div
+              v-if="oversellCalculator?.estimate"
+              class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
+            >
+              <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                {{
+                  t('admin.dashboard.oversell.sampleUsers', {
+                    count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
+                  })
+                }}
+              </span>
+              <span
+                v-if="oversellCalculator.generated_at"
+                class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700"
+              >
+                {{ t('admin.dashboard.oversell.updatedAt', { time: formatShortDateTime(oversellCalculator.generated_at) }) }}
+              </span>
             </div>
           </div>
 
           <div v-if="oversellLoading" class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
           </div>
-          <div v-else class="mt-4 space-y-4">
-            <div class="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-dark-700/50">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <div v-else class="mt-5 space-y-5">
+            <!-- 系统估算条件 -->
+            <div class="rounded-2xl border border-gray-200/60 bg-gradient-to-br from-gray-50 to-gray-50/50 p-4 dark:border-dark-700/60 dark:from-dark-700/40 dark:to-dark-700/20">
+              <div class="flex flex-wrap items-start gap-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
+                  <Icon name="infoCircle" size="sm" class="text-gray-500 dark:text-gray-400" :stroke-width="2" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ t('admin.dashboard.oversell.estimateTitle') }}
                   </p>
                   <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
                     {{ oversellEstimateSummary || t('admin.dashboard.oversell.noEstimate') }}
                   </p>
                 </div>
-                <div
-                  v-if="oversellCalculator?.estimate"
-                  class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
-                >
-                  <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                    {{
-                      t('admin.dashboard.oversell.sampleUsers', {
-                        count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
-                      })
-                    }}
-                  </span>
-                  <span
-                    v-if="oversellCalculator.generated_at"
-                    class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700"
-                  >
-                    {{ t('admin.dashboard.oversell.updatedAt', { time: formatShortDateTime(oversellCalculator.generated_at) }) }}
-                  </span>
-                </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.95fr)]">
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.plannedPrice') }}</label>
-                  <input
-                    v-model.number="oversellForm.plannedPrice"
-                    data-testid="oversell-planned-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
-                  </p>
-                </div>
+            <!-- 参数输入组 -->
+            <section>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.oversell.form.plannedPrice') }} · {{ t('admin.dashboard.oversell.form.targetProfit') }}
+              </h4>
+              <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.plannedPrice') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-planned-price-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.plannedPrice')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.plannedPrice"
+                      data-testid="oversell-planned-price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
-                  <input
-                    v-model.number="oversellForm.procurementCost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.cnyPerItem') }}
-                  </p>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-procurement-cost-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.procurementCost')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.procurementCost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.cnyPerItem') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.capacity') }}</label>
-                  <input
-                    v-model.number="oversellForm.capacityPerItem"
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.units') }}
-                  </p>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.capacity') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-capacity-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.capacity')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.capacityPerItem"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.units') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.heavyUsage') }}</label>
-                  <input
-                    v-model.number="oversellForm.heavyUsage"
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.units') }}
-                  </p>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.heavyUsage') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-heavy-usage-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.heavyUsage')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.heavyUsage"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.units') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
-                  <input
-                    v-model.number="oversellForm.profitRatePercent"
-                    type="number"
-                    min="0"
-                    max="95"
-                    step="1"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.percent') }}
-                  </p>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-profit-rate-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.profitRate')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.profitRatePercent"
+                      type="number"
+                      min="0"
+                      max="95"
+                      step="1"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.percent') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.profitMode') }}</label>
-                  <select v-model="oversellForm.profitMode" class="input mt-2">
-                    <option value="costPlus">{{ t('admin.dashboard.oversell.form.costPlus') }}</option>
-                    <option value="netMargin">{{ t('admin.dashboard.oversell.form.netMargin') }}</option>
-                  </select>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitMode') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-profit-mode-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.profitMode')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <select v-model="oversellForm.profitMode" class="input">
+                      <option value="costPlus">{{ t('admin.dashboard.oversell.form.costPlus') }}</option>
+                      <option value="netMargin">{{ t('admin.dashboard.oversell.form.netMargin') }}</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">&nbsp;</p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.targetProfit') }}</label>
-                  <input
-                    v-model.number="oversellForm.targetProfit"
-                    data-testid="oversell-target-profit"
-                    type="number"
-                    min="0"
-                    step="1"
-                    class="input mt-2"
-                  />
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
-                  </p>
-                </div>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.targetProfit') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-target-profit-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.targetProfit')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <input
+                      v-model.number="oversellForm.targetProfit"
+                      data-testid="oversell-target-profit"
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="input"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
+                    </p>
+                  </div>
 
-                <div class="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                  <label class="input-label">{{ t('admin.dashboard.oversell.form.confidence') }}</label>
-                  <select v-model.number="oversellForm.confidenceLevel" class="input mt-2">
-                    <option :value="95">{{ t('admin.dashboard.oversell.form.confidence95') }}</option>
-                    <option :value="99">{{ t('admin.dashboard.oversell.form.confidence99') }}</option>
-                  </select>
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.confidence') }}</label>
+                      <HelpTooltip
+                        data-testid="oversell-confidence-help"
+                        class="shrink-0"
+                        :content="t('admin.dashboard.oversell.tooltips.confidence')"
+                      >
+                        <template #trigger>
+                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
+                            ?
+                          </span>
+                        </template>
+                      </HelpTooltip>
+                    </div>
+                    <select v-model.number="oversellForm.confidenceLevel" class="input">
+                      <option :value="95">{{ t('admin.dashboard.oversell.form.confidence95') }}</option>
+                      <option :value="99">{{ t('admin.dashboard.oversell.form.confidence99') }}</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">&nbsp;</p>
+                  </div>
                 </div>
               </div>
+            </section>
 
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                <div class="rounded-xl border border-emerald-100 bg-emerald-50/80 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/10">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                    {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }}
-                  </p>
-                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+            <!-- 中间指标：成本 / 单位成本 / 保底价 -->
+            <section>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }} · {{ t('admin.dashboard.oversell.metrics.unitCost') }} · {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
+              </h4>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }}
+                    </p>
+                  </div>
+                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
                     {{ oversellScenario ? `${formatDecimal(oversellScenario.meanUpperBound, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
                   </p>
                 </div>
 
-                <div class="rounded-xl border border-blue-100 bg-blue-50/80 p-3 dark:border-blue-900/40 dark:bg-blue-900/10">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                    {{ t('admin.dashboard.oversell.metrics.unitCost') }}
-                  </p>
-                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.metrics.unitCost') }}
+                    </p>
+                  </div>
+                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
                     {{ oversellScenario ? formatCny(oversellScenario.unitCostPerTheoretical) : '--' }}
                   </p>
                 </div>
 
-                <div class="rounded-xl border border-amber-100 bg-amber-50/80 p-3 dark:border-amber-900/40 dark:bg-amber-900/10">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                    {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
-                  </p>
-                  <p class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
+                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
+                    </p>
+                  </div>
+                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
                     {{ oversellScenario ? formatCny(oversellScenario.floorPrice) : '--' }}
                   </p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
-                </p>
-                <p
-                  data-testid="oversell-recommended-price"
-                  class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
-                >
-                  {{ oversellScenario ? formatCny(oversellScenario.recommendedPrice) : '--' }}
-                </p>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                  {{ t('admin.dashboard.oversell.result.profitDrivenPrice') }}:
-                  {{ oversellScenario ? formatCny(oversellScenario.targetProfitDrivenPrice) : '--' }}
-                </p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.oversell.result.helper') }}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.oversell.result.minimumUsers') }}
-                </p>
-                <template v-if="oversellScenario && oversellScenario.minimumUsers !== null">
+            <!-- 关键结果 -->
+            <section>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.oversell.result.recommendedPrice') }} · {{ t('admin.dashboard.oversell.result.minimumUsers') }}
+              </h4>
+              <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-primary-300 hover:shadow dark:border-dark-700 dark:bg-dark-800/40 dark:hover:border-primary-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-primary-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-primary-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
+                    </p>
+                  </div>
                   <p
-                    data-testid="oversell-min-users"
-                    class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white"
+                    data-testid="oversell-recommended-price"
+                    class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
                   >
-                    {{ t('admin.dashboard.oversell.result.users', { count: oversellScenario.minimumUsers }) }}
+                    {{ oversellScenario ? formatCny(oversellScenario.recommendedPrice) : '--' }}
                   </p>
-                  <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    {{ t('admin.dashboard.oversell.result.lossRisk', { risk: oversellScenario.lossRiskLabel }) }}
+                  <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-300">
+                    {{ t('admin.dashboard.oversell.result.profitDrivenPrice') }}:
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {{ oversellScenario ? formatCny(oversellScenario.targetProfitDrivenPrice) : '--' }}
+                    </span>
                   </p>
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.result.buffer', { value: formatDecimal(oversellScenario.safetyBuffer, 3) }) }}
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.result.helper') }}
                   </p>
-                </template>
-                <template v-else>
-                  <p data-testid="oversell-min-users" class="mt-2 text-sm text-rose-600 dark:text-rose-300">
-                    {{ t('admin.dashboard.oversell.result.infiniteUsers') }}
-                  </p>
-                </template>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.oversell.result.note') }}
-                </p>
-              </div>
-            </div>
+                </div>
 
-            <div
-              v-if="oversellPlanRecommendations.length > 0"
-              class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700"
-            >
-              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
-                <thead class="bg-gray-50/80 dark:bg-dark-700/50">
-                  <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentPrice') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.recommendedPrice') }}</th>
-                    <th class="px-3 py-3 font-medium">{{ t('admin.dashboard.oversell.table.delta') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                  <tr v-for="plan in oversellPlanRecommendations" :key="plan.plan_id">
-                    <td class="px-3 py-3">
-                      <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
-                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {{ plan.group_name }}
-                      </div>
-                    </td>
-                    <td class="px-3 py-3 text-gray-700 dark:text-gray-300">
-                      {{ formatCny(plan.current_price_cny) }}
-                    </td>
-                    <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">
-                      {{ formatCny(plan.derived_recommended_price_cny) }}
-                    </td>
-                    <td
-                      class="px-3 py-3"
-                      :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-emerald-300 hover:shadow dark:border-dark-700 dark:bg-dark-800/40 dark:hover:border-emerald-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.result.minimumUsers') }}
+                    </p>
+                  </div>
+                  <template v-if="oversellScenario && oversellScenario.minimumUsers !== null">
+                    <p
+                      data-testid="oversell-min-users"
+                      class="mt-2 text-2xl font-bold text-gray-900 dark:text-white"
                     >
-                      {{ formatSignedCny(plan.price_delta_cny) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                      {{ t('admin.dashboard.oversell.result.users', { count: oversellScenario.minimumUsers }) }}
+                    </p>
+                    <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-300">
+                      {{ t('admin.dashboard.oversell.result.lossRisk', { risk: oversellScenario.lossRiskLabel }) }}
+                    </p>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.result.buffer', { value: formatDecimal(oversellScenario.safetyBuffer, 3) }) }}
+                    </p>
+                  </template>
+                  <template v-else>
+                    <p
+                      data-testid="oversell-min-users"
+                      class="mt-2 text-sm leading-relaxed text-rose-600 dark:text-rose-300"
+                    >
+                      {{ t('admin.dashboard.oversell.result.infiniteUsers') }}
+                    </p>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.result.note') }}
+                    </p>
+                  </template>
+                </div>
+              </div>
+            </section>
+
+            <!-- 套餐对比 -->
+            <section v-if="oversellPlanRecommendations.length > 0">
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ t('admin.dashboard.oversell.table.plan') }} · {{ t('admin.dashboard.oversell.table.recommendedPrice') }}
+              </h4>
+              <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
+                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
+                  <thead class="bg-gray-50/80 dark:bg-dark-700/50">
+                    <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentPrice') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.recommendedPrice') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.delta') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                    <tr
+                      v-for="plan in oversellPlanRecommendations"
+                      :key="plan.plan_id"
+                      class="transition-colors hover:bg-gray-50 dark:hover:bg-dark-800/30"
+                    >
+                      <td class="px-4 py-3">
+                        <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {{ plan.group_name }}
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {{ formatCny(plan.current_price_cny) }}
+                      </td>
+                      <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                        {{ formatCny(plan.derived_recommended_price_cny) }}
+                      </td>
+                      <td
+                        class="px-4 py-3 font-semibold"
+                        :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
+                      >
+                        {{ formatSignedCny(plan.price_delta_cny) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </div>
 
@@ -1031,6 +1294,7 @@ import type {
 } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import Icon from '@/components/icons/Icon.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'

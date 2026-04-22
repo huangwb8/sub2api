@@ -18,6 +18,13 @@ function onLeave() {
   show.value = false
 }
 
+function toggle() {
+  show.value = !show.value
+  if (show.value) {
+    nextTick(updatePosition)
+  }
+}
+
 function updatePosition() {
   const el = triggerRef.value
   if (!el) return
@@ -33,8 +40,16 @@ function updatePosition() {
   <div
     ref="trigger"
     class="group relative ml-1 inline-flex items-center align-middle"
+    role="button"
+    tabindex="0"
     @mouseenter="onEnter"
     @mouseleave="onLeave"
+    @focusin="onEnter"
+    @focusout="onLeave"
+    @click="toggle"
+    @keydown.enter.prevent="toggle"
+    @keydown.space.prevent="toggle"
+    @keydown.esc.prevent="onLeave"
   >
     <!-- Trigger Icon -->
     <slot name="trigger">
@@ -57,7 +72,7 @@ function updatePosition() {
     <Teleport to="body">
       <div
         v-show="show"
-        class="fixed z-[99999] w-64 -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800"
+        class="fixed z-[99999] w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800"
         :style="{ top: `calc(${tooltipStyle.top} - 8px)`, left: tooltipStyle.left }"
       >
         <slot>{{ content }}</slot>

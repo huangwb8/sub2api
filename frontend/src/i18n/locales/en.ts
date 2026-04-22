@@ -1102,6 +1102,12 @@ export default {
           cnyPerMonth: 'CNY / month',
           percent: '%'
         },
+        tooltips: {
+          targetProfit: 'How much profit you want this plan pool to generate each month in total. Higher targets usually push the suggested price or required user count upward.',
+          profitRate: 'The profit ratio you want to keep above cost. Higher values usually raise both the floor price and the suggested selling price.',
+          profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, which is usually more aggressive.',
+          confidence: 'Controls how conservative the model should be about usage volatility. 99% is safer and usually needs higher pricing or more users; 95% is better for trials.'
+        },
         result: {
           recommendedPrice: 'Suggested monthly price',
           minimumUsers: 'Minimum users needed',
@@ -1155,6 +1161,16 @@ export default {
           percent: '%',
           confidence95: '95%',
           confidence99: '99%'
+        },
+        tooltips: {
+          plannedPrice: 'The monthly selling price you plan to offer. The model uses it to judge whether the current price can support a stable oversell pool.',
+          procurementCost: 'The real cost of buying one upstream item or account. Use your long-term average procurement cost whenever possible.',
+          capacity: 'How many theoretical units one real item can sustainably cover under ideal conditions. Higher values mean lower unit cost per theoretical unit.',
+          heavyUsage: 'A conservative upper bound for heavy-user monthly usage. Higher values widen the risk range and usually increase the suggested price or required user count.',
+          profitRate: 'The extra profit ratio you want on top of cost. Higher values usually raise both the floor price and the suggested price.',
+          profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, so it typically behaves more conservatively.',
+          targetProfit: 'How much profit you want the whole oversell pool to make each month, not per user. Higher targets usually push the suggested price upward.',
+          confidence: 'Represents the maximum loss risk you are willing to accept. 99% is more conservative, while 95% is more aggressive.'
         },
         metrics: {
           meanUpperBound: 'Conservative mean upper bound',

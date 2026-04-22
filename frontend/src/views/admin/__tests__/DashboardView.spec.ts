@@ -98,6 +98,14 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.form.percent': '%',
     'admin.dashboard.oversell.form.confidence95': '95%',
     'admin.dashboard.oversell.form.confidence99': '99%',
+    'admin.dashboard.oversell.tooltips.plannedPrice': '超售计划售价说明',
+    'admin.dashboard.oversell.tooltips.procurementCost': '超售采购成本说明',
+    'admin.dashboard.oversell.tooltips.capacity': '超售承载能力说明',
+    'admin.dashboard.oversell.tooltips.heavyUsage': '超售重度用户上限说明',
+    'admin.dashboard.oversell.tooltips.profitRate': '超售目标盈利率说明',
+    'admin.dashboard.oversell.tooltips.profitMode': '超售盈利口径说明',
+    'admin.dashboard.oversell.tooltips.targetProfit': '超售目标盈利总额说明',
+    'admin.dashboard.oversell.tooltips.confidence': '超售把握度说明',
     'admin.dashboard.oversell.metrics.meanUpperBound': '保守人均消耗上界',
     'admin.dashboard.oversell.metrics.unitCost': '理论商品单位成本',
     'admin.dashboard.oversell.metrics.floorPrice': '保底套餐价',
@@ -130,6 +138,10 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.pricingStrategy.form.confidence99': '99%',
     'admin.dashboard.pricingStrategy.form.cnyPerMonth': '元 / 月',
     'admin.dashboard.pricingStrategy.form.percent': '%',
+    'admin.dashboard.pricingStrategy.tooltips.targetProfit': '定价目标月利润说明',
+    'admin.dashboard.pricingStrategy.tooltips.profitRate': '定价目标盈利率说明',
+    'admin.dashboard.pricingStrategy.tooltips.profitMode': '定价盈利口径说明',
+    'admin.dashboard.pricingStrategy.tooltips.confidence': '定价置信水平说明',
     'admin.dashboard.pricingStrategy.result.recommendedPrice': '建议月费单价',
     'admin.dashboard.pricingStrategy.result.minimumUsers': '至少需要用户',
     'admin.dashboard.pricingStrategy.result.profitPerUser': '每用户预期利润',
@@ -515,7 +527,7 @@ describe('admin DashboardView', () => {
 
     expect(wrapper.text()).toContain('定价策略建议')
     expect(wrapper.text()).toContain('73%')
-    expect(wrapper.text()).toContain('采购 ¥50/个')
+    expect(wrapper.text()).toContain('采购 ¥50.00/个')
 
     const pricingPriceEl = wrapper.get('[data-testid="pricing-recommended-price"]')
     const pricingUsersEl = wrapper.get('[data-testid="pricing-min-users"]')
@@ -527,5 +539,44 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="pricing-recommended-price"]').text()).toMatch(/¥/)
+  })
+
+  it('renders help tooltip triggers for all pricing and oversell parameters', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const helpTestIds = [
+      'pricing-target-profit-help',
+      'pricing-profit-rate-help',
+      'pricing-profit-mode-help',
+      'pricing-confidence-help',
+      'oversell-planned-price-help',
+      'oversell-procurement-cost-help',
+      'oversell-capacity-help',
+      'oversell-heavy-usage-help',
+      'oversell-profit-rate-help',
+      'oversell-profit-mode-help',
+      'oversell-target-profit-help',
+      'oversell-confidence-help'
+    ]
+
+    helpTestIds.forEach((testId) => {
+      expect(wrapper.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+    })
   })
 })
