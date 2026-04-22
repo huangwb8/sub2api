@@ -79,7 +79,7 @@ func validateWebSearchConfig(cfg *WebSearchEmulationConfig) error {
 
 func (s *SettingService) GetWebSearchEmulationConfig(ctx context.Context) (*WebSearchEmulationConfig, error) {
 	if cached := webSearchEmulationCache.Load(); cached != nil {
-		if c, ok := cached.(*cachedWebSearchEmulationConfig); ok && time.Now().UnixNano() < c.expiresAt {
+		if c, ok := cached.(*cachedWebSearchEmulationConfig); ok && c != nil && time.Now().UnixNano() < c.expiresAt {
 			return c.config, nil
 		}
 	}

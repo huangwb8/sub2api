@@ -9,7 +9,7 @@
 - Auto-test-code
 
 ```
-使用 auto-test-code skill 对本项目进行2次优化
+使用 auto-test-code skill 对本项目进行2次优化。每次优化都要主动做跨模块、全维度审查，而不是只追一个故障点。
 ```
 
 - 发布新的release
