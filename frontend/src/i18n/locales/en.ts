@@ -1085,12 +1085,13 @@ export default {
         }
       },
       pricingStrategy: {
-        title: 'Pricing Strategy Advisor',
-        description: 'Based on auto-estimated user consumption patterns, calculate the package pricing and minimum user count needed to reach your profit target.',
+        title: 'Pricing Strategy Calculator',
+        description: 'Based on the auto-estimated user consumption pattern, objectively calculate conservative cost, required price, and current pricing profit at your chosen user count.',
         estimateInfo: 'Within the last 30 days of samples, {share} of users stayed within {threshold} theoretical units per month ({count} active subscriptions sampled)',
         fallbackInfo: 'Insufficient sample data; using conservative default estimate (70% light users)',
         costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
         form: {
+          userCount: 'Users to model',
           targetProfit: 'Target monthly profit',
           profitRate: 'Target profit rate',
           profitMode: 'Profit basis',
@@ -1099,22 +1100,27 @@ export default {
           confidence: 'Confidence level',
           confidence95: '95% (trial)',
           confidence99: '99% (production)',
+          users: 'users',
           cnyPerMonth: 'CNY / month',
           percent: '%'
         },
         tooltips: {
-          targetProfit: 'How much profit you want this plan pool to generate each month in total. Higher targets usually push the suggested price or required user count upward.',
-          profitRate: 'The profit ratio you want to keep above cost. Higher values usually raise both the floor price and the suggested selling price.',
+          userCount: 'How many subscription users you want to model. The calculator now shows facts for that scale instead of auto-picking a “recommended” user pool.',
+          targetProfit: 'How much profit you want this plan pool to generate each month in total. Higher targets usually increase the required price at the current user count.',
+          profitRate: 'The profit ratio you want to keep above cost. Higher values usually raise both the conservative floor price and the required selling price.',
           profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, which is usually more aggressive.',
           confidence: 'Controls how conservative the model should be about usage volatility. 99% is safer and usually needs higher pricing or more users; 95% is better for trials.'
         },
         result: {
-          recommendedPrice: 'Suggested monthly price',
-          minimumUsers: 'Minimum users needed',
-          profitPerUser: 'Expected profit per user',
+          recommendedPrice: 'Required monthly price',
+          minimumUsers: 'Modeled users',
+          profitPerUser: 'Current cheapest-plan monthly profit',
           safetyBuffer: 'Safety buffer',
-          floorPriceHint: 'Floor ¥{floor}',
-          profitShareHint: 'Profit share ¥{share}',
+          floorPriceHint: 'Conservative floor ¥{floor}',
+          profitShareHint: 'Target-profit price ¥{share}',
+          conservativeCostHint: 'Conservative monthly cost ¥{cost}',
+          currentPriceHint: 'Current cheapest monthly price ¥{price}',
+          priceGapHint: 'Gap to required price {gap}',
           users: '{count} users',
           bufferValue: '{value} units/user',
           noResult: 'Cannot derive a reasonable price with current parameters. Adjust the profit target or profit rate.'
@@ -1132,19 +1138,20 @@ export default {
           plan: 'Plan',
           duration: 'Duration',
           currentPrice: 'Current price',
-          recommendedPrice: 'Suggested price',
+          recommendedPrice: 'Required price',
           delta: 'Delta'
         }
       },
       oversell: {
         title: 'Oversell Math',
-        description: 'Combines the current light-user share estimate with manual inputs to suggest package pricing and launch pool size.',
+        description: 'Combines the current light-user share estimate with manual inputs to objectively calculate oversell revenue, cost, profit, and required price at a chosen user count.',
         estimateTitle: 'System Estimate',
         estimateDescription: 'Within the last {days} days of samples, {share} of users stayed within {threshold} theoretical units per month.',
         sampleUsers: '{count} sampled users',
         updatedAt: 'Updated {time}',
         noEstimate: 'There is not enough sample data yet. Wait for the backend to finish estimating the light-user share before using this calculator.',
         form: {
+          userCount: 'Users to model',
           plannedPrice: 'Planned package price',
           procurementCost: 'Procurement cost per actual item',
           capacity: 'Theoretical units per actual item',
@@ -1160,39 +1167,46 @@ export default {
           units: 'units',
           percent: '%',
           confidence95: '95%',
-          confidence99: '99%'
+          confidence99: '99%',
+          users: 'users'
         },
         tooltips: {
+          userCount: 'How many users you want to model in the oversell pool. The calculator now shows revenue, cost, profit, and risk for that scale without auto-recommending a combination.',
           plannedPrice: 'The monthly selling price you plan to offer. The model uses it to judge whether the current price can support a stable oversell pool.',
           procurementCost: 'The real cost of buying one upstream item or account. Use your long-term average procurement cost whenever possible.',
           capacity: 'How many theoretical units one real item can sustainably cover under ideal conditions. Higher values mean lower unit cost per theoretical unit.',
-          heavyUsage: 'A conservative upper bound for heavy-user monthly usage. Higher values widen the risk range and usually increase the suggested price or required user count.',
-          profitRate: 'The extra profit ratio you want on top of cost. Higher values usually raise both the floor price and the suggested price.',
+          heavyUsage: 'A conservative upper bound for heavy-user monthly usage. Higher values widen the risk range and usually increase both the conservative floor price and the required selling price.',
+          profitRate: 'The extra profit ratio you want on top of cost. Higher values usually raise both the conservative floor price and the required selling price.',
           profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, so it typically behaves more conservatively.',
-          targetProfit: 'How much profit you want the whole oversell pool to make each month, not per user. Higher targets usually push the suggested price upward.',
+          targetProfit: 'How much profit you want the whole oversell pool to make each month, not per user. Higher targets usually increase the required price at the current user count.',
           confidence: 'Represents the maximum loss risk you are willing to accept. 99% is more conservative, while 95% is more aggressive.'
         },
         metrics: {
           meanUpperBound: 'Conservative mean upper bound',
           unitCost: 'Unit cost per theoretical item',
-          floorPrice: 'Floor package price'
+          floorPrice: 'Conservative floor price'
         },
         result: {
-          recommendedPrice: 'Suggested package price',
-          minimumUsers: 'Minimum users to onboard',
-          profitDrivenPrice: 'Derived from target profit',
+          recommendedPrice: 'Required package price',
+          minimumUsers: 'Modeled users',
+          plannedProfit: 'Current planned monthly profit',
+          profitDrivenPrice: 'Target-profit price',
           riskDrivenUsers: 'Derived from planned price',
           lossRisk: 'Loss-risk ceiling {risk}',
           infiniteUsers: 'The planned price cannot sustain a stable oversell pool yet. Raise the price or loosen the profit target first.',
           buffer: 'Safety buffer {value}',
           helper: 'The suggested price takes the higher value between the floor package price and the target-profit-derived price.',
+          floorPriceHint: 'Conservative floor ¥{floor}',
+          priceGapHint: 'Gap to required price {gap}',
+          revenueHint: 'Revenue ¥{value}',
+          costHint: 'Conservative cost ¥{value}',
           note: 'The Hoeffding upper bound estimates the risk that the user-pool average exceeds the affordable threshold at the selected confidence.',
           users: '{count} users'
         },
         table: {
           plan: 'Plan',
           currentPrice: 'Current price',
-          recommendedPrice: 'Suggested price',
+          recommendedPrice: 'Required price',
           delta: 'Adjustment'
         }
       },

@@ -12,15 +12,23 @@ const {
   getProfitabilityBounds,
   getRecommendations,
   getOversellCalculator
-} = vi.hoisted(() => ({
-  getSnapshotV2: vi.fn(),
-  getUserUsageTrend: vi.fn(),
-  getUserSpendingRanking: vi.fn(),
-  getProfitabilityTrend: vi.fn(),
-  getProfitabilityBounds: vi.fn(),
-  getRecommendations: vi.fn(),
-  getOversellCalculator: vi.fn()
-}))
+} = vi.hoisted(() => {
+  vi.stubGlobal('localStorage', {
+    getItem: vi.fn(() => null),
+    setItem: vi.fn(),
+    removeItem: vi.fn()
+  })
+
+  return {
+    getSnapshotV2: vi.fn(),
+    getUserUsageTrend: vi.fn(),
+    getUserSpendingRanking: vi.fn(),
+    getProfitabilityTrend: vi.fn(),
+    getProfitabilityBounds: vi.fn(),
+    getRecommendations: vi.fn(),
+    getOversellCalculator: vi.fn()
+  }
+})
 
 vi.mock('@/api/admin', () => ({
   adminAPI: {
@@ -76,12 +84,13 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.recommendations.statusMap.watch': '观察',
     'admin.dashboard.recommendations.statusMap.action': '行动',
     'admin.dashboard.oversell.title': '超售数学测算',
-    'admin.dashboard.oversell.description': '基于当前轻度用户占比估算与手动参数，给出建议套餐单价和启动用户数。',
+    'admin.dashboard.oversell.description': '基于当前轻度用户占比估算与手动参数，在指定用户数下客观测算超售收入、成本、利润与达标单价。',
     'admin.dashboard.oversell.estimateTitle': '系统估算条件',
     'admin.dashboard.oversell.estimateDescription': '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
     'admin.dashboard.oversell.sampleUsers': '样本用户 {count}',
     'admin.dashboard.oversell.updatedAt': '更新于 {time}',
     'admin.dashboard.oversell.noEstimate': '暂无足够样本，先等待后端完成估算。',
+    'admin.dashboard.oversell.form.userCount': '测算用户数',
     'admin.dashboard.oversell.form.plannedPrice': '计划套餐售价',
     'admin.dashboard.oversell.form.procurementCost': '单个实际商品采购成本',
     'admin.dashboard.oversell.form.capacity': '单个实际商品承载理论商品数',
@@ -98,6 +107,8 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.form.percent': '%',
     'admin.dashboard.oversell.form.confidence95': '95%',
     'admin.dashboard.oversell.form.confidence99': '99%',
+    'admin.dashboard.oversell.form.users': '人',
+    'admin.dashboard.oversell.tooltips.userCount': '超售测算用户数说明',
     'admin.dashboard.oversell.tooltips.plannedPrice': '超售计划售价说明',
     'admin.dashboard.oversell.tooltips.procurementCost': '超售采购成本说明',
     'admin.dashboard.oversell.tooltips.capacity': '超售承载能力说明',
@@ -108,27 +119,33 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.tooltips.confidence': '超售把握度说明',
     'admin.dashboard.oversell.metrics.meanUpperBound': '保守人均消耗上界',
     'admin.dashboard.oversell.metrics.unitCost': '理论商品单位成本',
-    'admin.dashboard.oversell.metrics.floorPrice': '保底套餐价',
-    'admin.dashboard.oversell.result.recommendedPrice': '建议套餐单价',
-    'admin.dashboard.oversell.result.minimumUsers': '至少纳入用户数',
-    'admin.dashboard.oversell.result.profitDrivenPrice': '按目标盈利推导',
+    'admin.dashboard.oversell.metrics.floorPrice': '保守保本价',
+    'admin.dashboard.oversell.result.recommendedPrice': '达成目标所需单价',
+    'admin.dashboard.oversell.result.minimumUsers': '测算用户数',
+    'admin.dashboard.oversell.result.plannedProfit': '当前计划月利润',
+    'admin.dashboard.oversell.result.profitDrivenPrice': '按目标利润折算',
     'admin.dashboard.oversell.result.riskDrivenUsers': '按计划售价推导',
     'admin.dashboard.oversell.result.lossRisk': '亏损风险上限 {risk}',
     'admin.dashboard.oversell.result.infiniteUsers': '当前计划售价无法形成稳定超售池，请先提高售价或放宽盈利目标。',
     'admin.dashboard.oversell.result.buffer': '安全垫 {value}',
     'admin.dashboard.oversell.result.helper': '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
+    'admin.dashboard.oversell.result.floorPriceHint': '保守保本价 ¥{floor}',
+    'admin.dashboard.oversell.result.priceGapHint': '与达标单价差额 {gap}',
+    'admin.dashboard.oversell.result.revenueHint': '月收入 ¥{value}',
+    'admin.dashboard.oversell.result.costHint': '保守月成本 ¥{value}',
     'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
     'admin.dashboard.oversell.result.users': '{count} 人',
     'admin.dashboard.oversell.table.plan': '套餐',
     'admin.dashboard.oversell.table.currentPrice': '当前单价',
-    'admin.dashboard.oversell.table.recommendedPrice': '建议单价',
+    'admin.dashboard.oversell.table.recommendedPrice': '达标单价',
     'admin.dashboard.oversell.table.delta': '调价幅度',
-    'admin.dashboard.pricingStrategy.title': '定价策略建议',
-    'admin.dashboard.pricingStrategy.description': '基于系统自动估算的用户消耗分布，计算达到目标利润所需的套餐定价和最低用户数。',
+    'admin.dashboard.pricingStrategy.title': '定价策略测算',
+    'admin.dashboard.pricingStrategy.description': '基于系统自动估算的用户消耗分布，在指定用户规模下客观测算保守成本、达标单价与当前定价利润。',
     'admin.dashboard.pricingStrategy.estimateInfo': '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅）',
     'admin.dashboard.pricingStrategy.fallbackInfo': '暂无足够样本，使用保守默认估算',
     'admin.dashboard.pricingStrategy.costBadge': '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
     'admin.dashboard.pricingStrategy.form.targetProfit': '目标月利润',
+    'admin.dashboard.pricingStrategy.form.userCount': '测算用户数',
     'admin.dashboard.pricingStrategy.form.profitRate': '目标盈利率',
     'admin.dashboard.pricingStrategy.form.profitMode': '盈利口径',
     'admin.dashboard.pricingStrategy.form.costPlus': '成本加成',
@@ -136,18 +153,23 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.pricingStrategy.form.confidence': '置信水平',
     'admin.dashboard.pricingStrategy.form.confidence95': '95%',
     'admin.dashboard.pricingStrategy.form.confidence99': '99%',
+    'admin.dashboard.pricingStrategy.form.users': '人',
     'admin.dashboard.pricingStrategy.form.cnyPerMonth': '元 / 月',
     'admin.dashboard.pricingStrategy.form.percent': '%',
+    'admin.dashboard.pricingStrategy.tooltips.userCount': '定价测算用户数说明',
     'admin.dashboard.pricingStrategy.tooltips.targetProfit': '定价目标月利润说明',
     'admin.dashboard.pricingStrategy.tooltips.profitRate': '定价目标盈利率说明',
     'admin.dashboard.pricingStrategy.tooltips.profitMode': '定价盈利口径说明',
     'admin.dashboard.pricingStrategy.tooltips.confidence': '定价置信水平说明',
-    'admin.dashboard.pricingStrategy.result.recommendedPrice': '建议月费单价',
-    'admin.dashboard.pricingStrategy.result.minimumUsers': '至少需要用户',
-    'admin.dashboard.pricingStrategy.result.profitPerUser': '每用户预期利润',
+    'admin.dashboard.pricingStrategy.result.recommendedPrice': '达标月费单价',
+    'admin.dashboard.pricingStrategy.result.minimumUsers': '测算用户数',
+    'admin.dashboard.pricingStrategy.result.profitPerUser': '当前最低月费月利润',
     'admin.dashboard.pricingStrategy.result.safetyBuffer': '安全余量',
-    'admin.dashboard.pricingStrategy.result.floorPriceHint': '保本价 ¥{floor}',
-    'admin.dashboard.pricingStrategy.result.profitShareHint': '利润分摊 ¥{share}',
+    'admin.dashboard.pricingStrategy.result.floorPriceHint': '保守保本价 ¥{floor}',
+    'admin.dashboard.pricingStrategy.result.profitShareHint': '按利润目标折算 ¥{share}',
+    'admin.dashboard.pricingStrategy.result.conservativeCostHint': '保守月成本 ¥{cost}',
+    'admin.dashboard.pricingStrategy.result.currentPriceHint': '当前最低月费 ¥{price}',
+    'admin.dashboard.pricingStrategy.result.priceGapHint': '与达标单价差额 {gap}',
     'admin.dashboard.pricingStrategy.result.users': '{count} 人',
     'admin.dashboard.pricingStrategy.result.bufferValue': '{value} 个/人',
     'admin.dashboard.pricingStrategy.result.noResult': '无法推导',
@@ -161,7 +183,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.pricingStrategy.table.plan': '套餐',
     'admin.dashboard.pricingStrategy.table.duration': '时长',
     'admin.dashboard.pricingStrategy.table.currentPrice': '当前单价',
-    'admin.dashboard.pricingStrategy.table.recommendedPrice': '建议单价',
+    'admin.dashboard.pricingStrategy.table.recommendedPrice': '达标单价',
     'admin.dashboard.pricingStrategy.table.delta': '差额'
   }
 
@@ -473,7 +495,7 @@ describe('admin DashboardView', () => {
     expect(text).toContain('涉及套餐: GPT-Standard / GPT-Pro')
   })
 
-  it('renders oversell math panel with readonly estimate and derived recommendation', async () => {
+  it('renders oversell math panel with readonly estimate and user-count-driven calculations', async () => {
     const wrapper = mount(DashboardView, {
       global: {
         stubs: {
@@ -497,16 +519,19 @@ describe('admin DashboardView', () => {
     expect(wrapper.text()).toContain('73%')
     expect(wrapper.text()).toContain('样本用户 126')
     expect(wrapper.text()).toContain('月付基础版')
+    expect(wrapper.text()).toContain('当前计划月利润')
 
-    const targetProfitInput = wrapper.get('[data-testid="oversell-target-profit"]')
-    await targetProfitInput.setValue('150')
+    const initialRequiredPrice = wrapper.get('[data-testid="oversell-recommended-price"]').text()
+    const userCountInput = wrapper.get('[data-testid="oversell-user-count"]')
+    await userCountInput.setValue('20')
     await flushPromises()
 
-    expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).toContain('¥32.15')
-    expect(wrapper.get('[data-testid="oversell-min-users"]').text()).toContain('10 人')
+    expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).toMatch(/¥/)
+    expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
+    expect(wrapper.get('[data-testid="oversell-min-users"]').text()).toContain('20 人')
   })
 
-  it('renders pricing strategy panel with auto-filled estimate and derived recommendations', async () => {
+  it('renders pricing strategy panel with auto-filled estimate and user-count-driven calculations', async () => {
     const wrapper = mount(DashboardView, {
       global: {
         stubs: {
@@ -525,20 +550,24 @@ describe('admin DashboardView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('定价策略建议')
+    expect(wrapper.text()).toContain('定价策略测算')
     expect(wrapper.text()).toContain('73%')
     expect(wrapper.text()).toContain('采购 ¥50.00/个')
+    expect(wrapper.text()).toContain('当前最低月费月利润')
 
     const pricingPriceEl = wrapper.get('[data-testid="pricing-recommended-price"]')
     const pricingUsersEl = wrapper.get('[data-testid="pricing-min-users"]')
     expect(pricingPriceEl.text()).toMatch(/¥/)
     expect(pricingUsersEl.text()).toMatch(/\d+ 人/)
 
-    const targetProfitInput = wrapper.get('[data-testid="pricing-target-profit"]')
-    await targetProfitInput.setValue('200')
+    const initialPrice = pricingPriceEl.text()
+    const pricingUserCountInput = wrapper.get('[data-testid="pricing-user-count"]')
+    await pricingUserCountInput.setValue('24')
     await flushPromises()
 
     expect(wrapper.get('[data-testid="pricing-recommended-price"]').text()).toMatch(/¥/)
+    expect(wrapper.get('[data-testid="pricing-recommended-price"]').text()).not.toEqual(initialPrice)
+    expect(wrapper.get('[data-testid="pricing-min-users"]').text()).toContain('24 人')
   })
 
   it('renders help tooltip triggers for all pricing and oversell parameters', async () => {
@@ -561,10 +590,12 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     const helpTestIds = [
+      'pricing-user-count-help',
       'pricing-target-profit-help',
       'pricing-profit-rate-help',
       'pricing-profit-mode-help',
       'pricing-confidence-help',
+      'oversell-user-count-help',
       'oversell-planned-price-help',
       'oversell-procurement-cost-help',
       'oversell-capacity-help',

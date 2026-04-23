@@ -1095,12 +1095,13 @@ export default {
         }
       },
       pricingStrategy: {
-        title: '定价策略建议',
-        description: '基于系统自动估算的用户消耗分布，计算达到目标利润所需的套餐定价和最低用户数。',
+        title: '定价策略测算',
+        description: '基于系统自动估算的用户消耗分布，在指定用户规模下客观测算保守成本、达标单价与当前定价利润。',
         estimateInfo: '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅）',
         fallbackInfo: '暂无足够样本，使用保守默认估算（70% 轻度用户）',
         costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
         form: {
+          userCount: '测算用户数',
           targetProfit: '目标月利润',
           profitRate: '目标盈利率',
           profitMode: '盈利口径',
@@ -1109,22 +1110,27 @@ export default {
           confidence: '置信水平',
           confidence95: '95%（试水）',
           confidence99: '99%（正式）',
+          users: '人',
           cnyPerMonth: '元 / 月',
           percent: '%'
         },
         tooltips: {
-          targetProfit: '希望这个套餐池每月合计实现多少利润。目标越高，建议售价或起量用户数通常越高。',
-          profitRate: '在成本之外希望保留的利润比例。数值越高，系统给出的保底价和建议售价通常越高。',
+          userCount: '你想按多少个订阅用户来测算。这里只做客观推演，不再自动替你挑选“推荐用户规模”。',
+          targetProfit: '希望这个套餐池每月合计实现多少利润。目标越高，按当前用户规模推导出的达标单价通常越高。',
+          profitRate: '在成本之外希望保留的利润比例。数值越高，保守保本价和达标单价通常越高。',
           profitMode: '成本加成按“成本 × (1 + 盈利率)”计算；净利率按“利润占售价的比例”反推，通常会更激进。',
           confidence: '用于控制对用户波动的保守程度。99% 更稳健，通常需要更高定价或更多用户；95% 更适合试水。'
         },
         result: {
-          recommendedPrice: '建议月费单价',
-          minimumUsers: '至少需要用户',
-          profitPerUser: '每用户预期利润',
+          recommendedPrice: '达标月费单价',
+          minimumUsers: '测算用户数',
+          profitPerUser: '当前最低月费月利润',
           safetyBuffer: '安全余量',
-          floorPriceHint: '保本价 ¥{floor}',
-          profitShareHint: '利润分摊 ¥{share}',
+          floorPriceHint: '保守保本价 ¥{floor}',
+          profitShareHint: '按利润目标折算 ¥{share}',
+          conservativeCostHint: '保守月成本 ¥{cost}',
+          currentPriceHint: '当前最低月费 ¥{price}',
+          priceGapHint: '与达标单价差额 {gap}',
           users: '{count} 人',
           bufferValue: '{value} 个/人',
           noResult: '当前参数下无法推导合理定价，请调整利润目标或盈利率。'
@@ -1142,19 +1148,20 @@ export default {
           plan: '套餐',
           duration: '时长',
           currentPrice: '当前单价',
-          recommendedPrice: '建议单价',
+          recommendedPrice: '达标单价',
           delta: '差额'
         }
       },
       oversell: {
         title: '超售数学测算',
-        description: '基于当前轻度用户占比估算与手动参数，快速评估建议套餐单价和启动用户池规模。',
+        description: '基于当前轻度用户占比估算与手动参数，在指定用户数下客观测算超售收入、成本、利润与达标单价。',
         estimateTitle: '系统估算条件',
         estimateDescription: '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
         sampleUsers: '样本用户 {count}',
         updatedAt: '更新于 {time}',
         noEstimate: '暂无足够样本，等待后端完成当前站点的轻度用户占比估算后再计算。',
         form: {
+          userCount: '测算用户数',
           plannedPrice: '计划套餐售价',
           procurementCost: '单个实际商品采购成本',
           capacity: '单个实际商品承载理论商品数',
@@ -1170,39 +1177,46 @@ export default {
           units: '个',
           percent: '%',
           confidence95: '95%',
-          confidence99: '99%'
+          confidence99: '99%',
+          users: '人'
         },
         tooltips: {
+          userCount: '你准备按多少个用户来测算超售池。系统只展示这个用户规模下的收入、成本、利润和风险，不再自动推荐组合。',
           plannedPrice: '你准备对外售卖的月费单价。系统会用它判断当前价格能否支撑一个稳定的超售用户池。',
           procurementCost: '购买一个真实上游商品或账号的实际成本，建议填写长期稳定的真实采购均价。',
           capacity: '一个真实商品在理想情况下最多能覆盖多少个理论商品。数值越大，单位理论成本越低。',
-          heavyUsage: '对重度用户月消耗上限的保守估计，用来界定风险区间上界。填得越高，建议价格和所需用户数通常越高。',
-          profitRate: '希望在成本之外额外保留的利润比例。数值越高，保底价和建议价通常越高。',
+          heavyUsage: '对重度用户月消耗上限的保守估计，用来界定风险区间上界。填得越高，保守保本价和达标单价通常越高。',
+          profitRate: '希望在成本之外额外保留的利润比例。数值越高，保守保本价和达标单价通常越高。',
           profitMode: '成本加成按“成本 × (1 + 盈利率)”计算；净利率按“利润占售价的比例”反推，结果通常更保守。',
-          targetProfit: '希望整个超售用户池每月合计赚多少钱，而不是单个用户利润。目标越高，系统推导的建议价格通常越高。',
+          targetProfit: '希望整个超售用户池每月合计赚多少钱，而不是单个用户利润。目标越高，按当前用户规模推导出的达标单价通常越高。',
           confidence: '表示你愿意接受的亏损风险上限。99% 更保守，95% 更激进。'
         },
         metrics: {
           meanUpperBound: '保守人均消耗上界',
           unitCost: '理论商品单位成本',
-          floorPrice: '保底套餐价'
+          floorPrice: '保守保本价'
         },
         result: {
-          recommendedPrice: '建议套餐单价',
-          minimumUsers: '至少纳入用户数',
-          profitDrivenPrice: '按目标盈利推导',
+          recommendedPrice: '达成目标所需单价',
+          minimumUsers: '测算用户数',
+          plannedProfit: '当前计划月利润',
+          profitDrivenPrice: '按目标利润折算',
           riskDrivenUsers: '按计划售价推导',
           lossRisk: '亏损风险上限 {risk}',
           infiniteUsers: '当前计划售价无法形成稳定超售池，请先提高售价或放宽盈利目标。',
           buffer: '安全垫 {value}',
           helper: '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
+          floorPriceHint: '保守保本价 ¥{floor}',
+          priceGapHint: '与达标单价差额 {gap}',
+          revenueHint: '月收入 ¥{value}',
+          costHint: '保守月成本 ¥{value}',
           note: 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
           users: '{count} 人'
         },
         table: {
           plan: '套餐',
           currentPrice: '当前单价',
-          recommendedPrice: '建议单价',
+          recommendedPrice: '达标单价',
           delta: '调价幅度'
         }
       },

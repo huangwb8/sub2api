@@ -15,7 +15,8 @@
 - 发布新的release
 
 ```
-version=1.0.26
+github项目： huangwb8/sub2api
+version=1.0.26 
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -61,6 +62,19 @@ version1 = 78f691d2de24d0d13ce68922e120c8119ea32856
 ```
 
 # 日常
+
+---
+
+管理控制台 - 定价策略建议 和  超售数学测算 的业务逻辑优化：
+
+- 用户数作为一个可调参数
+- 不要有推荐的参数组合； 请简化流程。 你只需要客观地展示事实即可
+
+使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
+基于 remote.env 调研我的sub2api站的实际数据，推算出：如果我希望GPT-standard订阅套餐相当于3个team席位的额度之和，那么我应该设置日、周、月的限额是多少为宜？目前我设置的感觉偏低。 
 
 ---
 
