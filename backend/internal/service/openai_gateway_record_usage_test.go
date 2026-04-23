@@ -241,6 +241,62 @@ func TestOpenAIGatewayServiceRecordUsage_UsesUserSpecificGroupRate(t *testing.T)
 	require.Equal(t, 1, userRepo.deductCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_UsesIdleExtraProfitRateWhenWindowActive(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+
+	now := time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600))
+	currentSeconds := now.Hour()*3600 + now.Minute()*60 + now.Second()
+	start := (currentSeconds + secondsPerDay - 60) % secondsPerDay
+	end := (currentSeconds + 60) % secondsPerDay
+	baseProfit := 80.0
+	idleProfit := 25.0
+	actualCostCNY := 45.0
+	actualCostUsageUSD := 5.0
+	usage := OpenAIUsage{InputTokens: 10, OutputTokens: 5}
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_idle_profit_rate",
+			Usage:     usage,
+			Model:     "gpt-5.1",
+			Duration:  time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      1010,
+			GroupID: i64p(88),
+			Group: &Group{
+				ID:                         88,
+				RateMultiplier:             1,
+				ExtraProfitRatePercent:     &baseProfit,
+				IdleExtraProfitRatePercent: &idleProfit,
+				IdleStartSeconds:           &start,
+				IdleEndSeconds:             &end,
+			},
+		},
+		User:    &User{ID: 2010},
+		Account: &Account{ID: 3010, ActualCostCNY: &actualCostCNY, ActualCostUsageUSD: &actualCostUsageUSD},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.ChargedAmountCNY)
+	require.Equal(t, 1, userRepo.deductCalls)
+
+	baseCost := expectedOpenAICost(t, svc, "gpt-5.1", usage, 1)
+	expectedEstimatedCostCNY := roundTo(baseCost.TotalCost*(actualCostCNY/actualCostUsageUSD), 8)
+	expectedChargedAmountCNY := roundTo(expectedEstimatedCostCNY*(1+idleProfit/100), 8)
+	resolvedRate, rateErr := svc.exchangeRateService.ResolveUSDCNYRate(context.Background())
+	require.NoError(t, rateErr)
+	expectedActualCostUSD := roundTo(expectedChargedAmountCNY/resolvedRate.EffectiveRate, 10)
+
+	require.InDelta(t, expectedActualCostUSD, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, expectedChargedAmountCNY, *usageRepo.lastLog.ChargedAmountCNY, 1e-12)
+	require.InDelta(t, expectedChargedAmountCNY, userRepo.lastAmount, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_IncludesEndpointMetadata(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

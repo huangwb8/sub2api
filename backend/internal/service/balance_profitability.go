@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"time"
 )
 
 type standardBalanceChargeResolution struct {
@@ -33,18 +34,18 @@ func resolveStandardBalanceCharge(
 	ctx context.Context,
 	account *Account,
 	group *Group,
+	now time.Time,
 	totalCostUSD float64,
 	fxService ExchangeRateService,
 ) *standardBalanceChargeResolution {
 	if group == nil || fxService == nil {
 		return nil
 	}
-	if !group.HasExtraProfitRateConfigured() {
+	extraProfitRate := group.ResolveExtraProfitRateAt(now)
+	if extraProfitRate == nil {
 		return nil
 	}
-
-	extraProfitRate := *group.ExtraProfitRatePercent
-	if extraProfitRate < 0 {
+	if *extraProfitRate < 0 {
 		return nil
 	}
 
@@ -52,7 +53,7 @@ func resolveStandardBalanceCharge(
 	if !ok {
 		return nil
 	}
-	chargedAmountCNY := roundTo(estimatedCostCNY*(1+extraProfitRate/100), 8)
+	chargedAmountCNY := roundTo(estimatedCostCNY*(1+*extraProfitRate/100), 8)
 	if chargedAmountCNY <= 0 {
 		return nil
 	}

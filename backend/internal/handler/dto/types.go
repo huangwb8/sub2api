@@ -68,14 +68,18 @@ type APIKey struct {
 }
 
 type Group struct {
-	ID                     int64    `json:"id"`
-	Name                   string   `json:"name"`
-	Description            string   `json:"description"`
-	Platform               string   `json:"platform"`
-	RateMultiplier         float64  `json:"rate_multiplier"`
-	ExtraProfitRatePercent *float64 `json:"extra_profit_rate_percent,omitempty"`
-	IsExclusive            bool     `json:"is_exclusive"`
-	Status                 string   `json:"status"`
+	ID                         int64    `json:"id"`
+	Name                       string   `json:"name"`
+	Description                string   `json:"description"`
+	Platform                   string   `json:"platform"`
+	RateMultiplier             float64  `json:"rate_multiplier"`
+	IdleRateMultiplier         *float64 `json:"idle_rate_multiplier,omitempty"`
+	ExtraProfitRatePercent     *float64 `json:"extra_profit_rate_percent,omitempty"`
+	IdleExtraProfitRatePercent *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
+	IdleStartTime              *string  `json:"idle_start_time,omitempty"`
+	IdleEndTime                *string  `json:"idle_end_time,omitempty"`
+	IsExclusive                bool     `json:"is_exclusive"`
+	Status                     string   `json:"status"`
 
 	SubscriptionType string   `json:"subscription_type"`
 	DailyLimitUSD    *float64 `json:"daily_limit_usd"`

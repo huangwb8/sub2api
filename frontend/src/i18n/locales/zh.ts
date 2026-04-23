@@ -1811,6 +1811,16 @@ export default {
       },
       extraProfitRatePercent: '额外盈利率(%)',
       extraProfitRateHint: '按 (总收入 - 成本) / 成本 计算；仅用于标准（余额）计费',
+      idleBilling: {
+        title: '闲时动态计费',
+        description: '留空即不启用；按北京时间生效，可精确到秒，并支持跨天时间窗。',
+        startTime: '闲时开始时间',
+        endTime: '闲时结束时间',
+        rateMultiplier: '闲时倍率',
+        extraProfitRatePercent: '闲时额外盈利率(%)',
+        hint: '当同时设置闲时时间段和闲时倍率/额外盈利率后，系统会在该时间窗内自动使用闲时参数，帮助分散高峰并发。',
+        summary: '闲时 {start}-{end} · {values}'
+      },
       usageToday: '今日',
       usageTotal: '累计',
       accountsAvailable: '可用:',

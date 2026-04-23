@@ -180,13 +180,21 @@
           </template>
 
           <template #cell-rate_multiplier="{ value, row }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">
-              {{
-                row.subscription_type === "subscription"
-                  ? `${value}x`
-                  : `${(row.extra_profit_rate_percent ?? 0).toFixed(2)}%`
-              }}
-            </span>
+            <div class="flex flex-col">
+              <span class="text-sm text-gray-700 dark:text-gray-300">
+                {{
+                  row.subscription_type === "subscription"
+                    ? `${value}x`
+                    : `${(row.extra_profit_rate_percent ?? 0).toFixed(2)}%`
+                }}
+              </span>
+              <span
+                v-if="hasIdleBillingConfig(row)"
+                class="text-xs text-gray-500 dark:text-gray-400"
+              >
+                {{ formatIdleBillingSummary(row) }}
+              </span>
+            </div>
           </template>
 
           <template #cell-is_exclusive="{ value }">
@@ -507,6 +515,67 @@
             class="input"
           />
           <p class="input-hint">{{ t("admin.groups.extraProfitRateHint") }}</p>
+        </div>
+        <div class="rounded-xl border border-dashed border-primary-200 bg-primary-50/60 p-4 dark:border-primary-800/70 dark:bg-primary-950/20">
+          <div class="mb-3">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ t("admin.groups.idleBilling.title") }}
+            </h4>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t("admin.groups.idleBilling.description") }}
+            </p>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.startTime")
+              }}</label>
+              <input
+                v-model="createForm.idle_start_time"
+                type="time"
+                step="1"
+                class="input"
+              />
+            </div>
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.endTime")
+              }}</label>
+              <input
+                v-model="createForm.idle_end_time"
+                type="time"
+                step="1"
+                class="input"
+              />
+            </div>
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.rateMultiplier")
+              }}</label>
+              <input
+                v-model.number="createForm.idle_rate_multiplier"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+              />
+            </div>
+            <div v-if="createForm.subscription_type !== 'subscription'">
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.extraProfitRatePercent")
+              }}</label>
+              <input
+                v-model.number="createForm.idle_extra_profit_rate_percent"
+                type="number"
+                step="0.01"
+                min="0"
+                class="input"
+              />
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            {{ t("admin.groups.idleBilling.hint") }}
+          </p>
         </div>
         <div
           v-if="createForm.subscription_type !== 'subscription'"
@@ -1640,6 +1709,67 @@
             class="input"
           />
           <p class="input-hint">{{ t("admin.groups.extraProfitRateHint") }}</p>
+        </div>
+        <div class="rounded-xl border border-dashed border-primary-200 bg-primary-50/60 p-4 dark:border-primary-800/70 dark:bg-primary-950/20">
+          <div class="mb-3">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ t("admin.groups.idleBilling.title") }}
+            </h4>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t("admin.groups.idleBilling.description") }}
+            </p>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.startTime")
+              }}</label>
+              <input
+                v-model="editForm.idle_start_time"
+                type="time"
+                step="1"
+                class="input"
+              />
+            </div>
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.endTime")
+              }}</label>
+              <input
+                v-model="editForm.idle_end_time"
+                type="time"
+                step="1"
+                class="input"
+              />
+            </div>
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.rateMultiplier")
+              }}</label>
+              <input
+                v-model.number="editForm.idle_rate_multiplier"
+                type="number"
+                step="0.001"
+                min="0"
+                class="input"
+              />
+            </div>
+            <div v-if="editForm.subscription_type !== 'subscription'">
+              <label class="input-label">{{
+                t("admin.groups.idleBilling.extraProfitRatePercent")
+              }}</label>
+              <input
+                v-model.number="editForm.idle_extra_profit_rate_percent"
+                type="number"
+                step="0.01"
+                min="0"
+                class="input"
+              />
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            {{ t("admin.groups.idleBilling.hint") }}
+          </p>
         </div>
         <div v-if="editForm.subscription_type !== 'subscription'">
           <div class="mb-1.5 flex items-center gap-1">
@@ -2988,7 +3118,11 @@ const createForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  idle_rate_multiplier: null as number | null,
   extra_profit_rate_percent: 0 as number | null,
+  idle_extra_profit_rate_percent: null as number | null,
+  idle_start_time: "" as string | null,
+  idle_end_time: "" as string | null,
   is_exclusive: false,
   subscription_type: "standard" as SubscriptionType,
   daily_limit_usd: null as number | null,
@@ -3268,7 +3402,11 @@ const editForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  idle_rate_multiplier: null as number | null,
   extra_profit_rate_percent: 0 as number | null,
+  idle_extra_profit_rate_percent: null as number | null,
+  idle_start_time: "" as string | null,
+  idle_end_time: "" as string | null,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
   subscription_type: "standard" as SubscriptionType,
@@ -3455,7 +3593,11 @@ const closeCreateModal = () => {
   createForm.description = "";
   createForm.platform = "anthropic";
   createForm.rate_multiplier = 1.0;
+  createForm.idle_rate_multiplier = null;
   createForm.extra_profit_rate_percent = 0;
+  createForm.idle_extra_profit_rate_percent = null;
+  createForm.idle_start_time = "";
+  createForm.idle_end_time = "";
   createForm.is_exclusive = false;
   createForm.subscription_type = "standard";
   createForm.daily_limit_usd = null;
@@ -3514,6 +3656,73 @@ const normalizeExtraProfitRatePercent = (
   return numericValue;
 };
 
+const normalizeIdleNumeric = (
+  value: number | string | null | undefined,
+): number | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return null;
+  }
+
+  return numericValue;
+};
+
+const normalizeIdleTime = (
+  value: string | null | undefined,
+): string | null => {
+  if (value == null) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const hasIdleBillingConfig = (
+  group: Pick<
+    AdminGroup,
+    | "idle_start_time"
+    | "idle_end_time"
+    | "idle_rate_multiplier"
+    | "idle_extra_profit_rate_percent"
+  >,
+): boolean =>
+  Boolean(
+    group.idle_start_time &&
+      group.idle_end_time &&
+      (group.idle_rate_multiplier != null ||
+        group.idle_extra_profit_rate_percent != null),
+  );
+
+const formatIdleBillingSummary = (group: AdminGroup): string => {
+  if (!hasIdleBillingConfig(group)) {
+    return "";
+  }
+
+  const formatNumber = (value: number, digits: number) =>
+    value.toFixed(digits).replace(/\.?0+$/, "");
+
+  const parts: string[] = [];
+  if (group.idle_rate_multiplier != null) {
+    parts.push(`×${formatNumber(group.idle_rate_multiplier, 3)}`);
+  }
+  if (
+    group.subscription_type !== "subscription" &&
+    group.idle_extra_profit_rate_percent != null
+  ) {
+    parts.push(`${formatNumber(group.idle_extra_profit_rate_percent, 2)}%`);
+  }
+
+  return t("admin.groups.idleBilling.summary", {
+    start: group.idle_start_time,
+    end: group.idle_end_time,
+    values: parts.join(" / "),
+  });
+};
+
 const handleCreateGroup = async () => {
   if (!createForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
@@ -3524,10 +3733,19 @@ const handleCreateGroup = async () => {
     // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
+      idle_rate_multiplier: normalizeIdleNumeric(
+        createForm.idle_rate_multiplier,
+      ),
       extra_profit_rate_percent: normalizeExtraProfitRatePercent(
         createForm.subscription_type,
         createForm.extra_profit_rate_percent,
       ),
+      idle_extra_profit_rate_percent:
+        createForm.subscription_type === "subscription"
+          ? null
+          : normalizeIdleNumeric(createForm.idle_extra_profit_rate_percent),
+      idle_start_time: normalizeIdleTime(createForm.idle_start_time),
+      idle_end_time: normalizeIdleTime(createForm.idle_end_time),
       daily_limit_usd: normalizeOptionalLimit(
         createForm.daily_limit_usd as number | string | null,
       ),
@@ -3581,7 +3799,12 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.description = group.description || "";
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
+  editForm.idle_rate_multiplier = group.idle_rate_multiplier ?? null;
   editForm.extra_profit_rate_percent = group.extra_profit_rate_percent ?? 0;
+  editForm.idle_extra_profit_rate_percent =
+    group.idle_extra_profit_rate_percent ?? null;
+  editForm.idle_start_time = group.idle_start_time ?? "";
+  editForm.idle_end_time = group.idle_end_time ?? "";
   editForm.is_exclusive = group.is_exclusive;
   editForm.status = group.status;
   editForm.subscription_type = group.subscription_type || "standard";
@@ -3631,6 +3854,10 @@ const closeEditModal = () => {
   showEditModal.value = false;
   editingGroup.value = null;
   editModelRoutingRules.value = [];
+  editForm.idle_rate_multiplier = null;
+  editForm.idle_extra_profit_rate_percent = null;
+  editForm.idle_start_time = "";
+  editForm.idle_end_time = "";
   editForm.copy_accounts_from_group_ids = [];
   resetMessagesDispatchFormState(editForm);
 };
@@ -3647,10 +3874,17 @@ const handleUpdateGroup = async () => {
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
     const payload = {
       ...editForm,
+      idle_rate_multiplier: normalizeIdleNumeric(editForm.idle_rate_multiplier),
       extra_profit_rate_percent: normalizeExtraProfitRatePercent(
         editForm.subscription_type,
         editForm.extra_profit_rate_percent,
       ),
+      idle_extra_profit_rate_percent:
+        editForm.subscription_type === "subscription"
+          ? null
+          : normalizeIdleNumeric(editForm.idle_extra_profit_rate_percent),
+      idle_start_time: normalizeIdleTime(editForm.idle_start_time),
+      idle_end_time: normalizeIdleTime(editForm.idle_end_time),
       daily_limit_usd: normalizeOptionalLimit(
         editForm.daily_limit_usd as number | string | null,
       ),

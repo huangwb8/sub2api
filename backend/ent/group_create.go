@@ -105,6 +105,20 @@ func (_c *GroupCreate) SetNillableRateMultiplier(v *float64) *GroupCreate {
 	return _c
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (_c *GroupCreate) SetIdleRateMultiplier(v float64) *GroupCreate {
+	_c.mutation.SetIdleRateMultiplier(v)
+	return _c
+}
+
+// SetNillableIdleRateMultiplier sets the "idle_rate_multiplier" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableIdleRateMultiplier(v *float64) *GroupCreate {
+	if v != nil {
+		_c.SetIdleRateMultiplier(*v)
+	}
+	return _c
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (_c *GroupCreate) SetExtraProfitRatePercent(v float64) *GroupCreate {
 	_c.mutation.SetExtraProfitRatePercent(v)
@@ -115,6 +129,48 @@ func (_c *GroupCreate) SetExtraProfitRatePercent(v float64) *GroupCreate {
 func (_c *GroupCreate) SetNillableExtraProfitRatePercent(v *float64) *GroupCreate {
 	if v != nil {
 		_c.SetExtraProfitRatePercent(*v)
+	}
+	return _c
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (_c *GroupCreate) SetIdleExtraProfitRatePercent(v float64) *GroupCreate {
+	_c.mutation.SetIdleExtraProfitRatePercent(v)
+	return _c
+}
+
+// SetNillableIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableIdleExtraProfitRatePercent(v *float64) *GroupCreate {
+	if v != nil {
+		_c.SetIdleExtraProfitRatePercent(*v)
+	}
+	return _c
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (_c *GroupCreate) SetIdleStartSeconds(v int) *GroupCreate {
+	_c.mutation.SetIdleStartSeconds(v)
+	return _c
+}
+
+// SetNillableIdleStartSeconds sets the "idle_start_seconds" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableIdleStartSeconds(v *int) *GroupCreate {
+	if v != nil {
+		_c.SetIdleStartSeconds(*v)
+	}
+	return _c
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (_c *GroupCreate) SetIdleEndSeconds(v int) *GroupCreate {
+	_c.mutation.SetIdleEndSeconds(v)
+	return _c
+}
+
+// SetNillableIdleEndSeconds sets the "idle_end_seconds" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableIdleEndSeconds(v *int) *GroupCreate {
+	if v != nil {
+		_c.SetIdleEndSeconds(*v)
 	}
 	return _c
 }
@@ -782,9 +838,25 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
 	}
+	if value, ok := _c.mutation.IdleRateMultiplier(); ok {
+		_spec.SetField(group.FieldIdleRateMultiplier, field.TypeFloat64, value)
+		_node.IdleRateMultiplier = &value
+	}
 	if value, ok := _c.mutation.ExtraProfitRatePercent(); ok {
 		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
 		_node.ExtraProfitRatePercent = &value
+	}
+	if value, ok := _c.mutation.IdleExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64, value)
+		_node.IdleExtraProfitRatePercent = &value
+	}
+	if value, ok := _c.mutation.IdleStartSeconds(); ok {
+		_spec.SetField(group.FieldIdleStartSeconds, field.TypeInt, value)
+		_node.IdleStartSeconds = &value
+	}
+	if value, ok := _c.mutation.IdleEndSeconds(); ok {
+		_spec.SetField(group.FieldIdleEndSeconds, field.TypeInt, value)
+		_node.IdleEndSeconds = &value
 	}
 	if value, ok := _c.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)
@@ -1116,6 +1188,30 @@ func (u *GroupUpsert) AddRateMultiplier(v float64) *GroupUpsert {
 	return u
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (u *GroupUpsert) SetIdleRateMultiplier(v float64) *GroupUpsert {
+	u.Set(group.FieldIdleRateMultiplier, v)
+	return u
+}
+
+// UpdateIdleRateMultiplier sets the "idle_rate_multiplier" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateIdleRateMultiplier() *GroupUpsert {
+	u.SetExcluded(group.FieldIdleRateMultiplier)
+	return u
+}
+
+// AddIdleRateMultiplier adds v to the "idle_rate_multiplier" field.
+func (u *GroupUpsert) AddIdleRateMultiplier(v float64) *GroupUpsert {
+	u.Add(group.FieldIdleRateMultiplier, v)
+	return u
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (u *GroupUpsert) ClearIdleRateMultiplier() *GroupUpsert {
+	u.SetNull(group.FieldIdleRateMultiplier)
+	return u
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (u *GroupUpsert) SetExtraProfitRatePercent(v float64) *GroupUpsert {
 	u.Set(group.FieldExtraProfitRatePercent, v)
@@ -1137,6 +1233,78 @@ func (u *GroupUpsert) AddExtraProfitRatePercent(v float64) *GroupUpsert {
 // ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
 func (u *GroupUpsert) ClearExtraProfitRatePercent() *GroupUpsert {
 	u.SetNull(group.FieldExtraProfitRatePercent)
+	return u
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsert) SetIdleExtraProfitRatePercent(v float64) *GroupUpsert {
+	u.Set(group.FieldIdleExtraProfitRatePercent, v)
+	return u
+}
+
+// UpdateIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateIdleExtraProfitRatePercent() *GroupUpsert {
+	u.SetExcluded(group.FieldIdleExtraProfitRatePercent)
+	return u
+}
+
+// AddIdleExtraProfitRatePercent adds v to the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsert) AddIdleExtraProfitRatePercent(v float64) *GroupUpsert {
+	u.Add(group.FieldIdleExtraProfitRatePercent, v)
+	return u
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsert) ClearIdleExtraProfitRatePercent() *GroupUpsert {
+	u.SetNull(group.FieldIdleExtraProfitRatePercent)
+	return u
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (u *GroupUpsert) SetIdleStartSeconds(v int) *GroupUpsert {
+	u.Set(group.FieldIdleStartSeconds, v)
+	return u
+}
+
+// UpdateIdleStartSeconds sets the "idle_start_seconds" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateIdleStartSeconds() *GroupUpsert {
+	u.SetExcluded(group.FieldIdleStartSeconds)
+	return u
+}
+
+// AddIdleStartSeconds adds v to the "idle_start_seconds" field.
+func (u *GroupUpsert) AddIdleStartSeconds(v int) *GroupUpsert {
+	u.Add(group.FieldIdleStartSeconds, v)
+	return u
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (u *GroupUpsert) ClearIdleStartSeconds() *GroupUpsert {
+	u.SetNull(group.FieldIdleStartSeconds)
+	return u
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (u *GroupUpsert) SetIdleEndSeconds(v int) *GroupUpsert {
+	u.Set(group.FieldIdleEndSeconds, v)
+	return u
+}
+
+// UpdateIdleEndSeconds sets the "idle_end_seconds" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateIdleEndSeconds() *GroupUpsert {
+	u.SetExcluded(group.FieldIdleEndSeconds)
+	return u
+}
+
+// AddIdleEndSeconds adds v to the "idle_end_seconds" field.
+func (u *GroupUpsert) AddIdleEndSeconds(v int) *GroupUpsert {
+	u.Add(group.FieldIdleEndSeconds, v)
+	return u
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (u *GroupUpsert) ClearIdleEndSeconds() *GroupUpsert {
+	u.SetNull(group.FieldIdleEndSeconds)
 	return u
 }
 
@@ -1678,6 +1846,34 @@ func (u *GroupUpsertOne) UpdateRateMultiplier() *GroupUpsertOne {
 	})
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (u *GroupUpsertOne) SetIdleRateMultiplier(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleRateMultiplier(v)
+	})
+}
+
+// AddIdleRateMultiplier adds v to the "idle_rate_multiplier" field.
+func (u *GroupUpsertOne) AddIdleRateMultiplier(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleRateMultiplier(v)
+	})
+}
+
+// UpdateIdleRateMultiplier sets the "idle_rate_multiplier" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateIdleRateMultiplier() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleRateMultiplier()
+	})
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (u *GroupUpsertOne) ClearIdleRateMultiplier() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleRateMultiplier()
+	})
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (u *GroupUpsertOne) SetExtraProfitRatePercent(v float64) *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
@@ -1703,6 +1899,90 @@ func (u *GroupUpsertOne) UpdateExtraProfitRatePercent() *GroupUpsertOne {
 func (u *GroupUpsertOne) ClearExtraProfitRatePercent() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearExtraProfitRatePercent()
+	})
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) SetIdleExtraProfitRatePercent(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleExtraProfitRatePercent(v)
+	})
+}
+
+// AddIdleExtraProfitRatePercent adds v to the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) AddIdleExtraProfitRatePercent(v float64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleExtraProfitRatePercent(v)
+	})
+}
+
+// UpdateIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateIdleExtraProfitRatePercent() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleExtraProfitRatePercent()
+	})
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertOne) ClearIdleExtraProfitRatePercent() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleExtraProfitRatePercent()
+	})
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (u *GroupUpsertOne) SetIdleStartSeconds(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleStartSeconds(v)
+	})
+}
+
+// AddIdleStartSeconds adds v to the "idle_start_seconds" field.
+func (u *GroupUpsertOne) AddIdleStartSeconds(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleStartSeconds(v)
+	})
+}
+
+// UpdateIdleStartSeconds sets the "idle_start_seconds" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateIdleStartSeconds() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleStartSeconds()
+	})
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (u *GroupUpsertOne) ClearIdleStartSeconds() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleStartSeconds()
+	})
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (u *GroupUpsertOne) SetIdleEndSeconds(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleEndSeconds(v)
+	})
+}
+
+// AddIdleEndSeconds adds v to the "idle_end_seconds" field.
+func (u *GroupUpsertOne) AddIdleEndSeconds(v int) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleEndSeconds(v)
+	})
+}
+
+// UpdateIdleEndSeconds sets the "idle_end_seconds" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateIdleEndSeconds() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleEndSeconds()
+	})
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (u *GroupUpsertOne) ClearIdleEndSeconds() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleEndSeconds()
 	})
 }
 
@@ -2477,6 +2757,34 @@ func (u *GroupUpsertBulk) UpdateRateMultiplier() *GroupUpsertBulk {
 	})
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (u *GroupUpsertBulk) SetIdleRateMultiplier(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleRateMultiplier(v)
+	})
+}
+
+// AddIdleRateMultiplier adds v to the "idle_rate_multiplier" field.
+func (u *GroupUpsertBulk) AddIdleRateMultiplier(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleRateMultiplier(v)
+	})
+}
+
+// UpdateIdleRateMultiplier sets the "idle_rate_multiplier" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateIdleRateMultiplier() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleRateMultiplier()
+	})
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (u *GroupUpsertBulk) ClearIdleRateMultiplier() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleRateMultiplier()
+	})
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (u *GroupUpsertBulk) SetExtraProfitRatePercent(v float64) *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
@@ -2502,6 +2810,90 @@ func (u *GroupUpsertBulk) UpdateExtraProfitRatePercent() *GroupUpsertBulk {
 func (u *GroupUpsertBulk) ClearExtraProfitRatePercent() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearExtraProfitRatePercent()
+	})
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) SetIdleExtraProfitRatePercent(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleExtraProfitRatePercent(v)
+	})
+}
+
+// AddIdleExtraProfitRatePercent adds v to the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) AddIdleExtraProfitRatePercent(v float64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleExtraProfitRatePercent(v)
+	})
+}
+
+// UpdateIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateIdleExtraProfitRatePercent() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleExtraProfitRatePercent()
+	})
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (u *GroupUpsertBulk) ClearIdleExtraProfitRatePercent() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleExtraProfitRatePercent()
+	})
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (u *GroupUpsertBulk) SetIdleStartSeconds(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleStartSeconds(v)
+	})
+}
+
+// AddIdleStartSeconds adds v to the "idle_start_seconds" field.
+func (u *GroupUpsertBulk) AddIdleStartSeconds(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleStartSeconds(v)
+	})
+}
+
+// UpdateIdleStartSeconds sets the "idle_start_seconds" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateIdleStartSeconds() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleStartSeconds()
+	})
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (u *GroupUpsertBulk) ClearIdleStartSeconds() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleStartSeconds()
+	})
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (u *GroupUpsertBulk) SetIdleEndSeconds(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetIdleEndSeconds(v)
+	})
+}
+
+// AddIdleEndSeconds adds v to the "idle_end_seconds" field.
+func (u *GroupUpsertBulk) AddIdleEndSeconds(v int) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddIdleEndSeconds(v)
+	})
+}
+
+// UpdateIdleEndSeconds sets the "idle_end_seconds" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateIdleEndSeconds() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateIdleEndSeconds()
+	})
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (u *GroupUpsertBulk) ClearIdleEndSeconds() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearIdleEndSeconds()
 	})
 }
 

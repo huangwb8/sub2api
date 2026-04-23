@@ -7740,6 +7740,8 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		cacheTTLOverridden = (result.Usage.CacheCreation5mTokens + result.Usage.CacheCreation1hTokens) > 0
 	}
 
+	billingNow := time.Now()
+
 	// 获取费率倍数（优先级：用户专属 > 分组默认 > 系统默认）
 	multiplier := 1.0
 	if s.cfg != nil {
@@ -7748,6 +7750,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	if apiKey.GroupID != nil && apiKey.Group != nil {
 		groupDefault := apiKey.Group.RateMultiplier
 		multiplier = s.getUserGroupRateMultiplier(ctx, user.ID, *apiKey.GroupID, groupDefault)
+		multiplier = apiKey.Group.ResolveRateMultiplierAt(billingNow, multiplier)
 	}
 
 	// 确定计费模型
@@ -7778,7 +7781,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	estimatedCostCNY, hasEstimatedCostCNY := resolveProfitabilityEstimatedCostCNY(account, cost.TotalCost)
 	var profitabilityCharge *standardBalanceChargeResolution
 	if !isSubscriptionBilling {
-		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
+		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, billingNow, cost.TotalCost, s.exchangeRateService)
 	}
 	if profitabilityCharge != nil {
 		cost.ActualCost = profitabilityCharge.ChargeCostUSD

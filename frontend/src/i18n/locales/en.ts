@@ -1759,6 +1759,18 @@ export default {
       accountsRateLimited: 'Limited:',
       accountsTotal: 'Total:',
       accountsUnit: '',
+      extraProfitRatePercent: 'Extra Profit Rate (%)',
+      extraProfitRateHint: 'Calculated as (revenue - cost) / cost; only applies to standard balance billing',
+      idleBilling: {
+        title: 'Idle-Time Dynamic Billing',
+        description: 'Leave blank to disable. Uses Beijing time, supports second-level precision, and can span across midnight.',
+        startTime: 'Idle Start Time',
+        endTime: 'Idle End Time',
+        rateMultiplier: 'Idle Rate Multiplier',
+        extraProfitRatePercent: 'Idle Extra Profit Rate (%)',
+        hint: 'When both the idle window and an idle multiplier/profit rate are configured, the system automatically applies the idle parameters during that window to help spread peak concurrency.',
+        summary: 'Idle {start}-{end} · {values}'
+      },
       rateAndAccounts: '{rate}x rate · {count} accounts',
       accountsCount: '{count} accounts',
       form: {

@@ -28,8 +28,16 @@ const (
 	FieldDescription = "description"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
+	// FieldIdleRateMultiplier holds the string denoting the idle_rate_multiplier field in the database.
+	FieldIdleRateMultiplier = "idle_rate_multiplier"
 	// FieldExtraProfitRatePercent holds the string denoting the extra_profit_rate_percent field in the database.
 	FieldExtraProfitRatePercent = "extra_profit_rate_percent"
+	// FieldIdleExtraProfitRatePercent holds the string denoting the idle_extra_profit_rate_percent field in the database.
+	FieldIdleExtraProfitRatePercent = "idle_extra_profit_rate_percent"
+	// FieldIdleStartSeconds holds the string denoting the idle_start_seconds field in the database.
+	FieldIdleStartSeconds = "idle_start_seconds"
+	// FieldIdleEndSeconds holds the string denoting the idle_end_seconds field in the database.
+	FieldIdleEndSeconds = "idle_end_seconds"
 	// FieldIsExclusive holds the string denoting the is_exclusive field in the database.
 	FieldIsExclusive = "is_exclusive"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -159,7 +167,11 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldRateMultiplier,
+	FieldIdleRateMultiplier,
 	FieldExtraProfitRatePercent,
+	FieldIdleExtraProfitRatePercent,
+	FieldIdleStartSeconds,
+	FieldIdleEndSeconds,
 	FieldIsExclusive,
 	FieldStatus,
 	FieldPlatform,
@@ -301,9 +313,29 @@ func ByRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRateMultiplier, opts...).ToFunc()
 }
 
+// ByIdleRateMultiplier orders the results by the idle_rate_multiplier field.
+func ByIdleRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdleRateMultiplier, opts...).ToFunc()
+}
+
 // ByExtraProfitRatePercent orders the results by the extra_profit_rate_percent field.
 func ByExtraProfitRatePercent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExtraProfitRatePercent, opts...).ToFunc()
+}
+
+// ByIdleExtraProfitRatePercent orders the results by the idle_extra_profit_rate_percent field.
+func ByIdleExtraProfitRatePercent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdleExtraProfitRatePercent, opts...).ToFunc()
+}
+
+// ByIdleStartSeconds orders the results by the idle_start_seconds field.
+func ByIdleStartSeconds(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdleStartSeconds, opts...).ToFunc()
+}
+
+// ByIdleEndSeconds orders the results by the idle_end_seconds field.
+func ByIdleEndSeconds(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdleEndSeconds, opts...).ToFunc()
 }
 
 // ByIsExclusive orders the results by the is_exclusive field.

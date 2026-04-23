@@ -43,7 +43,11 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
 		SetRateMultiplier(groupIn.RateMultiplier).
+		SetNillableIdleRateMultiplier(groupIn.IdleRateMultiplier).
 		SetNillableExtraProfitRatePercent(groupIn.ExtraProfitRatePercent).
+		SetNillableIdleExtraProfitRatePercent(groupIn.IdleExtraProfitRatePercent).
+		SetNillableIdleStartSeconds(groupIn.IdleStartSeconds).
+		SetNillableIdleEndSeconds(groupIn.IdleEndSeconds).
 		SetSortOrder(groupIn.SortOrder).
 		SetIsExclusive(groupIn.IsExclusive).
 		SetStatus(groupIn.Status).
@@ -153,6 +157,26 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		builder = builder.SetExtraProfitRatePercent(*groupIn.ExtraProfitRatePercent)
 	} else {
 		builder = builder.ClearExtraProfitRatePercent()
+	}
+	if groupIn.IdleRateMultiplier != nil {
+		builder = builder.SetIdleRateMultiplier(*groupIn.IdleRateMultiplier)
+	} else {
+		builder = builder.ClearIdleRateMultiplier()
+	}
+	if groupIn.IdleExtraProfitRatePercent != nil {
+		builder = builder.SetIdleExtraProfitRatePercent(*groupIn.IdleExtraProfitRatePercent)
+	} else {
+		builder = builder.ClearIdleExtraProfitRatePercent()
+	}
+	if groupIn.IdleStartSeconds != nil {
+		builder = builder.SetIdleStartSeconds(*groupIn.IdleStartSeconds)
+	} else {
+		builder = builder.ClearIdleStartSeconds()
+	}
+	if groupIn.IdleEndSeconds != nil {
+		builder = builder.SetIdleEndSeconds(*groupIn.IdleEndSeconds)
+	} else {
+		builder = builder.ClearIdleEndSeconds()
 	}
 	if groupIn.ImagePrice1K != nil {
 		builder = builder.SetImagePrice1k(*groupIn.ImagePrice1K)

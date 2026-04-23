@@ -156,13 +156,27 @@ func GroupFromServiceAdmin(g *service.Group) *AdminGroup {
 }
 
 func groupFromServiceBase(g *service.Group) Group {
+	var idleStartTime *string
+	if g.IdleStartSeconds != nil {
+		formatted := service.FormatClockTimeSeconds(*g.IdleStartSeconds)
+		idleStartTime = &formatted
+	}
+	var idleEndTime *string
+	if g.IdleEndSeconds != nil {
+		formatted := service.FormatClockTimeSeconds(*g.IdleEndSeconds)
+		idleEndTime = &formatted
+	}
 	return Group{
 		ID:                              g.ID,
 		Name:                            g.Name,
 		Description:                     g.Description,
 		Platform:                        g.Platform,
 		RateMultiplier:                  g.RateMultiplier,
+		IdleRateMultiplier:              g.IdleRateMultiplier,
 		ExtraProfitRatePercent:          g.ExtraProfitRatePercent,
+		IdleExtraProfitRatePercent:      g.IdleExtraProfitRatePercent,
+		IdleStartTime:                   idleStartTime,
+		IdleEndTime:                     idleEndTime,
 		IsExclusive:                     g.IsExclusive,
 		Status:                          g.Status,
 		SubscriptionType:                g.SubscriptionType,

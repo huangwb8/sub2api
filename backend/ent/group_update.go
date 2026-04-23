@@ -117,6 +117,33 @@ func (_u *GroupUpdate) AddRateMultiplier(v float64) *GroupUpdate {
 	return _u
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (_u *GroupUpdate) SetIdleRateMultiplier(v float64) *GroupUpdate {
+	_u.mutation.ResetIdleRateMultiplier()
+	_u.mutation.SetIdleRateMultiplier(v)
+	return _u
+}
+
+// SetNillableIdleRateMultiplier sets the "idle_rate_multiplier" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableIdleRateMultiplier(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetIdleRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddIdleRateMultiplier adds value to the "idle_rate_multiplier" field.
+func (_u *GroupUpdate) AddIdleRateMultiplier(v float64) *GroupUpdate {
+	_u.mutation.AddIdleRateMultiplier(v)
+	return _u
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (_u *GroupUpdate) ClearIdleRateMultiplier() *GroupUpdate {
+	_u.mutation.ClearIdleRateMultiplier()
+	return _u
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (_u *GroupUpdate) SetExtraProfitRatePercent(v float64) *GroupUpdate {
 	_u.mutation.ResetExtraProfitRatePercent()
@@ -141,6 +168,87 @@ func (_u *GroupUpdate) AddExtraProfitRatePercent(v float64) *GroupUpdate {
 // ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
 func (_u *GroupUpdate) ClearExtraProfitRatePercent() *GroupUpdate {
 	_u.mutation.ClearExtraProfitRatePercent()
+	return _u
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdate) SetIdleExtraProfitRatePercent(v float64) *GroupUpdate {
+	_u.mutation.ResetIdleExtraProfitRatePercent()
+	_u.mutation.SetIdleExtraProfitRatePercent(v)
+	return _u
+}
+
+// SetNillableIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableIdleExtraProfitRatePercent(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetIdleExtraProfitRatePercent(*v)
+	}
+	return _u
+}
+
+// AddIdleExtraProfitRatePercent adds value to the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdate) AddIdleExtraProfitRatePercent(v float64) *GroupUpdate {
+	_u.mutation.AddIdleExtraProfitRatePercent(v)
+	return _u
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdate) ClearIdleExtraProfitRatePercent() *GroupUpdate {
+	_u.mutation.ClearIdleExtraProfitRatePercent()
+	return _u
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (_u *GroupUpdate) SetIdleStartSeconds(v int) *GroupUpdate {
+	_u.mutation.ResetIdleStartSeconds()
+	_u.mutation.SetIdleStartSeconds(v)
+	return _u
+}
+
+// SetNillableIdleStartSeconds sets the "idle_start_seconds" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableIdleStartSeconds(v *int) *GroupUpdate {
+	if v != nil {
+		_u.SetIdleStartSeconds(*v)
+	}
+	return _u
+}
+
+// AddIdleStartSeconds adds value to the "idle_start_seconds" field.
+func (_u *GroupUpdate) AddIdleStartSeconds(v int) *GroupUpdate {
+	_u.mutation.AddIdleStartSeconds(v)
+	return _u
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (_u *GroupUpdate) ClearIdleStartSeconds() *GroupUpdate {
+	_u.mutation.ClearIdleStartSeconds()
+	return _u
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (_u *GroupUpdate) SetIdleEndSeconds(v int) *GroupUpdate {
+	_u.mutation.ResetIdleEndSeconds()
+	_u.mutation.SetIdleEndSeconds(v)
+	return _u
+}
+
+// SetNillableIdleEndSeconds sets the "idle_end_seconds" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableIdleEndSeconds(v *int) *GroupUpdate {
+	if v != nil {
+		_u.SetIdleEndSeconds(*v)
+	}
+	return _u
+}
+
+// AddIdleEndSeconds adds value to the "idle_end_seconds" field.
+func (_u *GroupUpdate) AddIdleEndSeconds(v int) *GroupUpdate {
+	_u.mutation.AddIdleEndSeconds(v)
+	return _u
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (_u *GroupUpdate) ClearIdleEndSeconds() *GroupUpdate {
+	_u.mutation.ClearIdleEndSeconds()
 	return _u
 }
 
@@ -923,6 +1031,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.IdleRateMultiplier(); ok {
+		_spec.SetField(group.FieldIdleRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedIdleRateMultiplier(); ok {
+		_spec.AddField(group.FieldIdleRateMultiplier, field.TypeFloat64, value)
+	}
+	if _u.mutation.IdleRateMultiplierCleared() {
+		_spec.ClearField(group.FieldIdleRateMultiplier, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.ExtraProfitRatePercent(); ok {
 		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
 	}
@@ -931,6 +1048,33 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ExtraProfitRatePercentCleared() {
 		_spec.ClearField(group.FieldExtraProfitRatePercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.IdleExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedIdleExtraProfitRatePercent(); ok {
+		_spec.AddField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.IdleExtraProfitRatePercentCleared() {
+		_spec.ClearField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.IdleStartSeconds(); ok {
+		_spec.SetField(group.FieldIdleStartSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedIdleStartSeconds(); ok {
+		_spec.AddField(group.FieldIdleStartSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.IdleStartSecondsCleared() {
+		_spec.ClearField(group.FieldIdleStartSeconds, field.TypeInt)
+	}
+	if value, ok := _u.mutation.IdleEndSeconds(); ok {
+		_spec.SetField(group.FieldIdleEndSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedIdleEndSeconds(); ok {
+		_spec.AddField(group.FieldIdleEndSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.IdleEndSecondsCleared() {
+		_spec.ClearField(group.FieldIdleEndSeconds, field.TypeInt)
 	}
 	if value, ok := _u.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)
@@ -1461,6 +1605,33 @@ func (_u *GroupUpdateOne) AddRateMultiplier(v float64) *GroupUpdateOne {
 	return _u
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (_u *GroupUpdateOne) SetIdleRateMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.ResetIdleRateMultiplier()
+	_u.mutation.SetIdleRateMultiplier(v)
+	return _u
+}
+
+// SetNillableIdleRateMultiplier sets the "idle_rate_multiplier" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableIdleRateMultiplier(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetIdleRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddIdleRateMultiplier adds value to the "idle_rate_multiplier" field.
+func (_u *GroupUpdateOne) AddIdleRateMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.AddIdleRateMultiplier(v)
+	return _u
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (_u *GroupUpdateOne) ClearIdleRateMultiplier() *GroupUpdateOne {
+	_u.mutation.ClearIdleRateMultiplier()
+	return _u
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (_u *GroupUpdateOne) SetExtraProfitRatePercent(v float64) *GroupUpdateOne {
 	_u.mutation.ResetExtraProfitRatePercent()
@@ -1485,6 +1656,87 @@ func (_u *GroupUpdateOne) AddExtraProfitRatePercent(v float64) *GroupUpdateOne {
 // ClearExtraProfitRatePercent clears the value of the "extra_profit_rate_percent" field.
 func (_u *GroupUpdateOne) ClearExtraProfitRatePercent() *GroupUpdateOne {
 	_u.mutation.ClearExtraProfitRatePercent()
+	return _u
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) SetIdleExtraProfitRatePercent(v float64) *GroupUpdateOne {
+	_u.mutation.ResetIdleExtraProfitRatePercent()
+	_u.mutation.SetIdleExtraProfitRatePercent(v)
+	return _u
+}
+
+// SetNillableIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableIdleExtraProfitRatePercent(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetIdleExtraProfitRatePercent(*v)
+	}
+	return _u
+}
+
+// AddIdleExtraProfitRatePercent adds value to the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) AddIdleExtraProfitRatePercent(v float64) *GroupUpdateOne {
+	_u.mutation.AddIdleExtraProfitRatePercent(v)
+	return _u
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (_u *GroupUpdateOne) ClearIdleExtraProfitRatePercent() *GroupUpdateOne {
+	_u.mutation.ClearIdleExtraProfitRatePercent()
+	return _u
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (_u *GroupUpdateOne) SetIdleStartSeconds(v int) *GroupUpdateOne {
+	_u.mutation.ResetIdleStartSeconds()
+	_u.mutation.SetIdleStartSeconds(v)
+	return _u
+}
+
+// SetNillableIdleStartSeconds sets the "idle_start_seconds" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableIdleStartSeconds(v *int) *GroupUpdateOne {
+	if v != nil {
+		_u.SetIdleStartSeconds(*v)
+	}
+	return _u
+}
+
+// AddIdleStartSeconds adds value to the "idle_start_seconds" field.
+func (_u *GroupUpdateOne) AddIdleStartSeconds(v int) *GroupUpdateOne {
+	_u.mutation.AddIdleStartSeconds(v)
+	return _u
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (_u *GroupUpdateOne) ClearIdleStartSeconds() *GroupUpdateOne {
+	_u.mutation.ClearIdleStartSeconds()
+	return _u
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (_u *GroupUpdateOne) SetIdleEndSeconds(v int) *GroupUpdateOne {
+	_u.mutation.ResetIdleEndSeconds()
+	_u.mutation.SetIdleEndSeconds(v)
+	return _u
+}
+
+// SetNillableIdleEndSeconds sets the "idle_end_seconds" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableIdleEndSeconds(v *int) *GroupUpdateOne {
+	if v != nil {
+		_u.SetIdleEndSeconds(*v)
+	}
+	return _u
+}
+
+// AddIdleEndSeconds adds value to the "idle_end_seconds" field.
+func (_u *GroupUpdateOne) AddIdleEndSeconds(v int) *GroupUpdateOne {
+	_u.mutation.AddIdleEndSeconds(v)
+	return _u
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (_u *GroupUpdateOne) ClearIdleEndSeconds() *GroupUpdateOne {
+	_u.mutation.ClearIdleEndSeconds()
 	return _u
 }
 
@@ -2297,6 +2549,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.IdleRateMultiplier(); ok {
+		_spec.SetField(group.FieldIdleRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedIdleRateMultiplier(); ok {
+		_spec.AddField(group.FieldIdleRateMultiplier, field.TypeFloat64, value)
+	}
+	if _u.mutation.IdleRateMultiplierCleared() {
+		_spec.ClearField(group.FieldIdleRateMultiplier, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.ExtraProfitRatePercent(); ok {
 		_spec.SetField(group.FieldExtraProfitRatePercent, field.TypeFloat64, value)
 	}
@@ -2305,6 +2566,33 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if _u.mutation.ExtraProfitRatePercentCleared() {
 		_spec.ClearField(group.FieldExtraProfitRatePercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.IdleExtraProfitRatePercent(); ok {
+		_spec.SetField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedIdleExtraProfitRatePercent(); ok {
+		_spec.AddField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.IdleExtraProfitRatePercentCleared() {
+		_spec.ClearField(group.FieldIdleExtraProfitRatePercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.IdleStartSeconds(); ok {
+		_spec.SetField(group.FieldIdleStartSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedIdleStartSeconds(); ok {
+		_spec.AddField(group.FieldIdleStartSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.IdleStartSecondsCleared() {
+		_spec.ClearField(group.FieldIdleStartSeconds, field.TypeInt)
+	}
+	if value, ok := _u.mutation.IdleEndSeconds(); ok {
+		_spec.SetField(group.FieldIdleEndSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedIdleEndSeconds(); ok {
+		_spec.AddField(group.FieldIdleEndSeconds, field.TypeInt, value)
+	}
+	if _u.mutation.IdleEndSecondsCleared() {
+		_spec.ClearField(group.FieldIdleEndSeconds, field.TypeInt)
 	}
 	if value, ok := _u.mutation.IsExclusive(); ok {
 		_spec.SetField(group.FieldIsExclusive, field.TypeBool, value)

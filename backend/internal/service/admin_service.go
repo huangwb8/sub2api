@@ -128,16 +128,20 @@ type UpdateUserInput struct {
 }
 
 type CreateGroupInput struct {
-	Name                   string
-	Description            string
-	Platform               string
-	RateMultiplier         float64
-	ExtraProfitRatePercent *float64
-	IsExclusive            bool
-	SubscriptionType       string   // standard/subscription
-	DailyLimitUSD          *float64 // 日限额 (USD)
-	WeeklyLimitUSD         *float64 // 周限额 (USD)
-	MonthlyLimitUSD        *float64 // 月限额 (USD)
+	Name                       string
+	Description                string
+	Platform                   string
+	RateMultiplier             float64
+	IdleRateMultiplier         *float64
+	ExtraProfitRatePercent     *float64
+	IdleExtraProfitRatePercent *float64
+	IdleStartSeconds           *int
+	IdleEndSeconds             *int
+	IsExclusive                bool
+	SubscriptionType           string   // standard/subscription
+	DailyLimitUSD              *float64 // 日限额 (USD)
+	WeeklyLimitUSD             *float64 // 周限额 (USD)
+	MonthlyLimitUSD            *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	ImagePrice1K    *float64
 	ImagePrice2K    *float64
@@ -163,17 +167,25 @@ type CreateGroupInput struct {
 }
 
 type UpdateGroupInput struct {
-	Name                   string
-	Description            string
-	Platform               string
-	RateMultiplier         *float64 // 使用指针以支持设置为0
-	ExtraProfitRatePercent *float64
-	IsExclusive            *bool
-	Status                 string
-	SubscriptionType       string   // standard/subscription
-	DailyLimitUSD          *float64 // 日限额 (USD)
-	WeeklyLimitUSD         *float64 // 周限额 (USD)
-	MonthlyLimitUSD        *float64 // 月限额 (USD)
+	Name                          string
+	Description                   string
+	Platform                      string
+	RateMultiplier                *float64 // 使用指针以支持设置为0
+	ExtraProfitRatePercent        *float64
+	IdleRateMultiplier            *float64
+	IdleRateMultiplierSet         bool
+	IdleExtraProfitRatePercent    *float64
+	IdleExtraProfitRatePercentSet bool
+	IdleStartSeconds              *int
+	IdleStartSecondsSet           bool
+	IdleEndSeconds                *int
+	IdleEndSecondsSet             bool
+	IsExclusive                   *bool
+	Status                        string
+	SubscriptionType              string   // standard/subscription
+	DailyLimitUSD                 *float64 // 日限额 (USD)
+	WeeklyLimitUSD                *float64 // 周限额 (USD)
+	MonthlyLimitUSD               *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	ImagePrice1K    *float64
 	ImagePrice2K    *float64
@@ -828,6 +840,12 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	if input.ExtraProfitRatePercent != nil && *input.ExtraProfitRatePercent < 0 {
 		return nil, errors.New("extra_profit_rate_percent must be >= 0")
 	}
+	if input.IdleRateMultiplier != nil && *input.IdleRateMultiplier < 0 {
+		return nil, errors.New("idle_rate_multiplier must be >= 0")
+	}
+	if input.IdleExtraProfitRatePercent != nil && *input.IdleExtraProfitRatePercent < 0 {
+		return nil, errors.New("idle_extra_profit_rate_percent must be >= 0")
+	}
 
 	// 限额字段：nil/负数 表示"无限制"，0 表示"不允许用量"，正数表示具体限额
 	dailyLimit := normalizeLimit(input.DailyLimitUSD)
@@ -899,7 +917,11 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		Description:                     input.Description,
 		Platform:                        platform,
 		RateMultiplier:                  input.RateMultiplier,
+		IdleRateMultiplier:              input.IdleRateMultiplier,
 		ExtraProfitRatePercent:          input.ExtraProfitRatePercent,
+		IdleExtraProfitRatePercent:      input.IdleExtraProfitRatePercent,
+		IdleStartSeconds:                input.IdleStartSeconds,
+		IdleEndSeconds:                  input.IdleEndSeconds,
 		IsExclusive:                     input.IsExclusive,
 		Status:                          StatusActive,
 		SubscriptionType:                subscriptionType,
@@ -920,6 +942,9 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		RequirePrivacySet:               input.RequirePrivacySet,
 		DefaultMappedModel:              input.DefaultMappedModel,
 		MessagesDispatchModelConfig:     normalizeOpenAIMessagesDispatchModelConfig(input.MessagesDispatchModelConfig),
+	}
+	if err := validateIdleBillingConfig(group); err != nil {
+		return nil, err
 	}
 	sanitizeGroupMessagesDispatchFields(group)
 	if err := s.groupRepo.Create(ctx, group); err != nil {
@@ -1051,6 +1076,12 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.ExtraProfitRatePercent != nil && *input.ExtraProfitRatePercent < 0 {
 		return nil, errors.New("extra_profit_rate_percent must be >= 0")
 	}
+	if input.IdleRateMultiplierSet && input.IdleRateMultiplier != nil && *input.IdleRateMultiplier < 0 {
+		return nil, errors.New("idle_rate_multiplier must be >= 0")
+	}
+	if input.IdleExtraProfitRatePercentSet && input.IdleExtraProfitRatePercent != nil && *input.IdleExtraProfitRatePercent < 0 {
+		return nil, errors.New("idle_extra_profit_rate_percent must be >= 0")
+	}
 
 	if input.Name != "" {
 		group.Name = input.Name
@@ -1067,11 +1098,26 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.ExtraProfitRatePercent != nil {
 		group.ExtraProfitRatePercent = input.ExtraProfitRatePercent
 	}
+	if input.IdleRateMultiplierSet {
+		group.IdleRateMultiplier = input.IdleRateMultiplier
+	}
+	if input.IdleExtraProfitRatePercentSet {
+		group.IdleExtraProfitRatePercent = input.IdleExtraProfitRatePercent
+	}
+	if input.IdleStartSecondsSet {
+		group.IdleStartSeconds = input.IdleStartSeconds
+	}
+	if input.IdleEndSecondsSet {
+		group.IdleEndSeconds = input.IdleEndSeconds
+	}
 	if input.IsExclusive != nil {
 		group.IsExclusive = *input.IsExclusive
 	}
 	if input.Status != "" {
 		group.Status = input.Status
+	}
+	if err := validateIdleBillingConfig(group); err != nil {
+		return nil, err
 	}
 
 	// 订阅相关字段

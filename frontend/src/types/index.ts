@@ -384,7 +384,11 @@ export interface Group {
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
+  idle_rate_multiplier?: number | null
   extra_profit_rate_percent?: number | null
+  idle_extra_profit_rate_percent?: number | null
+  idle_start_time?: string | null
+  idle_end_time?: string | null
   is_exclusive: boolean
   status: 'active' | 'inactive'
   subscription_type: SubscriptionType
@@ -498,7 +502,11 @@ export interface CreateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  idle_rate_multiplier?: number | null
   extra_profit_rate_percent?: number | null
+  idle_extra_profit_rate_percent?: number | null
+  idle_start_time?: string | null
+  idle_end_time?: string | null
   is_exclusive?: boolean
   subscription_type?: SubscriptionType
   daily_limit_usd?: number | null
@@ -524,7 +532,11 @@ export interface UpdateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  idle_rate_multiplier?: number | null
   extra_profit_rate_percent?: number | null
+  idle_extra_profit_rate_percent?: number | null
+  idle_start_time?: string | null
+  idle_end_time?: string | null
   is_exclusive?: boolean
   status?: 'active' | 'inactive'
   subscription_type?: SubscriptionType

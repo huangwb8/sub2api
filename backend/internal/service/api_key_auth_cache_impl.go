@@ -13,7 +13,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 4
+const apiKeyAuthSnapshotVersion = 5
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -234,7 +234,11 @@ func (s *APIKeyService) snapshotFromAPIKey(apiKey *APIKey) *APIKeyAuthSnapshot {
 			Status:                          apiKey.Group.Status,
 			SubscriptionType:                apiKey.Group.SubscriptionType,
 			RateMultiplier:                  apiKey.Group.RateMultiplier,
+			IdleRateMultiplier:              apiKey.Group.IdleRateMultiplier,
 			ExtraProfitRatePercent:          apiKey.Group.ExtraProfitRatePercent,
+			IdleExtraProfitRatePercent:      apiKey.Group.IdleExtraProfitRatePercent,
+			IdleStartSeconds:                apiKey.Group.IdleStartSeconds,
+			IdleEndSeconds:                  apiKey.Group.IdleEndSeconds,
 			DailyLimitUSD:                   apiKey.Group.DailyLimitUSD,
 			WeeklyLimitUSD:                  apiKey.Group.WeeklyLimitUSD,
 			MonthlyLimitUSD:                 apiKey.Group.MonthlyLimitUSD,
@@ -291,7 +295,11 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			Hydrated:                        true,
 			SubscriptionType:                snapshot.Group.SubscriptionType,
 			RateMultiplier:                  snapshot.Group.RateMultiplier,
+			IdleRateMultiplier:              snapshot.Group.IdleRateMultiplier,
 			ExtraProfitRatePercent:          snapshot.Group.ExtraProfitRatePercent,
+			IdleExtraProfitRatePercent:      snapshot.Group.IdleExtraProfitRatePercent,
+			IdleStartSeconds:                snapshot.Group.IdleStartSeconds,
+			IdleEndSeconds:                  snapshot.Group.IdleEndSeconds,
 			DailyLimitUSD:                   snapshot.Group.DailyLimitUSD,
 			WeeklyLimitUSD:                  snapshot.Group.WeeklyLimitUSD,
 			MonthlyLimitUSD:                 snapshot.Group.MonthlyLimitUSD,

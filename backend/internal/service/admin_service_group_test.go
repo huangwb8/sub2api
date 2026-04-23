@@ -266,6 +266,50 @@ func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	require.Nil(t, repo.updated.ImagePrice4K)
 }
 
+func TestAdminService_CreateGroup_ValidatesIdleBillingConfig(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+	start := 0
+
+	_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:             "idle-group",
+		Platform:         PlatformAnthropic,
+		RateMultiplier:   1,
+		IdleStartSeconds: &start,
+	})
+	require.EqualError(t, err, "idle_start_time and idle_end_time must be set together")
+	require.Nil(t, repo.created)
+}
+
+func TestAdminService_UpdateGroup_ClearsIdleBillingConfig(t *testing.T) {
+	idleMultiplier := 0.5
+	start := 0
+	end := 7 * 3600
+	existingGroup := &Group{
+		ID:                 1,
+		Name:               "existing-group",
+		Platform:           PlatformAnthropic,
+		Status:             StatusActive,
+		IdleRateMultiplier: &idleMultiplier,
+		IdleStartSeconds:   &start,
+		IdleEndSeconds:     &end,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		IdleRateMultiplierSet: true,
+		IdleStartSecondsSet:   true,
+		IdleEndSecondsSet:     true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.Nil(t, repo.updated.IdleRateMultiplier)
+	require.Nil(t, repo.updated.IdleStartSeconds)
+	require.Nil(t, repo.updated.IdleEndSeconds)
+}
+
 func TestAdminService_CreateGroup_NormalizesMessagesDispatchModelConfig(t *testing.T) {
 	repo := &groupRepoStubForAdmin{}
 	svc := &adminServiceImpl{groupRepo: repo}

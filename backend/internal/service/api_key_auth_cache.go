@@ -44,7 +44,11 @@ type APIKeyAuthGroupSnapshot struct {
 	Status                          string   `json:"status"`
 	SubscriptionType                string   `json:"subscription_type"`
 	RateMultiplier                  float64  `json:"rate_multiplier"`
+	IdleRateMultiplier              *float64 `json:"idle_rate_multiplier,omitempty"`
 	ExtraProfitRatePercent          *float64 `json:"extra_profit_rate_percent,omitempty"`
+	IdleExtraProfitRatePercent      *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
+	IdleStartSeconds                *int     `json:"idle_start_seconds,omitempty"`
+	IdleEndSeconds                  *int     `json:"idle_end_seconds,omitempty"`
 	DailyLimitUSD                   *float64 `json:"daily_limit_usd,omitempty"`
 	WeeklyLimitUSD                  *float64 `json:"weekly_limit_usd,omitempty"`
 	MonthlyLimitUSD                 *float64 `json:"monthly_limit_usd,omitempty"`

@@ -85,9 +85,29 @@ func RateMultiplier(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// IdleRateMultiplier applies equality check predicate on the "idle_rate_multiplier" field. It's identical to IdleRateMultiplierEQ.
+func IdleRateMultiplier(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleRateMultiplier, v))
+}
+
 // ExtraProfitRatePercent applies equality check predicate on the "extra_profit_rate_percent" field. It's identical to ExtraProfitRatePercentEQ.
 func ExtraProfitRatePercent(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercent applies equality check predicate on the "idle_extra_profit_rate_percent" field. It's identical to IdleExtraProfitRatePercentEQ.
+func IdleExtraProfitRatePercent(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleStartSeconds applies equality check predicate on the "idle_start_seconds" field. It's identical to IdleStartSecondsEQ.
+func IdleStartSeconds(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleStartSeconds, v))
+}
+
+// IdleEndSeconds applies equality check predicate on the "idle_end_seconds" field. It's identical to IdleEndSecondsEQ.
+func IdleEndSeconds(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleEndSeconds, v))
 }
 
 // IsExclusive applies equality check predicate on the "is_exclusive" field. It's identical to IsExclusiveEQ.
@@ -505,6 +525,56 @@ func RateMultiplierLTE(v float64) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldRateMultiplier, v))
 }
 
+// IdleRateMultiplierEQ applies the EQ predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierNEQ applies the NEQ predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierNEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierIn applies the In predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldIdleRateMultiplier, vs...))
+}
+
+// IdleRateMultiplierNotIn applies the NotIn predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierNotIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldIdleRateMultiplier, vs...))
+}
+
+// IdleRateMultiplierGT applies the GT predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierGT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierGTE applies the GTE predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierGTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierLT applies the LT predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierLT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierLTE applies the LTE predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierLTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldIdleRateMultiplier, v))
+}
+
+// IdleRateMultiplierIsNil applies the IsNil predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldIdleRateMultiplier))
+}
+
+// IdleRateMultiplierNotNil applies the NotNil predicate on the "idle_rate_multiplier" field.
+func IdleRateMultiplierNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldIdleRateMultiplier))
+}
+
 // ExtraProfitRatePercentEQ applies the EQ predicate on the "extra_profit_rate_percent" field.
 func ExtraProfitRatePercentEQ(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldExtraProfitRatePercent, v))
@@ -553,6 +623,156 @@ func ExtraProfitRatePercentIsNil() predicate.Group {
 // ExtraProfitRatePercentNotNil applies the NotNil predicate on the "extra_profit_rate_percent" field.
 func ExtraProfitRatePercentNotNil() predicate.Group {
 	return predicate.Group(sql.FieldNotNull(FieldExtraProfitRatePercent))
+}
+
+// IdleExtraProfitRatePercentEQ applies the EQ predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentNEQ applies the NEQ predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentNEQ(v float64) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentIn applies the In predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldIdleExtraProfitRatePercent, vs...))
+}
+
+// IdleExtraProfitRatePercentNotIn applies the NotIn predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentNotIn(vs ...float64) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldIdleExtraProfitRatePercent, vs...))
+}
+
+// IdleExtraProfitRatePercentGT applies the GT predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentGT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentGTE applies the GTE predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentGTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentLT applies the LT predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentLT(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentLTE applies the LTE predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentLTE(v float64) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldIdleExtraProfitRatePercent, v))
+}
+
+// IdleExtraProfitRatePercentIsNil applies the IsNil predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldIdleExtraProfitRatePercent))
+}
+
+// IdleExtraProfitRatePercentNotNil applies the NotNil predicate on the "idle_extra_profit_rate_percent" field.
+func IdleExtraProfitRatePercentNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldIdleExtraProfitRatePercent))
+}
+
+// IdleStartSecondsEQ applies the EQ predicate on the "idle_start_seconds" field.
+func IdleStartSecondsEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsNEQ applies the NEQ predicate on the "idle_start_seconds" field.
+func IdleStartSecondsNEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsIn applies the In predicate on the "idle_start_seconds" field.
+func IdleStartSecondsIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldIdleStartSeconds, vs...))
+}
+
+// IdleStartSecondsNotIn applies the NotIn predicate on the "idle_start_seconds" field.
+func IdleStartSecondsNotIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldIdleStartSeconds, vs...))
+}
+
+// IdleStartSecondsGT applies the GT predicate on the "idle_start_seconds" field.
+func IdleStartSecondsGT(v int) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsGTE applies the GTE predicate on the "idle_start_seconds" field.
+func IdleStartSecondsGTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsLT applies the LT predicate on the "idle_start_seconds" field.
+func IdleStartSecondsLT(v int) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsLTE applies the LTE predicate on the "idle_start_seconds" field.
+func IdleStartSecondsLTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldIdleStartSeconds, v))
+}
+
+// IdleStartSecondsIsNil applies the IsNil predicate on the "idle_start_seconds" field.
+func IdleStartSecondsIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldIdleStartSeconds))
+}
+
+// IdleStartSecondsNotNil applies the NotNil predicate on the "idle_start_seconds" field.
+func IdleStartSecondsNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldIdleStartSeconds))
+}
+
+// IdleEndSecondsEQ applies the EQ predicate on the "idle_end_seconds" field.
+func IdleEndSecondsEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsNEQ applies the NEQ predicate on the "idle_end_seconds" field.
+func IdleEndSecondsNEQ(v int) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsIn applies the In predicate on the "idle_end_seconds" field.
+func IdleEndSecondsIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldIdleEndSeconds, vs...))
+}
+
+// IdleEndSecondsNotIn applies the NotIn predicate on the "idle_end_seconds" field.
+func IdleEndSecondsNotIn(vs ...int) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldIdleEndSeconds, vs...))
+}
+
+// IdleEndSecondsGT applies the GT predicate on the "idle_end_seconds" field.
+func IdleEndSecondsGT(v int) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsGTE applies the GTE predicate on the "idle_end_seconds" field.
+func IdleEndSecondsGTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsLT applies the LT predicate on the "idle_end_seconds" field.
+func IdleEndSecondsLT(v int) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsLTE applies the LTE predicate on the "idle_end_seconds" field.
+func IdleEndSecondsLTE(v int) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldIdleEndSeconds, v))
+}
+
+// IdleEndSecondsIsNil applies the IsNil predicate on the "idle_end_seconds" field.
+func IdleEndSecondsIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldIdleEndSeconds))
+}
+
+// IdleEndSecondsNotNil applies the NotNil predicate on the "idle_end_seconds" field.
+func IdleEndSecondsNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldIdleEndSeconds))
 }
 
 // IsExclusiveEQ applies the EQ predicate on the "is_exclusive" field.

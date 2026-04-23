@@ -31,8 +31,16 @@ type Group struct {
 	Description *string `json:"description,omitempty"`
 	// RateMultiplier holds the value of the "rate_multiplier" field.
 	RateMultiplier float64 `json:"rate_multiplier,omitempty"`
+	// 闲时覆盖倍率（北京时间时间窗内生效）
+	IdleRateMultiplier *float64 `json:"idle_rate_multiplier,omitempty"`
 	// 标准余额计费下的额外盈利率（百分比）
 	ExtraProfitRatePercent *float64 `json:"extra_profit_rate_percent,omitempty"`
+	// 闲时覆盖额外盈利率（仅标准余额计费生效）
+	IdleExtraProfitRatePercent *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
+	// 闲时时间窗起始秒数，按北京时间 00:00:00-23:59:59 表示
+	IdleStartSeconds *int `json:"idle_start_seconds,omitempty"`
+	// 闲时时间窗结束秒数，按北京时间 00:00:00-23:59:59 表示
+	IdleEndSeconds *int `json:"idle_end_seconds,omitempty"`
 	// IsExclusive holds the value of the "is_exclusive" field.
 	IsExclusive bool `json:"is_exclusive,omitempty"`
 	// Status holds the value of the "status" field.
@@ -191,9 +199,9 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case group.FieldIsExclusive, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
 			values[i] = new(sql.NullBool)
-		case group.FieldRateMultiplier, group.FieldExtraProfitRatePercent, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k:
+		case group.FieldRateMultiplier, group.FieldIdleRateMultiplier, group.FieldExtraProfitRatePercent, group.FieldIdleExtraProfitRatePercent, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k:
 			values[i] = new(sql.NullFloat64)
-		case group.FieldID, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder:
+		case group.FieldID, group.FieldIdleStartSeconds, group.FieldIdleEndSeconds, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
 		case group.FieldName, group.FieldDescription, group.FieldStatus, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel:
 			values[i] = new(sql.NullString)
@@ -258,12 +266,40 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RateMultiplier = value.Float64
 			}
+		case group.FieldIdleRateMultiplier:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field idle_rate_multiplier", values[i])
+			} else if value.Valid {
+				_m.IdleRateMultiplier = new(float64)
+				*_m.IdleRateMultiplier = value.Float64
+			}
 		case group.FieldExtraProfitRatePercent:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field extra_profit_rate_percent", values[i])
 			} else if value.Valid {
 				_m.ExtraProfitRatePercent = new(float64)
 				*_m.ExtraProfitRatePercent = value.Float64
+			}
+		case group.FieldIdleExtraProfitRatePercent:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field idle_extra_profit_rate_percent", values[i])
+			} else if value.Valid {
+				_m.IdleExtraProfitRatePercent = new(float64)
+				*_m.IdleExtraProfitRatePercent = value.Float64
+			}
+		case group.FieldIdleStartSeconds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field idle_start_seconds", values[i])
+			} else if value.Valid {
+				_m.IdleStartSeconds = new(int)
+				*_m.IdleStartSeconds = int(value.Int64)
+			}
+		case group.FieldIdleEndSeconds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field idle_end_seconds", values[i])
+			} else if value.Valid {
+				_m.IdleEndSeconds = new(int)
+				*_m.IdleEndSeconds = int(value.Int64)
 			}
 		case group.FieldIsExclusive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -521,8 +557,28 @@ func (_m *Group) String() string {
 	builder.WriteString("rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RateMultiplier))
 	builder.WriteString(", ")
+	if v := _m.IdleRateMultiplier; v != nil {
+		builder.WriteString("idle_rate_multiplier=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	if v := _m.ExtraProfitRatePercent; v != nil {
 		builder.WriteString("extra_profit_rate_percent=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.IdleExtraProfitRatePercent; v != nil {
+		builder.WriteString("idle_extra_profit_rate_percent=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.IdleStartSeconds; v != nil {
+		builder.WriteString("idle_start_seconds=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.IdleEndSeconds; v != nil {
+		builder.WriteString("idle_end_seconds=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

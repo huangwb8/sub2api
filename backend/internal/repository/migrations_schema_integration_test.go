@@ -27,6 +27,13 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 		"109_backfill_subscription_profitability_cost.sql",
 	).Scan(&hasProfitabilityBackfill))
 	require.True(t, hasProfitabilityBackfill, "expected profitability backfill migration to be applied")
+	var hasIdleBillingMigration bool
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE filename = $1)",
+		"111_add_group_idle_billing_fields.sql",
+	).Scan(&hasIdleBillingMigration))
+	require.True(t, hasIdleBillingMigration, "expected group idle billing migration to be applied")
 
 	// users: columns required by repository queries
 	requireColumn(t, tx, "users", "username", "character varying", 100, false)
@@ -42,6 +49,12 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 
 	// api_keys: key length should be 128
 	requireColumn(t, tx, "api_keys", "key", "character varying", 128, false)
+
+	// groups: idle billing fields
+	requireColumn(t, tx, "groups", "idle_rate_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "groups", "idle_extra_profit_rate_percent", "numeric", 0, true)
+	requireColumn(t, tx, "groups", "idle_start_seconds", "integer", 0, true)
+	requireColumn(t, tx, "groups", "idle_end_seconds", "integer", 0, true)
 
 	// redeem_codes: subscription fields
 	requireColumn(t, tx, "redeem_codes", "group_id", "bigint", 0, true)

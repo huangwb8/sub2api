@@ -8507,8 +8507,16 @@ type GroupMutation struct {
 	description                             *string
 	rate_multiplier                         *float64
 	addrate_multiplier                      *float64
+	idle_rate_multiplier                    *float64
+	addidle_rate_multiplier                 *float64
 	extra_profit_rate_percent               *float64
 	addextra_profit_rate_percent            *float64
+	idle_extra_profit_rate_percent          *float64
+	addidle_extra_profit_rate_percent       *float64
+	idle_start_seconds                      *int
+	addidle_start_seconds                   *int
+	idle_end_seconds                        *int
+	addidle_end_seconds                     *int
 	is_exclusive                            *bool
 	status                                  *string
 	platform                                *string
@@ -8928,6 +8936,76 @@ func (m *GroupMutation) ResetRateMultiplier() {
 	m.addrate_multiplier = nil
 }
 
+// SetIdleRateMultiplier sets the "idle_rate_multiplier" field.
+func (m *GroupMutation) SetIdleRateMultiplier(f float64) {
+	m.idle_rate_multiplier = &f
+	m.addidle_rate_multiplier = nil
+}
+
+// IdleRateMultiplier returns the value of the "idle_rate_multiplier" field in the mutation.
+func (m *GroupMutation) IdleRateMultiplier() (r float64, exists bool) {
+	v := m.idle_rate_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdleRateMultiplier returns the old "idle_rate_multiplier" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldIdleRateMultiplier(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdleRateMultiplier is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdleRateMultiplier requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdleRateMultiplier: %w", err)
+	}
+	return oldValue.IdleRateMultiplier, nil
+}
+
+// AddIdleRateMultiplier adds f to the "idle_rate_multiplier" field.
+func (m *GroupMutation) AddIdleRateMultiplier(f float64) {
+	if m.addidle_rate_multiplier != nil {
+		*m.addidle_rate_multiplier += f
+	} else {
+		m.addidle_rate_multiplier = &f
+	}
+}
+
+// AddedIdleRateMultiplier returns the value that was added to the "idle_rate_multiplier" field in this mutation.
+func (m *GroupMutation) AddedIdleRateMultiplier() (r float64, exists bool) {
+	v := m.addidle_rate_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearIdleRateMultiplier clears the value of the "idle_rate_multiplier" field.
+func (m *GroupMutation) ClearIdleRateMultiplier() {
+	m.idle_rate_multiplier = nil
+	m.addidle_rate_multiplier = nil
+	m.clearedFields[group.FieldIdleRateMultiplier] = struct{}{}
+}
+
+// IdleRateMultiplierCleared returns if the "idle_rate_multiplier" field was cleared in this mutation.
+func (m *GroupMutation) IdleRateMultiplierCleared() bool {
+	_, ok := m.clearedFields[group.FieldIdleRateMultiplier]
+	return ok
+}
+
+// ResetIdleRateMultiplier resets all changes to the "idle_rate_multiplier" field.
+func (m *GroupMutation) ResetIdleRateMultiplier() {
+	m.idle_rate_multiplier = nil
+	m.addidle_rate_multiplier = nil
+	delete(m.clearedFields, group.FieldIdleRateMultiplier)
+}
+
 // SetExtraProfitRatePercent sets the "extra_profit_rate_percent" field.
 func (m *GroupMutation) SetExtraProfitRatePercent(f float64) {
 	m.extra_profit_rate_percent = &f
@@ -8996,6 +9074,216 @@ func (m *GroupMutation) ResetExtraProfitRatePercent() {
 	m.extra_profit_rate_percent = nil
 	m.addextra_profit_rate_percent = nil
 	delete(m.clearedFields, group.FieldExtraProfitRatePercent)
+}
+
+// SetIdleExtraProfitRatePercent sets the "idle_extra_profit_rate_percent" field.
+func (m *GroupMutation) SetIdleExtraProfitRatePercent(f float64) {
+	m.idle_extra_profit_rate_percent = &f
+	m.addidle_extra_profit_rate_percent = nil
+}
+
+// IdleExtraProfitRatePercent returns the value of the "idle_extra_profit_rate_percent" field in the mutation.
+func (m *GroupMutation) IdleExtraProfitRatePercent() (r float64, exists bool) {
+	v := m.idle_extra_profit_rate_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdleExtraProfitRatePercent returns the old "idle_extra_profit_rate_percent" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldIdleExtraProfitRatePercent(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdleExtraProfitRatePercent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdleExtraProfitRatePercent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdleExtraProfitRatePercent: %w", err)
+	}
+	return oldValue.IdleExtraProfitRatePercent, nil
+}
+
+// AddIdleExtraProfitRatePercent adds f to the "idle_extra_profit_rate_percent" field.
+func (m *GroupMutation) AddIdleExtraProfitRatePercent(f float64) {
+	if m.addidle_extra_profit_rate_percent != nil {
+		*m.addidle_extra_profit_rate_percent += f
+	} else {
+		m.addidle_extra_profit_rate_percent = &f
+	}
+}
+
+// AddedIdleExtraProfitRatePercent returns the value that was added to the "idle_extra_profit_rate_percent" field in this mutation.
+func (m *GroupMutation) AddedIdleExtraProfitRatePercent() (r float64, exists bool) {
+	v := m.addidle_extra_profit_rate_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearIdleExtraProfitRatePercent clears the value of the "idle_extra_profit_rate_percent" field.
+func (m *GroupMutation) ClearIdleExtraProfitRatePercent() {
+	m.idle_extra_profit_rate_percent = nil
+	m.addidle_extra_profit_rate_percent = nil
+	m.clearedFields[group.FieldIdleExtraProfitRatePercent] = struct{}{}
+}
+
+// IdleExtraProfitRatePercentCleared returns if the "idle_extra_profit_rate_percent" field was cleared in this mutation.
+func (m *GroupMutation) IdleExtraProfitRatePercentCleared() bool {
+	_, ok := m.clearedFields[group.FieldIdleExtraProfitRatePercent]
+	return ok
+}
+
+// ResetIdleExtraProfitRatePercent resets all changes to the "idle_extra_profit_rate_percent" field.
+func (m *GroupMutation) ResetIdleExtraProfitRatePercent() {
+	m.idle_extra_profit_rate_percent = nil
+	m.addidle_extra_profit_rate_percent = nil
+	delete(m.clearedFields, group.FieldIdleExtraProfitRatePercent)
+}
+
+// SetIdleStartSeconds sets the "idle_start_seconds" field.
+func (m *GroupMutation) SetIdleStartSeconds(i int) {
+	m.idle_start_seconds = &i
+	m.addidle_start_seconds = nil
+}
+
+// IdleStartSeconds returns the value of the "idle_start_seconds" field in the mutation.
+func (m *GroupMutation) IdleStartSeconds() (r int, exists bool) {
+	v := m.idle_start_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdleStartSeconds returns the old "idle_start_seconds" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldIdleStartSeconds(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdleStartSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdleStartSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdleStartSeconds: %w", err)
+	}
+	return oldValue.IdleStartSeconds, nil
+}
+
+// AddIdleStartSeconds adds i to the "idle_start_seconds" field.
+func (m *GroupMutation) AddIdleStartSeconds(i int) {
+	if m.addidle_start_seconds != nil {
+		*m.addidle_start_seconds += i
+	} else {
+		m.addidle_start_seconds = &i
+	}
+}
+
+// AddedIdleStartSeconds returns the value that was added to the "idle_start_seconds" field in this mutation.
+func (m *GroupMutation) AddedIdleStartSeconds() (r int, exists bool) {
+	v := m.addidle_start_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearIdleStartSeconds clears the value of the "idle_start_seconds" field.
+func (m *GroupMutation) ClearIdleStartSeconds() {
+	m.idle_start_seconds = nil
+	m.addidle_start_seconds = nil
+	m.clearedFields[group.FieldIdleStartSeconds] = struct{}{}
+}
+
+// IdleStartSecondsCleared returns if the "idle_start_seconds" field was cleared in this mutation.
+func (m *GroupMutation) IdleStartSecondsCleared() bool {
+	_, ok := m.clearedFields[group.FieldIdleStartSeconds]
+	return ok
+}
+
+// ResetIdleStartSeconds resets all changes to the "idle_start_seconds" field.
+func (m *GroupMutation) ResetIdleStartSeconds() {
+	m.idle_start_seconds = nil
+	m.addidle_start_seconds = nil
+	delete(m.clearedFields, group.FieldIdleStartSeconds)
+}
+
+// SetIdleEndSeconds sets the "idle_end_seconds" field.
+func (m *GroupMutation) SetIdleEndSeconds(i int) {
+	m.idle_end_seconds = &i
+	m.addidle_end_seconds = nil
+}
+
+// IdleEndSeconds returns the value of the "idle_end_seconds" field in the mutation.
+func (m *GroupMutation) IdleEndSeconds() (r int, exists bool) {
+	v := m.idle_end_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdleEndSeconds returns the old "idle_end_seconds" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldIdleEndSeconds(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdleEndSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdleEndSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdleEndSeconds: %w", err)
+	}
+	return oldValue.IdleEndSeconds, nil
+}
+
+// AddIdleEndSeconds adds i to the "idle_end_seconds" field.
+func (m *GroupMutation) AddIdleEndSeconds(i int) {
+	if m.addidle_end_seconds != nil {
+		*m.addidle_end_seconds += i
+	} else {
+		m.addidle_end_seconds = &i
+	}
+}
+
+// AddedIdleEndSeconds returns the value that was added to the "idle_end_seconds" field in this mutation.
+func (m *GroupMutation) AddedIdleEndSeconds() (r int, exists bool) {
+	v := m.addidle_end_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearIdleEndSeconds clears the value of the "idle_end_seconds" field.
+func (m *GroupMutation) ClearIdleEndSeconds() {
+	m.idle_end_seconds = nil
+	m.addidle_end_seconds = nil
+	m.clearedFields[group.FieldIdleEndSeconds] = struct{}{}
+}
+
+// IdleEndSecondsCleared returns if the "idle_end_seconds" field was cleared in this mutation.
+func (m *GroupMutation) IdleEndSecondsCleared() bool {
+	_, ok := m.clearedFields[group.FieldIdleEndSeconds]
+	return ok
+}
+
+// ResetIdleEndSeconds resets all changes to the "idle_end_seconds" field.
+func (m *GroupMutation) ResetIdleEndSeconds() {
+	m.idle_end_seconds = nil
+	m.addidle_end_seconds = nil
+	delete(m.clearedFields, group.FieldIdleEndSeconds)
 }
 
 // SetIsExclusive sets the "is_exclusive" field.
@@ -10560,7 +10848,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 31)
+	fields := make([]string, 0, 35)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -10579,8 +10867,20 @@ func (m *GroupMutation) Fields() []string {
 	if m.rate_multiplier != nil {
 		fields = append(fields, group.FieldRateMultiplier)
 	}
+	if m.idle_rate_multiplier != nil {
+		fields = append(fields, group.FieldIdleRateMultiplier)
+	}
 	if m.extra_profit_rate_percent != nil {
 		fields = append(fields, group.FieldExtraProfitRatePercent)
+	}
+	if m.idle_extra_profit_rate_percent != nil {
+		fields = append(fields, group.FieldIdleExtraProfitRatePercent)
+	}
+	if m.idle_start_seconds != nil {
+		fields = append(fields, group.FieldIdleStartSeconds)
+	}
+	if m.idle_end_seconds != nil {
+		fields = append(fields, group.FieldIdleEndSeconds)
 	}
 	if m.is_exclusive != nil {
 		fields = append(fields, group.FieldIsExclusive)
@@ -10674,8 +10974,16 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case group.FieldRateMultiplier:
 		return m.RateMultiplier()
+	case group.FieldIdleRateMultiplier:
+		return m.IdleRateMultiplier()
 	case group.FieldExtraProfitRatePercent:
 		return m.ExtraProfitRatePercent()
+	case group.FieldIdleExtraProfitRatePercent:
+		return m.IdleExtraProfitRatePercent()
+	case group.FieldIdleStartSeconds:
+		return m.IdleStartSeconds()
+	case group.FieldIdleEndSeconds:
+		return m.IdleEndSeconds()
 	case group.FieldIsExclusive:
 		return m.IsExclusive()
 	case group.FieldStatus:
@@ -10745,8 +11053,16 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDescription(ctx)
 	case group.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
+	case group.FieldIdleRateMultiplier:
+		return m.OldIdleRateMultiplier(ctx)
 	case group.FieldExtraProfitRatePercent:
 		return m.OldExtraProfitRatePercent(ctx)
+	case group.FieldIdleExtraProfitRatePercent:
+		return m.OldIdleExtraProfitRatePercent(ctx)
+	case group.FieldIdleStartSeconds:
+		return m.OldIdleStartSeconds(ctx)
+	case group.FieldIdleEndSeconds:
+		return m.OldIdleEndSeconds(ctx)
 	case group.FieldIsExclusive:
 		return m.OldIsExclusive(ctx)
 	case group.FieldStatus:
@@ -10846,12 +11162,40 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRateMultiplier(v)
 		return nil
+	case group.FieldIdleRateMultiplier:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdleRateMultiplier(v)
+		return nil
 	case group.FieldExtraProfitRatePercent:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExtraProfitRatePercent(v)
+		return nil
+	case group.FieldIdleExtraProfitRatePercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdleExtraProfitRatePercent(v)
+		return nil
+	case group.FieldIdleStartSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdleStartSeconds(v)
+		return nil
+	case group.FieldIdleEndSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdleEndSeconds(v)
 		return nil
 	case group.FieldIsExclusive:
 		v, ok := value.(bool)
@@ -11032,8 +11376,20 @@ func (m *GroupMutation) AddedFields() []string {
 	if m.addrate_multiplier != nil {
 		fields = append(fields, group.FieldRateMultiplier)
 	}
+	if m.addidle_rate_multiplier != nil {
+		fields = append(fields, group.FieldIdleRateMultiplier)
+	}
 	if m.addextra_profit_rate_percent != nil {
 		fields = append(fields, group.FieldExtraProfitRatePercent)
+	}
+	if m.addidle_extra_profit_rate_percent != nil {
+		fields = append(fields, group.FieldIdleExtraProfitRatePercent)
+	}
+	if m.addidle_start_seconds != nil {
+		fields = append(fields, group.FieldIdleStartSeconds)
+	}
+	if m.addidle_end_seconds != nil {
+		fields = append(fields, group.FieldIdleEndSeconds)
 	}
 	if m.adddaily_limit_usd != nil {
 		fields = append(fields, group.FieldDailyLimitUsd)
@@ -11075,8 +11431,16 @@ func (m *GroupMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case group.FieldRateMultiplier:
 		return m.AddedRateMultiplier()
+	case group.FieldIdleRateMultiplier:
+		return m.AddedIdleRateMultiplier()
 	case group.FieldExtraProfitRatePercent:
 		return m.AddedExtraProfitRatePercent()
+	case group.FieldIdleExtraProfitRatePercent:
+		return m.AddedIdleExtraProfitRatePercent()
+	case group.FieldIdleStartSeconds:
+		return m.AddedIdleStartSeconds()
+	case group.FieldIdleEndSeconds:
+		return m.AddedIdleEndSeconds()
 	case group.FieldDailyLimitUsd:
 		return m.AddedDailyLimitUsd()
 	case group.FieldWeeklyLimitUsd:
@@ -11113,12 +11477,40 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddRateMultiplier(v)
 		return nil
+	case group.FieldIdleRateMultiplier:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIdleRateMultiplier(v)
+		return nil
 	case group.FieldExtraProfitRatePercent:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddExtraProfitRatePercent(v)
+		return nil
+	case group.FieldIdleExtraProfitRatePercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIdleExtraProfitRatePercent(v)
+		return nil
+	case group.FieldIdleStartSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIdleStartSeconds(v)
+		return nil
+	case group.FieldIdleEndSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIdleEndSeconds(v)
 		return nil
 	case group.FieldDailyLimitUsd:
 		v, ok := value.(float64)
@@ -11204,8 +11596,20 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
+	if m.FieldCleared(group.FieldIdleRateMultiplier) {
+		fields = append(fields, group.FieldIdleRateMultiplier)
+	}
 	if m.FieldCleared(group.FieldExtraProfitRatePercent) {
 		fields = append(fields, group.FieldExtraProfitRatePercent)
+	}
+	if m.FieldCleared(group.FieldIdleExtraProfitRatePercent) {
+		fields = append(fields, group.FieldIdleExtraProfitRatePercent)
+	}
+	if m.FieldCleared(group.FieldIdleStartSeconds) {
+		fields = append(fields, group.FieldIdleStartSeconds)
+	}
+	if m.FieldCleared(group.FieldIdleEndSeconds) {
+		fields = append(fields, group.FieldIdleEndSeconds)
 	}
 	if m.FieldCleared(group.FieldDailyLimitUsd) {
 		fields = append(fields, group.FieldDailyLimitUsd)
@@ -11254,8 +11658,20 @@ func (m *GroupMutation) ClearField(name string) error {
 	case group.FieldDescription:
 		m.ClearDescription()
 		return nil
+	case group.FieldIdleRateMultiplier:
+		m.ClearIdleRateMultiplier()
+		return nil
 	case group.FieldExtraProfitRatePercent:
 		m.ClearExtraProfitRatePercent()
+		return nil
+	case group.FieldIdleExtraProfitRatePercent:
+		m.ClearIdleExtraProfitRatePercent()
+		return nil
+	case group.FieldIdleStartSeconds:
+		m.ClearIdleStartSeconds()
+		return nil
+	case group.FieldIdleEndSeconds:
+		m.ClearIdleEndSeconds()
 		return nil
 	case group.FieldDailyLimitUsd:
 		m.ClearDailyLimitUsd()
@@ -11310,8 +11726,20 @@ func (m *GroupMutation) ResetField(name string) error {
 	case group.FieldRateMultiplier:
 		m.ResetRateMultiplier()
 		return nil
+	case group.FieldIdleRateMultiplier:
+		m.ResetIdleRateMultiplier()
+		return nil
 	case group.FieldExtraProfitRatePercent:
 		m.ResetExtraProfitRatePercent()
+		return nil
+	case group.FieldIdleExtraProfitRatePercent:
+		m.ResetIdleExtraProfitRatePercent()
+		return nil
+	case group.FieldIdleStartSeconds:
+		m.ResetIdleStartSeconds()
+		return nil
+	case group.FieldIdleEndSeconds:
+		m.ResetIdleEndSeconds()
 		return nil
 	case group.FieldIsExclusive:
 		m.ResetIsExclusive()

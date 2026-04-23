@@ -4428,6 +4428,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		CacheReadTokens:     result.Usage.CacheReadInputTokens,
 		ImageOutputTokens:   result.Usage.ImageOutputTokens,
 	}
+	billingNow := time.Now()
 
 	// Get rate multiplier
 	multiplier := 1.0
@@ -4440,6 +4441,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			resolver = newUserGroupRateResolver(nil, nil, resolveUserGroupRateCacheTTL(s.cfg), nil, "service.openai_gateway")
 		}
 		multiplier = resolver.Resolve(ctx, user.ID, *apiKey.GroupID, apiKey.Group.RateMultiplier)
+		multiplier = apiKey.Group.ResolveRateMultiplierAt(billingNow, multiplier)
 	}
 
 	var cost *CostBreakdown
@@ -4487,7 +4489,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	estimatedCostCNY, hasEstimatedCostCNY := resolveProfitabilityEstimatedCostCNY(account, cost.TotalCost)
 	var profitabilityCharge *standardBalanceChargeResolution
 	if !isSubscriptionBilling {
-		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, cost.TotalCost, s.exchangeRateService)
+		profitabilityCharge = resolveStandardBalanceCharge(ctx, account, apiKey.Group, billingNow, cost.TotalCost, s.exchangeRateService)
 	}
 	if profitabilityCharge != nil {
 		cost.ActualCost = profitabilityCharge.ChargeCostUSD

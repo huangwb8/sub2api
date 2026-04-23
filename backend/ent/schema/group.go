@@ -45,11 +45,29 @@ func (Group) Fields() []ent.Field {
 		field.Float("rate_multiplier").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(1.0),
+		field.Float("idle_rate_multiplier").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
+			Comment("闲时覆盖倍率（北京时间时间窗内生效）"),
 		field.Float("extra_profit_rate_percent").
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Comment("标准余额计费下的额外盈利率（百分比）"),
+		field.Float("idle_extra_profit_rate_percent").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
+			Comment("闲时覆盖额外盈利率（仅标准余额计费生效）"),
+		field.Int("idle_start_seconds").
+			Optional().
+			Nillable().
+			Comment("闲时时间窗起始秒数，按北京时间 00:00:00-23:59:59 表示"),
+		field.Int("idle_end_seconds").
+			Optional().
+			Nillable().
+			Comment("闲时时间窗结束秒数，按北京时间 00:00:00-23:59:59 表示"),
 		field.Bool("is_exclusive").
 			Default(false),
 		field.String("status").

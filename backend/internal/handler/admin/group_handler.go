@@ -71,6 +71,76 @@ func (f optionalLimitField) ToServiceInput() *float64 {
 	return &zero
 }
 
+type optionalFloatField struct {
+	set   bool
+	value *float64
+}
+
+func (f *optionalFloatField) UnmarshalJSON(data []byte) error {
+	f.set = true
+
+	trimmed := bytes.TrimSpace(data)
+	if bytes.Equal(trimmed, []byte("null")) {
+		f.value = nil
+		return nil
+	}
+
+	var number float64
+	if err := json.Unmarshal(trimmed, &number); err == nil {
+		f.value = &number
+		return nil
+	}
+
+	var text string
+	if err := json.Unmarshal(trimmed, &text); err == nil {
+		text = strings.TrimSpace(text)
+		if text == "" {
+			f.value = nil
+			return nil
+		}
+		number, err = strconv.ParseFloat(text, 64)
+		if err != nil {
+			return fmt.Errorf("invalid numeric value %q: %w", text, err)
+		}
+		f.value = &number
+		return nil
+	}
+
+	return fmt.Errorf("invalid numeric value: %s", string(trimmed))
+}
+
+type optionalClockField struct {
+	set   bool
+	value *int
+}
+
+func (f *optionalClockField) UnmarshalJSON(data []byte) error {
+	f.set = true
+
+	trimmed := bytes.TrimSpace(data)
+	if bytes.Equal(trimmed, []byte("null")) {
+		f.value = nil
+		return nil
+	}
+
+	var text string
+	if err := json.Unmarshal(trimmed, &text); err != nil {
+		return fmt.Errorf("invalid time value: %s", string(trimmed))
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		f.value = nil
+		return nil
+	}
+
+	seconds, err := service.ParseClockTimeToSeconds(text)
+	if err != nil {
+		return err
+	}
+	f.value = &seconds
+	return nil
+}
+
 // NewGroupHandler creates a new admin group handler
 func NewGroupHandler(adminService service.AdminService, dashboardService *service.DashboardService, groupCapacityService *service.GroupCapacityService) *GroupHandler {
 	return &GroupHandler{
@@ -82,16 +152,20 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 
 // CreateGroupRequest represents create group request
 type CreateGroupRequest struct {
-	Name             string             `json:"name" binding:"required"`
-	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
-	RateMultiplier   float64            `json:"rate_multiplier"`
-	ExtraProfitRatePercent *float64     `json:"extra_profit_rate_percent"`
-	IsExclusive      bool               `json:"is_exclusive"`
-	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
-	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
-	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
-	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`
+	Name                       string             `json:"name" binding:"required"`
+	Description                string             `json:"description"`
+	Platform                   string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
+	RateMultiplier             float64            `json:"rate_multiplier"`
+	IdleRateMultiplier         optionalFloatField `json:"idle_rate_multiplier"`
+	ExtraProfitRatePercent     *float64           `json:"extra_profit_rate_percent"`
+	IdleExtraProfitRatePercent optionalFloatField `json:"idle_extra_profit_rate_percent"`
+	IdleStartTime              optionalClockField `json:"idle_start_time"`
+	IdleEndTime                optionalClockField `json:"idle_end_time"`
+	IsExclusive                bool               `json:"is_exclusive"`
+	SubscriptionType           string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
+	DailyLimitUSD              optionalLimitField `json:"daily_limit_usd"`
+	WeeklyLimitUSD             optionalLimitField `json:"weekly_limit_usd"`
+	MonthlyLimitUSD            optionalLimitField `json:"monthly_limit_usd"`
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -117,17 +191,21 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents update group request
 type UpdateGroupRequest struct {
-	Name             string             `json:"name"`
-	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
-	RateMultiplier   *float64           `json:"rate_multiplier"`
-	ExtraProfitRatePercent *float64     `json:"extra_profit_rate_percent"`
-	IsExclusive      *bool              `json:"is_exclusive"`
-	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`
-	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
-	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
-	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
-	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`
+	Name                       string             `json:"name"`
+	Description                string             `json:"description"`
+	Platform                   string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
+	RateMultiplier             *float64           `json:"rate_multiplier"`
+	ExtraProfitRatePercent     *float64           `json:"extra_profit_rate_percent"`
+	IdleRateMultiplier         optionalFloatField `json:"idle_rate_multiplier"`
+	IdleExtraProfitRatePercent optionalFloatField `json:"idle_extra_profit_rate_percent"`
+	IdleStartTime              optionalClockField `json:"idle_start_time"`
+	IdleEndTime                optionalClockField `json:"idle_end_time"`
+	IsExclusive                *bool              `json:"is_exclusive"`
+	Status                     string             `json:"status" binding:"omitempty,oneof=active inactive"`
+	SubscriptionType           string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
+	DailyLimitUSD              optionalLimitField `json:"daily_limit_usd"`
+	WeeklyLimitUSD             optionalLimitField `json:"weekly_limit_usd"`
+	MonthlyLimitUSD            optionalLimitField `json:"monthly_limit_usd"`
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -242,13 +320,25 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		response.BadRequest(c, "extra_profit_rate_percent must be >= 0")
 		return
 	}
+	if req.IdleRateMultiplier.value != nil && *req.IdleRateMultiplier.value < 0 {
+		response.BadRequest(c, "idle_rate_multiplier must be >= 0")
+		return
+	}
+	if req.IdleExtraProfitRatePercent.value != nil && *req.IdleExtraProfitRatePercent.value < 0 {
+		response.BadRequest(c, "idle_extra_profit_rate_percent must be >= 0")
+		return
+	}
 
 	group, err := h.adminService.CreateGroup(c.Request.Context(), &service.CreateGroupInput{
 		Name:                            req.Name,
 		Description:                     req.Description,
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
+		IdleRateMultiplier:              req.IdleRateMultiplier.value,
 		ExtraProfitRatePercent:          req.ExtraProfitRatePercent,
+		IdleExtraProfitRatePercent:      req.IdleExtraProfitRatePercent.value,
+		IdleStartSeconds:                req.IdleStartTime.value,
+		IdleEndSeconds:                  req.IdleEndTime.value,
 		IsExclusive:                     req.IsExclusive,
 		SubscriptionType:                req.SubscriptionType,
 		DailyLimitUSD:                   req.DailyLimitUSD.ToServiceInput(),
@@ -297,6 +387,14 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		response.BadRequest(c, "extra_profit_rate_percent must be >= 0")
 		return
 	}
+	if req.IdleRateMultiplier.value != nil && *req.IdleRateMultiplier.value < 0 {
+		response.BadRequest(c, "idle_rate_multiplier must be >= 0")
+		return
+	}
+	if req.IdleExtraProfitRatePercent.value != nil && *req.IdleExtraProfitRatePercent.value < 0 {
+		response.BadRequest(c, "idle_extra_profit_rate_percent must be >= 0")
+		return
+	}
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
 		Name:                            req.Name,
@@ -304,6 +402,14 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
 		ExtraProfitRatePercent:          req.ExtraProfitRatePercent,
+		IdleRateMultiplier:              req.IdleRateMultiplier.value,
+		IdleRateMultiplierSet:           req.IdleRateMultiplier.set,
+		IdleExtraProfitRatePercent:      req.IdleExtraProfitRatePercent.value,
+		IdleExtraProfitRatePercentSet:   req.IdleExtraProfitRatePercent.set,
+		IdleStartSeconds:                req.IdleStartTime.value,
+		IdleStartSecondsSet:             req.IdleStartTime.set,
+		IdleEndSeconds:                  req.IdleEndTime.value,
+		IdleEndSecondsSet:               req.IdleEndTime.set,
 		IsExclusive:                     req.IsExclusive,
 		Status:                          req.Status,
 		SubscriptionType:                req.SubscriptionType,

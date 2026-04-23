@@ -191,6 +191,56 @@ func TestGatewayServiceRecordUsage_PreservesRequestedAndUpstreamModels(t *testin
 	require.Equal(t, mappedModel, *usageRepo.lastLog.UpstreamModel)
 }
 
+func TestGatewayServiceRecordUsage_UsesIdleRateMultiplierWhenWindowActive(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, subRepo)
+
+	now := time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600))
+	currentSeconds := now.Hour()*3600 + now.Minute()*60 + now.Second()
+	start := (currentSeconds + secondsPerDay - 60) % secondsPerDay
+	end := (currentSeconds + 60) % secondsPerDay
+	idleMultiplier := 0.4
+	groupID := int64(77)
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID: "gateway_idle_multiplier",
+			Usage: ClaudeUsage{
+				InputTokens:  10,
+				OutputTokens: 6,
+			},
+			Model:    "claude-sonnet-4",
+			Duration: time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      100,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:                 groupID,
+				RateMultiplier:     1.8,
+				IdleRateMultiplier: &idleMultiplier,
+				IdleStartSeconds:   &start,
+				IdleEndSeconds:     &end,
+			},
+		},
+		User:    &User{ID: 200},
+		Account: &Account{ID: 300},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.InDelta(t, idleMultiplier, usageRepo.lastLog.RateMultiplier, 1e-12)
+
+	expectedCost, costErr := svc.billingService.CalculateCost("claude-sonnet-4", UsageTokens{
+		InputTokens:  10,
+		OutputTokens: 6,
+	}, idleMultiplier)
+	require.NoError(t, costErr)
+	require.InDelta(t, expectedCost.ActualCost, usageRepo.lastLog.ActualCost, 1e-12)
+}
+
 func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
 	userRepo := &openAIRecordUsageUserRepoStub{}

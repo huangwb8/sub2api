@@ -15,12 +15,21 @@ type Group struct {
 	Description    string
 	Platform       string
 	RateMultiplier float64
+	// IdleRateMultiplier 为闲时覆盖倍率。
+	// nil 表示闲时不覆盖倍率。
+	IdleRateMultiplier *float64
 	// ExtraProfitRatePercent 仅用于标准（余额）计费。
 	// nil 表示仍沿用旧倍率兼容逻辑。
 	ExtraProfitRatePercent *float64
-	IsExclusive    bool
-	Status         string
-	Hydrated       bool // indicates the group was loaded from a trusted repository source
+	// IdleExtraProfitRatePercent 为闲时覆盖额外盈利率。
+	// nil 表示闲时不覆盖额外盈利率。
+	IdleExtraProfitRatePercent *float64
+	// IdleStartSeconds / IdleEndSeconds 使用北京时间当天 0-86399 秒表示闲时时间段。
+	IdleStartSeconds *int
+	IdleEndSeconds   *int
+	IsExclusive      bool
+	Status           string
+	Hydrated         bool // indicates the group was loaded from a trusted repository source
 
 	SubscriptionType    string
 	DailyLimitUSD       *float64
@@ -81,6 +90,14 @@ func (g *Group) IsSubscriptionType() bool {
 
 func (g *Group) HasExtraProfitRateConfigured() bool {
 	return g != nil && g.ExtraProfitRatePercent != nil
+}
+
+func (g *Group) HasIdleRateMultiplierConfigured() bool {
+	return g != nil && g.IdleRateMultiplier != nil
+}
+
+func (g *Group) HasIdleExtraProfitRateConfigured() bool {
+	return g != nil && g.IdleExtraProfitRatePercent != nil
 }
 
 func (g *Group) IsFreeSubscription() bool {
