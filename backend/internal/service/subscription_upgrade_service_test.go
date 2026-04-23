@@ -240,6 +240,235 @@ func TestSubscriptionUpgradeService_BuildUpgradeQuote_RequiresPlanSnapshot(t *te
 	require.Contains(t, err.Error(), "plan snapshot")
 }
 
+func TestSubscriptionUpgradeService_ListUpgradeOptions_UsesSameGroupUpgradeMetadataFallback(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newSubscriptionUpgradeServiceTestEnv(t, "balance,wxpay")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := mustCreateUpgradeUser(t, ctx, client, 20)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "legacy-basic-group")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "modern-pro-group")
+
+	legacySourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Legacy", 100, "", 0)
+	currentSourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Current", 110, "openai-team", 10)
+	targetPlan := mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 20)
+
+	billingStartedAt := now.AddDate(0, 0, -15)
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(legacySourcePlan.ID).
+		SetCurrentPlanName(legacySourcePlan.Name).
+		SetCurrentPlanPriceCny(legacySourcePlan.Price).
+		SetCurrentPlanValidityDays(legacySourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(legacySourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(billingStartedAt).
+		SetStartsAt(billingStartedAt).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(billingStartedAt).
+		SetNotes("legacy basic subscription").
+		Save(ctx)
+	require.NoError(t, err)
+
+	result, err := svc.ListUpgradeOptions(ctx, user.ID, sourceSub.ID)
+	require.NoError(t, err)
+	require.Len(t, result.Options, 1)
+	require.Equal(t, targetPlan.ID, result.Options[0].TargetPlanID)
+	require.Equal(t, currentSourcePlan.UpgradeFamily, result.Options[0].UpgradeFamily)
+	require.Equal(t, 10, currentSourcePlan.UpgradeRank)
+}
+
+func TestSubscriptionUpgradeService_ListUpgradeOptions_RejectsAmbiguousSameGroupUpgradeMetadata(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newSubscriptionUpgradeServiceTestEnv(t, "balance,wxpay")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := mustCreateUpgradeUser(t, ctx, client, 20)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "ambiguous-basic-group")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "ambiguous-pro-group")
+
+	legacySourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Legacy", 100, "", 0)
+	mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Current A", 110, "openai-team", 10)
+	mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Current B", 120, "openai-enterprise", 20)
+	mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 30)
+
+	billingStartedAt := now.AddDate(0, 0, -15)
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(legacySourcePlan.ID).
+		SetCurrentPlanName(legacySourcePlan.Name).
+		SetCurrentPlanPriceCny(legacySourcePlan.Price).
+		SetCurrentPlanValidityDays(legacySourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(legacySourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(billingStartedAt).
+		SetStartsAt(billingStartedAt).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(billingStartedAt).
+		SetNotes("legacy basic subscription with ambiguous metadata").
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = svc.ListUpgradeOptions(ctx, user.ID, sourceSub.ID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "inconsistent")
+}
+
+func TestSubscriptionUpgradeService_BuildUpgradeQuote_UsesSameGroupMetadataFallbackWhenSourcePlanIsMissing(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newSubscriptionUpgradeServiceTestEnv(t, "balance,wxpay")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := mustCreateUpgradeUser(t, ctx, client, 20)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "deleted-source-group")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "deleted-target-group")
+
+	legacySourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Legacy", 100, "", 0)
+	mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Current", 120, "openai-team", 10)
+	targetPlan := mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 20)
+
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(legacySourcePlan.ID).
+		SetCurrentPlanName(legacySourcePlan.Name).
+		SetCurrentPlanPriceCny(legacySourcePlan.Price).
+		SetCurrentPlanValidityDays(legacySourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(legacySourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(now.AddDate(0, 0, -15)).
+		SetStartsAt(now.AddDate(0, 0, -15)).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(now.AddDate(0, 0, -15)).
+		SetNotes("legacy basic subscription with deleted source plan").
+		Save(ctx)
+	require.NoError(t, err)
+
+	err = client.SubscriptionPlan.DeleteOneID(legacySourcePlan.ID).Exec(ctx)
+	require.NoError(t, err)
+
+	quote, err := svc.BuildUpgradeQuote(ctx, user.ID, sourceSub.ID, targetPlan.ID, now)
+	require.NoError(t, err)
+	require.Equal(t, targetPlan.ID, quote.TargetPlanID)
+	require.InDelta(t, 100, quote.PayableCNY, 0.0001)
+}
+
+func TestSubscriptionUpgradeService_BuildUpgradeQuote_RejectsWhenNoSameGroupUpgradeMetadataExists(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newSubscriptionUpgradeServiceTestEnv(t, "balance,wxpay")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	user := mustCreateUpgradeUser(t, ctx, client, 20)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "unsupported-source-group")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "unsupported-target-group")
+
+	sourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Legacy", 100, "", 0)
+	targetPlan := mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 20)
+
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(sourcePlan.ID).
+		SetCurrentPlanName(sourcePlan.Name).
+		SetCurrentPlanPriceCny(sourcePlan.Price).
+		SetCurrentPlanValidityDays(sourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(sourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(now.AddDate(0, 0, -15)).
+		SetStartsAt(now.AddDate(0, 0, -15)).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(now.AddDate(0, 0, -15)).
+		SetNotes("legacy basic subscription without upgrade metadata").
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = svc.BuildUpgradeQuote(ctx, user.ID, sourceSub.ID, targetPlan.ID, now)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not enabled for this plan")
+}
+
+func TestPaymentService_CreateOrder_WithBalanceSubscriptionUpgradeCompletes_ForLegacyPlanMetadataFallback(t *testing.T) {
+	t.Parallel()
+
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", strings.NewReplacer("/", "_", " ", "_").Replace(t.Name()))
+	db, err := sql.Open("sqlite", dsn)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	_, err = db.Exec("PRAGMA foreign_keys = ON")
+	require.NoError(t, err)
+
+	drv := entsql.OpenDB(dialect.SQLite, db)
+	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
+	t.Cleanup(func() { _ = client.Close() })
+
+	settingRepo := &upgradeSettingRepoStub{
+		values: map[string]string{
+			service.SettingPaymentEnabled:      "true",
+			service.SettingEnabledPaymentTypes: "balance,wxpay",
+			service.SettingLoadBalanceStrategy: payment.DefaultLoadBalanceStrategy,
+		},
+	}
+	userRepo := repository.NewUserRepository(client, db)
+	groupRepo := repository.NewGroupRepository(client, db)
+	userSubRepo := repository.NewUserSubscriptionRepository(client)
+	subscriptionSvc := service.NewSubscriptionService(groupRepo, userSubRepo, nil, client, nil)
+	configSvc := service.NewPaymentConfigService(client, settingRepo, nil)
+	paymentSvc := service.NewPaymentService(client, payment.NewRegistry(), upgradeLoadBalancerStub{}, nil, subscriptionSvc, configSvc, userRepo, groupRepo)
+
+	ctx := context.Background()
+	now := time.Now().UTC()
+	user := mustCreateUpgradeUser(t, ctx, client, 100)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "upgrade-legacy-basic")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "upgrade-modern-pro")
+	legacySourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Legacy", 100, "", 0)
+	mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic Current", 120, "openai-team", 10)
+	targetPlan := mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 20)
+
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(legacySourcePlan.ID).
+		SetCurrentPlanName(legacySourcePlan.Name).
+		SetCurrentPlanPriceCny(legacySourcePlan.Price).
+		SetCurrentPlanValidityDays(legacySourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(legacySourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(now.AddDate(0, 0, -15)).
+		SetStartsAt(now.AddDate(0, 0, -15)).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(now.AddDate(0, 0, -15)).
+		SetNotes("legacy basic subscription").
+		Save(ctx)
+	require.NoError(t, err)
+
+	resp, err := paymentSvc.CreateOrder(ctx, service.CreateOrderRequest{
+		UserID:               user.ID,
+		Amount:               999,
+		PaymentType:          payment.TypeBalance,
+		OrderType:            payment.OrderTypeSubscriptionUpgrade,
+		PlanID:               targetPlan.ID,
+		SourceSubscriptionID: sourceSub.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.OrderStatusCompleted, resp.Status)
+
+	activeTargetSub, err := subscriptionSvc.GetActiveSubscription(ctx, user.ID, targetGroup.ID)
+	require.NoError(t, err)
+	require.NotNil(t, activeTargetSub.CurrentPlanID)
+	require.Equal(t, targetPlan.ID, *activeTargetSub.CurrentPlanID)
+}
+
 func TestPaymentService_CreateOrder_WithBalanceSubscriptionUpgradeCompletes(t *testing.T) {
 	t.Parallel()
 

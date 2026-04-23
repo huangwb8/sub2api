@@ -8,6 +8,7 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
@@ -50,6 +51,11 @@ type UpgradeQuote struct {
 	UpgradeRank          int     `json:"upgrade_rank"`
 }
 
+type sourceUpgradeMetadata struct {
+	Family string
+	Rank   int
+}
+
 type SubscriptionUpgradeService struct {
 	entClient       *dbent.Client
 	subscriptionSvc *SubscriptionService
@@ -68,7 +74,7 @@ func NewSubscriptionUpgradeService(entClient *dbent.Client, subscriptionSvc *Sub
 
 func (s *SubscriptionUpgradeService) ListUpgradeOptions(ctx context.Context, userID, sourceSubscriptionID int64) (*UpgradeOptionsResult, error) {
 	now := time.Now()
-	user, sourceSub, sourcePlan, cfg, remainingRatio, creditCNY, err := s.loadUpgradeContext(ctx, userID, sourceSubscriptionID, now)
+	user, sourceSub, sourceMeta, cfg, remainingRatio, creditCNY, err := s.loadUpgradeContext(ctx, userID, sourceSubscriptionID, now)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +98,7 @@ func (s *SubscriptionUpgradeService) ListUpgradeOptions(ctx context.Context, use
 
 	options := make([]UpgradeOption, 0)
 	for _, plan := range plans {
-		if !s.isEligibleUpgradeTarget(plan, sourcePlan, sourceSub, activeTargetGroups) {
+		if !s.isEligibleUpgradeTarget(plan, sourceMeta, sourceSub, activeTargetGroups) {
 			continue
 		}
 		payable := roundCNY(math.Max(plan.Price-creditCNY, 0))
@@ -130,7 +136,7 @@ func (s *SubscriptionUpgradeService) ListUpgradeOptions(ctx context.Context, use
 }
 
 func (s *SubscriptionUpgradeService) BuildUpgradeQuote(ctx context.Context, userID, sourceSubscriptionID, targetPlanID int64, now time.Time) (*UpgradeQuote, error) {
-	user, sourceSub, sourcePlan, cfg, remainingRatio, creditCNY, err := s.loadUpgradeContext(ctx, userID, sourceSubscriptionID, now)
+	user, sourceSub, sourceMeta, cfg, remainingRatio, creditCNY, err := s.loadUpgradeContext(ctx, userID, sourceSubscriptionID, now)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +150,7 @@ func (s *SubscriptionUpgradeService) BuildUpgradeQuote(ctx context.Context, user
 			activeTargetGroups[targetPlan.GroupID] = struct{}{}
 		}
 	}
-	if !s.isEligibleUpgradeTarget(targetPlan, sourcePlan, sourceSub, activeTargetGroups) {
+	if !s.isEligibleUpgradeTarget(targetPlan, sourceMeta, sourceSub, activeTargetGroups) {
 		return nil, infraerrors.BadRequest("UPGRADE_TARGET_NOT_ALLOWED", "target subscription plan is not eligible for upgrade")
 	}
 
@@ -167,7 +173,7 @@ func (s *SubscriptionUpgradeService) BuildUpgradeQuote(ctx context.Context, user
 	}, nil
 }
 
-func (s *SubscriptionUpgradeService) loadUpgradeContext(ctx context.Context, userID, sourceSubscriptionID int64, now time.Time) (*User, *UserSubscription, *dbent.SubscriptionPlan, *PaymentConfig, float64, float64, error) {
+func (s *SubscriptionUpgradeService) loadUpgradeContext(ctx context.Context, userID, sourceSubscriptionID int64, now time.Time) (*User, *UserSubscription, *sourceUpgradeMetadata, *PaymentConfig, float64, float64, error) {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, nil, nil, nil, 0, 0, fmt.Errorf("get user: %w", err)
@@ -185,12 +191,15 @@ func (s *SubscriptionUpgradeService) loadUpgradeContext(ctx context.Context, use
 	if sourceSub.CurrentPlanID == nil || sourceSub.CurrentPlanPriceCNY == nil || sourceSub.CurrentPlanValidityDays == nil || sourceSub.BillingCycleStartedAt == nil || sourceSub.CurrentPlanValidityUnit == "" {
 		return nil, nil, nil, nil, 0, 0, infraerrors.BadRequest("UPGRADE_SOURCE_SNAPSHOT_MISSING", "subscription upgrade is not available for historical subscriptions without a plan snapshot")
 	}
+
 	sourcePlan, err := s.configService.GetPlan(ctx, *sourceSub.CurrentPlanID)
 	if err != nil {
-		return nil, nil, nil, nil, 0, 0, infraerrors.BadRequest("UPGRADE_SOURCE_PLAN_NOT_FOUND", "source subscription plan is no longer available for upgrades")
+		sourcePlan = nil
 	}
-	if sourcePlan.UpgradeFamily == "" {
-		return nil, nil, nil, nil, 0, 0, infraerrors.BadRequest("UPGRADE_SOURCE_NOT_SUPPORTED", "subscription upgrade is not enabled for this plan")
+
+	sourceMeta, err := s.resolveSourceUpgradeMetadata(ctx, sourceSub, sourcePlan)
+	if err != nil {
+		return nil, nil, nil, nil, 0, 0, err
 	}
 	cfg, err := s.configService.GetPaymentConfig(ctx)
 	if err != nil {
@@ -210,11 +219,51 @@ func (s *SubscriptionUpgradeService) loadUpgradeContext(ctx context.Context, use
 	remainingRatio := clampRatio(sourceSub.ExpiresAt.Sub(now).Seconds() / cycleDuration.Seconds())
 	creditCNY := roundCNY(*sourceSub.CurrentPlanPriceCNY * remainingRatio)
 
-	return user, sourceSub, sourcePlan, cfg, remainingRatio, creditCNY, nil
+	return user, sourceSub, sourceMeta, cfg, remainingRatio, creditCNY, nil
 }
 
-func (s *SubscriptionUpgradeService) isEligibleUpgradeTarget(plan, sourcePlan *dbent.SubscriptionPlan, sourceSub *UserSubscription, activeTargetGroups map[int64]struct{}) bool {
-	if plan == nil || sourcePlan == nil || sourceSub == nil {
+func (s *SubscriptionUpgradeService) resolveSourceUpgradeMetadata(ctx context.Context, sourceSub *UserSubscription, sourcePlan *dbent.SubscriptionPlan) (*sourceUpgradeMetadata, error) {
+	if sourcePlan != nil && sourcePlan.UpgradeFamily != "" {
+		return &sourceUpgradeMetadata{
+			Family: sourcePlan.UpgradeFamily,
+			Rank:   sourcePlan.UpgradeRank,
+		}, nil
+	}
+
+	groupPlans, err := s.entClient.SubscriptionPlan.Query().
+		Where(
+			subscriptionplan.GroupIDEQ(sourceSub.GroupID),
+			subscriptionplan.UpgradeFamilyNEQ(""),
+		).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query source group upgrade metadata: %w", err)
+	}
+
+	var resolved *sourceUpgradeMetadata
+	for _, plan := range groupPlans {
+		if resolved == nil {
+			resolved = &sourceUpgradeMetadata{
+				Family: plan.UpgradeFamily,
+				Rank:   plan.UpgradeRank,
+			}
+			continue
+		}
+		if plan.UpgradeFamily != resolved.Family || plan.UpgradeRank != resolved.Rank {
+			return nil, infraerrors.BadRequest("UPGRADE_SOURCE_METADATA_AMBIGUOUS", "subscription upgrade metadata is inconsistent for this plan group")
+		}
+	}
+	if resolved != nil {
+		return resolved, nil
+	}
+	if sourcePlan == nil {
+		return nil, infraerrors.BadRequest("UPGRADE_SOURCE_PLAN_NOT_FOUND", "source subscription plan is no longer available for upgrades")
+	}
+	return nil, infraerrors.BadRequest("UPGRADE_SOURCE_NOT_SUPPORTED", "subscription upgrade is not enabled for this plan")
+}
+
+func (s *SubscriptionUpgradeService) isEligibleUpgradeTarget(plan *dbent.SubscriptionPlan, sourceMeta *sourceUpgradeMetadata, sourceSub *UserSubscription, activeTargetGroups map[int64]struct{}) bool {
+	if plan == nil || sourceMeta == nil || sourceSub == nil {
 		return false
 	}
 	if !plan.ForSale {
@@ -223,10 +272,10 @@ func (s *SubscriptionUpgradeService) isEligibleUpgradeTarget(plan, sourcePlan *d
 	if plan.GroupID == sourceSub.GroupID {
 		return false
 	}
-	if plan.UpgradeFamily == "" || plan.UpgradeFamily != sourcePlan.UpgradeFamily {
+	if plan.UpgradeFamily == "" || plan.UpgradeFamily != sourceMeta.Family {
 		return false
 	}
-	if plan.UpgradeRank <= sourcePlan.UpgradeRank {
+	if plan.UpgradeRank <= sourceMeta.Rank {
 		return false
 	}
 	if _, exists := activeTargetGroups[plan.GroupID]; exists {
