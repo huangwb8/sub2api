@@ -87,6 +87,8 @@ func TestResolveOpenAIForwardModel_PreventsClaudeModelFromFallingBackToGpt51(t *
 
 func TestNormalizeCodexModel(t *testing.T) {
 	cases := map[string]string{
+		"gpt-5.5-high":              "gpt-5.5",
+		"gpt-5.5-2026-04-23":        "gpt-5.5",
 		"gpt-5.3-codex-spark":       "gpt-5.3-codex",
 		"gpt-5.3-codex-spark-high":  "gpt-5.3-codex",
 		"gpt-5.3-codex-spark-xhigh": "gpt-5.3-codex",
@@ -124,6 +126,12 @@ func TestNormalizeOpenAIModelForUpstream(t *testing.T) {
 			account: &Account{Type: AccountTypeAPIKey},
 			model:   "gpt-4.1",
 			want:    "gpt-4.1",
+		},
+		{
+			name:    "oauth preserves gpt55 reasoning family",
+			account: &Account{Type: AccountTypeOAuth},
+			model:   "gpt-5.5-high",
+			want:    "gpt-5.5",
 		},
 	}
 

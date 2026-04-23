@@ -27,6 +27,8 @@ To manually update this file with the latest pricing data (if automation is unav
 curl -s https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json -o model_prices_and_context_window.json
 ```
 
+When OpenAI announces a new model before the LiteLLM mirror catches up, we may temporarily backfill a minimal local entry so billing fallback and admin model selection stay consistent. Replace that provisional entry with the mirrored upstream snapshot once it lands.
+
 ## File Format
 The file contains JSON data with model pricing information including:
 - Model names and identifiers
@@ -34,4 +36,4 @@ The file contains JSON data with model pricing information including:
 - Context window sizes
 - Model capabilities
 
-Last updated: 2025-08-10
+Last updated: 2026-04-24

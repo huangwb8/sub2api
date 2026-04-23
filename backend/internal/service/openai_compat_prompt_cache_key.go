@@ -15,7 +15,7 @@ func shouldAutoInjectPromptCacheKeyForCompat(model string) bool {
 		return false
 	}
 	switch normalizeCodexModel(trimmed) {
-	case "gpt-5.4", "gpt-5.3-codex":
+	case "gpt-5.5", "gpt-5.4", "gpt-5.3-codex":
 		return true
 	default:
 		return false

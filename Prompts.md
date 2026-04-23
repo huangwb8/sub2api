@@ -16,7 +16,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.0.26 
+version=1.0.27 
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -62,6 +62,10 @@ version1 = 78f691d2de24d0d13ce68922e120c8119ea32856
 ```
 
 # 日常
+
+---
+
+最近几个小时openai发布了gpt-5.5。请联网了解gpt-5.5的情况，为本项目添加对gpt-5.5的支持。使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

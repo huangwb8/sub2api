@@ -10,6 +10,9 @@ func TestIsOpenAIGPT54Model_GuardsNonGPTFamilies(t *testing.T) {
 	if !isOpenAIGPT54Model("gpt-5.4") {
 		t.Fatal("expected gpt-5.4 to match GPT-5.4 pricing guard")
 	}
+	if isOpenAIGPT54Model("gpt-5.5") {
+		t.Fatal("did not expect gpt-5.5 to match GPT-5.4 pricing guard")
+	}
 	if isOpenAIGPT54Model("gpt-4o") {
 		t.Fatal("did not expect gpt-4o to match GPT-5.4 pricing guard")
 	}
