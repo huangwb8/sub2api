@@ -1096,13 +1096,12 @@ export default {
       },
       pricingStrategy: {
         title: '定价策略测算',
-        description: '基于系统自动估算的用户消耗分布，在指定用户规模下客观测算保守成本、达标单价与当前定价利润。',
+        description: '基于系统自动估算的用户消耗分布，在指定用户规模和目标盈利率下客观测算保守成本、达标单价与当前定价利润。',
         estimateInfo: '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅）',
         fallbackInfo: '暂无足够样本，使用保守默认估算（70% 轻度用户）',
         costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
         form: {
           userCount: '测算用户数',
-          targetProfit: '目标月利润',
           profitRate: '目标盈利率',
           profitMode: '盈利口径',
           costPlus: '成本加成',
@@ -1111,13 +1110,11 @@ export default {
           confidence95: '95%（试水）',
           confidence99: '99%（正式）',
           users: '人',
-          cnyPerMonth: '元 / 月',
           percent: '%'
         },
         tooltips: {
           userCount: '你想按多少个订阅用户来测算。这里只做客观推演，不再自动替你挑选“推荐用户规模”。',
-          targetProfit: '希望这个套餐池每月合计实现多少利润。目标越高，按当前用户规模推导出的达标单价通常越高。',
-          profitRate: '在成本之外希望保留的利润比例。数值越高，保守保本价和达标单价通常越高。',
+          profitRate: '在成本之外希望保留的利润比例。定价策略测算会直接按这个比例推导达标单价，不再叠加单独的目标月利润约束。',
           profitMode: '成本加成按“成本 × (1 + 盈利率)”计算；净利率按“利润占售价的比例”反推，通常会更激进。',
           confidence: '用于控制对用户波动的保守程度。99% 更稳健，通常需要更高定价或更多用户；95% 更适合试水。'
         },
@@ -1126,14 +1123,13 @@ export default {
           minimumUsers: '测算用户数',
           profitPerUser: '当前最低月费月利润',
           safetyBuffer: '安全余量',
-          floorPriceHint: '保守保本价 ¥{floor}',
-          profitShareHint: '按利润目标折算 ¥{share}',
+          floorPriceHint: '按目标盈利率折算 ¥{floor}',
           conservativeCostHint: '保守月成本 ¥{cost}',
           currentPriceHint: '当前最低月费 ¥{price}',
           priceGapHint: '与达标单价差额 {gap}',
           users: '{count} 人',
           bufferValue: '{value} 个/人',
-          noResult: '当前参数下无法推导合理定价，请调整利润目标或盈利率。'
+          noResult: '当前参数下无法推导合理定价，请调整目标盈利率。'
         },
         scenarios: {
           title: '用户规模 × 定价情景',

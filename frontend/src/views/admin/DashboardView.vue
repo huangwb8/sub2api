@@ -396,7 +396,7 @@
             <!-- 参数输入组 -->
             <section>
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.pricingStrategy.form.userCount') }} · {{ t('admin.dashboard.pricingStrategy.form.targetProfit') }}
+                {{ t('admin.dashboard.pricingStrategy.form.userCount') }} · {{ t('admin.dashboard.pricingStrategy.form.profitRate') }}
               </h4>
               <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
                 <div class="calculator-form-grid">
@@ -425,34 +425,6 @@
                     />
                     <p class="calculator-field__hint">
                       {{ t('admin.dashboard.pricingStrategy.form.users') }}
-                    </p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.targetProfit') }}</label>
-                      <HelpTooltip
-                        data-testid="pricing-target-profit-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.pricingStrategy.tooltips.targetProfit')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <input
-                      v-model.number="pricingForm.targetProfit"
-                      data-testid="pricing-target-profit"
-                      type="number"
-                      min="0"
-                      step="10"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.pricingStrategy.form.cnyPerMonth') }}
                     </p>
                   </div>
 
@@ -554,8 +526,6 @@
                   <p class="calculator-result-card__meta">
                     <span v-if="pricingScenario">
                       {{ t('admin.dashboard.pricingStrategy.result.floorPriceHint', { floor: formatCost(pricingScenario.floorPrice) }) }}
-                      ·
-                      {{ t('admin.dashboard.pricingStrategy.result.profitShareHint', { share: formatCost(pricingScenario.targetProfitDrivenPrice) }) }}
                     </span>
                     <span v-else>&nbsp;</span>
                   </p>
@@ -1392,7 +1362,6 @@ type PricingProfitMode = 'costPlus' | 'netMargin'
 
 const pricingForm = reactive({
   userCount: 30,
-  targetProfit: 120,
   profitRatePercent: 20,
   profitMode: 'costPlus' as PricingProfitMode,
   confidenceLevel: 99 as 95 | 99
@@ -1718,7 +1687,6 @@ const pricingScenario = computed(() => {
   const distribution = resolveUsageDistribution(estimate, capacityPerItem)
   const unitCost = procurementCost / capacityPerItem
   const profitRate = resolveProfitRate(pricingForm.profitRatePercent)
-  const targetProfit = Math.max(pricingForm.targetProfit, 0)
   const lossRisk = resolveLossRisk(pricingForm.confidenceLevel)
   const riskBufferUnits =
     distribution.heavyUsage * Math.sqrt(Math.log(1 / lossRisk) / (2 * userCount))
@@ -1727,8 +1695,7 @@ const pricingScenario = computed(() => {
   const conservativeMonthlyCost = riskAdjustedCostPerUser * userCount
   const multiplier = resolvePriceMultiplier(pricingForm.profitMode, profitRate)
   const floorPrice = riskAdjustedCostPerUser * multiplier
-  const targetProfitDrivenPrice = riskAdjustedCostPerUser + targetProfit / userCount
-  const requiredPrice = Math.max(floorPrice, targetProfitDrivenPrice)
+  const requiredPrice = floorPrice
   const currentMonthlyPrice = Math.max(estimate.current_cheapest_monthly_price_cny, 0)
   const currentMonthlyRevenue = currentMonthlyPrice * userCount
   const currentMonthlyProfit = currentMonthlyRevenue - conservativeMonthlyCost
@@ -1741,7 +1708,6 @@ const pricingScenario = computed(() => {
     riskAdjustedCostPerUser,
     conservativeMonthlyCost,
     floorPrice,
-    targetProfitDrivenPrice,
     requiredPrice,
     currentMonthlyPrice,
     currentMonthlyRevenue,
@@ -2068,7 +2034,6 @@ const loadOversellMathBaseline = async () => {
     oversellForm.confidenceLevel = initialInput.confidence_level >= 0.99 ? 99 : 95
     oversellForm.plannedPrice = response.estimate.current_cheapest_monthly_price_cny || oversellForm.plannedPrice
     pricingForm.userCount = Math.max(response.estimate.sampled_subscription_count || 0, 1)
-    pricingForm.targetProfit = initialInput.target_profit_total_cny
     pricingForm.profitRatePercent = initialInput.profit_rate_percent
     pricingForm.profitMode = initialInput.profit_mode === 'net_margin' ? 'netMargin' : 'costPlus'
     pricingForm.confidenceLevel = initialInput.confidence_level >= 0.99 ? 99 : 95

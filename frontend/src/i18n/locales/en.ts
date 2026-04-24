@@ -1086,13 +1086,12 @@ export default {
       },
       pricingStrategy: {
         title: 'Pricing Strategy Calculator',
-        description: 'Based on the auto-estimated user consumption pattern, objectively calculate conservative cost, required price, and current pricing profit at your chosen user count.',
+        description: 'Based on the auto-estimated user consumption pattern, objectively calculate conservative cost, required price, and current pricing profit at your chosen user count and target profit rate.',
         estimateInfo: 'Within the last 30 days of samples, {share} of users stayed within {threshold} theoretical units per month ({count} active subscriptions sampled)',
         fallbackInfo: 'Insufficient sample data; using conservative default estimate (70% light users)',
         costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
         form: {
           userCount: 'Users to model',
-          targetProfit: 'Target monthly profit',
           profitRate: 'Target profit rate',
           profitMode: 'Profit basis',
           costPlus: 'Cost plus',
@@ -1101,13 +1100,11 @@ export default {
           confidence95: '95% (trial)',
           confidence99: '99% (production)',
           users: 'users',
-          cnyPerMonth: 'CNY / month',
           percent: '%'
         },
         tooltips: {
           userCount: 'How many subscription users you want to model. The calculator now shows facts for that scale instead of auto-picking a “recommended” user pool.',
-          targetProfit: 'How much profit you want this plan pool to generate each month in total. Higher targets usually increase the required price at the current user count.',
-          profitRate: 'The profit ratio you want to keep above cost. Higher values usually raise both the conservative floor price and the required selling price.',
+          profitRate: 'The profit ratio you want to keep above cost. The pricing calculator now derives the required price directly from this rate without an extra monthly-profit constraint.',
           profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, which is usually more aggressive.',
           confidence: 'Controls how conservative the model should be about usage volatility. 99% is safer and usually needs higher pricing or more users; 95% is better for trials.'
         },
@@ -1116,14 +1113,13 @@ export default {
           minimumUsers: 'Modeled users',
           profitPerUser: 'Current cheapest-plan monthly profit',
           safetyBuffer: 'Safety buffer',
-          floorPriceHint: 'Conservative floor ¥{floor}',
-          profitShareHint: 'Target-profit price ¥{share}',
+          floorPriceHint: 'Target-rate price ¥{floor}',
           conservativeCostHint: 'Conservative monthly cost ¥{cost}',
           currentPriceHint: 'Current cheapest monthly price ¥{price}',
           priceGapHint: 'Gap to required price {gap}',
           users: '{count} users',
           bufferValue: '{value} units/user',
-          noResult: 'Cannot derive a reasonable price with current parameters. Adjust the profit target or profit rate.'
+          noResult: 'Cannot derive a reasonable price with current parameters. Adjust the target profit rate.'
         },
         scenarios: {
           title: 'User Count × Pricing Scenarios',
