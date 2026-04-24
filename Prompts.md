@@ -39,15 +39,15 @@ version=1.0.27
 - 源项目最新的历史版本
 
 ```
-version2 = 
-version1 = 78f691d2de24d0d13ce68922e120c8119ea32856
+version2 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
+version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 ```
 
 - 吸收源项目的优势
 
 ```
-version2 = 6449da6c8daf2a443854cf25de96f3a972e3297c
-version1 = 78f691d2de24d0d13ce68922e120c8119ea32856
+version2 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
+version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
 - 这些变化对目前我的个人sub2api项目有没有启发？你觉得那些优化我有必要吸收吗？如果有，先不要改本项目的源代码； 而是在 ./docs/plans 里写一个优化计划。
@@ -62,6 +62,18 @@ version1 = 78f691d2de24d0d13ce68922e120c8119ea32856
 ```
 
 # 日常
+
+---
+
+sub2api的管理控制台 - 定价策略测算里，如果有 目标盈利率 ，似乎目标月利润这个参数不需要也行？你怎么看？
+
+---
+
+如图，对于管理控制台 - 定价策略建议 和  超售数学测算 的前端UI里，当用户将鼠标放在参数右上角的问题里时，这个弹出的解释框的位置有bug。 这是个p0级别bug。 请修复。
+
+---
+
+根据 docs/plans/2026-04-24-upstream-6449da-to-1ce9dc-optimization-plan.md，将上游项目的新特性的优点吸收在本项目里；这个过程应该是在你彻底了解新特性的源代码以及本项目的源代码的前提下进行。本项目有不少我独有的开发功能，你千万不要干扰； 如果上游项目的新特性与我的个性化功能有冲突，以保我的个性化功能为首要前提。上述过程比较复杂， 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

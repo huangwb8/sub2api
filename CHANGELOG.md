@@ -6,6 +6,20 @@
 
 ## [Unreleased]
 
+### Added（新增）
+- 新增了 `docs/plans/2026-04-24-upstream-6449da-to-1ce9dc-optimization-plan.md`：基于上游 `6449da6c..1ce9dc03` 的提交区间，沉淀当前 fork 对 Channel Monitor、Available Channels、RPM 限流、OpenAI/Codex 兼容、403 冷却、支付 webhook 与 license 同步状态的选择性吸收计划。
+- 新增了 OpenAI 403 连续失败计数缓存与回归测试：OpenAI 账号遇到偶发 403 时先进入短时临时不可调度，连续达到阈值后才正式标记错误，降低风控抖动导致的误杀风险。
+- 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
+
+### Changed（变更）
+- 简化了管理控制台 Dashboard 的“定价策略测算”：移除核心表单中的“目标月利润”输入，达标月费单价现在只按测算用户数、目标盈利率、盈利口径与置信水平推导，减少与目标盈利率并列造成的定价歧义。
+- 调整了账号配额用量更新后的调度刷新条件：总额度、日额度、周额度跨越限额，以及日/周窗口自动重置时都会触发调度 outbox，避免快照在额度边界漂移。
+- 强化了 Codex Spark 模型限制提示：`gpt-5.3-codex-spark` 请求会注入图片能力限制说明，并拒绝图片输入或 `image_generation` 工具请求，避免把模型能力限制误判为本地工具缺失。
+
+### Fixed（修复）
+- 修复了管理控制台 Dashboard 参数说明气泡定位异常的问题：`HelpTooltip` 现在使用纯视口坐标定位，并会在左右边界与顶部空间不足时自动避让，避免“定价策略建议 / 超售数学测算”等面板里的问号说明框错位显示。
+- 修复了支付 webhook 签名验证成功但订单不存在时返回 500 的问题：未知订单现在使用 sentinel error 分类并返回 provider 所需的成功 ack，仍保留告警日志且不触发履约。
+
 ## [1.0.27] - 2026-04-24
 
 ### Added（新增）
