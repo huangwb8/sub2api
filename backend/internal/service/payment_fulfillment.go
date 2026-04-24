@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -16,6 +17,10 @@ import (
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
+// ErrOrderNotFound 表示支付回调引用的订单不存在。
+// Webhook handler 应将其视为不可重试终态并返回 2xx，避免支付平台重试风暴。
+var ErrOrderNotFound = errors.New("payment order not found")
+
 // --- Payment Notification & Fulfillment ---
 
 func (s *PaymentService) HandlePaymentNotification(ctx context.Context, n *payment.PaymentNotification, pk string) error {
@@ -25,12 +30,18 @@ func (s *PaymentService) HandlePaymentNotification(ctx context.Context, n *payme
 	// Look up order by out_trade_no (the external order ID we sent to the provider)
 	order, err := s.entClient.PaymentOrder.Query().Where(paymentorder.OutTradeNo(n.OrderID)).Only(ctx)
 	if err != nil {
-		// Fallback: try legacy format (sub2_N where N is DB ID)
-		trimmed := strings.TrimPrefix(n.OrderID, orderIDPrefix)
-		if oid, parseErr := strconv.ParseInt(trimmed, 10, 64); parseErr == nil {
-			return s.confirmPayment(ctx, oid, n.TradeNo, n.Amount, pk, n.Metadata)
+		// Fallback only for true legacy "sub2_N" DB-ID payloads when the
+		// current out_trade_no lookup genuinely did not find an order.
+		if !dbent.IsNotFound(err) {
+			return fmt.Errorf("lookup order failed for out_trade_no %s: %w", n.OrderID, err)
 		}
-		return fmt.Errorf("order not found for out_trade_no: %s", n.OrderID)
+		trimmed := strings.TrimPrefix(n.OrderID, orderIDPrefix)
+		if trimmed != "" && trimmed != n.OrderID {
+			if oid, parseErr := strconv.ParseInt(trimmed, 10, 64); parseErr == nil && oid > 0 {
+				return s.confirmPayment(ctx, oid, n.TradeNo, n.Amount, pk, n.Metadata)
+			}
+		}
+		return fmt.Errorf("%w: out_trade_no=%s", ErrOrderNotFound, n.OrderID)
 	}
 	return s.confirmPayment(ctx, order.ID, n.TradeNo, n.Amount, pk, n.Metadata)
 }

@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -44,6 +45,22 @@ func (s stubPaymentLoadBalancer) GetInstanceConfig(_ context.Context, instanceID
 
 func (s stubPaymentLoadBalancer) SelectInstance(_ context.Context, _ payment.PaymentType, _ []string, _ payment.Strategy, _ float64) (*payment.InstanceSelection, error) {
 	return nil, nil
+}
+
+func TestPaymentService_HandlePaymentNotificationUnknownOrderReturnsSentinel(t *testing.T) {
+	_, client := newPaymentConfigServiceSQLite(t)
+	svc := &PaymentService{entClient: client, registry: payment.NewRegistry()}
+
+	err := svc.HandlePaymentNotification(context.Background(), &payment.PaymentNotification{
+		OrderID: "foreign_order_123",
+		TradeNo: "trade_123",
+		Amount:  10,
+		Status:  payment.NotificationStatusSuccess,
+	}, payment.TypeStripe)
+
+	if !errors.Is(err, ErrOrderNotFound) {
+		t.Fatalf("HandlePaymentNotification() error = %v, want ErrOrderNotFound", err)
+	}
 }
 
 func TestPaymentService_RefreshProviders_RegistersCheckoutTypes(t *testing.T) {
@@ -159,9 +176,21 @@ func TestPaymentService_ResolveWebhookProviders(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create second stripe instance: %v", err)
 		}
+		user, err := client.User.Create().
+			SetEmail("webhook-known@example.com").
+			SetUsername("webhook-known").
+			SetPasswordHash("hash").
+			SetRole(RoleUser).
+			SetBalance(0).
+			SetConcurrency(1).
+			SetStatus(StatusActive).
+			Save(ctx)
+		if err != nil {
+			t.Fatalf("create user: %v", err)
+		}
 
 		_, err = client.PaymentOrder.Create().
-			SetUserID(1).
+			SetUserID(user.ID).
 			SetUserEmail("user@example.com").
 			SetUserName("user").
 			SetAmount(10).

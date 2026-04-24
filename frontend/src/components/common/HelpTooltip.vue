@@ -7,7 +7,14 @@ defineProps<{
 
 const show = ref(false)
 const triggerRef = useTemplateRef<HTMLElement>('trigger')
-const tooltipStyle = ref({ top: '0px', left: '0px' })
+const tooltipRef = useTemplateRef<HTMLElement>('tooltip')
+const tooltipStyle = ref({
+  top: '0px',
+  left: '0px',
+  transform: 'translateX(-50%) translateY(-100%)',
+  arrowLeft: '50%',
+})
+const tooltipPlacement = ref<'top' | 'bottom'>('top')
 
 function onEnter() {
   show.value = true
@@ -28,10 +35,25 @@ function toggle() {
 function updatePosition() {
   const el = triggerRef.value
   if (!el) return
+
   const rect = el.getBoundingClientRect()
+
+  const viewportPadding = 16
+  const viewportWidth = window.innerWidth
+  const tooltipWidth = Math.min(tooltipRef.value?.offsetWidth || 256, viewportWidth - viewportPadding * 2)
+  const tooltipHeight = tooltipRef.value?.offsetHeight || 0
+  const triggerCenter = rect.left + rect.width / 2
+  const minLeft = viewportPadding + tooltipWidth / 2
+  const maxLeft = viewportWidth - viewportPadding - tooltipWidth / 2
+  const left = Math.min(Math.max(triggerCenter, minLeft), Math.max(minLeft, maxLeft))
+  const hasSpaceAbove = rect.top >= tooltipHeight + viewportPadding + 8
+
+  tooltipPlacement.value = hasSpaceAbove ? 'top' : 'bottom'
   tooltipStyle.value = {
-    top: `${rect.top + window.scrollY}px`,
-    left: `${rect.left + rect.width / 2 + window.scrollX}px`,
+    top: `${hasSpaceAbove ? rect.top - 8 : rect.bottom + 8}px`,
+    left: `${left}px`,
+    transform: hasSpaceAbove ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
+    arrowLeft: `${triggerCenter - left + tooltipWidth / 2}px`,
   }
 }
 </script>
@@ -71,12 +93,17 @@ function updatePosition() {
     <!-- Teleport to body to escape modal overflow clipping -->
     <Teleport to="body">
       <div
+        ref="tooltip"
         v-show="show"
-        class="fixed z-[99999] w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-full rounded-lg bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800"
-        :style="{ top: `calc(${tooltipStyle.top} - 8px)`, left: tooltipStyle.left }"
+        class="fixed z-[99999] w-64 max-w-[calc(100vw-2rem)] rounded-lg bg-gray-900 p-3 text-xs leading-relaxed text-white shadow-xl ring-1 ring-white/10 dark:bg-gray-800"
+        :style="{ top: tooltipStyle.top, left: tooltipStyle.left, transform: tooltipStyle.transform }"
       >
         <slot>{{ content }}</slot>
-        <div class="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900 dark:bg-gray-800"></div>
+        <div
+          class="absolute h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900 dark:bg-gray-800"
+          :class="tooltipPlacement === 'top' ? '-bottom-1' : '-top-1'"
+          :style="{ left: tooltipStyle.arrowLeft }"
+        ></div>
       </div>
     </Teleport>
   </div>
