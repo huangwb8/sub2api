@@ -14,8 +14,12 @@ import (
 )
 
 // NewAPIKeyAuthMiddleware 创建 API Key 认证中间件
-func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) APIKeyAuthMiddleware {
-	return APIKeyAuthMiddleware(apiKeyAuthWithSubscription(apiKeyService, subscriptionService, cfg))
+func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCaches ...service.GatewayRPMCache) APIKeyAuthMiddleware {
+	var rpmCache service.GatewayRPMCache
+	if len(rpmCaches) > 0 {
+		rpmCache = rpmCaches[0]
+	}
+	return APIKeyAuthMiddleware(apiKeyAuthWithSubscription(apiKeyService, subscriptionService, cfg, rpmCache))
 }
 
 // apiKeyAuthWithSubscription API Key认证中间件（支持订阅验证）
@@ -25,7 +29,7 @@ func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionS
 //   - 计费执行（Billing Enforcement）：过期/配额/订阅/余额检查 —— skipBilling 时整块跳过
 //
 // /v1/usage 端点只需鉴权，不需要计费执行（允许过期/配额耗尽的 Key 查询自身用量）。
-func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) gin.HandlerFunc {
+func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCache service.GatewayRPMCache) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ── 1. 提取 API Key ──────────────────────────────────────────
 
@@ -199,6 +203,15 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 					AbortWithError(c, 403, "INSUFFICIENT_BALANCE", "Insufficient account balance")
 					return
 				}
+			}
+
+			if err := service.EnforceGatewayRPM(c.Request.Context(), rpmCache, apiKey); err != nil {
+				if errors.Is(err, service.ErrGatewayRPMExceeded) {
+					AbortWithError(c, 429, "RPM_LIMIT_EXCEEDED", "RPM limit exceeded")
+					return
+				}
+				AbortWithError(c, 503, "RPM_LIMIT_UNAVAILABLE", "RPM limit temporarily unavailable")
+				return
 			}
 		}
 

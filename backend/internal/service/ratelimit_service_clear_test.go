@@ -67,6 +67,11 @@ type tempUnschedCacheRecorder struct {
 	deleteErr  error
 }
 
+type openAI403CounterCacheRecorder struct {
+	resetIDs []int64
+	resetErr error
+}
+
 type recoverTokenInvalidatorStub struct {
 	accounts []*Account
 	err      error
@@ -90,10 +95,21 @@ func (s *recoverTokenInvalidatorStub) InvalidateToken(ctx context.Context, accou
 	return s.err
 }
 
+func (c *openAI403CounterCacheRecorder) IncrementOpenAI403Count(ctx context.Context, accountID int64, windowMinutes int) (int64, error) {
+	return 0, nil
+}
+
+func (c *openAI403CounterCacheRecorder) ResetOpenAI403Count(ctx context.Context, accountID int64) error {
+	c.resetIDs = append(c.resetIDs, accountID)
+	return c.resetErr
+}
+
 func TestRateLimitService_ClearRateLimit_AlsoClearsTempUnschedulable(t *testing.T) {
 	repo := &rateLimitClearRepoStub{}
 	cache := &tempUnschedCacheRecorder{}
 	svc := NewRateLimitService(repo, nil, &config.Config{}, nil, cache)
+	counter := &openAI403CounterCacheRecorder{}
+	svc.SetOpenAI403CounterCache(counter)
 
 	err := svc.ClearRateLimit(context.Background(), 42)
 	require.NoError(t, err)
@@ -103,6 +119,7 @@ func TestRateLimitService_ClearRateLimit_AlsoClearsTempUnschedulable(t *testing.
 	require.Equal(t, 1, repo.clearModelRateLimitCalls)
 	require.Equal(t, 1, repo.clearTempUnschedCalls)
 	require.Equal(t, []int64{42}, cache.deletedIDs)
+	require.Equal(t, []int64{42}, counter.resetIDs)
 }
 
 func TestRateLimitService_ClearRateLimit_ClearTempUnschedulableFailed(t *testing.T) {
@@ -220,6 +237,8 @@ func TestRateLimitService_RecoverAccountAfterSuccessfulTest_ClearsErrorAndRateLi
 	}
 	cache := &tempUnschedCacheRecorder{}
 	svc := NewRateLimitService(repo, nil, &config.Config{}, nil, cache)
+	counter := &openAI403CounterCacheRecorder{}
+	svc.SetOpenAI403CounterCache(counter)
 
 	result, err := svc.RecoverAccountAfterSuccessfulTest(context.Background(), 42)
 	require.NoError(t, err)
@@ -234,6 +253,7 @@ func TestRateLimitService_RecoverAccountAfterSuccessfulTest_ClearsErrorAndRateLi
 	require.Equal(t, 1, repo.clearModelRateLimitCalls)
 	require.Equal(t, 1, repo.clearTempUnschedCalls)
 	require.Equal(t, []int64{42}, cache.deletedIDs)
+	require.Equal(t, []int64{42, 42}, counter.resetIDs)
 }
 
 func TestRateLimitService_RecoverAccountAfterSuccessfulTest_NoRecoverableStateIsNoop(t *testing.T) {

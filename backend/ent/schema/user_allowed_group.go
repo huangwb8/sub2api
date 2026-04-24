@@ -30,6 +30,10 @@ func (UserAllowedGroup) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("user_id"),
 		field.Int64("group_id"),
+		field.Int("rpm_limit").
+			Optional().
+			Nillable().
+			Comment("用户-分组每分钟请求数覆盖：NULL 继承分组，0 不限制，正数限流"),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).

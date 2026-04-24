@@ -44,6 +44,7 @@ type APIKey struct {
 	UpdatedAt           time.Time
 	User                *User
 	Group               *Group
+	UserGroupRPMLimit   *int // 用户-分组 RPM 覆盖：nil 继承分组，0 不限制，正数限流
 
 	// Quota fields
 	Quota     float64    // Quota limit in USD (0 = unlimited)

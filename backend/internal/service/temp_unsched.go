@@ -34,3 +34,12 @@ type TimeoutCounterCache interface {
 	// GetTimeoutCountTTL 获取计数器剩余过期时间
 	GetTimeoutCountTTL(ctx context.Context, accountID int64) (time.Duration, error)
 }
+
+// OpenAI403CounterCache 追踪 OpenAI 账号连续 403 失败次数。
+type OpenAI403CounterCache interface {
+	// IncrementOpenAI403Count 原子递增 403 计数并返回当前值。
+	// windowMinutes 是计数窗口时间（分钟），超过此时间计数器会自动重置。
+	IncrementOpenAI403Count(ctx context.Context, accountID int64, windowMinutes int) (int64, error)
+	// ResetOpenAI403Count 成功恢复或人工清理后清零计数器。
+	ResetOpenAI403Count(ctx context.Context, accountID int64) error
+}

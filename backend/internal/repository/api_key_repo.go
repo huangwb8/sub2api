@@ -12,6 +12,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
 	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -142,6 +143,7 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 				user.FieldRole,
 				user.FieldBalance,
 				user.FieldConcurrency,
+				user.FieldRpmLimit,
 			)
 		}).
 		WithGroup(func(q *dbent.GroupQuery) {
@@ -165,6 +167,7 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 				group.FieldModelRouting,
 				group.FieldMcpXMLInject,
 				group.FieldSupportedModelScopes,
+				group.FieldRpmLimit,
 				group.FieldAllowMessagesDispatch,
 				group.FieldDefaultMappedModel,
 				group.FieldMessagesDispatchModelConfig,
@@ -177,7 +180,16 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 		}
 		return nil, err
 	}
-	return apiKeyEntityToService(m), nil
+	out := apiKeyEntityToService(m)
+	if out.UserID > 0 && out.GroupID != nil {
+		if override, overrideErr := r.client.UserAllowedGroup.Query().
+			Where(userallowedgroup.UserIDEQ(out.UserID), userallowedgroup.GroupIDEQ(*out.GroupID)).
+			Select(userallowedgroup.FieldRpmLimit).
+			Only(ctx); overrideErr == nil {
+			out.UserGroupRPMLimit = override.RpmLimit
+		}
+	}
+	return out, nil
 }
 
 func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) error {
@@ -648,6 +660,7 @@ func userEntityToService(u *dbent.User) *service.User {
 		Role:                u.Role,
 		Balance:             u.Balance,
 		Concurrency:         u.Concurrency,
+		RPMLimit:            u.RpmLimit,
 		Status:              u.Status,
 		TotpSecretEncrypted: u.TotpSecretEncrypted,
 		TotpEnabled:         u.TotpEnabled,
@@ -691,6 +704,7 @@ func groupEntityToService(g *dbent.Group) *service.Group {
 		MCPXMLInject:                    g.McpXMLInject,
 		SupportedModelScopes:            g.SupportedModelScopes,
 		SortOrder:                       g.SortOrder,
+		RPMLimit:                        g.RpmLimit,
 		AllowMessagesDispatch:           g.AllowMessagesDispatch,
 		RequireOAuthOnly:                g.RequireOauthOnly,
 		RequirePrivacySet:               g.RequirePrivacySet,

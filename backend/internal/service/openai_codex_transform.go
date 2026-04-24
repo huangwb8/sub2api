@@ -83,6 +83,11 @@ type codexTransformResult struct {
 	PromptCacheKey  string
 }
 
+const (
+	codexSparkImageUnsupportedMarker = "<sub2api-codex-spark-image-unsupported>"
+	codexSparkImageUnsupportedText   = codexSparkImageUnsupportedMarker + "\nThe current model is gpt-5.3-codex-spark, which does not support image generation, image editing, image input, the `image_generation` tool, or Codex `image_gen`/`$imagegen` workflows. If the user asks for image generation or image editing, clearly explain this model limitation and ask them to switch to a non-Spark Codex model such as gpt-5.3-codex or gpt-5.4. Do not claim that the local environment merely lacks image_gen tooling, and do not suggest CLI fallback as the primary fix while the model remains Spark.\n</sub2api-codex-spark-image-unsupported>"
+)
+
 func applyCodexOAuthTransform(reqBody map[string]any, isCodexCLI bool, isCompact bool) codexTransformResult {
 	result := codexTransformResult{}
 	// 工具续链需求会影响存储策略与 input 过滤逻辑。
@@ -181,6 +186,10 @@ func applyCodexOAuthTransform(reqBody map[string]any, isCodexCLI bool, isCompact
 		result.PromptCacheKey = strings.TrimSpace(v)
 	}
 
+	if isCodexSparkModel(normalizedModel) && applyCodexSparkImageUnsupportedInstructions(reqBody) {
+		result.Modified = true
+	}
+
 	// 提取 input 中 role:"system" 消息至 instructions（OAuth 上游不支持 system role）。
 	if extractSystemMessagesFromInput(reqBody) {
 		result.Modified = true
@@ -215,6 +224,96 @@ func applyCodexOAuthTransform(reqBody map[string]any, isCodexCLI bool, isCompact
 	}
 
 	return result
+}
+
+func isCodexSparkModel(model string) bool {
+	model = strings.TrimSpace(strings.ToLower(model))
+	return model == "gpt-5.3-codex-spark" || strings.HasPrefix(model, "gpt-5.3-codex-spark-")
+}
+
+func hasOpenAIImageGenerationTool(reqBody map[string]any) bool {
+	rawTools, ok := reqBody["tools"]
+	if !ok || rawTools == nil {
+		return false
+	}
+	tools, ok := rawTools.([]any)
+	if !ok {
+		return false
+	}
+	for _, rawTool := range tools {
+		toolMap, ok := rawTool.(map[string]any)
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(firstString(toolMap["type"])) == "image_generation" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasOpenAIInputImage(reqBody map[string]any) bool {
+	if reqBody == nil {
+		return false
+	}
+	return hasOpenAIInputImageValue(reqBody["input"]) || hasOpenAIInputImageValue(reqBody["messages"])
+}
+
+func hasOpenAIInputImageValue(value any) bool {
+	switch v := value.(type) {
+	case []any:
+		for _, item := range v {
+			if hasOpenAIInputImageValue(item) {
+				return true
+			}
+		}
+	case map[string]any:
+		if strings.TrimSpace(firstString(v["type"])) == "input_image" {
+			return true
+		}
+		if _, ok := v["image_url"]; ok {
+			return true
+		}
+		return hasOpenAIInputImageValue(v["content"])
+	}
+	return false
+}
+
+func validateCodexSparkInput(reqBody map[string]any, model string) error {
+	if !isCodexSparkModel(model) {
+		return nil
+	}
+	if hasOpenAIImageGenerationTool(reqBody) {
+		return fmt.Errorf("model %q does not support image_generation tools", strings.TrimSpace(model))
+	}
+	if hasOpenAIInputImage(reqBody) {
+		return fmt.Errorf("model %q does not support image input", strings.TrimSpace(model))
+	}
+	return nil
+}
+
+func applyCodexSparkImageUnsupportedInstructions(reqBody map[string]any) bool {
+	if len(reqBody) == 0 {
+		return false
+	}
+	existing, _ := reqBody["instructions"].(string)
+	if strings.Contains(existing, codexSparkImageUnsupportedMarker) {
+		return false
+	}
+	existing = strings.TrimRight(existing, " \t\r\n")
+	if strings.TrimSpace(existing) == "" {
+		reqBody["instructions"] = codexSparkImageUnsupportedText
+		return true
+	}
+	reqBody["instructions"] = existing + "\n\n" + codexSparkImageUnsupportedText
+	return true
+}
+
+func firstString(value any) string {
+	if str, ok := value.(string); ok {
+		return str
+	}
+	return ""
 }
 
 func normalizeCodexModel(model string) string {

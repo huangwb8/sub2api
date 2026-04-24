@@ -63,6 +63,8 @@ type Group struct {
 
 	// 分组排序
 	SortOrder int
+	// RPMLimit 为分组级每分钟请求限制；nil 未配置，0 不限制，正数限流。
+	RPMLimit *int
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool

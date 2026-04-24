@@ -36,6 +36,20 @@ func (_c *UserAllowedGroupCreate) SetGroupID(v int64) *UserAllowedGroupCreate {
 	return _c
 }
 
+// SetRpmLimit sets the "rpm_limit" field.
+func (_c *UserAllowedGroupCreate) SetRpmLimit(v int) *UserAllowedGroupCreate {
+	_c.mutation.SetRpmLimit(v)
+	return _c
+}
+
+// SetNillableRpmLimit sets the "rpm_limit" field if the given value is not nil.
+func (_c *UserAllowedGroupCreate) SetNillableRpmLimit(v *int) *UserAllowedGroupCreate {
+	if v != nil {
+		_c.SetRpmLimit(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *UserAllowedGroupCreate) SetCreatedAt(v time.Time) *UserAllowedGroupCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -141,6 +155,10 @@ func (_c *UserAllowedGroupCreate) createSpec() (*UserAllowedGroup, *sqlgraph.Cre
 		_spec = sqlgraph.NewCreateSpec(userallowedgroup.Table, nil)
 	)
 	_spec.OnConflict = _c.conflict
+	if value, ok := _c.mutation.RpmLimit(); ok {
+		_spec.SetField(userallowedgroup.FieldRpmLimit, field.TypeInt, value)
+		_node.RpmLimit = &value
+	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(userallowedgroup.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -255,6 +273,30 @@ func (u *UserAllowedGroupUpsert) UpdateGroupID() *UserAllowedGroupUpsert {
 	return u
 }
 
+// SetRpmLimit sets the "rpm_limit" field.
+func (u *UserAllowedGroupUpsert) SetRpmLimit(v int) *UserAllowedGroupUpsert {
+	u.Set(userallowedgroup.FieldRpmLimit, v)
+	return u
+}
+
+// UpdateRpmLimit sets the "rpm_limit" field to the value that was provided on create.
+func (u *UserAllowedGroupUpsert) UpdateRpmLimit() *UserAllowedGroupUpsert {
+	u.SetExcluded(userallowedgroup.FieldRpmLimit)
+	return u
+}
+
+// AddRpmLimit adds v to the "rpm_limit" field.
+func (u *UserAllowedGroupUpsert) AddRpmLimit(v int) *UserAllowedGroupUpsert {
+	u.Add(userallowedgroup.FieldRpmLimit, v)
+	return u
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (u *UserAllowedGroupUpsert) ClearRpmLimit() *UserAllowedGroupUpsert {
+	u.SetNull(userallowedgroup.FieldRpmLimit)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -325,6 +367,34 @@ func (u *UserAllowedGroupUpsertOne) SetGroupID(v int64) *UserAllowedGroupUpsertO
 func (u *UserAllowedGroupUpsertOne) UpdateGroupID() *UserAllowedGroupUpsertOne {
 	return u.Update(func(s *UserAllowedGroupUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// SetRpmLimit sets the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertOne) SetRpmLimit(v int) *UserAllowedGroupUpsertOne {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.SetRpmLimit(v)
+	})
+}
+
+// AddRpmLimit adds v to the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertOne) AddRpmLimit(v int) *UserAllowedGroupUpsertOne {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.AddRpmLimit(v)
+	})
+}
+
+// UpdateRpmLimit sets the "rpm_limit" field to the value that was provided on create.
+func (u *UserAllowedGroupUpsertOne) UpdateRpmLimit() *UserAllowedGroupUpsertOne {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.UpdateRpmLimit()
+	})
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertOne) ClearRpmLimit() *UserAllowedGroupUpsertOne {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.ClearRpmLimit()
 	})
 }
 
@@ -541,6 +611,34 @@ func (u *UserAllowedGroupUpsertBulk) SetGroupID(v int64) *UserAllowedGroupUpsert
 func (u *UserAllowedGroupUpsertBulk) UpdateGroupID() *UserAllowedGroupUpsertBulk {
 	return u.Update(func(s *UserAllowedGroupUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// SetRpmLimit sets the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertBulk) SetRpmLimit(v int) *UserAllowedGroupUpsertBulk {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.SetRpmLimit(v)
+	})
+}
+
+// AddRpmLimit adds v to the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertBulk) AddRpmLimit(v int) *UserAllowedGroupUpsertBulk {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.AddRpmLimit(v)
+	})
+}
+
+// UpdateRpmLimit sets the "rpm_limit" field to the value that was provided on create.
+func (u *UserAllowedGroupUpsertBulk) UpdateRpmLimit() *UserAllowedGroupUpsertBulk {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.UpdateRpmLimit()
+	})
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (u *UserAllowedGroupUpsertBulk) ClearRpmLimit() *UserAllowedGroupUpsertBulk {
+	return u.Update(func(s *UserAllowedGroupUpsert) {
+		s.ClearRpmLimit()
 	})
 }
 

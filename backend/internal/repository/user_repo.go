@@ -63,6 +63,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetRole(userIn.Role).
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
+		SetNillableRpmLimit(userIn.RPMLimit).
 		SetStatus(userIn.Status).
 		Save(ctx)
 	if err != nil {
@@ -145,6 +146,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetRole(userIn.Role).
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
+		SetNillableRpmLimit(userIn.RPMLimit).
 		SetStatus(userIn.Status).
 		Save(ctx)
 	if err != nil {

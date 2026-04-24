@@ -25,6 +25,8 @@ type APIKeyAuthSnapshot struct {
 	RateLimit5h float64 `json:"rate_limit_5h"`
 	RateLimit1d float64 `json:"rate_limit_1d"`
 	RateLimit7d float64 `json:"rate_limit_7d"`
+
+	UserGroupRPMLimit *int `json:"user_group_rpm_limit,omitempty"`
 }
 
 // APIKeyAuthUserSnapshot 用户快照
@@ -34,6 +36,7 @@ type APIKeyAuthUserSnapshot struct {
 	Role        string  `json:"role"`
 	Balance     float64 `json:"balance"`
 	Concurrency int     `json:"concurrency"`
+	RPMLimit    *int    `json:"rpm_limit,omitempty"`
 }
 
 // APIKeyAuthGroupSnapshot 分组快照
@@ -49,6 +52,7 @@ type APIKeyAuthGroupSnapshot struct {
 	IdleExtraProfitRatePercent      *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
 	IdleStartSeconds                *int     `json:"idle_start_seconds,omitempty"`
 	IdleEndSeconds                  *int     `json:"idle_end_seconds,omitempty"`
+	RPMLimit                        *int     `json:"rpm_limit,omitempty"`
 	DailyLimitUSD                   *float64 `json:"daily_limit_usd,omitempty"`
 	WeeklyLimitUSD                  *float64 `json:"weekly_limit_usd,omitempty"`
 	MonthlyLimitUSD                 *float64 `json:"monthly_limit_usd,omitempty"`

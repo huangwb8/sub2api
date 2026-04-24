@@ -1941,11 +1941,13 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		markPatchSet("model", billingModel)
 	}
 	upstreamModel := billingModel
+	requestedCodexSpark := isCodexSparkModel(reqModel) || isCodexSparkModel(billingModel)
 
 	// OpenAI OAuth 账号走 ChatGPT internal Codex endpoint，需要将模型名规范化为
 	// 上游可识别的 Codex/GPT 系列。API Key 账号则应保留原始/映射后的模型名，
 	// 以兼容自定义 base_url 的 OpenAI-compatible 上游。
 	if model, ok := reqBody["model"].(string); ok {
+		requestedCodexSpark = requestedCodexSpark || isCodexSparkModel(model)
 		upstreamModel = normalizeOpenAIModelForUpstream(account, model)
 		if upstreamModel != "" && upstreamModel != model {
 			logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Upstream model resolved: %s -> %s (account: %s, type: %s, isCodexCLI: %v)",
@@ -1986,6 +1988,25 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		if codexResult.PromptCacheKey != "" {
 			promptCacheKey = codexResult.PromptCacheKey
 		}
+	}
+	if requestedCodexSpark && applyCodexSparkImageUnsupportedInstructions(reqBody) {
+		bodyModified = true
+		disablePatch()
+	}
+	sparkValidationModel := upstreamModel
+	if requestedCodexSpark {
+		sparkValidationModel = "gpt-5.3-codex-spark"
+	}
+	if err := validateCodexSparkInput(reqBody, sparkValidationModel); err != nil {
+		setOpsUpstreamError(c, http.StatusBadRequest, err.Error(), "")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": gin.H{
+				"type":    "invalid_request_error",
+				"message": err.Error(),
+				"param":   "input",
+			},
+		})
+		return nil, err
 	}
 
 	// Handle max_output_tokens based on platform and account type

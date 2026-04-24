@@ -8547,6 +8547,8 @@ type GroupMutation struct {
 	appendsupported_model_scopes            []string
 	sort_order                              *int
 	addsort_order                           *int
+	rpm_limit                               *int
+	addrpm_limit                            *int
 	allow_messages_dispatch                 *bool
 	require_oauth_only                      *bool
 	require_privacy_set                     *bool
@@ -10310,6 +10312,76 @@ func (m *GroupMutation) ResetSortOrder() {
 	m.addsort_order = nil
 }
 
+// SetRpmLimit sets the "rpm_limit" field.
+func (m *GroupMutation) SetRpmLimit(i int) {
+	m.rpm_limit = &i
+	m.addrpm_limit = nil
+}
+
+// RpmLimit returns the value of the "rpm_limit" field in the mutation.
+func (m *GroupMutation) RpmLimit() (r int, exists bool) {
+	v := m.rpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRpmLimit returns the old "rpm_limit" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldRpmLimit(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRpmLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRpmLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRpmLimit: %w", err)
+	}
+	return oldValue.RpmLimit, nil
+}
+
+// AddRpmLimit adds i to the "rpm_limit" field.
+func (m *GroupMutation) AddRpmLimit(i int) {
+	if m.addrpm_limit != nil {
+		*m.addrpm_limit += i
+	} else {
+		m.addrpm_limit = &i
+	}
+}
+
+// AddedRpmLimit returns the value that was added to the "rpm_limit" field in this mutation.
+func (m *GroupMutation) AddedRpmLimit() (r int, exists bool) {
+	v := m.addrpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (m *GroupMutation) ClearRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	m.clearedFields[group.FieldRpmLimit] = struct{}{}
+}
+
+// RpmLimitCleared returns if the "rpm_limit" field was cleared in this mutation.
+func (m *GroupMutation) RpmLimitCleared() bool {
+	_, ok := m.clearedFields[group.FieldRpmLimit]
+	return ok
+}
+
+// ResetRpmLimit resets all changes to the "rpm_limit" field.
+func (m *GroupMutation) ResetRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	delete(m.clearedFields, group.FieldRpmLimit)
+}
+
 // SetAllowMessagesDispatch sets the "allow_messages_dispatch" field.
 func (m *GroupMutation) SetAllowMessagesDispatch(b bool) {
 	m.allow_messages_dispatch = &b
@@ -10848,7 +10920,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 35)
+	fields := make([]string, 0, 36)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -10939,6 +11011,9 @@ func (m *GroupMutation) Fields() []string {
 	if m.sort_order != nil {
 		fields = append(fields, group.FieldSortOrder)
 	}
+	if m.rpm_limit != nil {
+		fields = append(fields, group.FieldRpmLimit)
+	}
 	if m.allow_messages_dispatch != nil {
 		fields = append(fields, group.FieldAllowMessagesDispatch)
 	}
@@ -11022,6 +11097,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.SupportedModelScopes()
 	case group.FieldSortOrder:
 		return m.SortOrder()
+	case group.FieldRpmLimit:
+		return m.RpmLimit()
 	case group.FieldAllowMessagesDispatch:
 		return m.AllowMessagesDispatch()
 	case group.FieldRequireOauthOnly:
@@ -11101,6 +11178,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldSupportedModelScopes(ctx)
 	case group.FieldSortOrder:
 		return m.OldSortOrder(ctx)
+	case group.FieldRpmLimit:
+		return m.OldRpmLimit(ctx)
 	case group.FieldAllowMessagesDispatch:
 		return m.OldAllowMessagesDispatch(ctx)
 	case group.FieldRequireOauthOnly:
@@ -11330,6 +11409,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSortOrder(v)
 		return nil
+	case group.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRpmLimit(v)
+		return nil
 	case group.FieldAllowMessagesDispatch:
 		v, ok := value.(bool)
 		if !ok {
@@ -11421,6 +11507,9 @@ func (m *GroupMutation) AddedFields() []string {
 	if m.addsort_order != nil {
 		fields = append(fields, group.FieldSortOrder)
 	}
+	if m.addrpm_limit != nil {
+		fields = append(fields, group.FieldRpmLimit)
+	}
 	return fields
 }
 
@@ -11461,6 +11550,8 @@ func (m *GroupMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedFallbackGroupIDOnInvalidRequest()
 	case group.FieldSortOrder:
 		return m.AddedSortOrder()
+	case group.FieldRpmLimit:
+		return m.AddedRpmLimit()
 	}
 	return nil, false
 }
@@ -11582,6 +11673,13 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddSortOrder(v)
 		return nil
+	case group.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRpmLimit(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Group numeric field %s", name)
 }
@@ -11637,6 +11735,9 @@ func (m *GroupMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(group.FieldModelRouting) {
 		fields = append(fields, group.FieldModelRouting)
+	}
+	if m.FieldCleared(group.FieldRpmLimit) {
+		fields = append(fields, group.FieldRpmLimit)
 	}
 	return fields
 }
@@ -11699,6 +11800,9 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldModelRouting:
 		m.ClearModelRouting()
+		return nil
+	case group.FieldRpmLimit:
+		m.ClearRpmLimit()
 		return nil
 	}
 	return fmt.Errorf("unknown Group nullable field %s", name)
@@ -11797,6 +11901,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldSortOrder:
 		m.ResetSortOrder()
+		return nil
+	case group.FieldRpmLimit:
+		m.ResetRpmLimit()
 		return nil
 	case group.FieldAllowMessagesDispatch:
 		m.ResetAllowMessagesDispatch()
@@ -30476,6 +30583,8 @@ type UserMutation struct {
 	addbalance                    *float64
 	concurrency                   *int
 	addconcurrency                *int
+	rpm_limit                     *int
+	addrpm_limit                  *int
 	status                        *string
 	username                      *string
 	notes                         *string
@@ -30955,6 +31064,76 @@ func (m *UserMutation) AddedConcurrency() (r int, exists bool) {
 func (m *UserMutation) ResetConcurrency() {
 	m.concurrency = nil
 	m.addconcurrency = nil
+}
+
+// SetRpmLimit sets the "rpm_limit" field.
+func (m *UserMutation) SetRpmLimit(i int) {
+	m.rpm_limit = &i
+	m.addrpm_limit = nil
+}
+
+// RpmLimit returns the value of the "rpm_limit" field in the mutation.
+func (m *UserMutation) RpmLimit() (r int, exists bool) {
+	v := m.rpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRpmLimit returns the old "rpm_limit" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldRpmLimit(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRpmLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRpmLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRpmLimit: %w", err)
+	}
+	return oldValue.RpmLimit, nil
+}
+
+// AddRpmLimit adds i to the "rpm_limit" field.
+func (m *UserMutation) AddRpmLimit(i int) {
+	if m.addrpm_limit != nil {
+		*m.addrpm_limit += i
+	} else {
+		m.addrpm_limit = &i
+	}
+}
+
+// AddedRpmLimit returns the value that was added to the "rpm_limit" field in this mutation.
+func (m *UserMutation) AddedRpmLimit() (r int, exists bool) {
+	v := m.addrpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (m *UserMutation) ClearRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	m.clearedFields[user.FieldRpmLimit] = struct{}{}
+}
+
+// RpmLimitCleared returns if the "rpm_limit" field was cleared in this mutation.
+func (m *UserMutation) RpmLimitCleared() bool {
+	_, ok := m.clearedFields[user.FieldRpmLimit]
+	return ok
+}
+
+// ResetRpmLimit resets all changes to the "rpm_limit" field.
+func (m *UserMutation) ResetRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	delete(m.clearedFields, user.FieldRpmLimit)
 }
 
 // SetStatus sets the "status" field.
@@ -31773,7 +31952,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -31797,6 +31976,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.concurrency != nil {
 		fields = append(fields, user.FieldConcurrency)
+	}
+	if m.rpm_limit != nil {
+		fields = append(fields, user.FieldRpmLimit)
 	}
 	if m.status != nil {
 		fields = append(fields, user.FieldStatus)
@@ -31840,6 +32022,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Balance()
 	case user.FieldConcurrency:
 		return m.Concurrency()
+	case user.FieldRpmLimit:
+		return m.RpmLimit()
 	case user.FieldStatus:
 		return m.Status()
 	case user.FieldUsername:
@@ -31877,6 +32061,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldBalance(ctx)
 	case user.FieldConcurrency:
 		return m.OldConcurrency(ctx)
+	case user.FieldRpmLimit:
+		return m.OldRpmLimit(ctx)
 	case user.FieldStatus:
 		return m.OldStatus(ctx)
 	case user.FieldUsername:
@@ -31954,6 +32140,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetConcurrency(v)
 		return nil
+	case user.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRpmLimit(v)
+		return nil
 	case user.FieldStatus:
 		v, ok := value.(string)
 		if !ok {
@@ -32010,6 +32203,9 @@ func (m *UserMutation) AddedFields() []string {
 	if m.addconcurrency != nil {
 		fields = append(fields, user.FieldConcurrency)
 	}
+	if m.addrpm_limit != nil {
+		fields = append(fields, user.FieldRpmLimit)
+	}
 	return fields
 }
 
@@ -32022,6 +32218,8 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedBalance()
 	case user.FieldConcurrency:
 		return m.AddedConcurrency()
+	case user.FieldRpmLimit:
+		return m.AddedRpmLimit()
 	}
 	return nil, false
 }
@@ -32045,6 +32243,13 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddConcurrency(v)
 		return nil
+	case user.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRpmLimit(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
 }
@@ -32055,6 +32260,9 @@ func (m *UserMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(user.FieldDeletedAt) {
 		fields = append(fields, user.FieldDeletedAt)
+	}
+	if m.FieldCleared(user.FieldRpmLimit) {
+		fields = append(fields, user.FieldRpmLimit)
 	}
 	if m.FieldCleared(user.FieldTotpSecretEncrypted) {
 		fields = append(fields, user.FieldTotpSecretEncrypted)
@@ -32078,6 +32286,9 @@ func (m *UserMutation) ClearField(name string) error {
 	switch name {
 	case user.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case user.FieldRpmLimit:
+		m.ClearRpmLimit()
 		return nil
 	case user.FieldTotpSecretEncrypted:
 		m.ClearTotpSecretEncrypted()
@@ -32116,6 +32327,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldConcurrency:
 		m.ResetConcurrency()
+		return nil
+	case user.FieldRpmLimit:
+		m.ResetRpmLimit()
 		return nil
 	case user.FieldStatus:
 		m.ResetStatus()
@@ -32462,6 +32676,8 @@ type UserAllowedGroupMutation struct {
 	config
 	op            Op
 	typ           string
+	rpm_limit     *int
+	addrpm_limit  *int
 	created_at    *time.Time
 	clearedFields map[string]struct{}
 	user          *int64
@@ -32547,6 +32763,59 @@ func (m *UserAllowedGroupMutation) GroupID() (r int64, exists bool) {
 // ResetGroupID resets all changes to the "group_id" field.
 func (m *UserAllowedGroupMutation) ResetGroupID() {
 	m.group = nil
+}
+
+// SetRpmLimit sets the "rpm_limit" field.
+func (m *UserAllowedGroupMutation) SetRpmLimit(i int) {
+	m.rpm_limit = &i
+	m.addrpm_limit = nil
+}
+
+// RpmLimit returns the value of the "rpm_limit" field in the mutation.
+func (m *UserAllowedGroupMutation) RpmLimit() (r int, exists bool) {
+	v := m.rpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddRpmLimit adds i to the "rpm_limit" field.
+func (m *UserAllowedGroupMutation) AddRpmLimit(i int) {
+	if m.addrpm_limit != nil {
+		*m.addrpm_limit += i
+	} else {
+		m.addrpm_limit = &i
+	}
+}
+
+// AddedRpmLimit returns the value that was added to the "rpm_limit" field in this mutation.
+func (m *UserAllowedGroupMutation) AddedRpmLimit() (r int, exists bool) {
+	v := m.addrpm_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (m *UserAllowedGroupMutation) ClearRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	m.clearedFields[userallowedgroup.FieldRpmLimit] = struct{}{}
+}
+
+// RpmLimitCleared returns if the "rpm_limit" field was cleared in this mutation.
+func (m *UserAllowedGroupMutation) RpmLimitCleared() bool {
+	_, ok := m.clearedFields[userallowedgroup.FieldRpmLimit]
+	return ok
+}
+
+// ResetRpmLimit resets all changes to the "rpm_limit" field.
+func (m *UserAllowedGroupMutation) ResetRpmLimit() {
+	m.rpm_limit = nil
+	m.addrpm_limit = nil
+	delete(m.clearedFields, userallowedgroup.FieldRpmLimit)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -32656,12 +32925,15 @@ func (m *UserAllowedGroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserAllowedGroupMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.user != nil {
 		fields = append(fields, userallowedgroup.FieldUserID)
 	}
 	if m.group != nil {
 		fields = append(fields, userallowedgroup.FieldGroupID)
+	}
+	if m.rpm_limit != nil {
+		fields = append(fields, userallowedgroup.FieldRpmLimit)
 	}
 	if m.created_at != nil {
 		fields = append(fields, userallowedgroup.FieldCreatedAt)
@@ -32678,6 +32950,8 @@ func (m *UserAllowedGroupMutation) Field(name string) (ent.Value, bool) {
 		return m.UserID()
 	case userallowedgroup.FieldGroupID:
 		return m.GroupID()
+	case userallowedgroup.FieldRpmLimit:
+		return m.RpmLimit()
 	case userallowedgroup.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -32710,6 +32984,13 @@ func (m *UserAllowedGroupMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetGroupID(v)
 		return nil
+	case userallowedgroup.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRpmLimit(v)
+		return nil
 	case userallowedgroup.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -32725,6 +33006,9 @@ func (m *UserAllowedGroupMutation) SetField(name string, value ent.Value) error 
 // this mutation.
 func (m *UserAllowedGroupMutation) AddedFields() []string {
 	var fields []string
+	if m.addrpm_limit != nil {
+		fields = append(fields, userallowedgroup.FieldRpmLimit)
+	}
 	return fields
 }
 
@@ -32733,6 +33017,8 @@ func (m *UserAllowedGroupMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *UserAllowedGroupMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case userallowedgroup.FieldRpmLimit:
+		return m.AddedRpmLimit()
 	}
 	return nil, false
 }
@@ -32742,6 +33028,13 @@ func (m *UserAllowedGroupMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *UserAllowedGroupMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case userallowedgroup.FieldRpmLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRpmLimit(v)
+		return nil
 	}
 	return fmt.Errorf("unknown UserAllowedGroup numeric field %s", name)
 }
@@ -32749,7 +33042,11 @@ func (m *UserAllowedGroupMutation) AddField(name string, value ent.Value) error 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserAllowedGroupMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(userallowedgroup.FieldRpmLimit) {
+		fields = append(fields, userallowedgroup.FieldRpmLimit)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -32762,6 +33059,11 @@ func (m *UserAllowedGroupMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserAllowedGroupMutation) ClearField(name string) error {
+	switch name {
+	case userallowedgroup.FieldRpmLimit:
+		m.ClearRpmLimit()
+		return nil
+	}
 	return fmt.Errorf("unknown UserAllowedGroup nullable field %s", name)
 }
 
@@ -32774,6 +33076,9 @@ func (m *UserAllowedGroupMutation) ResetField(name string) error {
 		return nil
 	case userallowedgroup.FieldGroupID:
 		m.ResetGroupID()
+		return nil
+	case userallowedgroup.FieldRpmLimit:
+		m.ResetRpmLimit()
 		return nil
 	case userallowedgroup.FieldCreatedAt:
 		m.ResetCreatedAt()

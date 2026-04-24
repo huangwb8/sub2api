@@ -149,6 +149,10 @@ func (Group) Fields() []ent.Field {
 		field.Int("sort_order").
 			Default(0).
 			Comment("分组显示排序，数值越小越靠前"),
+		field.Int("rpm_limit").
+			Optional().
+			Nillable().
+			Comment("分组级每分钟请求数限制：NULL 表示未配置，0 表示不限制，正数表示限流"),
 
 		// OpenAI Messages 调度配置 (added by migration 069)
 		field.Bool("allow_messages_dispatch").

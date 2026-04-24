@@ -49,6 +49,10 @@ func (User) Fields() []ent.Field {
 			Default(0),
 		field.Int("concurrency").
 			Default(5),
+		field.Int("rpm_limit").
+			Optional().
+			Nillable().
+			Comment("用户级每分钟请求数限制：NULL 表示未配置，0 表示不限制，正数表示限流"),
 		field.String("status").
 			MaxLen(20).
 			Default(domain.StatusActive),

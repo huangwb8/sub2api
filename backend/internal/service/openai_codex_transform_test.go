@@ -289,6 +289,41 @@ func TestApplyCodexOAuthTransform_TrimmedModelWithoutPolicyRewrite(t *testing.T)
 	require.True(t, result.Modified)
 }
 
+func TestApplyCodexOAuthTransform_AddsSparkImageUnsupportedInstructions(t *testing.T) {
+	reqBody := map[string]any{
+		"model":        "gpt-5.3-codex-spark",
+		"instructions": "existing instructions",
+		"input":        "hello",
+	}
+
+	result := applyCodexOAuthTransform(reqBody, true, false)
+	require.True(t, result.Modified)
+
+	instructions, ok := reqBody["instructions"].(string)
+	require.True(t, ok)
+	require.Contains(t, instructions, "existing instructions")
+	require.Contains(t, instructions, codexSparkImageUnsupportedMarker)
+	require.Contains(t, instructions, "does not support image generation")
+	require.Contains(t, instructions, "switch to a non-Spark Codex model")
+}
+
+func TestValidateCodexSparkInputRejectsImageInputAndImageTool(t *testing.T) {
+	require.Error(t, validateCodexSparkInput(map[string]any{
+		"input": []any{
+			map[string]any{
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "input_image", "image_url": "data:image/png;base64,aGVsbG8="},
+				},
+			},
+		},
+	}, "gpt-5.3-codex-spark"))
+
+	require.Error(t, validateCodexSparkInput(map[string]any{
+		"tools": []any{map[string]any{"type": "image_generation"}},
+	}, "gpt-5.3-codex-spark"))
+}
+
 func TestApplyCodexOAuthTransform_CodexCLI_PreservesExistingInstructions(t *testing.T) {
 	// Codex CLI 场景：已有 instructions 时不修改
 

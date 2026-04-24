@@ -20,6 +20,11 @@ func GroupID(v int64) predicate.UserAllowedGroup {
 	return predicate.UserAllowedGroup(sql.FieldEQ(FieldGroupID, v))
 }
 
+// RpmLimit applies equality check predicate on the "rpm_limit" field. It's identical to RpmLimitEQ.
+func RpmLimit(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldEQ(FieldRpmLimit, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.UserAllowedGroup {
 	return predicate.UserAllowedGroup(sql.FieldEQ(FieldCreatedAt, v))
@@ -63,6 +68,56 @@ func GroupIDIn(vs ...int64) predicate.UserAllowedGroup {
 // GroupIDNotIn applies the NotIn predicate on the "group_id" field.
 func GroupIDNotIn(vs ...int64) predicate.UserAllowedGroup {
 	return predicate.UserAllowedGroup(sql.FieldNotIn(FieldGroupID, vs...))
+}
+
+// RpmLimitEQ applies the EQ predicate on the "rpm_limit" field.
+func RpmLimitEQ(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldEQ(FieldRpmLimit, v))
+}
+
+// RpmLimitNEQ applies the NEQ predicate on the "rpm_limit" field.
+func RpmLimitNEQ(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldNEQ(FieldRpmLimit, v))
+}
+
+// RpmLimitIn applies the In predicate on the "rpm_limit" field.
+func RpmLimitIn(vs ...int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldIn(FieldRpmLimit, vs...))
+}
+
+// RpmLimitNotIn applies the NotIn predicate on the "rpm_limit" field.
+func RpmLimitNotIn(vs ...int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldNotIn(FieldRpmLimit, vs...))
+}
+
+// RpmLimitGT applies the GT predicate on the "rpm_limit" field.
+func RpmLimitGT(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldGT(FieldRpmLimit, v))
+}
+
+// RpmLimitGTE applies the GTE predicate on the "rpm_limit" field.
+func RpmLimitGTE(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldGTE(FieldRpmLimit, v))
+}
+
+// RpmLimitLT applies the LT predicate on the "rpm_limit" field.
+func RpmLimitLT(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldLT(FieldRpmLimit, v))
+}
+
+// RpmLimitLTE applies the LTE predicate on the "rpm_limit" field.
+func RpmLimitLTE(v int) predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldLTE(FieldRpmLimit, v))
+}
+
+// RpmLimitIsNil applies the IsNil predicate on the "rpm_limit" field.
+func RpmLimitIsNil() predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldIsNull(FieldRpmLimit))
+}
+
+// RpmLimitNotNil applies the NotNil predicate on the "rpm_limit" field.
+func RpmLimitNotNil() predicate.UserAllowedGroup {
+	return predicate.UserAllowedGroup(sql.FieldNotNull(FieldRpmLimit))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

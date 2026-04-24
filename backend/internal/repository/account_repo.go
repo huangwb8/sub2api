@@ -2023,16 +2023,20 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 		WHERE id = $2 AND deleted_at IS NULL
 		RETURNING
 			COALESCE((extra->>'quota_used')::numeric, 0),
-			COALESCE((extra->>'quota_limit')::numeric, 0)`,
+			COALESCE((extra->>'quota_limit')::numeric, 0),
+			COALESCE((extra->>'quota_daily_used')::numeric, 0),
+			COALESCE((extra->>'quota_daily_limit')::numeric, 0),
+			COALESCE((extra->>'quota_weekly_used')::numeric, 0),
+			COALESCE((extra->>'quota_weekly_limit')::numeric, 0)`,
 		amount, id)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = rows.Close() }()
 
-	var newUsed, limit float64
+	var newUsed, limit, newDailyUsed, dailyLimit, newWeeklyUsed, weeklyLimit float64
 	if rows.Next() {
-		if err := rows.Scan(&newUsed, &limit); err != nil {
+		if err := rows.Scan(&newUsed, &limit, &newDailyUsed, &dailyLimit, &newWeeklyUsed, &weeklyLimit); err != nil {
 			return err
 		}
 	}
@@ -2041,9 +2045,14 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 	}
 
 	// 任一维度配额刚超限时触发调度快照刷新
-	if limit > 0 && newUsed >= limit && (newUsed-amount) < limit {
+	totalCrossed := limit > 0 && newUsed >= limit && (newUsed-amount) < limit
+	dailyCrossed := dailyLimit > 0 && newDailyUsed >= dailyLimit && (newDailyUsed-amount) < dailyLimit
+	weeklyCrossed := weeklyLimit > 0 && newWeeklyUsed >= weeklyLimit && (newWeeklyUsed-amount) < weeklyLimit
+	dailyResetOrInitialized := dailyLimit > 0 && amount > 0 && newDailyUsed == amount
+	weeklyResetOrInitialized := weeklyLimit > 0 && amount > 0 && newWeeklyUsed == amount
+	if totalCrossed || dailyCrossed || weeklyCrossed || dailyResetOrInitialized || weeklyResetOrInitialized {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
-			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota exceeded failed: account=%d err=%v", id, err)
+			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota state changed failed: account=%d err=%v", id, err)
 		}
 	}
 	return nil

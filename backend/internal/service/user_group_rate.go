@@ -10,6 +10,7 @@ type UserGroupRateEntry struct {
 	UserNotes      string  `json:"user_notes"`
 	UserStatus     string  `json:"user_status"`
 	RateMultiplier float64 `json:"rate_multiplier"`
+	RPMLimit       *int    `json:"rpm_limit,omitempty"`
 }
 
 // GroupRateMultiplierInput 批量设置分组倍率的输入条目

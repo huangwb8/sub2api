@@ -13,14 +13,18 @@ import (
 
 // APIKeyAuthGoogle is a Google-style error wrapper for API key auth.
 func APIKeyAuthGoogle(apiKeyService *service.APIKeyService, cfg *config.Config) gin.HandlerFunc {
-	return APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg)
+	return APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg, nil)
 }
 
 // APIKeyAuthWithSubscriptionGoogle behaves like ApiKeyAuthWithSubscription but returns Google-style errors:
 // {"error":{"code":401,"message":"...","status":"UNAUTHENTICATED"}}
 //
 // It is intended for Gemini native endpoints (/v1beta) to match Gemini SDK expectations.
-func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) gin.HandlerFunc {
+func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCaches ...service.GatewayRPMCache) gin.HandlerFunc {
+	var rpmCache service.GatewayRPMCache
+	if len(rpmCaches) > 0 {
+		rpmCache = rpmCaches[0]
+	}
 	return func(c *gin.Context) {
 		if v := strings.TrimSpace(c.Query("api_key")); v != "" {
 			abortWithGoogleError(c, 400, "Query parameter api_key is deprecated. Use Authorization header or key instead.")
@@ -104,6 +108,14 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 				abortWithGoogleError(c, 403, "Insufficient account balance")
 				return
 			}
+		}
+		if err := service.EnforceGatewayRPM(c.Request.Context(), rpmCache, apiKey); err != nil {
+			if errors.Is(err, service.ErrGatewayRPMExceeded) {
+				abortWithGoogleError(c, 429, "RPM limit exceeded")
+				return
+			}
+			abortWithGoogleError(c, 503, "RPM limit temporarily unavailable")
+			return
 		}
 
 		c.Set(string(ContextKeyAPIKey), apiKey)

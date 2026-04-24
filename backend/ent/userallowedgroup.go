@@ -21,6 +21,8 @@ type UserAllowedGroup struct {
 	UserID int64 `json:"user_id,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID int64 `json:"group_id,omitempty"`
+	// 用户-分组每分钟请求数覆盖：NULL 继承分组，0 不限制，正数限流
+	RpmLimit *int `json:"rpm_limit,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -67,7 +69,7 @@ func (*UserAllowedGroup) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case userallowedgroup.FieldUserID, userallowedgroup.FieldGroupID:
+		case userallowedgroup.FieldUserID, userallowedgroup.FieldGroupID, userallowedgroup.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
 		case userallowedgroup.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -97,6 +99,13 @@ func (_m *UserAllowedGroup) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field group_id", values[i])
 			} else if value.Valid {
 				_m.GroupID = value.Int64
+			}
+		case userallowedgroup.FieldRpmLimit:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field rpm_limit", values[i])
+			} else if value.Valid {
+				_m.RpmLimit = new(int)
+				*_m.RpmLimit = int(value.Int64)
 			}
 		case userallowedgroup.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -154,6 +163,11 @@ func (_m *UserAllowedGroup) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("group_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GroupID))
+	builder.WriteString(", ")
+	if v := _m.RpmLimit; v != nil {
+		builder.WriteString("rpm_limit=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

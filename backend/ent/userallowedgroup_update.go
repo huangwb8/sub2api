@@ -57,6 +57,33 @@ func (_u *UserAllowedGroupUpdate) SetNillableGroupID(v *int64) *UserAllowedGroup
 	return _u
 }
 
+// SetRpmLimit sets the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdate) SetRpmLimit(v int) *UserAllowedGroupUpdate {
+	_u.mutation.ResetRpmLimit()
+	_u.mutation.SetRpmLimit(v)
+	return _u
+}
+
+// SetNillableRpmLimit sets the "rpm_limit" field if the given value is not nil.
+func (_u *UserAllowedGroupUpdate) SetNillableRpmLimit(v *int) *UserAllowedGroupUpdate {
+	if v != nil {
+		_u.SetRpmLimit(*v)
+	}
+	return _u
+}
+
+// AddRpmLimit adds value to the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdate) AddRpmLimit(v int) *UserAllowedGroupUpdate {
+	_u.mutation.AddRpmLimit(v)
+	return _u
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdate) ClearRpmLimit() *UserAllowedGroupUpdate {
+	_u.mutation.ClearRpmLimit()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserAllowedGroupUpdate) SetUser(v *User) *UserAllowedGroupUpdate {
 	return _u.SetUserID(v.ID)
@@ -133,6 +160,15 @@ func (_u *UserAllowedGroupUpdate) sqlSave(ctx context.Context) (_node int, err e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.RpmLimit(); ok {
+		_spec.SetField(userallowedgroup.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRpmLimit(); ok {
+		_spec.AddField(userallowedgroup.FieldRpmLimit, field.TypeInt, value)
+	}
+	if _u.mutation.RpmLimitCleared() {
+		_spec.ClearField(userallowedgroup.FieldRpmLimit, field.TypeInt)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -237,6 +273,33 @@ func (_u *UserAllowedGroupUpdateOne) SetNillableGroupID(v *int64) *UserAllowedGr
 	if v != nil {
 		_u.SetGroupID(*v)
 	}
+	return _u
+}
+
+// SetRpmLimit sets the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdateOne) SetRpmLimit(v int) *UserAllowedGroupUpdateOne {
+	_u.mutation.ResetRpmLimit()
+	_u.mutation.SetRpmLimit(v)
+	return _u
+}
+
+// SetNillableRpmLimit sets the "rpm_limit" field if the given value is not nil.
+func (_u *UserAllowedGroupUpdateOne) SetNillableRpmLimit(v *int) *UserAllowedGroupUpdateOne {
+	if v != nil {
+		_u.SetRpmLimit(*v)
+	}
+	return _u
+}
+
+// AddRpmLimit adds value to the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdateOne) AddRpmLimit(v int) *UserAllowedGroupUpdateOne {
+	_u.mutation.AddRpmLimit(v)
+	return _u
+}
+
+// ClearRpmLimit clears the value of the "rpm_limit" field.
+func (_u *UserAllowedGroupUpdateOne) ClearRpmLimit() *UserAllowedGroupUpdateOne {
+	_u.mutation.ClearRpmLimit()
 	return _u
 }
 
@@ -348,6 +411,15 @@ func (_u *UserAllowedGroupUpdateOne) sqlSave(ctx context.Context) (_node *UserAl
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.RpmLimit(); ok {
+		_spec.SetField(userallowedgroup.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRpmLimit(); ok {
+		_spec.AddField(userallowedgroup.FieldRpmLimit, field.TypeInt, value)
+	}
+	if _u.mutation.RpmLimitCleared() {
+		_spec.ClearField(userallowedgroup.FieldRpmLimit, field.TypeInt)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
