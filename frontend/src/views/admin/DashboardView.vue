@@ -348,291 +348,6 @@
         <div class="card p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex items-start gap-3">
-              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 sm:flex">
-                <Icon name="lightbulb" size="md" :stroke-width="2" />
-              </div>
-              <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                  {{ t('admin.dashboard.pricingStrategy.title') }}
-                </h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.pricingStrategy.description') }}
-                </p>
-              </div>
-            </div>
-            <div
-              v-if="oversellCalculator?.estimate"
-              class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
-            >
-              <span
-                v-if="Number.isFinite(oversellCalculator.estimate.estimated_light_user_ratio)"
-                class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
-              >
-                {{
-                  oversellCalculator.estimate.estimated_from_live_data
-                    ? t('admin.dashboard.pricingStrategy.estimateInfo', {
-                        share: formatPercentDetailed(oversellCalculator.estimate.estimated_light_user_ratio, 0),
-                        threshold: formatDecimal(oversellCalculator.estimate.light_user_threshold_units, 2),
-                        count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
-                      })
-                    : t('admin.dashboard.pricingStrategy.fallbackInfo')
-                }}
-              </span>
-              <span class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700">
-                {{
-                  t('admin.dashboard.pricingStrategy.costBadge', {
-                    cost: formatCost(oversellCalculator.defaults.actual_cost_cny),
-                    capacity: formatDecimal(oversellCalculator.defaults.capacity_units_per_product, 1)
-                  })
-                }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="oversellLoading" class="flex items-center justify-center py-8">
-            <LoadingSpinner size="md" />
-          </div>
-          <div v-else-if="oversellCalculator?.estimate" class="mt-5 space-y-5">
-            <!-- 参数输入组 -->
-            <section>
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.pricingStrategy.form.userCount') }} · {{ t('admin.dashboard.pricingStrategy.form.profitRate') }}
-              </h4>
-              <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
-                <div class="calculator-form-grid">
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.userCount') }}</label>
-                      <HelpTooltip
-                        data-testid="pricing-user-count-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.pricingStrategy.tooltips.userCount')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <input
-                      v-model.number="pricingForm.userCount"
-                      data-testid="pricing-user-count"
-                      type="number"
-                      min="1"
-                      step="1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.pricingStrategy.form.users') }}
-                    </p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.profitRate') }}</label>
-                      <HelpTooltip
-                        data-testid="pricing-profit-rate-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.pricingStrategy.tooltips.profitRate')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <input
-                      v-model.number="pricingForm.profitRatePercent"
-                      type="number"
-                      min="0"
-                      max="95"
-                      step="1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.pricingStrategy.form.percent') }}
-                    </p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.profitMode') }}</label>
-                      <HelpTooltip
-                        data-testid="pricing-profit-mode-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.pricingStrategy.tooltips.profitMode')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <select v-model="pricingForm.profitMode" class="input calculator-field__control">
-                      <option value="costPlus">{{ t('admin.dashboard.pricingStrategy.form.costPlus') }}</option>
-                      <option value="netMargin">{{ t('admin.dashboard.pricingStrategy.form.netMargin') }}</option>
-                    </select>
-                    <p class="calculator-field__hint"></p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.pricingStrategy.form.confidence') }}</label>
-                      <HelpTooltip
-                        data-testid="pricing-confidence-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.pricingStrategy.tooltips.confidence')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <select v-model.number="pricingForm.confidenceLevel" class="input calculator-field__control">
-                      <option :value="95">{{ t('admin.dashboard.pricingStrategy.form.confidence95') }}</option>
-                      <option :value="99">{{ t('admin.dashboard.pricingStrategy.form.confidence99') }}</option>
-                    </select>
-                    <p class="calculator-field__hint"></p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- 关键结果 -->
-            <section>
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
-              </h4>
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="calculator-result-card group hover:border-primary-300 hover:shadow dark:hover:border-primary-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-primary-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-primary-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.pricingStrategy.result.recommendedPrice') }}
-                    </p>
-                  </div>
-                  <p
-                    data-testid="pricing-recommended-price"
-                    class="calculator-result-card__value"
-                  >
-                    {{ pricingScenario ? formatCny(pricingScenario.requiredPrice) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    <span v-if="pricingScenario">
-                      {{ t('admin.dashboard.pricingStrategy.result.floorPriceHint', { floor: formatCost(pricingScenario.floorPrice) }) }}
-                    </span>
-                    <span v-else>&nbsp;</span>
-                  </p>
-                </div>
-
-                <div class="calculator-result-card group hover:border-emerald-300 hover:shadow dark:hover:border-emerald-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.pricingStrategy.result.minimumUsers') }}
-                    </p>
-                  </div>
-                  <p
-                    data-testid="pricing-min-users"
-                    class="calculator-result-card__value"
-                  >
-                    {{ pricingScenario ? t('admin.dashboard.pricingStrategy.result.users', { count: pricingScenario.userCount }) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{
-                      pricingScenario
-                        ? t('admin.dashboard.pricingStrategy.result.conservativeCostHint', {
-                            cost: formatCost(pricingScenario.conservativeMonthlyCost)
-                          })
-                        : '--'
-                    }}
-                  </p>
-                </div>
-
-                <div class="calculator-result-card group hover:border-amber-300 hover:shadow dark:hover:border-amber-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-amber-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.pricingStrategy.result.profitPerUser') }}
-                    </p>
-                  </div>
-                  <p class="calculator-result-card__value">
-                    {{
-                      pricingScenario && pricingScenario.currentMonthlyPrice > 0
-                        ? formatSignedCny(pricingScenario.currentMonthlyProfit)
-                        : '--'
-                    }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    <span v-if="pricingScenario && pricingScenario.currentMonthlyPrice > 0">
-                      {{ t('admin.dashboard.pricingStrategy.result.currentPriceHint', { price: formatCost(pricingScenario.currentMonthlyPrice) }) }}
-                      ·
-                      {{ t('admin.dashboard.pricingStrategy.result.priceGapHint', { gap: formatSignedCny(pricingScenario.currentPriceGap) }) }}
-                    </span>
-                    <span v-else>{{ t('admin.dashboard.pricingStrategy.result.noResult') }}</span>
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <!-- 套餐建议 -->
-            <section v-if="pricingPlanRecommendations.length > 0">
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.pricingStrategy.table.plan') }} · {{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}
-              </h4>
-              <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
-                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
-                  <thead class="bg-gray-50/80 dark:bg-dark-700/50">
-                    <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.plan') }}</th>
-                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.duration') }}</th>
-                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.currentPrice') }}</th>
-                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.recommendedPrice') }}</th>
-                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.pricingStrategy.table.delta') }}</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
-                    <tr
-                      v-for="plan in pricingPlanRecommendations"
-                      :key="plan.plan_id"
-                      class="transition-colors hover:bg-gray-50 dark:hover:bg-dark-800/30"
-                    >
-                      <td class="px-4 py-3">
-                        <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
-                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
-                      </td>
-                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
-                      </td>
-                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ formatCny(plan.current_price_cny) }}</td>
-                      <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
-                        {{ formatCny(plan.derived_recommended_price_cny) }}
-                      </td>
-                      <td
-                        class="px-4 py-3 font-semibold"
-                        :class="plan.price_delta_cny >= 0 ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'"
-                      >
-                        {{ formatSignedCny(plan.price_delta_cny) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <div class="card p-5">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="flex items-start gap-3">
               <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400 sm:flex">
                 <Icon name="calculator" size="md" :stroke-width="2" />
               </div>
@@ -649,10 +364,17 @@
               v-if="oversellCalculator?.estimate"
               class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
             >
-              <span class="rounded-full bg-blue-50 px-3 py-1 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+              <span
+                v-if="Number.isFinite(oversellCalculator.estimate.estimated_light_user_ratio)"
+                class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+              >
+                {{ oversellEstimateSummary }}
+              </span>
+              <span class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700">
                 {{
-                  t('admin.dashboard.oversell.sampleUsers', {
-                    count: formatNumber(oversellCalculator.estimate.sampled_subscription_count)
+                  t('admin.dashboard.oversell.costBadge', {
+                    cost: formatCost(oversellCalculator.defaults.actual_cost_cny),
+                    capacity: formatDecimal(oversellCalculator.defaults.capacity_units_per_product, 1)
                   })
                 }}
               </span>
@@ -668,321 +390,221 @@
           <div v-if="oversellLoading" class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
           </div>
-          <div v-else class="mt-5 space-y-5">
-            <!-- 系统估算条件 -->
-            <div class="rounded-2xl border border-gray-200/60 bg-gradient-to-br from-gray-50 to-gray-50/50 p-4 dark:border-dark-700/60 dark:from-dark-700/40 dark:to-dark-700/20">
-              <div class="flex flex-wrap items-start gap-3">
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
-                  <Icon name="infoCircle" size="sm" class="text-gray-500 dark:text-gray-400" :stroke-width="2" />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.estimateTitle') }}
-                  </p>
-                  <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
-                    {{ oversellEstimateSummary || t('admin.dashboard.oversell.noEstimate') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- 参数输入组 -->
+          <div v-else-if="oversellCalculator?.estimate" class="mt-5 space-y-5">
             <section>
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.form.userCount') }} · {{ t('admin.dashboard.oversell.form.plannedPrice') }}
+                {{ t('admin.dashboard.oversell.sections.parameters') }}
               </h4>
-              <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
-                <div class="calculator-form-grid">
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.userCount') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-user-count-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.userCount')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+              <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.sections.cost') }}
+                  </h5>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-procurement-cost-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.procurementCost')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.procurementCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.cnyPerItem') }}</p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.userCount"
-                      data-testid="oversell-user-count"
-                      type="number"
-                      min="1"
-                      step="1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.users') }}
-                    </p>
-                  </div>
 
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.plannedPrice') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-planned-price-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.plannedPrice')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.capacity') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-capacity-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.capacity')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.capacityPerItem"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.units') }}</p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.plannedPrice"
-                      data-testid="oversell-planned-price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
-                    </p>
                   </div>
+                </div>
 
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-procurement-cost-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.procurementCost')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.sections.users') }}
+                  </h5>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.userCount') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-user-count-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.userCount')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.userCount"
+                        data-testid="oversell-user-count"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.users') }}</p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.procurementCost"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.cnyPerItem') }}
-                    </p>
+
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.plannedPrice') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-planned-price-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.plannedPrice')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.plannedPrice"
+                        data-testid="oversell-planned-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.cnyPerMonth') }}</p>
+                    </div>
+
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.heavyUsage') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-heavy-usage-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.heavyUsage')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.heavyUsage"
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.units') }}</p>
+                    </div>
                   </div>
+                </div>
 
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.capacity') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-capacity-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.capacity')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.oversell.sections.profitRisk') }}
+                  </h5>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-profit-rate-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.profitRate')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.profitRatePercent"
+                        type="number"
+                        min="0"
+                        max="95"
+                        step="1"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.percent') }}</p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.capacityPerItem"
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.units') }}
-                    </p>
-                  </div>
 
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.heavyUsage') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-heavy-usage-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.heavyUsage')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitMode') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-profit-mode-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.profitMode')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <select v-model="oversellForm.profitMode" class="input calculator-field__control">
+                        <option value="costPlus">{{ t('admin.dashboard.oversell.form.costPlus') }}</option>
+                        <option value="netMargin">{{ t('admin.dashboard.oversell.form.netMargin') }}</option>
+                      </select>
+                      <p class="calculator-field__hint"></p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.heavyUsage"
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.units') }}
-                    </p>
-                  </div>
 
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-profit-rate-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.profitRate')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.confidence') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-confidence-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.confidence')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <select v-model.number="oversellForm.confidenceLevel" class="input calculator-field__control">
+                        <option :value="95">{{ t('admin.dashboard.oversell.form.confidence95') }}</option>
+                        <option :value="99">{{ t('admin.dashboard.oversell.form.confidence99') }}</option>
+                      </select>
+                      <p class="calculator-field__hint"></p>
                     </div>
-                    <input
-                      v-model.number="oversellForm.profitRatePercent"
-                      type="number"
-                      min="0"
-                      max="95"
-                      step="1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.percent') }}
-                    </p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitMode') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-profit-mode-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.profitMode')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <select v-model="oversellForm.profitMode" class="input calculator-field__control">
-                      <option value="costPlus">{{ t('admin.dashboard.oversell.form.costPlus') }}</option>
-                      <option value="netMargin">{{ t('admin.dashboard.oversell.form.netMargin') }}</option>
-                    </select>
-                    <p class="calculator-field__hint"></p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.targetProfit') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-target-profit-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.targetProfit')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <input
-                      v-model.number="oversellForm.targetProfit"
-                      data-testid="oversell-target-profit"
-                      type="number"
-                      min="0"
-                      step="1"
-                      class="input calculator-field__control"
-                    />
-                    <p class="calculator-field__hint">
-                      {{ t('admin.dashboard.oversell.form.cnyPerMonth') }}
-                    </p>
-                  </div>
-
-                  <div class="calculator-field">
-                    <div class="calculator-field__header">
-                      <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.confidence') }}</label>
-                      <HelpTooltip
-                        data-testid="oversell-confidence-help"
-                        class="shrink-0"
-                        :content="t('admin.dashboard.oversell.tooltips.confidence')"
-                      >
-                        <template #trigger>
-                          <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">
-                            ?
-                          </span>
-                        </template>
-                      </HelpTooltip>
-                    </div>
-                    <select v-model.number="oversellForm.confidenceLevel" class="input calculator-field__control">
-                      <option :value="95">{{ t('admin.dashboard.oversell.form.confidence95') }}</option>
-                      <option :value="99">{{ t('admin.dashboard.oversell.form.confidence99') }}</option>
-                    </select>
-                    <p class="calculator-field__hint"></p>
                   </div>
                 </div>
               </div>
             </section>
 
-            <!-- 中间指标：成本 / 单位成本 / 保底价 -->
             <section>
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }} · {{ t('admin.dashboard.oversell.metrics.unitCost') }} · {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
+                {{ t('admin.dashboard.oversell.sections.results') }}
               </h4>
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.metrics.meanUpperBound') }}
-                    </p>
-                  </div>
-                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                    {{ oversellScenario ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.metrics.unitCost') }}
-                    </p>
-                  </div>
-                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                    {{ oversellScenario ? formatCny(oversellScenario.unitCostPerTheoretical) : '--' }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/40">
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.metrics.floorPrice') }}
-                    </p>
-                  </div>
-                  <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                    {{ oversellScenario ? formatCny(oversellScenario.floorPrice) : '--' }}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <!-- 关键结果 -->
-            <section>
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.result.recommendedPrice') }} · {{ t('admin.dashboard.oversell.result.plannedProfit') }}
-              </h4>
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <div class="calculator-result-card group hover:border-primary-300 hover:shadow dark:hover:border-primary-700">
                   <span class="absolute left-0 top-0 h-full w-1 bg-primary-500"></span>
                   <div class="flex items-center gap-1.5">
@@ -991,24 +613,11 @@
                       {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
                     </p>
                   </div>
-                  <p
-                    data-testid="oversell-recommended-price"
-                    class="calculator-result-card__value"
-                  >
+                  <p data-testid="oversell-recommended-price" class="calculator-result-card__value">
                     {{ oversellScenario ? formatCny(oversellScenario.requiredPrice) : '--' }}
                   </p>
-                  <p class="calculator-result-card__support">
-                    {{ t('admin.dashboard.oversell.result.profitDrivenPrice') }}:
-                    <span class="font-medium text-gray-900 dark:text-white">
-                      {{ oversellScenario ? formatCny(oversellScenario.targetProfitDrivenPrice) : '--' }}
-                    </span>
-                  </p>
                   <p class="calculator-result-card__meta">
-                    {{
-                      oversellScenario
-                        ? t('admin.dashboard.oversell.result.floorPriceHint', { floor: formatCost(oversellScenario.floorPrice) })
-                        : '--'
-                    }}
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.floorPriceHint', { floor: formatCost(oversellScenario.floorPrice) }) : '--' }}
                   </p>
                 </div>
 
@@ -1023,22 +632,8 @@
                   <p class="calculator-result-card__value">
                     {{ oversellScenario ? formatSignedCny(oversellScenario.plannedMonthlyProfit) : '--' }}
                   </p>
-                  <p class="calculator-result-card__support">
-                    {{
-                      oversellScenario
-                        ? t('admin.dashboard.oversell.result.priceGapHint', {
-                            gap: formatSignedCny(oversellScenario.priceGap)
-                          })
-                        : '--'
-                    }}
-                  </p>
                   <p class="calculator-result-card__meta">
-                    <span v-if="oversellScenario">
-                      {{ t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) }) }}
-                      ·
-                      {{ t('admin.dashboard.oversell.result.costHint', { value: formatCost(oversellScenario.conservativeMonthlyCost) }) }}
-                    </span>
-                    <span v-else>--</span>
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) }) : '--' }}
                   </p>
                 </div>
 
@@ -1047,35 +642,49 @@
                   <div class="flex items-center gap-1.5">
                     <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.result.minimumUsers') }}
+                      {{ t('admin.dashboard.oversell.result.conservativeCost') }}
+                    </p>
+                  </div>
+                  <p class="calculator-result-card__value">
+                    {{ oversellScenario ? formatCny(oversellScenario.conservativeMonthlyCost) : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta">
+                    {{ oversellScenario ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')}` : '--' }}
+                  </p>
+                </div>
+
+                <div class="calculator-result-card group hover:border-sky-300 hover:shadow dark:hover:border-sky-700">
+                  <span class="absolute left-0 top-0 h-full w-1 bg-sky-500"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t('admin.dashboard.oversell.result.buffer') }}
                     </p>
                   </div>
                   <p
-                    data-testid="oversell-min-users"
                     class="calculator-result-card__value"
+                    :class="oversellScenario && oversellScenario.safetyBuffer < 0 ? 'text-rose-600 dark:text-rose-300' : ''"
                   >
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.users', { count: oversellScenario.userCount }) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__support">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.lossRisk', { risk: oversellScenario.lossRiskLabel }) : '--' }}
+                    {{ oversellScenario ? `${formatSignedDecimal(oversellScenario.safetyBuffer, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
                   </p>
                   <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.buffer', { value: formatDecimal(oversellScenario.safetyBuffer, 3) }) : '--' }}
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.priceGapHint', { gap: formatSignedCny(oversellScenario.priceGap) }) : '--' }}
                   </p>
                 </div>
               </div>
             </section>
 
-            <!-- 套餐对比 -->
             <section v-if="oversellPlanRecommendations.length > 0">
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.table.plan') }} · {{ t('admin.dashboard.oversell.table.recommendedPrice') }}
+                {{ t('admin.dashboard.oversell.table.title') }}
               </h4>
               <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
                 <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
                   <thead class="bg-gray-50/80 dark:bg-dark-700/50">
                     <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.duration') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentMonthlyEquivalent') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentPrice') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.recommendedPrice') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.delta') }}</th>
@@ -1089,9 +698,13 @@
                     >
                       <td class="px-4 py-3">
                         <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
-                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {{ plan.group_name }}
-                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
+                      </td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
+                      </td>
+                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {{ formatCny(plan.current_monthly_equivalent_cny) }}
                       </td>
                       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {{ formatCny(plan.current_price_cny) }}
@@ -1110,6 +723,16 @@
                 </table>
               </div>
             </section>
+
+            <p class="rounded-2xl bg-gray-50/80 px-4 py-3 text-xs leading-5 text-gray-500 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:text-gray-400 dark:ring-dark-700/60">
+              {{ t('admin.dashboard.oversell.result.note') }}
+            </p>
+          </div>
+          <div
+            v-else
+            class="mt-5 rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400"
+          >
+            {{ t('admin.dashboard.oversell.noEstimate') }}
           </div>
         </div>
 
@@ -1353,19 +976,10 @@ const oversellForm = reactive({
   capacityPerItem: 3,
   profitRatePercent: 20,
   profitMode: 'costPlus' as OversellProfitMode,
-  targetProfit: 120,
   heavyUsage: 3,
   confidenceLevel: 99 as 95 | 99
 })
 
-type PricingProfitMode = 'costPlus' | 'netMargin'
-
-const pricingForm = reactive({
-  userCount: 30,
-  profitRatePercent: 20,
-  profitMode: 'costPlus' as PricingProfitMode,
-  confidenceLevel: 99 as 95 | 99
-})
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -1574,7 +1188,7 @@ const resolveProfitRate = (percent: number): number => {
 }
 
 const resolvePriceMultiplier = (
-  profitMode: OversellProfitMode | PricingProfitMode,
+  profitMode: OversellProfitMode,
   profitRate: number
 ): number => {
   return profitMode === 'netMargin'
@@ -1611,7 +1225,6 @@ const oversellScenario = computed(() => {
   const procurementCost = Math.max(oversellForm.procurementCost || 0, 0)
   const capacityPerItem = Math.max(oversellForm.capacityPerItem || 0, 0.0001)
   const plannedPrice = Math.max(oversellForm.plannedPrice || 0, 0)
-  const targetProfit = Math.max(oversellForm.targetProfit || 0, 0)
   const profitRate = resolveProfitRate(oversellForm.profitRatePercent || 0)
   const priceMultiplier = resolvePriceMultiplier(oversellForm.profitMode, profitRate)
   const lossRisk = resolveLossRisk(oversellForm.confidenceLevel)
@@ -1622,8 +1235,7 @@ const oversellScenario = computed(() => {
   const riskAdjustedCostPerUser = unitCostPerTheoretical * riskAdjustedMeanUnits
   const conservativeMonthlyCost = riskAdjustedCostPerUser * userCount
   const floorPrice = riskAdjustedCostPerUser * priceMultiplier
-  const targetProfitDrivenPrice = riskAdjustedCostPerUser + targetProfit / userCount
-  const requiredPrice = Math.max(floorPrice, targetProfitDrivenPrice)
+  const requiredPrice = floorPrice
   const plannedMonthlyRevenue = plannedPrice * userCount
   const plannedMonthlyProfit = plannedMonthlyRevenue - conservativeMonthlyCost
   const affordableUsageThreshold =
@@ -1643,7 +1255,6 @@ const oversellScenario = computed(() => {
     riskAdjustedCostPerUser,
     conservativeMonthlyCost,
     floorPrice,
-    targetProfitDrivenPrice,
     requiredPrice,
     plannedMonthlyRevenue,
     plannedMonthlyProfit,
@@ -1666,73 +1277,16 @@ const oversellPlanRecommendations = computed(() => {
 
     return {
       ...plan,
+      current_monthly_equivalent_cny:
+        plan.duration_days_equivalent > 0
+          ? (plan.current_price_cny * 30) / plan.duration_days_equivalent
+          : plan.current_price_cny,
       derived_recommended_price_cny: derivedRecommendedPrice,
       price_delta_cny: derivedRecommendedPrice - plan.current_price_cny
     }
   })
 })
 
-const pricingScenario = computed(() => {
-  const estimate = oversellCalculator.value?.estimate
-  if (!estimate || !Number.isFinite(estimate.estimated_light_user_ratio)) return null
-
-  const defaults = oversellCalculator.value?.defaults
-  if (!defaults) return null
-
-  const procurementCost = Math.max(defaults.actual_cost_cny, 0)
-  const capacityPerItem = Math.max(defaults.capacity_units_per_product, 0.0001)
-  if (procurementCost <= 0) return null
-
-  const userCount = Math.max(Math.round(pricingForm.userCount || 0), 1)
-  const distribution = resolveUsageDistribution(estimate, capacityPerItem)
-  const unitCost = procurementCost / capacityPerItem
-  const profitRate = resolveProfitRate(pricingForm.profitRatePercent)
-  const lossRisk = resolveLossRisk(pricingForm.confidenceLevel)
-  const riskBufferUnits =
-    distribution.heavyUsage * Math.sqrt(Math.log(1 / lossRisk) / (2 * userCount))
-  const riskAdjustedMeanUnits = distribution.meanUpperBound + riskBufferUnits
-  const riskAdjustedCostPerUser = unitCost * riskAdjustedMeanUnits
-  const conservativeMonthlyCost = riskAdjustedCostPerUser * userCount
-  const multiplier = resolvePriceMultiplier(pricingForm.profitMode, profitRate)
-  const floorPrice = riskAdjustedCostPerUser * multiplier
-  const requiredPrice = floorPrice
-  const currentMonthlyPrice = Math.max(estimate.current_cheapest_monthly_price_cny, 0)
-  const currentMonthlyRevenue = currentMonthlyPrice * userCount
-  const currentMonthlyProfit = currentMonthlyRevenue - conservativeMonthlyCost
-
-  return {
-    userCount,
-    unitCost,
-    meanUpperBound: distribution.meanUpperBound,
-    riskAdjustedMeanUnits,
-    riskAdjustedCostPerUser,
-    conservativeMonthlyCost,
-    floorPrice,
-    requiredPrice,
-    currentMonthlyPrice,
-    currentMonthlyRevenue,
-    currentMonthlyProfit,
-    currentPriceGap: currentMonthlyPrice - requiredPrice
-  }
-})
-
-const pricingPlanRecommendations = computed(() => {
-  const plans = oversellCalculator.value?.plans ?? []
-  const requiredMonthlyPrice = pricingScenario.value?.requiredPrice ?? 0
-
-  return plans.map((plan) => {
-    const derivedRecommendedPrice =
-      requiredMonthlyPrice > 0
-        ? (requiredMonthlyPrice * plan.duration_days_equivalent) / 30
-        : 0
-
-    return {
-      ...plan,
-      derived_recommended_price_cny: derivedRecommendedPrice,
-      price_delta_cny: derivedRecommendedPrice - plan.current_price_cny
-    }
-  })
-})
 
 // Format helpers
 const formatTokens = (value: number | undefined): string => {
@@ -1779,6 +1333,14 @@ const formatDecimal = (value: number, digits = 2): string => {
   }
 
   return value.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')
+}
+
+const formatSignedDecimal = (value: number, digits = 2): string => {
+  if (!Number.isFinite(value)) {
+    return '--'
+  }
+
+  return `${value >= 0 ? '+' : ''}${formatDecimal(value, digits)}`
 }
 
 const formatPercentDetailed = (value: number, digits = 1): string => {
@@ -2030,13 +1592,8 @@ const loadOversellMathBaseline = async () => {
     oversellForm.userCount = Math.max(response.estimate.sampled_subscription_count || 0, 1)
     oversellForm.profitRatePercent = initialInput.profit_rate_percent
     oversellForm.profitMode = initialInput.profit_mode === 'net_margin' ? 'netMargin' : 'costPlus'
-    oversellForm.targetProfit = initialInput.target_profit_total_cny
     oversellForm.confidenceLevel = initialInput.confidence_level >= 0.99 ? 99 : 95
     oversellForm.plannedPrice = response.estimate.current_cheapest_monthly_price_cny || oversellForm.plannedPrice
-    pricingForm.userCount = Math.max(response.estimate.sampled_subscription_count || 0, 1)
-    pricingForm.profitRatePercent = initialInput.profit_rate_percent
-    pricingForm.profitMode = initialInput.profit_mode === 'net_margin' ? 'netMargin' : 'costPlus'
-    pricingForm.confidenceLevel = initialInput.confidence_level >= 0.99 ? 99 : 95
   } catch (error) {
     console.error('Error loading oversell math baseline:', error)
     oversellCalculator.value = null
@@ -2074,24 +1631,24 @@ onMounted(() => {
 
 <style scoped>
 .calculator-form-grid {
-  @apply grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  @apply grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4;
 }
 
 .calculator-field {
-  @apply flex h-full min-h-[132px] flex-col rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm ring-1 ring-gray-200/70;
+  @apply flex h-full min-h-[104px] flex-col rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm ring-1 ring-gray-200/70;
   @apply dark:border-dark-700 dark:bg-dark-800/50 dark:ring-dark-700/80;
 }
 
 .calculator-field__header {
-  @apply flex min-h-[2.75rem] items-start justify-between gap-2;
+  @apply flex min-h-[1.75rem] items-center justify-between gap-2;
 }
 
 .calculator-field__control {
-  @apply mt-3 w-full;
+  @apply mt-2 w-full;
 }
 
 .calculator-field__hint {
-  @apply mt-auto min-h-[2.5rem] pt-3 text-xs leading-5 text-gray-500 dark:text-gray-400;
+  @apply mt-auto min-h-[1.25rem] pt-2 text-xs leading-4 text-gray-500 dark:text-gray-400;
 }
 
 .calculator-result-card {

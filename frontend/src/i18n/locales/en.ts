@@ -1115,6 +1115,7 @@ export default {
           safetyBuffer: 'Safety buffer',
           floorPriceHint: 'Target-rate price ¥{floor}',
           conservativeCostHint: 'Conservative monthly cost ¥{cost}',
+          currentProfitHint: 'Current cheapest-plan profit {profit}',
           currentPriceHint: 'Current cheapest monthly price ¥{price}',
           priceGapHint: 'Gap to required price {gap}',
           users: '{count} users',
@@ -1131,21 +1132,31 @@ export default {
           recommended: 'Recommended'
         },
         table: {
+          title: 'Plans · Required Prices',
           plan: 'Plan',
           duration: 'Duration',
+          monthlyEquivalent: 'Monthly equivalent',
           currentPrice: 'Current price',
           recommendedPrice: 'Required price',
           delta: 'Delta'
         }
       },
       oversell: {
-        title: 'Oversell Math',
-        description: 'Combines the current light-user share estimate with manual inputs to objectively calculate oversell revenue, cost, profit, and required price at a chosen user count.',
+        title: 'Package Pricing Calculator',
+        description: 'Use cost, user consumption, target profit rate, and risk confidence to calculate required package prices and projected monthly profit in one place.',
         estimateTitle: 'System Estimate',
         estimateDescription: 'Within the last {days} days of samples, {share} of users stayed within {threshold} theoretical units per month.',
         sampleUsers: '{count} sampled users',
         updatedAt: 'Updated {time}',
+        costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
         noEstimate: 'There is not enough sample data yet. Wait for the backend to finish estimating the light-user share before using this calculator.',
+        sections: {
+          parameters: 'Calculator inputs',
+          cost: 'Cost inputs',
+          users: 'User inputs',
+          profitRisk: 'Profit and risk',
+          results: 'Key results'
+        },
         form: {
           userCount: 'Users to model',
           plannedPrice: 'Planned package price',
@@ -1153,7 +1164,6 @@ export default {
           capacity: 'Theoretical units per actual item',
           profitRate: 'Target profit rate',
           profitMode: 'Profit basis',
-          targetProfit: 'Target total profit',
           heavyUsage: 'Heavy-user monthly usage ceiling',
           confidence: 'Confidence',
           costPlus: 'Cost plus',
@@ -1174,7 +1184,6 @@ export default {
           heavyUsage: 'A conservative upper bound for heavy-user monthly usage. Higher values widen the risk range and usually increase both the conservative floor price and the required selling price.',
           profitRate: 'The extra profit ratio you want on top of cost. Higher values usually raise both the conservative floor price and the required selling price.',
           profitMode: 'Cost plus uses “cost × (1 + rate)”; net margin back-solves from the share of profit inside the selling price, so it typically behaves more conservatively.',
-          targetProfit: 'How much profit you want the whole oversell pool to make each month, not per user. Higher targets usually increase the required price at the current user count.',
           confidence: 'Represents the maximum loss risk you are willing to accept. 99% is more conservative, while 95% is more aggressive.'
         },
         metrics: {
@@ -1185,13 +1194,13 @@ export default {
         result: {
           recommendedPrice: 'Required package price',
           minimumUsers: 'Modeled users',
-          plannedProfit: 'Current planned monthly profit',
-          profitDrivenPrice: 'Target-profit price',
+          plannedProfit: 'Projected monthly profit',
+          conservativeCost: 'Conservative monthly cost',
           riskDrivenUsers: 'Derived from planned price',
           lossRisk: 'Loss-risk ceiling {risk}',
-          infiniteUsers: 'The planned price cannot sustain a stable oversell pool yet. Raise the price or loosen the profit target first.',
+          infiniteUsers: 'The planned price cannot sustain a stable oversell pool yet. Raise the price or lower the target profit rate first.',
           buffer: 'Safety buffer {value}',
-          helper: 'The suggested price takes the higher value between the floor package price and the target-profit-derived price.',
+          helper: 'The suggested price is derived from risk-adjusted cost and the target profit rate, so you can judge whether the current planned price can sustain a stable oversell pool.',
           floorPriceHint: 'Conservative floor ¥{floor}',
           priceGapHint: 'Gap to required price {gap}',
           revenueHint: 'Revenue ¥{value}',
@@ -1200,7 +1209,10 @@ export default {
           users: '{count} users'
         },
         table: {
+          title: 'Package Price Conversion',
           plan: 'Plan',
+          duration: 'Duration',
+          currentMonthlyEquivalent: 'Current monthly equivalent',
           currentPrice: 'Current price',
           recommendedPrice: 'Required price',
           delta: 'Adjustment'

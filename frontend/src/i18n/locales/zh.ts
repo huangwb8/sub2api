@@ -1125,6 +1125,7 @@ export default {
           safetyBuffer: '安全余量',
           floorPriceHint: '按目标盈利率折算 ¥{floor}',
           conservativeCostHint: '保守月成本 ¥{cost}',
+          currentProfitHint: '当前最低月费利润 {profit}',
           currentPriceHint: '当前最低月费 ¥{price}',
           priceGapHint: '与达标单价差额 {gap}',
           users: '{count} 人',
@@ -1141,21 +1142,31 @@ export default {
           recommended: '推荐'
         },
         table: {
+          title: '套餐 · 达标单价',
           plan: '套餐',
           duration: '时长',
+          monthlyEquivalent: '月费等价',
           currentPrice: '当前单价',
           recommendedPrice: '达标单价',
           delta: '差额'
         }
       },
       oversell: {
-        title: '超售数学测算',
-        description: '基于当前轻度用户占比估算与手动参数，在指定用户数下客观测算超售收入、成本、利润与达标单价。',
+        title: '套餐定价测算',
+        description: '基于成本、用户消耗分布、目标盈利率和风险把握度，统一测算套餐达标售价与预测月利润。',
         estimateTitle: '系统估算条件',
         estimateDescription: '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
         sampleUsers: '样本用户 {count}',
         updatedAt: '更新于 {time}',
+        costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
         noEstimate: '暂无足够样本，等待后端完成当前站点的轻度用户占比估算后再计算。',
+        sections: {
+          parameters: '测算参数',
+          cost: '成本参数',
+          users: '用户参数',
+          profitRisk: '利润与风险',
+          results: '关键结果'
+        },
         form: {
           userCount: '测算用户数',
           plannedPrice: '计划套餐售价',
@@ -1163,7 +1174,6 @@ export default {
           capacity: '单个实际商品承载理论商品数',
           profitRate: '目标盈利率',
           profitMode: '盈利口径',
-          targetProfit: '目标盈利总额',
           heavyUsage: '重度用户月消耗上限',
           confidence: '把握度',
           costPlus: '成本加成',
@@ -1184,7 +1194,6 @@ export default {
           heavyUsage: '对重度用户月消耗上限的保守估计，用来界定风险区间上界。填得越高，保守保本价和达标单价通常越高。',
           profitRate: '希望在成本之外额外保留的利润比例。数值越高，保守保本价和达标单价通常越高。',
           profitMode: '成本加成按“成本 × (1 + 盈利率)”计算；净利率按“利润占售价的比例”反推，结果通常更保守。',
-          targetProfit: '希望整个超售用户池每月合计赚多少钱，而不是单个用户利润。目标越高，按当前用户规模推导出的达标单价通常越高。',
           confidence: '表示你愿意接受的亏损风险上限。99% 更保守，95% 更激进。'
         },
         metrics: {
@@ -1193,15 +1202,15 @@ export default {
           floorPrice: '保守保本价'
         },
         result: {
-          recommendedPrice: '达成目标所需单价',
+          recommendedPrice: '达标套餐价格',
           minimumUsers: '测算用户数',
-          plannedProfit: '当前计划月利润',
-          profitDrivenPrice: '按目标利润折算',
+          plannedProfit: '预测月利润',
+          conservativeCost: '保守月成本',
           riskDrivenUsers: '按计划售价推导',
           lossRisk: '亏损风险上限 {risk}',
-          infiniteUsers: '当前计划售价无法形成稳定超售池，请先提高售价或放宽盈利目标。',
+          infiniteUsers: '当前计划售价无法形成稳定超售池，请先提高售价或降低目标盈利率。',
           buffer: '安全垫 {value}',
-          helper: '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
+          helper: '建议价按风险调整成本与目标盈利率推导，用于判断当前计划售价是否能支撑稳定超售。',
           floorPriceHint: '保守保本价 ¥{floor}',
           priceGapHint: '与达标单价差额 {gap}',
           revenueHint: '月收入 ¥{value}',
@@ -1210,9 +1219,12 @@ export default {
           users: '{count} 人'
         },
         table: {
+          title: '套餐价格换算',
           plan: '套餐',
+          duration: '时长',
+          currentMonthlyEquivalent: '当前月费等价',
           currentPrice: '当前单价',
-          recommendedPrice: '达标单价',
+          recommendedPrice: '达标售价',
           delta: '调价幅度'
         }
       },
