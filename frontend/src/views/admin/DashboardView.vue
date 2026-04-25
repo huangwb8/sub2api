@@ -204,13 +204,172 @@
           </div>
         </div>
 
+        <!-- Charts Section -->
+        <div class="space-y-6">
+          <!-- Date Range Filter -->
+          <div class="card p-4">
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >{{ t('admin.dashboard.timeRange') }}:</span
+                >
+                <DateRangePicker
+                  v-model:start-date="startDate"
+                  v-model:end-date="endDate"
+                  @change="onDateRangeChange"
+                />
+              </div>
+              <button @click="loadDashboardStats" :disabled="chartsLoading" class="btn btn-secondary">
+                {{ t('common.refresh') }}
+              </button>
+              <div class="ml-auto flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >{{ t('admin.dashboard.granularity') }}:</span
+                >
+                <div class="w-28">
+                  <Select
+                    v-model="granularity"
+                    :options="granularityOptions"
+                    @change="loadChartData"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <ModelDistributionChart
+              :model-stats="modelStats"
+              :enable-ranking-view="true"
+              :ranking-items="rankingItems"
+              :ranking-total-actual-cost="rankingTotalActualCost"
+              :ranking-total-requests="rankingTotalRequests"
+              :ranking-total-tokens="rankingTotalTokens"
+              :loading="chartsLoading"
+              :ranking-loading="rankingLoading"
+              :ranking-error="rankingError"
+              :start-date="startDate"
+              :end-date="endDate"
+              @ranking-click="goToUserUsage"
+            />
+            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
+          </div>
+
+          <div class="card p-4">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 class="dashboard-panel-title">
+                  {{ t('admin.dashboard.profitability.title') }}
+                </h3>
+                <p class="dashboard-panel-description">
+                  {{ t('admin.dashboard.profitability.description') }}
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.timeRange') }}:
+                </span>
+                <DateRangePicker
+                  v-model:start-date="profitabilityStartDate"
+                  v-model:end-date="profitabilityEndDate"
+                  :default-preset="profitabilityDefaultPreset"
+                  :enable-all-time="Boolean(profitabilityAllTimeStartDate)"
+                  :all-time-start-date="profitabilityAllTimeStartDate"
+                  @change="onProfitabilityRangeChange"
+                />
+              </div>
+              <div class="grid min-w-full grid-cols-2 gap-2 text-xs sm:min-w-0 sm:grid-cols-5">
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.balanceRevenue') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(profitabilitySummary.revenueBalanceCNY) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.subscriptionRevenue') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(profitabilitySummary.revenueSubscriptionCNY) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.estimatedCost') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
+                    {{ formatCny(profitabilitySummary.estimatedCostCNY) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.profit') }}
+                  </div>
+                  <div
+                    class="mt-1 font-semibold"
+                    :class="profitabilitySummary.profitCNY >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+                  >
+                    {{ formatSignedCny(profitabilitySummary.profitCNY) }}
+                  </div>
+                </div>
+                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
+                  <div class="text-gray-500 dark:text-gray-400">
+                    {{ t('admin.dashboard.profitability.extraProfitRate') }}
+                  </div>
+                  <div class="mt-1 font-semibold text-blue-600 dark:text-blue-400">
+                    {{ formatExtraProfitRate(profitabilitySummary.extraProfitRatePercent) }}
+                  </div>
+                  <div
+                    v-if="profitabilitySummary.extraProfitRatePercent == null"
+                    class="mt-1 text-[11px] text-gray-500 dark:text-gray-400"
+                  >
+                    {{ t('admin.dashboard.profitability.extraProfitRateUnavailableHint') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 h-72">
+              <ProfitabilityTrendChart
+                :trend-data="profitabilityTrend"
+                :loading="profitabilityLoading"
+                :granularity="profitabilityGranularity"
+                :start-date="profitabilityStartDate"
+                :end-date="profitabilityEndDate"
+              />
+            </div>
+          </div>
+
+          <!-- User Usage Trend (Full Width) -->
+          <div class="card p-4">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.dashboard.recentUsage') }} (Top 12)
+            </h3>
+            <div class="h-64">
+              <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
+                <LoadingSpinner size="md" />
+              </div>
+              <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
+              <div
+                v-else
+                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+              >
+                {{ t('admin.dashboard.noDataAvailable') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="card p-5">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+              <h3 class="dashboard-panel-title">
                 {{ t('admin.dashboard.recommendations.title') }}
               </h3>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p class="dashboard-panel-description">
                 {{ t('admin.dashboard.recommendations.description') }}
               </p>
             </div>
@@ -347,18 +506,13 @@
 
         <div class="calculator-shell">
           <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="flex items-start gap-3">
-              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-cyan-300 shadow-lg shadow-cyan-500/10 dark:bg-cyan-400/10 dark:text-cyan-200 sm:flex">
-                <Icon name="calculator" size="md" :stroke-width="2" />
-              </div>
-              <div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                  {{ t('admin.dashboard.oversell.title') }}
-                </h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.oversell.description') }}
-                </p>
-              </div>
+            <div>
+              <h3 class="dashboard-panel-title">
+                {{ t('admin.dashboard.oversell.title') }}
+              </h3>
+              <p class="dashboard-panel-description">
+                {{ t('admin.dashboard.oversell.description') }}
+              </p>
             </div>
             <div
               v-if="oversellCalculator?.estimate"
@@ -369,14 +523,6 @@
                 class="calculator-evidence-pill calculator-evidence-pill--strong"
               >
                 {{ oversellEstimateSummary }}
-              </span>
-              <span class="calculator-evidence-pill">
-                {{
-                  t('admin.dashboard.oversell.costBadge', {
-                    cost: formatCost(oversellCalculator.defaults.actual_cost_cny),
-                    capacity: formatDecimal(oversellCalculator.defaults.capacity_units_per_product, 1)
-                  })
-                }}
               </span>
               <span
                 v-if="oversellCalculator.generated_at"
@@ -394,12 +540,9 @@
             <section class="calculator-results-panel">
               <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h4 class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                  <h4 class="dashboard-panel-section-title">
                     {{ t('admin.dashboard.oversell.sections.results') }}
                   </h4>
-                  <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {{ t('admin.dashboard.oversell.result.note') }}
-                  </p>
                 </div>
               </div>
               <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
@@ -467,15 +610,17 @@
             </section>
 
             <section class="calculator-parameters-panel">
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.sections.parameters') }}
-              </h4>
-              <div class="grid grid-cols-1 gap-3 xl:grid-cols-3">
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <h4 class="dashboard-panel-section-title">
+                  {{ t('admin.dashboard.oversell.sections.parameters') }}
+                </h4>
+              </div>
+              <div class="grid grid-cols-1 gap-2 xl:grid-cols-3">
                 <div class="calculator-parameter-group">
-                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <h5 class="calculator-parameter-group__title">
                     {{ t('admin.dashboard.oversell.sections.cost') }}
                   </h5>
-                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                  <div class="calculator-parameter-group__fields grid-cols-1 sm:grid-cols-2">
                     <div class="calculator-field">
                       <div class="calculator-field__header">
                         <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
@@ -525,10 +670,10 @@
                 </div>
 
                 <div class="calculator-parameter-group">
-                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <h5 class="calculator-parameter-group__title">
                     {{ t('admin.dashboard.oversell.sections.users') }}
                   </h5>
-                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <div class="calculator-parameter-group__fields grid-cols-1 sm:grid-cols-3">
                     <div class="calculator-field">
                       <div class="calculator-field__header">
                         <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.userCount') }}</label>
@@ -603,10 +748,10 @@
                 </div>
 
                 <div class="calculator-parameter-group">
-                  <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <h5 class="calculator-parameter-group__title">
                     {{ t('admin.dashboard.oversell.sections.profitRisk') }}
                   </h5>
-                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <div class="calculator-parameter-group__fields grid-cols-1 sm:grid-cols-3">
                     <div class="calculator-field">
                       <div class="calculator-field__header">
                         <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.profitRate') }}</label>
@@ -676,7 +821,7 @@
             </section>
 
             <section v-if="oversellPlanRecommendations.length > 0">
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <h4 class="dashboard-panel-section-title mb-3">
                 {{ t('admin.dashboard.oversell.table.title') }}
               </h4>
               <div class="calculator-table-wrap">
@@ -747,165 +892,6 @@
             class="mt-5 rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400"
           >
             {{ t('admin.dashboard.oversell.noEstimate') }}
-          </div>
-        </div>
-
-        <!-- Charts Section -->
-        <div class="space-y-6">
-          <!-- Date Range Filter -->
-          <div class="card p-4">
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.timeRange') }}:</span
-                >
-                <DateRangePicker
-                  v-model:start-date="startDate"
-                  v-model:end-date="endDate"
-                  @change="onDateRangeChange"
-                />
-              </div>
-              <button @click="loadDashboardStats" :disabled="chartsLoading" class="btn btn-secondary">
-                {{ t('common.refresh') }}
-              </button>
-              <div class="ml-auto flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >{{ t('admin.dashboard.granularity') }}:</span
-                >
-                <div class="w-28">
-                  <Select
-                    v-model="granularity"
-                    :options="granularityOptions"
-                    @change="loadChartData"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Grid -->
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ModelDistributionChart
-              :model-stats="modelStats"
-              :enable-ranking-view="true"
-              :ranking-items="rankingItems"
-              :ranking-total-actual-cost="rankingTotalActualCost"
-              :ranking-total-requests="rankingTotalRequests"
-              :ranking-total-tokens="rankingTotalTokens"
-              :loading="chartsLoading"
-              :ranking-loading="rankingLoading"
-              :ranking-error="rankingError"
-              :start-date="startDate"
-              :end-date="endDate"
-              @ranking-click="goToUserUsage"
-            />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
-          </div>
-
-          <div class="card p-4">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-                  {{ t('admin.dashboard.profitability.title') }}
-                </h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.profitability.description') }}
-                </p>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.timeRange') }}:
-                </span>
-                <DateRangePicker
-                  v-model:start-date="profitabilityStartDate"
-                  v-model:end-date="profitabilityEndDate"
-                  :default-preset="profitabilityDefaultPreset"
-                  :enable-all-time="Boolean(profitabilityAllTimeStartDate)"
-                  :all-time-start-date="profitabilityAllTimeStartDate"
-                  @change="onProfitabilityRangeChange"
-                />
-              </div>
-              <div class="grid min-w-full grid-cols-2 gap-2 text-xs sm:min-w-0 sm:grid-cols-5">
-                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.profitability.balanceRevenue') }}
-                  </div>
-                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(profitabilitySummary.revenueBalanceCNY) }}
-                  </div>
-                </div>
-                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.profitability.subscriptionRevenue') }}
-                  </div>
-                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(profitabilitySummary.revenueSubscriptionCNY) }}
-                  </div>
-                </div>
-                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.profitability.estimatedCost') }}
-                  </div>
-                  <div class="mt-1 font-semibold text-gray-900 dark:text-white">
-                    {{ formatCny(profitabilitySummary.estimatedCostCNY) }}
-                  </div>
-                </div>
-                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.profitability.profit') }}
-                  </div>
-                  <div
-                    class="mt-1 font-semibold"
-                    :class="profitabilitySummary.profitCNY >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-                  >
-                    {{ formatSignedCny(profitabilitySummary.profitCNY) }}
-                  </div>
-                </div>
-                <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-dark-700/60">
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.profitability.extraProfitRate') }}
-                  </div>
-                  <div class="mt-1 font-semibold text-blue-600 dark:text-blue-400">
-                    {{ formatExtraProfitRate(profitabilitySummary.extraProfitRatePercent) }}
-                  </div>
-                  <div
-                    v-if="profitabilitySummary.extraProfitRatePercent == null"
-                    class="mt-1 text-[11px] text-gray-500 dark:text-gray-400"
-                  >
-                    {{ t('admin.dashboard.profitability.extraProfitRateUnavailableHint') }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4 h-72">
-              <ProfitabilityTrendChart
-                :trend-data="profitabilityTrend"
-                :loading="profitabilityLoading"
-                :granularity="profitabilityGranularity"
-                :start-date="profitabilityStartDate"
-                :end-date="profitabilityEndDate"
-              />
-            </div>
-          </div>
-
-          <!-- User Usage Trend (Full Width) -->
-          <div class="card p-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('admin.dashboard.recentUsage') }} (Top 12)
-            </h3>
-            <div class="h-64">
-              <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
-                <LoadingSpinner size="md" />
-              </div>
-              <Line v-else-if="userTrendChartData" :data="userTrendChartData" :options="lineOptions" />
-              <div
-                v-else
-                class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
-              >
-                {{ t('admin.dashboard.noDataAvailable') }}
-              </div>
-            </div>
           </div>
         </div>
       </template>
@@ -1670,6 +1656,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dashboard-panel-title {
+  @apply text-base font-semibold leading-6 text-gray-900 dark:text-white;
+}
+
+.dashboard-panel-description {
+  @apply mt-1 max-w-4xl text-sm leading-6 text-gray-500 dark:text-gray-400;
+}
+
+.dashboard-panel-section-title {
+  @apply text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400;
+}
+
 .calculator-form-grid {
   @apply grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4;
 }
@@ -1706,29 +1704,37 @@ onMounted(() => {
 }
 
 .calculator-parameters-panel {
-  @apply rounded-3xl border border-slate-200/80 bg-white/70 p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/30;
+  @apply rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-sm dark:border-dark-700 dark:bg-dark-800/30;
 }
 
 .calculator-parameter-group {
-  @apply rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 shadow-inner shadow-white/60;
-  @apply dark:border-dark-700 dark:bg-dark-700/30 dark:shadow-none;
+  @apply rounded-xl border border-slate-200/80 bg-slate-50/70 p-3;
+  @apply dark:border-dark-700 dark:bg-dark-700/30;
+}
+
+.calculator-parameter-group__title {
+  @apply mb-2 text-xs font-semibold uppercase leading-5 tracking-[0.12em] text-gray-500 dark:text-gray-400;
+}
+
+.calculator-parameter-group__fields {
+  @apply grid gap-2;
 }
 
 .calculator-field {
-  @apply flex h-full min-h-[96px] flex-col rounded-2xl border border-slate-200/80 bg-white/95 p-3 shadow-sm ring-1 ring-white/70 transition-all;
+  @apply flex h-full min-h-[74px] flex-col rounded-xl border border-slate-200/80 bg-white/95 p-2.5 shadow-sm ring-1 ring-white/70 transition-all;
   @apply focus-within:border-cyan-300 focus-within:shadow-md focus-within:shadow-cyan-500/10 dark:border-dark-700 dark:bg-dark-800/60 dark:ring-dark-700/80 dark:focus-within:border-cyan-700;
 }
 
 .calculator-field__header {
-  @apply flex min-h-[1.75rem] items-center justify-between gap-2;
+  @apply flex min-h-[1.25rem] items-center justify-between gap-2;
 }
 
 .calculator-field__control {
-  @apply mt-2 w-full border-slate-200 bg-slate-50/70 font-medium text-slate-900 shadow-inner dark:border-dark-600 dark:bg-dark-900/40 dark:text-white;
+  @apply mt-1.5 h-9 w-full border-slate-200 bg-slate-50/70 font-medium text-slate-900 shadow-inner dark:border-dark-600 dark:bg-dark-900/40 dark:text-white;
 }
 
 .calculator-field__hint {
-  @apply mt-auto min-h-[1.25rem] pt-2 text-xs leading-4 text-gray-500 dark:text-gray-400;
+  @apply mt-1 min-h-[1rem] text-xs leading-4 text-gray-500 dark:text-gray-400;
 }
 
 .calculator-result-card {
