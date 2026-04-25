@@ -71,7 +71,7 @@ func TestAssignSubscriptionSendsAdminNotificationForNewSubscription(t *testing.T
 	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
 	svc.SetAdminNotificationDeps(&settingRepoStub{values: map[string]string{
 		SettingKeySubscriptionNotificationEmail: "ops@example.com",
-		SettingKeySiteName:                     "Sub2API",
+		SettingKeySiteName:                      "Sub2API",
 	}}, userRepo, emailer)
 
 	sub, assignErr := svc.AssignSubscription(context.Background(), &AssignSubscriptionInput{
@@ -86,7 +86,7 @@ func TestAssignSubscriptionSendsAdminNotificationForNewSubscription(t *testing.T
 	require.Equal(t, "ops@example.com", emailer.calls[0].email)
 	require.Contains(t, emailer.calls[0].subject, "OpenAI Pro")
 	require.Contains(t, emailer.calls[0].body, "buyer@example.com")
-	require.Contains(t, emailer.calls[0].body, "建议补充 1 个")
+	require.Contains(t, emailer.calls[0].body, "当前暂无必须立即补充的账号")
 	require.Contains(t, emailer.calls[0].body, "OAuth")
 }
 

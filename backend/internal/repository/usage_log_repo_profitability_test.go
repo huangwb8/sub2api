@@ -128,3 +128,42 @@ func TestUsageLogRepositoryGetProfitabilityTrend_FallsBackSubscriptionCostFromAc
 	}
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestUsageLogRepositoryGetProfitabilityTrend_ExcludesAdminUsersFromRevenueAndCost(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageLogRepository{sql: db}
+
+	start := time.Date(2026, 4, 13, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 4, 19, 0, 0, 0, 0, time.UTC)
+
+	mock.ExpectQuery(
+		"WITH\\s+account_cost_allocation AS[\\s\\S]*"+
+			"INNER JOIN users u ON u\\.id = ul\\.user_id[\\s\\S]*"+
+			"COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*"+
+			"balance_usage AS[\\s\\S]*"+
+			"COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*"+
+			"subscription_orders AS[\\s\\S]*"+
+			"COALESCE\\(u\\.role, ''\\) <> 'admin'",
+	).
+		WithArgs(
+			start,
+			end,
+			"subscription",
+			service.OrderStatusCompleted,
+			service.OrderStatusPaid,
+			service.OrderStatusRecharging,
+		).
+		WillReturnRows(
+			sqlmock.NewRows([]string{
+				"date",
+				"revenue_balance_cny",
+				"revenue_subscription_cny",
+				"estimated_cost_cny",
+			}),
+		)
+
+	trend, err := repo.GetProfitabilityTrend(context.Background(), start, end, "day")
+	require.NoError(t, err)
+	require.Empty(t, trend)
+	require.NoError(t, mock.ExpectationsWereMet())
+}

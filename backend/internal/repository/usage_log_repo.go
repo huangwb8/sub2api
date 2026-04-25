@@ -1672,17 +1672,19 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 	combinedStatsQuery := `
 		WITH scoped AS (
 			SELECT
-				created_at,
-				input_tokens,
-				output_tokens,
-				cache_creation_tokens,
-				cache_read_tokens,
-				total_cost,
-				actual_cost,
-				COALESCE(duration_ms, 0) AS duration_ms
-			FROM usage_logs
-			WHERE created_at >= LEAST($1::timestamptz, $3::timestamptz)
-				AND created_at < GREATEST($2::timestamptz, $4::timestamptz)
+				ul.created_at,
+				ul.input_tokens,
+				ul.output_tokens,
+				ul.cache_creation_tokens,
+				ul.cache_read_tokens,
+				ul.total_cost,
+				ul.actual_cost,
+				COALESCE(u.role, '') AS user_role,
+				COALESCE(ul.duration_ms, 0) AS duration_ms
+			FROM usage_logs ul
+			LEFT JOIN users u ON u.id = ul.user_id
+			WHERE ul.created_at >= LEAST($1::timestamptz, $3::timestamptz)
+				AND ul.created_at < GREATEST($2::timestamptz, $4::timestamptz)
 		)
 		SELECT
 			COUNT(*) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz) AS total_requests,
@@ -1690,16 +1692,16 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 			COALESCE(SUM(output_tokens) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_output_tokens,
 			COALESCE(SUM(cache_creation_tokens) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_cache_creation_tokens,
 			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_cache_read_tokens,
-			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_cost,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_actual_cost,
+			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz AND user_role <> 'admin'), 0) AS total_cost,
+			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz AND user_role <> 'admin'), 0) AS total_actual_cost,
 			COALESCE(SUM(duration_ms) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_duration_ms,
 			COUNT(*) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz) AS today_requests,
 			COALESCE(SUM(input_tokens) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_input_tokens,
 			COALESCE(SUM(output_tokens) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_output_tokens,
 			COALESCE(SUM(cache_creation_tokens) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_cache_creation_tokens,
 			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_cache_read_tokens,
-			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_cost,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_actual_cost
+			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz AND user_role <> 'admin'), 0) AS today_cost,
+			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz AND user_role <> 'admin'), 0) AS today_actual_cost
 		FROM scoped
 	`
 	var totalDurationMs int64
@@ -2343,6 +2345,7 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 			FROM usage_logs u
 			LEFT JOIN users us ON u.user_id = us.id
 			WHERE u.created_at >= $1 AND u.created_at < $2
+				AND COALESCE(us.role, '') <> 'admin'
 			GROUP BY u.user_id, us.email
 		),
 		ranked AS (
@@ -3009,9 +3012,11 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 				COALESCE(SUM(CASE WHEN %s > 0 THEN %s ELSE 0::numeric END), 0) AS total_account_usage_usd
 			FROM usage_logs ul
 			LEFT JOIN accounts a ON a.id = ul.account_id
+			INNER JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1
 				AND ul.created_at < $2
 				AND ul.account_id IS NOT NULL
+				AND COALESCE(u.role, '') <> 'admin'
 			GROUP BY ul.account_id
 		),
 		balance_usage AS (
@@ -3474,10 +3479,11 @@ func (r *usageLogRepository) GetAllGroupUsageSummary(ctx context.Context, todayS
 	query := `
 		SELECT
 			g.id AS group_id,
-			COALESCE(SUM(ul.actual_cost), 0) AS total_cost,
-			COALESCE(SUM(CASE WHEN ul.created_at >= $1 THEN ul.actual_cost ELSE 0 END), 0) AS today_cost
+			COALESCE(SUM(CASE WHEN COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS total_cost,
+			COALESCE(SUM(CASE WHEN ul.created_at >= $1 AND COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS today_cost
 		FROM groups g
 		LEFT JOIN usage_logs ul ON ul.group_id = g.id
+		LEFT JOIN users u ON u.id = ul.user_id
 		GROUP BY g.id
 	`
 

@@ -269,7 +269,7 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 		AddRow(int64(1), "alpha@example.com", 12.5, int64(8), int64(800), 40.0, int64(30), int64(2600)).
 		AddRow(int64(3), "gamma@example.com", 4.25, int64(5), int64(300), 40.0, int64(30), int64(2600))
 
-	mock.ExpectQuery("WITH user_spend AS \\(").
+	mock.ExpectQuery("WITH user_spend AS \\([\\s\\S]*COALESCE\\(us\\.role, ''\\) <> 'admin'").
 		WithArgs(start, end, 12).
 		WillReturnRows(rows)
 
@@ -284,6 +284,26 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 		TotalActualCost: 40.0,
 		TotalRequests:   30,
 		TotalTokens:     2600,
+	}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUsageLogRepositoryGetAllGroupUsageSummary_ExcludesAdminCosts(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageLogRepository{sql: db}
+
+	today := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
+	rows := sqlmock.NewRows([]string{"group_id", "total_cost", "today_cost"}).
+		AddRow(int64(7), 12.5, 4.5)
+
+	mock.ExpectQuery("COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*LEFT JOIN users u ON u\\.id = ul\\.user_id").
+		WithArgs(today).
+		WillReturnRows(rows)
+
+	got, err := repo.GetAllGroupUsageSummary(context.Background(), today)
+	require.NoError(t, err)
+	require.Equal(t, []usagestats.GroupUsageSummary{
+		{GroupID: 7, TotalCost: 12.5, TodayCost: 4.5},
 	}, got)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

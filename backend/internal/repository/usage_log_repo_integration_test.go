@@ -667,10 +667,17 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 		CreatedAt: todayStart.Add(-24 * time.Hour),
 		UpdatedAt: todayStart.Add(-24 * time.Hour),
 	})
+	adminUser := mustCreateUser(s.T(), s.client, &service.User{
+		Email:     "admin-dashboard@example.com",
+		Role:      service.RoleAdmin,
+		CreatedAt: todayStart.Add(-24 * time.Hour),
+		UpdatedAt: todayStart.Add(-24 * time.Hour),
+	})
 
 	group := mustCreateGroup(s.T(), s.client, &service.Group{Name: "g-ul"})
 	apiKey1 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: userToday.ID, Key: "sk-ul-1", Name: "ul1"})
 	mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: userOld.ID, Key: "sk-ul-2", Name: "ul2", Status: service.StatusDisabled})
+	adminKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: adminUser.ID, Key: "sk-ul-admin", Name: "admin"})
 
 	resetAt := now.Add(10 * time.Minute)
 	accNormal := mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-normal", Schedulable: true})
@@ -727,6 +734,21 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	_, err = s.repo.Create(s.ctx, logPerf)
 	s.Require().NoError(err, "Create logPerf")
 
+	adminLog := &service.UsageLog{
+		UserID:       adminUser.ID,
+		APIKeyID:     adminKey.ID,
+		AccountID:    accNormal.ID,
+		Model:        "claude-3",
+		InputTokens:  100,
+		OutputTokens: 200,
+		TotalCost:    99,
+		ActualCost:   88,
+		DurationMs:   &d3,
+		CreatedAt:    testMaxTime(todayStart.Add(time.Second), now.Add(-time.Minute)),
+	}
+	_, err = s.repo.Create(s.ctx, adminLog)
+	s.Require().NoError(err, "Create adminLog")
+
 	aggRepo := newDashboardAggregationRepositoryWithSQL(s.tx)
 	aggStart := todayStart.Add(-2 * time.Hour)
 	aggEnd := now.Add(2 * time.Minute)
@@ -735,22 +757,22 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	stats, err := s.repo.GetDashboardStats(s.ctx)
 	s.Require().NoError(err, "GetDashboardStats")
 
-	s.Require().Equal(baseStats.TotalUsers+2, stats.TotalUsers, "TotalUsers mismatch")
+	s.Require().Equal(baseStats.TotalUsers+3, stats.TotalUsers, "TotalUsers mismatch")
 	s.Require().Equal(baseStats.TodayNewUsers+1, stats.TodayNewUsers, "TodayNewUsers mismatch")
-	s.Require().Equal(baseStats.ActiveUsers+1, stats.ActiveUsers, "ActiveUsers mismatch")
-	s.Require().Equal(baseStats.TotalAPIKeys+2, stats.TotalAPIKeys, "TotalAPIKeys mismatch")
-	s.Require().Equal(baseStats.ActiveAPIKeys+1, stats.ActiveAPIKeys, "ActiveAPIKeys mismatch")
+	s.Require().Equal(baseStats.ActiveUsers+2, stats.ActiveUsers, "ActiveUsers mismatch")
+	s.Require().Equal(baseStats.TotalAPIKeys+3, stats.TotalAPIKeys, "TotalAPIKeys mismatch")
+	s.Require().Equal(baseStats.ActiveAPIKeys+2, stats.ActiveAPIKeys, "ActiveAPIKeys mismatch")
 	s.Require().Equal(baseStats.TotalAccounts+4, stats.TotalAccounts, "TotalAccounts mismatch")
 	s.Require().Equal(baseStats.ErrorAccounts+1, stats.ErrorAccounts, "ErrorAccounts mismatch")
 	s.Require().Equal(baseStats.RateLimitAccounts+1, stats.RateLimitAccounts, "RateLimitAccounts mismatch")
 	s.Require().Equal(baseStats.OverloadAccounts+1, stats.OverloadAccounts, "OverloadAccounts mismatch")
 
-	s.Require().Equal(baseStats.TotalRequests+3, stats.TotalRequests, "TotalRequests mismatch")
-	s.Require().Equal(baseStats.TotalInputTokens+int64(16), stats.TotalInputTokens, "TotalInputTokens mismatch")
-	s.Require().Equal(baseStats.TotalOutputTokens+int64(28), stats.TotalOutputTokens, "TotalOutputTokens mismatch")
+	s.Require().Equal(baseStats.TotalRequests+4, stats.TotalRequests, "TotalRequests mismatch")
+	s.Require().Equal(baseStats.TotalInputTokens+int64(116), stats.TotalInputTokens, "TotalInputTokens mismatch")
+	s.Require().Equal(baseStats.TotalOutputTokens+int64(228), stats.TotalOutputTokens, "TotalOutputTokens mismatch")
 	s.Require().Equal(baseStats.TotalCacheCreationTokens+int64(3), stats.TotalCacheCreationTokens, "TotalCacheCreationTokens mismatch")
 	s.Require().Equal(baseStats.TotalCacheReadTokens+int64(4), stats.TotalCacheReadTokens, "TotalCacheReadTokens mismatch")
-	s.Require().Equal(baseStats.TotalTokens+int64(51), stats.TotalTokens, "TotalTokens mismatch")
+	s.Require().Equal(baseStats.TotalTokens+int64(351), stats.TotalTokens, "TotalTokens mismatch")
 	s.Require().Equal(baseStats.TotalCost+2.3, stats.TotalCost, "TotalCost mismatch")
 	s.Require().Equal(baseStats.TotalActualCost+2.0, stats.TotalActualCost, "TotalActualCost mismatch")
 	s.Require().GreaterOrEqual(stats.TodayRequests, int64(1), "expected TodayRequests >= 1")
@@ -770,8 +792,10 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 
 	user1 := mustCreateUser(s.T(), s.client, &service.User{Email: "range-u1@test.com"})
 	user2 := mustCreateUser(s.T(), s.client, &service.User{Email: "range-u2@test.com"})
+	adminUser := mustCreateUser(s.T(), s.client, &service.User{Email: "range-admin@test.com", Role: service.RoleAdmin})
 	apiKey1 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user1.ID, Key: "sk-range-1", Name: "k1"})
 	apiKey2 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user2.ID, Key: "sk-range-2", Name: "k2"})
+	adminKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: adminUser.ID, Key: "sk-range-admin", Name: "admin"})
 	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-range"})
 
 	d1, d2, d3 := 100, 200, 300
@@ -823,17 +847,32 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	_, err = s.repo.Create(s.ctx, logToday)
 	s.Require().NoError(err)
 
+	adminLog := &service.UsageLog{
+		UserID:       adminUser.ID,
+		APIKeyID:     adminKey.ID,
+		AccountID:    account.ID,
+		Model:        "claude-3",
+		InputTokens:  100,
+		OutputTokens: 100,
+		TotalCost:    99,
+		ActualCost:   88,
+		DurationMs:   &d3,
+		CreatedAt:    rangeStart.Add(3 * time.Hour),
+	}
+	_, err = s.repo.Create(s.ctx, adminLog)
+	s.Require().NoError(err)
+
 	stats, err := s.repo.GetDashboardStatsWithRange(s.ctx, rangeStart, rangeEnd)
 	s.Require().NoError(err)
-	s.Require().Equal(int64(2), stats.TotalRequests)
-	s.Require().Equal(int64(15), stats.TotalInputTokens)
-	s.Require().Equal(int64(26), stats.TotalOutputTokens)
+	s.Require().Equal(int64(3), stats.TotalRequests)
+	s.Require().Equal(int64(115), stats.TotalInputTokens)
+	s.Require().Equal(int64(126), stats.TotalOutputTokens)
 	s.Require().Equal(int64(1), stats.TotalCacheCreationTokens)
 	s.Require().Equal(int64(3), stats.TotalCacheReadTokens)
-	s.Require().Equal(int64(45), stats.TotalTokens)
+	s.Require().Equal(int64(245), stats.TotalTokens)
 	s.Require().Equal(1.5, stats.TotalCost)
 	s.Require().Equal(1.4, stats.TotalActualCost)
-	s.Require().InEpsilon(150.0, stats.AverageDurationMs, 0.0001)
+	s.Require().InEpsilon(200.0, stats.AverageDurationMs, 0.0001)
 }
 
 // --- GetUserDashboardStats ---
