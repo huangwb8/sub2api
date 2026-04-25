@@ -2333,9 +2333,9 @@
               </div>
               <!-- Row 2: Balance toggle + amounts -->
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div><label class="input-label">{{ t('admin.settings.payment.minAmount') }}</label><input :value="form.payment_min_amount || ''" @input="form.payment_min_amount = parseFloat(($event.target as HTMLInputElement).value) || 0" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
-                <div><label class="input-label">{{ t('admin.settings.payment.maxAmount') }}</label><input :value="form.payment_max_amount || ''" @input="form.payment_max_amount = parseFloat(($event.target as HTMLInputElement).value) || 0" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
-                <div><label class="input-label">{{ t('admin.settings.payment.dailyLimit') }}</label><input :value="form.payment_daily_limit || ''" @input="form.payment_daily_limit = parseFloat(($event.target as HTMLInputElement).value) || 0" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
+                <div><label class="input-label">{{ t('admin.settings.payment.minAmount') }}</label><input :value="paymentLimitInputValue(form.payment_min_amount)" @input="updatePaymentLimit('payment_min_amount', $event)" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
+                <div><label class="input-label">{{ t('admin.settings.payment.maxAmount') }}</label><input :value="paymentLimitInputValue(form.payment_max_amount)" @input="updatePaymentLimit('payment_max_amount', $event)" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
+                <div><label class="input-label">{{ t('admin.settings.payment.dailyLimit') }}</label><input :value="paymentLimitInputValue(form.payment_daily_limit)" @input="updatePaymentLimit('payment_daily_limit', $event)" type="number" step="0.01" min="0" class="input" :placeholder="t('admin.settings.payment.noLimit')" /></div>
                 <div><label class="input-label">{{ t('admin.settings.payment.orderTimeout') }} <span class="text-red-500">*</span></label><input v-model.number="form.payment_order_timeout_minutes" type="number" min="1" class="input" required /><p class="mt-0.5 text-xs text-gray-400">{{ t('admin.settings.payment.orderTimeoutHint') }}</p></div>
               </div>
               <!-- Row 3: Pending orders + load balance + cancel rate limit (all in one row) -->
@@ -2749,6 +2749,10 @@ import {
   normalizeRegistrationEmailSuffixDomains,
   parseRegistrationEmailSuffixWhitelistInput
 } from '@/utils/registrationEmailPolicy'
+import {
+  normalizeOptionalNumberInput,
+  optionalNumberInputValue
+} from '@/utils/numericInput'
 
 const { t, locale } = useI18n()
 const appStore = useAppStore()
@@ -2951,6 +2955,16 @@ const form = reactive<SettingsForm>({
   enable_metadata_passthrough: false,
   enable_cch_signing: false
 })
+
+type PaymentLimitKey = 'payment_min_amount' | 'payment_max_amount' | 'payment_daily_limit'
+
+const paymentLimitInputValue = (value: number | string | null | undefined) =>
+  optionalNumberInputValue(value, { blankZero: true })
+
+const updatePaymentLimit = (key: PaymentLimitKey, event: Event) => {
+  const raw = (event.target as HTMLInputElement).value
+  form[key] = normalizeOptionalNumberInput(raw, { min: 0 }) ?? 0
+}
 
 const defaultSubscriptionGroupOptions = computed<DefaultSubscriptionGroupOption[]>(() =>
   subscriptionGroups.value.map((group) => ({

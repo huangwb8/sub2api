@@ -2212,13 +2212,13 @@
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
           <input v-model.number="form.concurrency" type="number" min="1" class="input"
-            @input="form.concurrency = Math.max(1, form.concurrency || 1)" />
+            @blur="normalizeAccountConcurrency" />
         </div>
         <div>
           <label class="input-label">{{ t('admin.accounts.loadFactor') }}</label>
           <input v-model.number="form.load_factor" type="number" min="1"
             class="input" :placeholder="String(form.concurrency || 1)"
-            @input="form.load_factor = (form.load_factor &amp;&amp; form.load_factor >= 1) ? form.load_factor : null" />
+            @blur="normalizeAccountLoadFactor" />
           <p class="input-hint">{{ t('admin.accounts.loadFactorHint') }}</p>
         </div>
         <div>
@@ -2849,6 +2849,11 @@ import {
   resolveOpenAIWSModeConcurrencyHintKey,
   type OpenAIWSMode
 } from '@/utils/openaiWsMode'
+import {
+  normalizeNumberInput,
+  normalizeOptionalNumberInput,
+  type NumericInputValue
+} from '@/utils/numericInput'
 import OAuthAuthorizationFlow from './OAuthAuthorizationFlow.vue'
 
 // Type for exposed OAuthAuthorizationFlow component
@@ -3164,8 +3169,8 @@ const form = reactive({
   type: 'oauth' as AccountType, // Will be 'oauth', 'setup-token', or 'apikey'
   credentials: {} as Record<string, unknown>,
   proxy_id: null as number | null,
-  concurrency: 10,
-  load_factor: null as number | null,
+  concurrency: 10 as NumericInputValue,
+  load_factor: null as NumericInputValue,
   priority: 1,
   rate_multiplier: 1,
   actual_cost_cny: null as number | null,
@@ -3183,6 +3188,27 @@ const normalizeCreateActualCostCny = (value: number | string | null | undefined)
   }
   return numericValue
 }
+
+const normalizeAccountConcurrency = () => {
+  form.concurrency = normalizeNumberInput(form.concurrency, {
+    min: 1,
+    fallback: 1,
+    integer: true
+  })
+}
+
+const normalizeAccountLoadFactor = () => {
+  form.load_factor = normalizeOptionalNumberInput(form.load_factor, { min: 1 })
+}
+
+const getAccountConcurrency = () =>
+  normalizeNumberInput(form.concurrency, {
+    min: 1,
+    fallback: 1,
+    integer: true
+  })
+
+const getAccountLoadFactor = () => normalizeOptionalNumberInput(form.load_factor, { min: 1 })
 
 // Helper to check if current type needs OAuth flow
 const isOAuthFlow = computed(() => {
@@ -4009,6 +4035,8 @@ const handleSubmit = async () => {
 
   await doCreateAccount({
     ...form,
+    concurrency: getAccountConcurrency(),
+    load_factor: getAccountLoadFactor() ?? undefined,
     group_ids: form.group_ids,
     extra,
     auto_pause_on_expired: autoPauseOnExpired.value
@@ -4104,8 +4132,8 @@ const createAccountAndFinish = async (
     credentials,
     extra: finalExtra,
     proxy_id: form.proxy_id,
-    concurrency: form.concurrency,
-    load_factor: form.load_factor ?? undefined,
+    concurrency: getAccountConcurrency(),
+    load_factor: getAccountLoadFactor() ?? undefined,
     priority: form.priority,
     rate_multiplier: form.rate_multiplier,
     actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
@@ -4166,8 +4194,8 @@ const handleOpenAIExchange = async (authCode: string) => {
         credentials,
         extra,
         proxy_id: form.proxy_id,
-        concurrency: form.concurrency,
-        load_factor: form.load_factor ?? undefined,
+        concurrency: getAccountConcurrency(),
+        load_factor: getAccountLoadFactor() ?? undefined,
         priority: form.priority,
         rate_multiplier: form.rate_multiplier,
         actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
@@ -4258,8 +4286,8 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
             credentials,
             extra,
             proxy_id: form.proxy_id,
-            concurrency: form.concurrency,
-            load_factor: form.load_factor ?? undefined,
+            concurrency: getAccountConcurrency(),
+            load_factor: getAccountLoadFactor() ?? undefined,
             priority: form.priority,
             rate_multiplier: form.rate_multiplier,
             actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
@@ -4357,8 +4385,8 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
           credentials,
           extra: {},
           proxy_id: form.proxy_id,
-          concurrency: form.concurrency,
-          load_factor: form.load_factor ?? undefined,
+          concurrency: getAccountConcurrency(),
+          load_factor: getAccountLoadFactor() ?? undefined,
           priority: form.priority,
           rate_multiplier: form.rate_multiplier,
           actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),
@@ -4699,8 +4727,8 @@ const handleCookieAuth = async (sessionKey: string) => {
           credentials,
           extra,
           proxy_id: form.proxy_id,
-          concurrency: form.concurrency,
-          load_factor: form.load_factor ?? undefined,
+          concurrency: getAccountConcurrency(),
+          load_factor: getAccountLoadFactor() ?? undefined,
           priority: form.priority,
           rate_multiplier: form.rate_multiplier,
           actual_cost_cny: normalizeCreateActualCostCny(form.actual_cost_cny),

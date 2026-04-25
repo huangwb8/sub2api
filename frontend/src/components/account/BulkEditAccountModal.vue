@@ -541,7 +541,7 @@
             class="input"
             :class="!enableConcurrency && 'cursor-not-allowed opacity-50'"
             aria-labelledby="bulk-edit-concurrency-label"
-            @input="concurrency = Math.max(1, concurrency || 1)"
+            @blur="normalizeBulkConcurrency"
           />
         </div>
         <div>
@@ -570,7 +570,7 @@
             class="input"
             :class="!enableLoadFactor && 'cursor-not-allowed opacity-50'"
             aria-labelledby="bulk-edit-load-factor-label"
-            @input="loadFactor = (loadFactor &amp;&amp; loadFactor >= 1) ? loadFactor : null"
+            @blur="normalizeBulkLoadFactor"
           />
           <p class="input-hint">{{ t('admin.accounts.loadFactorHint') }}</p>
         </div>
@@ -959,6 +959,11 @@ import {
   resolveOpenAIWSModeConcurrencyHintKey
 } from '@/utils/openaiWsMode'
 import type { OpenAIWSMode } from '@/utils/openaiWsMode'
+import {
+  normalizeNumberInput,
+  normalizeOptionalNumberInput,
+  type NumericInputValue
+} from '@/utils/numericInput'
 interface Props {
   show: boolean
   accountIds: number[]
@@ -1059,19 +1064,19 @@ const selectedErrorCodes = ref<number[]>([])
 const customErrorCodeInput = ref<number | null>(null)
 const interceptWarmupRequests = ref(false)
 const proxyId = ref<number | null>(null)
-const concurrency = ref(1)
-const loadFactor = ref<number | null>(null)
-const priority = ref(1)
-const rateMultiplier = ref(1)
-const actualCostCny = ref<number | null>(null)
+const concurrency = ref<NumericInputValue>(1)
+const loadFactor = ref<NumericInputValue>(null)
+const priority = ref<NumericInputValue>(1)
+const rateMultiplier = ref<NumericInputValue>(1)
+const actualCostCny = ref<NumericInputValue>(null)
 const status = ref<'active' | 'inactive'>('active')
 const groupIds = ref<number[]>([])
 const openaiPassthroughEnabled = ref(false)
 const openaiOAuthResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const rpmLimitEnabled = ref(false)
-const bulkBaseRpm = ref<number | null>(null)
+const bulkBaseRpm = ref<NumericInputValue>(null)
 const bulkRpmStrategy = ref<'tiered' | 'sticky_exempt'>('tiered')
-const bulkRpmStickyBuffer = ref<number | null>(null)
+const bulkRpmStickyBuffer = ref<NumericInputValue>(null)
 const userMsgQueueMode = ref<string | null>(null)
 const umqModeOptions = computed(() => [
   { value: '', label: t('admin.accounts.quotaControl.rpmLimit.umqModeOff') },
@@ -1187,6 +1192,18 @@ const buildModelMappingObject = (): Record<string, string> | null => {
   )
 }
 
+const normalizeBulkConcurrency = () => {
+  concurrency.value = normalizeNumberInput(concurrency.value, {
+    min: 1,
+    fallback: 1,
+    integer: true
+  })
+}
+
+const normalizeBulkLoadFactor = () => {
+  loadFactor.value = normalizeOptionalNumberInput(loadFactor.value, { min: 1 })
+}
+
 const buildUpdatePayload = (): Record<string, unknown> | null => {
   const updates: Record<string, unknown> = {}
   const credentials: Record<string, unknown> = {}
@@ -1204,30 +1221,37 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
   }
 
   if (enableConcurrency.value) {
-    updates.concurrency = concurrency.value
+    updates.concurrency = normalizeNumberInput(concurrency.value, {
+      min: 1,
+      fallback: 1,
+      integer: true
+    })
   }
 
   if (enableLoadFactor.value) {
     // 空值/NaN/0 时发送 0（后端约定 <= 0 表示清除）
-    const lf = loadFactor.value
-    updates.load_factor = (lf != null && !Number.isNaN(lf) && lf > 0) ? lf : 0
+    updates.load_factor = normalizeOptionalNumberInput(loadFactor.value, { min: 1 }) ?? 0
   }
 
   if (enablePriority.value) {
-    updates.priority = priority.value
+    updates.priority = normalizeNumberInput(priority.value, {
+      min: 1,
+      fallback: 1,
+      integer: true
+    })
   }
 
   if (enableRateMultiplier.value) {
-    updates.rate_multiplier = rateMultiplier.value
+    updates.rate_multiplier = normalizeNumberInput(rateMultiplier.value, {
+      min: 0,
+      fallback: 1
+    })
   }
 
   if (enableActualCostCny.value) {
+    const normalizedActualCostCny = normalizeOptionalNumberInput(actualCostCny.value, { min: 0 })
     updates.actual_cost_cny =
-      actualCostCny.value != null &&
-      !Number.isNaN(actualCostCny.value) &&
-      actualCostCny.value > 0
-        ? actualCostCny.value
-        : 0
+      normalizedActualCostCny != null && normalizedActualCostCny > 0 ? normalizedActualCostCny : 0
   }
 
   if (enableStatus.value) {
@@ -1299,11 +1323,19 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
   // RPM limit settings (写入 extra 字段)
   if (enableRpmLimit.value) {
     const extra = ensureExtra()
-    if (rpmLimitEnabled.value && bulkBaseRpm.value != null && bulkBaseRpm.value > 0) {
-      extra.base_rpm = bulkBaseRpm.value
+    const normalizedBulkBaseRpm = normalizeOptionalNumberInput(bulkBaseRpm.value, {
+      min: 1,
+      integer: true
+    })
+    const normalizedBulkRpmStickyBuffer = normalizeOptionalNumberInput(bulkRpmStickyBuffer.value, {
+      min: 1,
+      integer: true
+    })
+    if (rpmLimitEnabled.value && normalizedBulkBaseRpm != null) {
+      extra.base_rpm = normalizedBulkBaseRpm
       extra.rpm_strategy = bulkRpmStrategy.value
-      if (bulkRpmStickyBuffer.value != null && bulkRpmStickyBuffer.value > 0) {
-        extra.rpm_sticky_buffer = bulkRpmStickyBuffer.value
+      if (normalizedBulkRpmStickyBuffer != null) {
+        extra.rpm_sticky_buffer = normalizedBulkRpmStickyBuffer
       }
     } else {
       // 关闭 RPM 限制 - 设置 base_rpm 为 0，并用空值覆盖关联字段

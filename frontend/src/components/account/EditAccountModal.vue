@@ -1040,13 +1040,13 @@
         <div>
           <label class="input-label">{{ t('admin.accounts.concurrency') }}</label>
           <input v-model.number="form.concurrency" type="number" min="1" class="input"
-            @input="form.concurrency = Math.max(1, form.concurrency || 1)" />
+            @blur="normalizeAccountConcurrency" />
         </div>
         <div>
           <label class="input-label">{{ t('admin.accounts.loadFactor') }}</label>
           <input v-model.number="form.load_factor" type="number" min="1"
             class="input" :placeholder="String(form.concurrency || 1)"
-            @input="form.load_factor = (form.load_factor &amp;&amp; form.load_factor >= 1) ? form.load_factor : null" />
+            @blur="normalizeAccountLoadFactor" />
           <p class="input-hint">{{ t('admin.accounts.loadFactorHint') }}</p>
         </div>
         <div>
@@ -1782,6 +1782,11 @@ import {
   resolveOpenAIWSModeFromExtra
 } from '@/utils/openaiWsMode'
 import {
+  normalizeNumberInput,
+  normalizeOptionalNumberInput,
+  type NumericInputValue
+} from '@/utils/numericInput'
+import {
   getPresetMappingsByPlatform,
   commonErrorCodes,
   buildModelMappingObject,
@@ -1993,8 +1998,8 @@ const form = reactive({
   name: '',
   notes: '',
   proxy_id: null as number | null,
-  concurrency: 1,
-  load_factor: null as number | null,
+  concurrency: 1 as NumericInputValue,
+  load_factor: null as NumericInputValue,
   priority: 1,
   rate_multiplier: 1,
   actual_cost_cny: null as number | null,
@@ -2002,6 +2007,18 @@ const form = reactive({
   group_ids: [] as number[],
   expires_at: null as number | null
 })
+
+const normalizeAccountConcurrency = () => {
+  form.concurrency = normalizeNumberInput(form.concurrency, {
+    min: 1,
+    fallback: 1,
+    integer: true
+  })
+}
+
+const normalizeAccountLoadFactor = () => {
+  form.load_factor = normalizeOptionalNumberInput(form.load_factor, { min: 1 })
+}
 
 const statusOptions = computed(() => {
   const options = [
@@ -2738,6 +2755,14 @@ const handleSubmit = async () => {
 
   const updatePayload: Record<string, unknown> = { ...form }
   try {
+    const normalizedConcurrency = normalizeNumberInput(form.concurrency, {
+      min: 1,
+      fallback: 1,
+      integer: true
+    })
+    form.concurrency = normalizedConcurrency
+    updatePayload.concurrency = normalizedConcurrency
+
     // 后端期望 proxy_id: 0 表示清除代理，而不是 null
     if (updatePayload.proxy_id === null) {
       updatePayload.proxy_id = 0
@@ -2746,10 +2771,7 @@ const handleSubmit = async () => {
       updatePayload.expires_at = 0
     }
     // load_factor: 空值/NaN/0/负数 时发送 0（后端约定 <= 0 = 清除）
-    const lf = form.load_factor
-    if (lf == null || Number.isNaN(lf) || lf <= 0) {
-      updatePayload.load_factor = 0
-    }
+    updatePayload.load_factor = normalizeOptionalNumberInput(form.load_factor, { min: 1 }) ?? 0
     const actualCostCny = form.actual_cost_cny
     const normalizedActualCostCny = Number(actualCostCny)
     updatePayload.actual_cost_cny =

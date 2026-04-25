@@ -205,6 +205,25 @@ describe('BulkEditAccountModal', () => {
     expect(wrapper.find('#bulk-edit-openai-ws-mode-enabled').exists()).toBe(false)
   })
 
+  it('批量编辑数字输入允许先清空旧值再输入新值', async () => {
+    const wrapper = mountModal()
+
+    await wrapper.get('#bulk-edit-concurrency-enabled').setValue(true)
+    const concurrencyInput = wrapper.get('#bulk-edit-concurrency')
+
+    await concurrencyInput.setValue('')
+    expect((concurrencyInput.element as HTMLInputElement).value).toBe('')
+
+    await concurrencyInput.setValue('18')
+    await wrapper.get('#bulk-edit-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledTimes(1)
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledWith([1, 2], {
+      concurrency: 18
+    })
+  })
+
   it('OpenAI 账号批量编辑可关闭自动透传', async () => {
     const wrapper = mountModal({
       selectedPlatforms: ['openai'],
