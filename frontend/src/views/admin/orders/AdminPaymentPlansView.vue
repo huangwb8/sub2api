@@ -134,11 +134,11 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="input-label">Upgrade Family</label>
+            <label class="input-label">{{ t('payment.admin.upgradeFamily') }}</label>
             <input v-model.trim="planForm.upgrade_family" type="text" class="input" placeholder="openai-team" />
           </div>
           <div>
-            <label class="input-label">Upgrade Rank</label>
+            <label class="input-label">{{ t('payment.admin.upgradeRank') }}</label>
             <input v-model.number="planForm.upgrade_rank" type="number" min="0" class="input" />
           </div>
         </div>
@@ -280,8 +280,8 @@ const planColumns = computed((): Column[] => [
   { key: 'group_id', label: t('payment.admin.group') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'validity_days', label: t('payment.admin.validityDays') },
-  { key: 'upgrade_family', label: 'Upgrade Family' },
-  { key: 'upgrade_rank', label: 'Upgrade Rank' },
+  { key: 'upgrade_family', label: t('payment.admin.upgradeFamily') },
+  { key: 'upgrade_rank', label: t('payment.admin.upgradeRank') },
   { key: 'for_sale', label: t('payment.admin.forSale') },
   { key: 'sort_order', label: t('payment.admin.sortOrder') },
   { key: 'actions', label: t('common.actions') },

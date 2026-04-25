@@ -5744,6 +5744,8 @@ export default {
       planPriceMustBePositive: 'Plan price must be greater than 0',
       validityDays: 'Validity (days)',
       validityUnit: 'Validity Unit',
+      upgradeFamily: 'Upgrade Family',
+      upgradeRank: 'Upgrade Rank',
       planManagementHint: 'Only plans marked for sale appear on the user payment page. The selected group must stay active and use subscription billing for self-service purchase to work.',
       sortOrder: 'Sort Order',
       forSale: 'For Sale',
