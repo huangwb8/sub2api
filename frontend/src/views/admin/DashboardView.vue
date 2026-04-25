@@ -345,10 +345,10 @@
           </div>
         </div>
 
-        <div class="card p-5">
+        <div class="calculator-shell">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="flex items-start gap-3">
-              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-100 text-accent-600 dark:bg-accent-900/30 dark:text-accent-400 sm:flex">
+              <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-cyan-300 shadow-lg shadow-cyan-500/10 dark:bg-cyan-400/10 dark:text-cyan-200 sm:flex">
                 <Icon name="calculator" size="md" :stroke-width="2" />
               </div>
               <div>
@@ -362,15 +362,15 @@
             </div>
             <div
               v-if="oversellCalculator?.estimate"
-              class="flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
+              class="flex max-w-4xl flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400"
             >
               <span
                 v-if="Number.isFinite(oversellCalculator.estimate.estimated_light_user_ratio)"
-                class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                class="calculator-evidence-pill calculator-evidence-pill--strong"
               >
                 {{ oversellEstimateSummary }}
               </span>
-              <span class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700">
+              <span class="calculator-evidence-pill">
                 {{
                   t('admin.dashboard.oversell.costBadge', {
                     cost: formatCost(oversellCalculator.defaults.actual_cost_cny),
@@ -380,7 +380,7 @@
               </span>
               <span
                 v-if="oversellCalculator.generated_at"
-                class="rounded-full bg-gray-100 px-3 py-1 dark:bg-dark-700"
+                class="calculator-evidence-pill"
               >
                 {{ t('admin.dashboard.oversell.updatedAt', { time: formatShortDateTime(oversellCalculator.generated_at) }) }}
               </span>
@@ -391,12 +391,87 @@
             <LoadingSpinner size="md" />
           </div>
           <div v-else-if="oversellCalculator?.estimate" class="mt-5 space-y-5">
-            <section>
+            <section class="calculator-results-panel">
+              <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h4 class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    {{ t('admin.dashboard.oversell.sections.results') }}
+                  </h4>
+                  <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    {{ t('admin.dashboard.oversell.result.note') }}
+                  </p>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div class="calculator-result-card calculator-result-card--hero lg:col-span-5">
+                  <span class="calculator-result-card__stripe bg-cyan-400"></span>
+                  <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.75)]"></span>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100/80">
+                      {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
+                    </p>
+                  </div>
+                  <p data-testid="oversell-recommended-price" class="calculator-result-card__value calculator-result-card__value--hero">
+                    {{ oversellScenario ? formatCny(oversellScenario.requiredPrice) : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta !text-cyan-50/70">
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.floorPriceHint', { floor: formatCost(oversellScenario.floorPrice) }) : '--' }}
+                  </p>
+                </div>
+
+                <div class="calculator-result-card calculator-result-card--amber lg:col-span-3">
+                  <span class="calculator-result-card__stripe bg-amber-400"></span>
+                  <div class="calculator-result-card__label">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                    <p>{{ t('admin.dashboard.oversell.result.plannedProfit') }}</p>
+                  </div>
+                  <p class="calculator-result-card__value">
+                    {{ oversellScenario ? formatSignedCny(oversellScenario.plannedMonthlyProfit) : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta">
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) }) : '--' }}
+                  </p>
+                </div>
+
+                <div class="calculator-result-card calculator-result-card--emerald lg:col-span-2">
+                  <span class="calculator-result-card__stripe bg-emerald-400"></span>
+                  <div class="calculator-result-card__label">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                    <p>{{ t('admin.dashboard.oversell.result.conservativeCost') }}</p>
+                  </div>
+                  <p class="calculator-result-card__value">
+                    {{ oversellScenario ? formatCny(oversellScenario.conservativeMonthlyCost) : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta">
+                    {{ oversellScenario ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')}` : '--' }}
+                  </p>
+                </div>
+
+                <div class="calculator-result-card calculator-result-card--sky lg:col-span-2">
+                  <span class="calculator-result-card__stripe bg-sky-400"></span>
+                  <div class="calculator-result-card__label">
+                    <span class="h-1.5 w-1.5 rounded-full bg-sky-400"></span>
+                    <p>{{ t('admin.dashboard.oversell.result.buffer') }}</p>
+                  </div>
+                  <p
+                    class="calculator-result-card__value"
+                    :class="oversellScenario && oversellScenario.safetyBuffer < 0 ? 'text-rose-600 dark:text-rose-300' : ''"
+                  >
+                    {{ oversellScenario ? `${formatSignedDecimal(oversellScenario.safetyBuffer, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta">
+                    {{ oversellScenario ? t('admin.dashboard.oversell.result.priceGapHint', { gap: formatSignedCny(oversellScenario.priceGap) }) : '--' }}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section class="calculator-parameters-panel">
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 {{ t('admin.dashboard.oversell.sections.parameters') }}
               </h4>
-              <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+              <div class="grid grid-cols-1 gap-3 xl:grid-cols-3">
+                <div class="calculator-parameter-group">
                   <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ t('admin.dashboard.oversell.sections.cost') }}
                   </h5>
@@ -449,7 +524,7 @@
                   </div>
                 </div>
 
-                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                <div class="calculator-parameter-group">
                   <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ t('admin.dashboard.oversell.sections.users') }}
                   </h5>
@@ -527,7 +602,7 @@
                   </div>
                 </div>
 
-                <div class="rounded-2xl bg-gray-50/70 p-4 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:ring-dark-700/60">
+                <div class="calculator-parameter-group">
                   <h5 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ t('admin.dashboard.oversell.sections.profitRisk') }}
                   </h5>
@@ -600,88 +675,14 @@
               </div>
             </section>
 
-            <section>
-              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {{ t('admin.dashboard.oversell.sections.results') }}
-              </h4>
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="calculator-result-card group hover:border-primary-300 hover:shadow dark:hover:border-primary-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-primary-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-primary-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.result.recommendedPrice') }}
-                    </p>
-                  </div>
-                  <p data-testid="oversell-recommended-price" class="calculator-result-card__value">
-                    {{ oversellScenario ? formatCny(oversellScenario.requiredPrice) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.floorPriceHint', { floor: formatCost(oversellScenario.floorPrice) }) : '--' }}
-                  </p>
-                </div>
-
-                <div class="calculator-result-card group hover:border-amber-300 hover:shadow dark:hover:border-amber-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-amber-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.result.plannedProfit') }}
-                    </p>
-                  </div>
-                  <p class="calculator-result-card__value">
-                    {{ oversellScenario ? formatSignedCny(oversellScenario.plannedMonthlyProfit) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) }) : '--' }}
-                  </p>
-                </div>
-
-                <div class="calculator-result-card group hover:border-emerald-300 hover:shadow dark:hover:border-emerald-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-emerald-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.result.conservativeCost') }}
-                    </p>
-                  </div>
-                  <p class="calculator-result-card__value">
-                    {{ oversellScenario ? formatCny(oversellScenario.conservativeMonthlyCost) : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')}` : '--' }}
-                  </p>
-                </div>
-
-                <div class="calculator-result-card group hover:border-sky-300 hover:shadow dark:hover:border-sky-700">
-                  <span class="absolute left-0 top-0 h-full w-1 bg-sky-500"></span>
-                  <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {{ t('admin.dashboard.oversell.result.buffer') }}
-                    </p>
-                  </div>
-                  <p
-                    class="calculator-result-card__value"
-                    :class="oversellScenario && oversellScenario.safetyBuffer < 0 ? 'text-rose-600 dark:text-rose-300' : ''"
-                  >
-                    {{ oversellScenario ? `${formatSignedDecimal(oversellScenario.safetyBuffer, 3)} ${t('admin.dashboard.oversell.form.units')}` : '--' }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.priceGapHint', { gap: formatSignedCny(oversellScenario.priceGap) }) : '--' }}
-                  </p>
-                </div>
-              </div>
-            </section>
-
             <section v-if="oversellPlanRecommendations.length > 0">
               <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 {{ t('admin.dashboard.oversell.table.title') }}
               </h4>
-              <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-dark-700">
+              <div class="calculator-table-wrap">
                 <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
                   <thead class="bg-gray-50/80 dark:bg-dark-700/50">
-                    <tr class="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    <tr class="text-left text-xs uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.duration') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentMonthlyEquivalent') }}</th>
@@ -724,9 +725,6 @@
               </div>
             </section>
 
-            <p class="rounded-2xl bg-gray-50/80 px-4 py-3 text-xs leading-5 text-gray-500 ring-1 ring-inset ring-gray-100 dark:bg-dark-700/30 dark:text-gray-400 dark:ring-dark-700/60">
-              {{ t('admin.dashboard.oversell.result.note') }}
-            </p>
           </div>
           <div
             v-else
@@ -1634,9 +1632,49 @@ onMounted(() => {
   @apply grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4;
 }
 
+.calculator-shell {
+  @apply relative overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50/90 p-5 shadow-sm;
+  @apply dark:border-dark-700 dark:bg-dark-900/40;
+}
+
+.calculator-shell::before {
+  content: '';
+  @apply pointer-events-none absolute inset-x-0 top-0 h-32 opacity-80;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(34, 211, 238, 0.16), transparent 28%),
+    radial-gradient(circle at 78% 12%, rgba(16, 185, 129, 0.12), transparent 30%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.05), transparent 42%);
+}
+
+.calculator-shell > * {
+  @apply relative;
+}
+
+.calculator-evidence-pill {
+  @apply rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-slate-600 shadow-sm backdrop-blur dark:border-dark-700 dark:bg-dark-800/70 dark:text-slate-300;
+}
+
+.calculator-evidence-pill--strong {
+  @apply border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/20 dark:text-emerald-300;
+}
+
+.calculator-results-panel {
+  @apply rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm ring-1 ring-white/70;
+  @apply dark:border-dark-700 dark:bg-dark-800/50 dark:ring-dark-700/60;
+}
+
+.calculator-parameters-panel {
+  @apply rounded-3xl border border-slate-200/80 bg-white/70 p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800/30;
+}
+
+.calculator-parameter-group {
+  @apply rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 shadow-inner shadow-white/60;
+  @apply dark:border-dark-700 dark:bg-dark-700/30 dark:shadow-none;
+}
+
 .calculator-field {
-  @apply flex h-full min-h-[104px] flex-col rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm ring-1 ring-gray-200/70;
-  @apply dark:border-dark-700 dark:bg-dark-800/50 dark:ring-dark-700/80;
+  @apply flex h-full min-h-[96px] flex-col rounded-2xl border border-slate-200/80 bg-white/95 p-3 shadow-sm ring-1 ring-white/70 transition-all;
+  @apply focus-within:border-cyan-300 focus-within:shadow-md focus-within:shadow-cyan-500/10 dark:border-dark-700 dark:bg-dark-800/60 dark:ring-dark-700/80 dark:focus-within:border-cyan-700;
 }
 
 .calculator-field__header {
@@ -1644,7 +1682,7 @@ onMounted(() => {
 }
 
 .calculator-field__control {
-  @apply mt-2 w-full;
+  @apply mt-2 w-full border-slate-200 bg-slate-50/70 font-medium text-slate-900 shadow-inner dark:border-dark-600 dark:bg-dark-900/40 dark:text-white;
 }
 
 .calculator-field__hint {
@@ -1652,12 +1690,50 @@ onMounted(() => {
 }
 
 .calculator-result-card {
-  @apply relative flex h-full min-h-[156px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all;
-  @apply dark:border-dark-700 dark:bg-dark-800/40;
+  @apply relative flex h-full min-h-[148px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg;
+  @apply dark:border-dark-700 dark:bg-dark-800/60;
+}
+
+.calculator-result-card::after {
+  content: '';
+  @apply pointer-events-none absolute inset-x-0 top-0 h-20 opacity-70;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.04), transparent);
+}
+
+.calculator-result-card--hero {
+  @apply min-h-[176px] border-slate-800 bg-slate-950 text-white shadow-xl shadow-slate-900/15 dark:border-cyan-900/70;
+  background:
+    radial-gradient(circle at 82% 8%, rgba(34, 211, 238, 0.24), transparent 30%),
+    radial-gradient(circle at 12% 92%, rgba(16, 185, 129, 0.18), transparent 26%),
+    #020617;
+}
+
+.calculator-result-card--amber {
+  @apply border-amber-200/80 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/20;
+}
+
+.calculator-result-card--emerald {
+  @apply border-emerald-200/80 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20;
+}
+
+.calculator-result-card--sky {
+  @apply border-sky-200/80 bg-sky-50/60 dark:border-sky-900/50 dark:bg-sky-950/20;
+}
+
+.calculator-result-card__stripe {
+  @apply absolute left-0 top-0 h-full w-1;
+}
+
+.calculator-result-card__label {
+  @apply flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400;
 }
 
 .calculator-result-card__value {
-  @apply mt-3 text-2xl font-bold text-gray-900 dark:text-white;
+  @apply mt-3 text-2xl font-black tracking-tight text-gray-950 tabular-nums dark:text-white;
+}
+
+.calculator-result-card__value--hero {
+  @apply text-4xl text-white sm:text-5xl;
 }
 
 .calculator-result-card__support {
@@ -1666,5 +1742,9 @@ onMounted(() => {
 
 .calculator-result-card__meta {
   @apply mt-auto min-h-[2.75rem] pt-3 text-xs leading-5 text-gray-500 dark:text-gray-400;
+}
+
+.calculator-table-wrap {
+  @apply overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800/40;
 }
 </style>
