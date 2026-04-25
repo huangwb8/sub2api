@@ -1974,6 +1974,59 @@
               </p>
             </div>
 
+            <!-- Appearance Preferences -->
+            <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ t('admin.settings.site.appearanceTitle') }}
+              </h3>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.site.appearanceDescription') }}
+              </p>
+
+              <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.site.themeMode') }}
+                  </label>
+                  <select v-model="themeMode" class="input">
+                    <option
+                      v-for="option in themeModeOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.site.themeModeHint') }}
+                  </p>
+                </div>
+
+                <div v-if="themeMode === 'schedule'" class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ t('admin.settings.site.themeDarkStart') }}
+                    </label>
+                    <input v-model="themeDarkStart" type="time" class="input" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ t('admin.settings.site.themeDarkEnd') }}
+                    </label>
+                    <input v-model="themeDarkEnd" type="time" class="input" />
+                  </div>
+                  <p class="col-span-2 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.site.themeScheduleHint') }}
+                  </p>
+                </div>
+                <div v-else class="flex items-end">
+                  <p class="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-500 dark:bg-dark-800 dark:text-gray-400">
+                    {{ t('admin.settings.site.themeSystemHint') }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Global Table Preferences -->
             <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
               <h3 class="text-sm font-medium text-gray-900 dark:text-white">
@@ -2717,7 +2770,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api'
 import type {
@@ -2753,6 +2806,11 @@ import {
   normalizeOptionalNumberInput,
   optionalNumberInputValue
 } from '@/utils/numericInput'
+import {
+  readThemePreferences,
+  saveThemePreferences,
+  type ThemeMode
+} from '@/utils/theme'
 
 const { t, locale } = useI18n()
 const appStore = useAppStore()
@@ -2781,6 +2839,10 @@ const testEmailAddress = ref('')
 const registrationEmailSuffixWhitelistTags = ref<string[]>([])
 const registrationEmailSuffixWhitelistDraft = ref('')
 const tablePageSizeOptionsInput = ref('10, 20, 50, 100')
+const initialThemePreferences = readThemePreferences()
+const themeMode = ref<ThemeMode>(initialThemePreferences.mode)
+const themeDarkStart = ref(initialThemePreferences.darkStart)
+const themeDarkEnd = ref(initialThemePreferences.darkEnd)
 
 // Admin API Key 状态
 const adminApiKeyLoading = ref(true)
@@ -2838,6 +2900,13 @@ const betaPolicyForm = reactive({
 const tablePageSizeMin = 5
 const tablePageSizeMax = 1000
 const tablePageSizeDefault = 20
+
+const themeModeOptions = computed(() => [
+  { value: 'system', label: t('admin.settings.site.themeModeSystem') },
+  { value: 'light', label: t('admin.settings.site.themeModeLight') },
+  { value: 'dark', label: t('admin.settings.site.themeModeDark') },
+  { value: 'schedule', label: t('admin.settings.site.themeModeSchedule') }
+])
 
 interface DefaultSubscriptionGroupOption {
   value: number
@@ -3166,6 +3235,14 @@ function parseTablePageSizeOptionsInput(raw: string): number[] | null {
 
   return deduped
 }
+
+watch([themeMode, themeDarkStart, themeDarkEnd], () => {
+  saveThemePreferences({
+    mode: themeMode.value,
+    darkStart: themeDarkStart.value,
+    darkEnd: themeDarkEnd.value
+  })
+})
 
 async function loadSettings() {
   loading.value = true

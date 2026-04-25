@@ -184,6 +184,7 @@ import { normalizeSubscriptionPlan, sortSubscriptionPlans } from '@/utils/subscr
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -193,7 +194,7 @@ const appStore = useAppStore()
 
 const plans = ref<SubscriptionPlan[]>([])
 const loading = ref(false)
-const isDark = ref(document.documentElement.classList.contains('dark'))
+const { isDark, toggleTheme } = useTheme()
 
 const isEmbedded = computed(() => route.query.ui_mode === 'embedded')
 const paymentEnabled = computed(() => !!appStore.cachedPublicSettings?.payment_enabled)
@@ -224,12 +225,6 @@ function navLinkClass(targetPath: string) {
   return route.path === targetPath
     ? 'bg-gray-900 text-white dark:bg-gray-700'
     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-dark-300 dark:hover:bg-dark-700 dark:hover:text-white'
-}
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
 }
 
 async function loadPlans() {

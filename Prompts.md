@@ -16,7 +16,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.1.3
+version=1.1.4
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -65,7 +65,7 @@ version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 
 ---
 
-
+深色模式、浅色模式的选择，目前是在左侧栏。 我觉得没必要。 你直接把这个功能放在系统设置 - 通用设置 的某个可调参数里，并支持可直接设置深色模板的时间（或者可以跟随系统）。 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。 
 
 ---
 
