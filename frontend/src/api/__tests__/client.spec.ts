@@ -91,6 +91,27 @@ describe('API Client', () => {
       const config = adapter.mock.calls[0][0]
       expect(config.params?.timezone).toBeUndefined()
     })
+
+    it('FormData 请求不沿用默认 JSON Content-Type', async () => {
+      const adapter = vi.fn().mockResolvedValue({
+        status: 200,
+        data: { code: 0, data: {} },
+        headers: {},
+        config: {},
+        statusText: 'OK',
+      })
+      apiClient.defaults.adapter = adapter
+
+      const form = new FormData()
+      form.set('avatar_type', 'uploaded')
+      form.set('avatar_file', new Blob(['avatar'], { type: 'image/png' }), 'avatar.png')
+
+      await apiClient.put('/user', form)
+
+      const config = adapter.mock.calls[0][0]
+      expect(config.data).toBe(form)
+      expect(config.headers.get('Content-Type')).not.toBe('application/json')
+    })
   })
 
   // --- 响应拦截器 ---

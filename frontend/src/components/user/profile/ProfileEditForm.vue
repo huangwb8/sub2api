@@ -153,6 +153,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { userAPI } from '@/api'
 import UserAvatar from '@/components/user/UserAvatar.vue'
+import { extractApiErrorMessage } from '@/utils/apiError'
 import type { User } from '@/types'
 
 const props = defineProps<{
@@ -300,8 +301,8 @@ const handleUpdateProfile = async () => {
     localStorage.setItem('auth_user', JSON.stringify(updatedUser))
     clearSelectedFile()
     appStore.showSuccess(t('profile.updateSuccess'))
-  } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('profile.updateFailed'))
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('profile.updateFailed')))
   } finally {
     loading.value = false
   }
