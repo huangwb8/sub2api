@@ -65,6 +65,10 @@ version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 
 ---
 
+基于 remote.env，你看一下 https://api.benszresearch.com/admin/ops 里所表现的实际运维情况揭示了什么问题？ 请把你的发现写在 ./docs/plans 里。
+
+---
+
 使用本项目时，用户有时候会收到 warning: Heads up, you have less than 25% of your weekly limit left. Run /status for a breakdown. 这样的通知。 这是为什么？这是物理规则受限、管理员后台设置不到位，还是程序的设计缺陷所导致的？
 
 ---
