@@ -105,6 +105,10 @@ export interface SubscriptionPlan {
   group_platform?: string
   group_name?: string
   rate_multiplier?: number
+  idle_rate_multiplier?: number | null
+  idle_extra_profit_rate_percent?: number | null
+  idle_start_time?: string | null
+  idle_end_time?: string | null
   daily_limit_usd?: number | null
   weekly_limit_usd?: number | null
   monthly_limit_usd?: number | null

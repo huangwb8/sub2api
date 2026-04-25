@@ -114,27 +114,31 @@ type checkoutInfoResponse struct {
 }
 
 type checkoutPlan struct {
-	ID              int64    `json:"id"`
-	GroupID         int64    `json:"group_id"`
-	GroupPlatform   string   `json:"group_platform"`
-	GroupName       string   `json:"group_name"`
-	RateMultiplier  float64  `json:"rate_multiplier"`
-	DailyLimitUSD   *float64 `json:"daily_limit_usd"`
-	WeeklyLimitUSD  *float64 `json:"weekly_limit_usd"`
-	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
-	ModelScopes     []string `json:"supported_model_scopes"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Price           float64  `json:"price"`
-	OriginalPrice   *float64 `json:"original_price,omitempty"`
-	ValidityDays    int      `json:"validity_days"`
-	ValidityUnit    string   `json:"validity_unit"`
-	Features        []string `json:"features"`
-	ProductName     string   `json:"product_name"`
-	UpgradeFamily   string   `json:"upgrade_family"`
-	UpgradeRank     int      `json:"upgrade_rank"`
-	ForSale         bool     `json:"for_sale"`
-	SortOrder       int      `json:"sort_order"`
+	ID                         int64    `json:"id"`
+	GroupID                    int64    `json:"group_id"`
+	GroupPlatform              string   `json:"group_platform"`
+	GroupName                  string   `json:"group_name"`
+	RateMultiplier             float64  `json:"rate_multiplier"`
+	IdleRateMultiplier         *float64 `json:"idle_rate_multiplier,omitempty"`
+	IdleExtraProfitRatePercent *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
+	IdleStartTime              *string  `json:"idle_start_time,omitempty"`
+	IdleEndTime                *string  `json:"idle_end_time,omitempty"`
+	DailyLimitUSD              *float64 `json:"daily_limit_usd"`
+	WeeklyLimitUSD             *float64 `json:"weekly_limit_usd"`
+	MonthlyLimitUSD            *float64 `json:"monthly_limit_usd"`
+	ModelScopes                []string `json:"supported_model_scopes"`
+	Name                       string   `json:"name"`
+	Description                string   `json:"description"`
+	Price                      float64  `json:"price"`
+	OriginalPrice              *float64 `json:"original_price,omitempty"`
+	ValidityDays               int      `json:"validity_days"`
+	ValidityUnit               string   `json:"validity_unit"`
+	Features                   []string `json:"features"`
+	ProductName                string   `json:"product_name"`
+	UpgradeFamily              string   `json:"upgrade_family"`
+	UpgradeRank                int      `json:"upgrade_rank"`
+	ForSale                    bool     `json:"for_sale"`
+	SortOrder                  int      `json:"sort_order"`
 }
 
 func (h *PaymentHandler) listDisplayPlans(ctx context.Context) ([]checkoutPlan, error) {
@@ -148,27 +152,31 @@ func (h *PaymentHandler) listDisplayPlans(ctx context.Context) ([]checkoutPlan, 
 	for _, p := range plans {
 		gi := groupInfo[p.GroupID]
 		planList = append(planList, checkoutPlan{
-			ID:              int64(p.ID),
-			GroupID:         p.GroupID,
-			GroupPlatform:   gi.Platform,
-			GroupName:       gi.Name,
-			RateMultiplier:  gi.RateMultiplier,
-			DailyLimitUSD:   gi.DailyLimitUSD,
-			WeeklyLimitUSD:  gi.WeeklyLimitUSD,
-			MonthlyLimitUSD: gi.MonthlyLimitUSD,
-			ModelScopes:     gi.ModelScopes,
-			Name:            p.Name,
-			Description:     p.Description,
-			Price:           p.Price,
-			OriginalPrice:   p.OriginalPrice,
-			ValidityDays:    p.ValidityDays,
-			ValidityUnit:    p.ValidityUnit,
-			Features:        parseFeatures(p.Features),
-			ProductName:     p.ProductName,
-			UpgradeFamily:   p.UpgradeFamily,
-			UpgradeRank:     p.UpgradeRank,
-			ForSale:         p.ForSale,
-			SortOrder:       p.SortOrder,
+			ID:                         int64(p.ID),
+			GroupID:                    p.GroupID,
+			GroupPlatform:              gi.Platform,
+			GroupName:                  gi.Name,
+			RateMultiplier:             gi.RateMultiplier,
+			IdleRateMultiplier:         gi.IdleRateMultiplier,
+			IdleExtraProfitRatePercent: gi.IdleExtraProfitRatePercent,
+			IdleStartTime:              gi.IdleStartTime,
+			IdleEndTime:                gi.IdleEndTime,
+			DailyLimitUSD:              gi.DailyLimitUSD,
+			WeeklyLimitUSD:             gi.WeeklyLimitUSD,
+			MonthlyLimitUSD:            gi.MonthlyLimitUSD,
+			ModelScopes:                gi.ModelScopes,
+			Name:                       p.Name,
+			Description:                p.Description,
+			Price:                      p.Price,
+			OriginalPrice:              p.OriginalPrice,
+			ValidityDays:               p.ValidityDays,
+			ValidityUnit:               p.ValidityUnit,
+			Features:                   parseFeatures(p.Features),
+			ProductName:                p.ProductName,
+			UpgradeFamily:              p.UpgradeFamily,
+			UpgradeRank:                p.UpgradeRank,
+			ForSale:                    p.ForSale,
+			SortOrder:                  p.SortOrder,
 		})
 	}
 

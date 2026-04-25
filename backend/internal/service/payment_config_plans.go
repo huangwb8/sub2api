@@ -15,13 +15,17 @@ import (
 
 // PlanGroupInfo holds the group details needed for subscription plan display.
 type PlanGroupInfo struct {
-	Platform        string   `json:"platform"`
-	Name            string   `json:"name"`
-	RateMultiplier  float64  `json:"rate_multiplier"`
-	DailyLimitUSD   *float64 `json:"daily_limit_usd"`
-	WeeklyLimitUSD  *float64 `json:"weekly_limit_usd"`
-	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
-	ModelScopes     []string `json:"supported_model_scopes"`
+	Platform                   string   `json:"platform"`
+	Name                       string   `json:"name"`
+	RateMultiplier             float64  `json:"rate_multiplier"`
+	IdleRateMultiplier         *float64 `json:"idle_rate_multiplier,omitempty"`
+	IdleExtraProfitRatePercent *float64 `json:"idle_extra_profit_rate_percent,omitempty"`
+	IdleStartTime              *string  `json:"idle_start_time,omitempty"`
+	IdleEndTime                *string  `json:"idle_end_time,omitempty"`
+	DailyLimitUSD              *float64 `json:"daily_limit_usd"`
+	WeeklyLimitUSD             *float64 `json:"weekly_limit_usd"`
+	MonthlyLimitUSD            *float64 `json:"monthly_limit_usd"`
+	ModelScopes                []string `json:"supported_model_scopes"`
 }
 
 // GetGroupPlatformMap returns a map of group_id → platform for the given plans.
@@ -53,14 +57,28 @@ func (s *PaymentConfigService) GetGroupInfoMap(ctx context.Context, plans []*dbe
 	}
 	m := make(map[int64]PlanGroupInfo, len(groups))
 	for _, g := range groups {
+		var idleStartTime *string
+		var idleEndTime *string
+		if g.IdleStartSeconds != nil {
+			formatted := FormatClockTimeSeconds(*g.IdleStartSeconds)
+			idleStartTime = &formatted
+		}
+		if g.IdleEndSeconds != nil {
+			formatted := FormatClockTimeSeconds(*g.IdleEndSeconds)
+			idleEndTime = &formatted
+		}
 		m[int64(g.ID)] = PlanGroupInfo{
-			Platform:        g.Platform,
-			Name:            g.Name,
-			RateMultiplier:  g.RateMultiplier,
-			DailyLimitUSD:   g.DailyLimitUsd,
-			WeeklyLimitUSD:  g.WeeklyLimitUsd,
-			MonthlyLimitUSD: g.MonthlyLimitUsd,
-			ModelScopes:     g.SupportedModelScopes,
+			Platform:                   g.Platform,
+			Name:                       g.Name,
+			RateMultiplier:             g.RateMultiplier,
+			IdleRateMultiplier:         g.IdleRateMultiplier,
+			IdleExtraProfitRatePercent: g.IdleExtraProfitRatePercent,
+			IdleStartTime:              idleStartTime,
+			IdleEndTime:                idleEndTime,
+			DailyLimitUSD:              g.DailyLimitUsd,
+			WeeklyLimitUSD:             g.WeeklyLimitUsd,
+			MonthlyLimitUSD:            g.MonthlyLimitUsd,
+			ModelScopes:                g.SupportedModelScopes,
 		}
 	}
 	return m

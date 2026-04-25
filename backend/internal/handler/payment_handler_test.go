@@ -53,6 +53,10 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 		SetStatus(service.StatusActive).
 		SetSubscriptionType(service.SubscriptionTypeSubscription).
 		SetRateMultiplier(1.8).
+		SetIdleRateMultiplier(0.6).
+		SetIdleExtraProfitRatePercent(8).
+		SetIdleStartSeconds(0).
+		SetIdleEndSeconds(7 * 60 * 60).
 		SetDailyLimitUsd(12.5).
 		SetSupportedModelScopes([]string{"gpt-5", "gpt-4.1"}).
 		Save(ctx)
@@ -89,6 +93,10 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 			GroupPlatform        string   `json:"group_platform"`
 			GroupName            string   `json:"group_name"`
 			RateMultiplier       float64  `json:"rate_multiplier"`
+			IdleRateMultiplier   *float64 `json:"idle_rate_multiplier"`
+			IdleExtraProfitRate  *float64 `json:"idle_extra_profit_rate_percent"`
+			IdleStartTime        *string  `json:"idle_start_time"`
+			IdleEndTime          *string  `json:"idle_end_time"`
 			DailyLimitUSD        *float64 `json:"daily_limit_usd"`
 			SupportedModelScopes []string `json:"supported_model_scopes"`
 			Features             []string `json:"features"`
@@ -106,6 +114,14 @@ func TestPaymentHandler_GetPlans_EnrichesPlanDisplayFields(t *testing.T) {
 	require.Equal(t, service.PlatformOpenAI, plan.GroupPlatform)
 	require.Equal(t, "research-openai", plan.GroupName)
 	require.Equal(t, 1.8, plan.RateMultiplier)
+	require.NotNil(t, plan.IdleRateMultiplier)
+	require.Equal(t, 0.6, *plan.IdleRateMultiplier)
+	require.NotNil(t, plan.IdleExtraProfitRate)
+	require.Equal(t, 8.0, *plan.IdleExtraProfitRate)
+	require.NotNil(t, plan.IdleStartTime)
+	require.Equal(t, "00:00:00", *plan.IdleStartTime)
+	require.NotNil(t, plan.IdleEndTime)
+	require.Equal(t, "07:00:00", *plan.IdleEndTime)
 	require.NotNil(t, plan.DailyLimitUSD)
 	require.Equal(t, 12.5, *plan.DailyLimitUSD)
 	require.Equal(t, []string{"gpt-5", "gpt-4.1"}, plan.SupportedModelScopes)

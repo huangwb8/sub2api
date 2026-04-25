@@ -70,6 +70,40 @@
         </div>
       </div>
 
+      <!-- Idle dynamic billing highlight -->
+      <div
+        v-if="idleBillingVisible"
+        class="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs dark:border-emerald-900/60 dark:bg-emerald-950/30"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex min-w-0 items-center gap-1.5">
+            <svg class="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l3.5 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <span class="truncate font-semibold text-emerald-800 dark:text-emerald-200">
+              {{ t('payment.planCard.idleBilling') }}
+            </span>
+          </div>
+          <span class="shrink-0 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+            {{ idleBillingWindowDisplay }}
+          </span>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <span
+            v-if="idleRateDisplay"
+            class="rounded-md bg-white px-2 py-1 font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-900/70"
+          >
+            {{ t('payment.planCard.idleRate') }} {{ idleRateDisplay }}
+          </span>
+          <span
+            v-if="idleExtraProfitDisplay"
+            class="rounded-md bg-white px-2 py-1 font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-900/70"
+          >
+            {{ t('payment.planCard.idleExtraProfit') }} {{ idleExtraProfitDisplay }}
+          </span>
+        </div>
+      </div>
+
       <!-- Features list (compact) -->
       <div v-if="plan.features.length > 0" class="mb-3 space-y-1">
         <div v-for="feature in plan.features" :key="feature" class="flex items-start gap-1.5">
@@ -133,6 +167,10 @@ const pLabel = computed(() => platformLabel(platform.value))
 const currencySymbol = getCurrencySymbol('CNY')
 const formattedPriceValue = computed(() => formatPaymentAmount(props.plan.price).replace(currencySymbol, ''))
 
+function formatCompactNumber(value: number) {
+  return Number(value.toPrecision(10)).toString()
+}
+
 const discountText = computed(() => {
   if (!props.plan.original_price || props.plan.original_price <= 0) return ''
   const pct = Math.round((1 - props.plan.price / props.plan.original_price) * 100)
@@ -141,7 +179,39 @@ const discountText = computed(() => {
 
 const rateDisplay = computed(() => {
   const rate = props.plan.rate_multiplier ?? 1
-  return `×${Number(rate.toPrecision(10))}`
+  return `×${formatCompactNumber(rate)}`
+})
+
+const idleBillingVisible = computed(() => {
+  return Boolean(
+    props.plan.idle_start_time &&
+    props.plan.idle_end_time &&
+    (props.plan.idle_rate_multiplier != null || props.plan.idle_extra_profit_rate_percent != null)
+  )
+})
+
+function formatClockTime(value?: string | null) {
+  const time = (value || '').trim()
+  if (/^\d{2}:\d{2}:00$/.test(time)) {
+    return time.slice(0, 5)
+  }
+  return time
+}
+
+const idleBillingWindowDisplay = computed(() => {
+  const start = formatClockTime(props.plan.idle_start_time)
+  const end = formatClockTime(props.plan.idle_end_time)
+  return t('payment.planCard.idleWindow', { start, end })
+})
+
+const idleRateDisplay = computed(() => {
+  if (props.plan.idle_rate_multiplier == null) return ''
+  return `×${formatCompactNumber(props.plan.idle_rate_multiplier)}`
+})
+
+const idleExtraProfitDisplay = computed(() => {
+  if (props.plan.idle_extra_profit_rate_percent == null) return ''
+  return `${formatCompactNumber(props.plan.idle_extra_profit_rate_percent)}%`
 })
 
 const MODEL_SCOPE_LABELS: Record<string, string> = {
