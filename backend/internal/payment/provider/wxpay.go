@@ -3,6 +3,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"log/slog"
@@ -75,13 +76,19 @@ func NewWxpay(instanceID string, config map[string]string) (*Wxpay, error) {
 				"actual":   strconv.Itoa(len(config["apiV3Key"])),
 			})
 	}
-	if _, err := utils.LoadPrivateKey(formatPEM(config["privateKey"], "PRIVATE KEY")); err != nil {
-		return nil, infraerrors.BadRequest("WXPAY_CONFIG_INVALID_KEY", "invalid_key").
-			WithMetadata(map[string]string{"key": "privateKey"})
+	privateKeyPEM := formatPEM(config["privateKey"], "PRIVATE KEY")
+	if hasExtraPEMContent(privateKeyPEM) {
+		return nil, wxpayInvalidKeyError("privateKey")
 	}
-	if _, err := utils.LoadPublicKey(formatPEM(config["publicKey"], "PUBLIC KEY")); err != nil {
-		return nil, infraerrors.BadRequest("WXPAY_CONFIG_INVALID_KEY", "invalid_key").
-			WithMetadata(map[string]string{"key": "publicKey"})
+	if _, err := utils.LoadPrivateKey(privateKeyPEM); err != nil {
+		return nil, wxpayInvalidKeyError("privateKey")
+	}
+	publicKeyPEM := formatPEM(config["publicKey"], "PUBLIC KEY")
+	if hasExtraPEMContent(publicKeyPEM) {
+		return nil, wxpayInvalidKeyError("publicKey")
+	}
+	if _, err := utils.LoadPublicKey(publicKeyPEM); err != nil {
+		return nil, wxpayInvalidKeyError("publicKey")
 	}
 	return &Wxpay{instanceID: instanceID, config: config}, nil
 }
@@ -100,21 +107,37 @@ func formatPEM(key, keyType string) string {
 	return fmt.Sprintf("-----BEGIN %s-----\n%s\n-----END %s-----", keyType, key, keyType)
 }
 
+func hasExtraPEMContent(formatted string) bool {
+	block, rest := pem.Decode([]byte(formatted))
+	return block != nil && strings.TrimSpace(string(rest)) != ""
+}
+
+func wxpayInvalidKeyError(key string) error {
+	return infraerrors.BadRequest("WXPAY_CONFIG_INVALID_KEY", "invalid_key").
+		WithMetadata(map[string]string{"key": key})
+}
+
 func (w *Wxpay) ensureClient() (*core.Client, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.coreClient != nil {
 		return w.coreClient, nil
 	}
-	privateKey, err := utils.LoadPrivateKey(formatPEM(w.config["privateKey"], "PRIVATE KEY"))
-	if err != nil {
-		return nil, infraerrors.BadRequest("WXPAY_CONFIG_INVALID_KEY", "invalid_key").
-			WithMetadata(map[string]string{"key": "privateKey"})
+	privateKeyPEM := formatPEM(w.config["privateKey"], "PRIVATE KEY")
+	if hasExtraPEMContent(privateKeyPEM) {
+		return nil, wxpayInvalidKeyError("privateKey")
 	}
-	publicKey, err := utils.LoadPublicKey(formatPEM(w.config["publicKey"], "PUBLIC KEY"))
+	privateKey, err := utils.LoadPrivateKey(privateKeyPEM)
 	if err != nil {
-		return nil, infraerrors.BadRequest("WXPAY_CONFIG_INVALID_KEY", "invalid_key").
-			WithMetadata(map[string]string{"key": "publicKey"})
+		return nil, wxpayInvalidKeyError("privateKey")
+	}
+	publicKeyPEM := formatPEM(w.config["publicKey"], "PUBLIC KEY")
+	if hasExtraPEMContent(publicKeyPEM) {
+		return nil, wxpayInvalidKeyError("publicKey")
+	}
+	publicKey, err := utils.LoadPublicKey(publicKeyPEM)
+	if err != nil {
+		return nil, wxpayInvalidKeyError("publicKey")
 	}
 	verifier := verifiers.NewSHA256WithRSAPubkeyVerifier(w.config["publicKeyId"], *publicKey)
 	client, err := core.NewClient(context.Background(),

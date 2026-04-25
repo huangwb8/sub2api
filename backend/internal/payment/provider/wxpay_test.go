@@ -297,6 +297,14 @@ func TestNewWxpay(t *testing.T) {
 				"key": "publicKey",
 			},
 		},
+		{
+			name:       "public key pem with trailing garbage",
+			config:     withOverride(map[string]string{"publicKey": publicKey + "broken"}),
+			wantReason: "WXPAY_CONFIG_INVALID_KEY",
+			wantMetadata: map[string]string{
+				"key": "publicKey",
+			},
+		},
 	}
 
 	for _, tt := range tests {
