@@ -202,6 +202,48 @@ func (_u *UserUpdate) SetNillableUsername(v *string) *UserUpdate {
 	return _u
 }
 
+// SetAvatarURL sets the "avatar_url" field.
+func (_u *UserUpdate) SetAvatarURL(v string) *UserUpdate {
+	_u.mutation.SetAvatarURL(v)
+	return _u
+}
+
+// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableAvatarURL(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetAvatarURL(*v)
+	}
+	return _u
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (_u *UserUpdate) SetAvatarType(v string) *UserUpdate {
+	_u.mutation.SetAvatarType(v)
+	return _u
+}
+
+// SetNillableAvatarType sets the "avatar_type" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableAvatarType(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetAvatarType(*v)
+	}
+	return _u
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (_u *UserUpdate) SetAvatarStyle(v string) *UserUpdate {
+	_u.mutation.SetAvatarStyle(v)
+	return _u
+}
+
+// SetNillableAvatarStyle sets the "avatar_style" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableAvatarStyle(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetAvatarStyle(*v)
+	}
+	return _u
+}
+
 // SetNotes sets the "notes" field.
 func (_u *UserUpdate) SetNotes(v string) *UserUpdate {
 	_u.mutation.SetNotes(v)
@@ -704,6 +746,16 @@ func (_u *UserUpdate) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AvatarType(); ok {
+		if err := user.AvatarTypeValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_type", err: fmt.Errorf(`ent: validator failed for field "User.avatar_type": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.AvatarStyle(); ok {
+		if err := user.AvatarStyleValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_style", err: fmt.Errorf(`ent: validator failed for field "User.avatar_style": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -763,6 +815,15 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarURL(); ok {
+		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarType(); ok {
+		_spec.SetField(user.FieldAvatarType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarStyle(); ok {
+		_spec.SetField(user.FieldAvatarStyle, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Notes(); ok {
 		_spec.SetField(user.FieldNotes, field.TypeString, value)
@@ -1429,6 +1490,48 @@ func (_u *UserUpdateOne) SetNillableUsername(v *string) *UserUpdateOne {
 	return _u
 }
 
+// SetAvatarURL sets the "avatar_url" field.
+func (_u *UserUpdateOne) SetAvatarURL(v string) *UserUpdateOne {
+	_u.mutation.SetAvatarURL(v)
+	return _u
+}
+
+// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableAvatarURL(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetAvatarURL(*v)
+	}
+	return _u
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (_u *UserUpdateOne) SetAvatarType(v string) *UserUpdateOne {
+	_u.mutation.SetAvatarType(v)
+	return _u
+}
+
+// SetNillableAvatarType sets the "avatar_type" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableAvatarType(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetAvatarType(*v)
+	}
+	return _u
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (_u *UserUpdateOne) SetAvatarStyle(v string) *UserUpdateOne {
+	_u.mutation.SetAvatarStyle(v)
+	return _u
+}
+
+// SetNillableAvatarStyle sets the "avatar_style" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableAvatarStyle(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetAvatarStyle(*v)
+	}
+	return _u
+}
+
 // SetNotes sets the "notes" field.
 func (_u *UserUpdateOne) SetNotes(v string) *UserUpdateOne {
 	_u.mutation.SetNotes(v)
@@ -1944,6 +2047,16 @@ func (_u *UserUpdateOne) check() error {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AvatarType(); ok {
+		if err := user.AvatarTypeValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_type", err: fmt.Errorf(`ent: validator failed for field "User.avatar_type": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.AvatarStyle(); ok {
+		if err := user.AvatarStyleValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_style", err: fmt.Errorf(`ent: validator failed for field "User.avatar_style": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -2020,6 +2133,15 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarURL(); ok {
+		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarType(); ok {
+		_spec.SetField(user.FieldAvatarType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AvatarStyle(); ok {
+		_spec.SetField(user.FieldAvatarStyle, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Notes(); ok {
 		_spec.SetField(user.FieldNotes, field.TypeString, value)

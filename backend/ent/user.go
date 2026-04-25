@@ -39,6 +39,12 @@ type User struct {
 	Status string `json:"status,omitempty"`
 	// Username holds the value of the "username" field.
 	Username string `json:"username,omitempty"`
+	// 用户头像 URL；可为外链或 /uploads/avatars 下的本地上传路径
+	AvatarURL string `json:"avatar_url,omitempty"`
+	// 头像来源：generated/external/uploaded
+	AvatarType string `json:"avatar_type,omitempty"`
+	// 生成头像风格
+	AvatarStyle string `json:"avatar_style,omitempty"`
 	// Notes holds the value of the "notes" field.
 	Notes string `json:"notes,omitempty"`
 	// TotpSecretEncrypted holds the value of the "totp_secret_encrypted" field.
@@ -192,7 +198,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case user.FieldID, user.FieldConcurrency, user.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
-		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldNotes, user.FieldTotpSecretEncrypted:
+		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldAvatarURL, user.FieldAvatarType, user.FieldAvatarStyle, user.FieldNotes, user.FieldTotpSecretEncrypted:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt:
 			values[i] = new(sql.NullTime)
@@ -284,6 +290,24 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field username", values[i])
 			} else if value.Valid {
 				_m.Username = value.String
+			}
+		case user.FieldAvatarURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar_url", values[i])
+			} else if value.Valid {
+				_m.AvatarURL = value.String
+			}
+		case user.FieldAvatarType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar_type", values[i])
+			} else if value.Valid {
+				_m.AvatarType = value.String
+			}
+		case user.FieldAvatarStyle:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar_style", values[i])
+			} else if value.Valid {
+				_m.AvatarStyle = value.String
 			}
 		case user.FieldNotes:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -438,6 +462,15 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("username=")
 	builder.WriteString(_m.Username)
+	builder.WriteString(", ")
+	builder.WriteString("avatar_url=")
+	builder.WriteString(_m.AvatarURL)
+	builder.WriteString(", ")
+	builder.WriteString("avatar_type=")
+	builder.WriteString(_m.AvatarType)
+	builder.WriteString(", ")
+	builder.WriteString("avatar_style=")
+	builder.WriteString(_m.AvatarStyle)
 	builder.WriteString(", ")
 	builder.WriteString("notes=")
 	builder.WriteString(_m.Notes)

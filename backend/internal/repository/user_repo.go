@@ -38,6 +38,8 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if userIn == nil {
 		return nil
 	}
+	avatarType := service.AvatarTypeOrDefault(userIn.AvatarType)
+	avatarStyle := service.AvatarStyleOrDefault(userIn.AvatarStyle)
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
 	// 并避免基于 *sql.Tx 手动构造 ent client 导致的 ExecQuerier 断言错误。
@@ -58,6 +60,9 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	created, err := txClient.User.Create().
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
+		SetAvatarURL(userIn.AvatarURL).
+		SetAvatarType(avatarType).
+		SetAvatarStyle(avatarStyle).
 		SetNotes(userIn.Notes).
 		SetPasswordHash(userIn.PasswordHash).
 		SetRole(userIn.Role).
@@ -122,6 +127,8 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	if userIn == nil {
 		return nil
 	}
+	avatarType := service.AvatarTypeOrDefault(userIn.AvatarType)
+	avatarStyle := service.AvatarStyleOrDefault(userIn.AvatarStyle)
 
 	// 使用 ent 事务包裹用户更新与 allowed_groups 同步，避免跨层事务不一致。
 	tx, err := r.client.Tx(ctx)
@@ -141,6 +148,9 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	updated, err := txClient.User.UpdateOneID(userIn.ID).
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
+		SetAvatarURL(userIn.AvatarURL).
+		SetAvatarType(avatarType).
+		SetAvatarStyle(avatarStyle).
 		SetNotes(userIn.Notes).
 		SetPasswordHash(userIn.PasswordHash).
 		SetRole(userIn.Role).
@@ -164,6 +174,9 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 
 	userIn.UpdatedAt = updated.UpdatedAt
+	userIn.AvatarType = service.AvatarTypeOrDefault(updated.AvatarType)
+	userIn.AvatarStyle = service.AvatarStyleOrDefault(updated.AvatarStyle)
+	userIn.AvatarURL = updated.AvatarURL
 	return nil
 }
 
@@ -547,6 +560,9 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 		return
 	}
 	dst.ID = src.ID
+	dst.AvatarURL = src.AvatarURL
+	dst.AvatarType = service.AvatarTypeOrDefault(src.AvatarType)
+	dst.AvatarStyle = service.AvatarStyleOrDefault(src.AvatarStyle)
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }

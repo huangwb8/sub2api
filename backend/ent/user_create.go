@@ -169,6 +169,48 @@ func (_c *UserCreate) SetNillableUsername(v *string) *UserCreate {
 	return _c
 }
 
+// SetAvatarURL sets the "avatar_url" field.
+func (_c *UserCreate) SetAvatarURL(v string) *UserCreate {
+	_c.mutation.SetAvatarURL(v)
+	return _c
+}
+
+// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
+func (_c *UserCreate) SetNillableAvatarURL(v *string) *UserCreate {
+	if v != nil {
+		_c.SetAvatarURL(*v)
+	}
+	return _c
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (_c *UserCreate) SetAvatarType(v string) *UserCreate {
+	_c.mutation.SetAvatarType(v)
+	return _c
+}
+
+// SetNillableAvatarType sets the "avatar_type" field if the given value is not nil.
+func (_c *UserCreate) SetNillableAvatarType(v *string) *UserCreate {
+	if v != nil {
+		_c.SetAvatarType(*v)
+	}
+	return _c
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (_c *UserCreate) SetAvatarStyle(v string) *UserCreate {
+	_c.mutation.SetAvatarStyle(v)
+	return _c
+}
+
+// SetNillableAvatarStyle sets the "avatar_style" field if the given value is not nil.
+func (_c *UserCreate) SetNillableAvatarStyle(v *string) *UserCreate {
+	if v != nil {
+		_c.SetAvatarStyle(*v)
+	}
+	return _c
+}
+
 // SetNotes sets the "notes" field.
 func (_c *UserCreate) SetNotes(v string) *UserCreate {
 	_c.mutation.SetNotes(v)
@@ -446,6 +488,18 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultUsername
 		_c.mutation.SetUsername(v)
 	}
+	if _, ok := _c.mutation.AvatarURL(); !ok {
+		v := user.DefaultAvatarURL
+		_c.mutation.SetAvatarURL(v)
+	}
+	if _, ok := _c.mutation.AvatarType(); !ok {
+		v := user.DefaultAvatarType
+		_c.mutation.SetAvatarType(v)
+	}
+	if _, ok := _c.mutation.AvatarStyle(); !ok {
+		v := user.DefaultAvatarStyle
+		_c.mutation.SetAvatarStyle(v)
+	}
 	if _, ok := _c.mutation.Notes(); !ok {
 		v := user.DefaultNotes
 		_c.mutation.SetNotes(v)
@@ -509,6 +563,25 @@ func (_c *UserCreate) check() error {
 	if v, ok := _c.mutation.Username(); ok {
 		if err := user.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.AvatarURL(); !ok {
+		return &ValidationError{Name: "avatar_url", err: errors.New(`ent: missing required field "User.avatar_url"`)}
+	}
+	if _, ok := _c.mutation.AvatarType(); !ok {
+		return &ValidationError{Name: "avatar_type", err: errors.New(`ent: missing required field "User.avatar_type"`)}
+	}
+	if v, ok := _c.mutation.AvatarType(); ok {
+		if err := user.AvatarTypeValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_type", err: fmt.Errorf(`ent: validator failed for field "User.avatar_type": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.AvatarStyle(); !ok {
+		return &ValidationError{Name: "avatar_style", err: errors.New(`ent: missing required field "User.avatar_style"`)}
+	}
+	if v, ok := _c.mutation.AvatarStyle(); ok {
+		if err := user.AvatarStyleValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_style", err: fmt.Errorf(`ent: validator failed for field "User.avatar_style": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Notes(); !ok {
@@ -587,6 +660,18 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
 		_node.Username = value
+	}
+	if value, ok := _c.mutation.AvatarURL(); ok {
+		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
+		_node.AvatarURL = value
+	}
+	if value, ok := _c.mutation.AvatarType(); ok {
+		_spec.SetField(user.FieldAvatarType, field.TypeString, value)
+		_node.AvatarType = value
+	}
+	if value, ok := _c.mutation.AvatarStyle(); ok {
+		_spec.SetField(user.FieldAvatarStyle, field.TypeString, value)
+		_node.AvatarStyle = value
 	}
 	if value, ok := _c.mutation.Notes(); ok {
 		_spec.SetField(user.FieldNotes, field.TypeString, value)
@@ -970,6 +1055,42 @@ func (u *UserUpsert) UpdateUsername() *UserUpsert {
 	return u
 }
 
+// SetAvatarURL sets the "avatar_url" field.
+func (u *UserUpsert) SetAvatarURL(v string) *UserUpsert {
+	u.Set(user.FieldAvatarURL, v)
+	return u
+}
+
+// UpdateAvatarURL sets the "avatar_url" field to the value that was provided on create.
+func (u *UserUpsert) UpdateAvatarURL() *UserUpsert {
+	u.SetExcluded(user.FieldAvatarURL)
+	return u
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (u *UserUpsert) SetAvatarType(v string) *UserUpsert {
+	u.Set(user.FieldAvatarType, v)
+	return u
+}
+
+// UpdateAvatarType sets the "avatar_type" field to the value that was provided on create.
+func (u *UserUpsert) UpdateAvatarType() *UserUpsert {
+	u.SetExcluded(user.FieldAvatarType)
+	return u
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (u *UserUpsert) SetAvatarStyle(v string) *UserUpsert {
+	u.Set(user.FieldAvatarStyle, v)
+	return u
+}
+
+// UpdateAvatarStyle sets the "avatar_style" field to the value that was provided on create.
+func (u *UserUpsert) UpdateAvatarStyle() *UserUpsert {
+	u.SetExcluded(user.FieldAvatarStyle)
+	return u
+}
+
 // SetNotes sets the "notes" field.
 func (u *UserUpsert) SetNotes(v string) *UserUpsert {
 	u.Set(user.FieldNotes, v)
@@ -1247,6 +1368,48 @@ func (u *UserUpsertOne) SetUsername(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateUsername() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetAvatarURL sets the "avatar_url" field.
+func (u *UserUpsertOne) SetAvatarURL(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarURL(v)
+	})
+}
+
+// UpdateAvatarURL sets the "avatar_url" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateAvatarURL() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarURL()
+	})
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (u *UserUpsertOne) SetAvatarType(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarType(v)
+	})
+}
+
+// UpdateAvatarType sets the "avatar_type" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateAvatarType() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarType()
+	})
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (u *UserUpsertOne) SetAvatarStyle(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarStyle(v)
+	})
+}
+
+// UpdateAvatarStyle sets the "avatar_style" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateAvatarStyle() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarStyle()
 	})
 }
 
@@ -1703,6 +1866,48 @@ func (u *UserUpsertBulk) SetUsername(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateUsername() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetAvatarURL sets the "avatar_url" field.
+func (u *UserUpsertBulk) SetAvatarURL(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarURL(v)
+	})
+}
+
+// UpdateAvatarURL sets the "avatar_url" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateAvatarURL() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarURL()
+	})
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (u *UserUpsertBulk) SetAvatarType(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarType(v)
+	})
+}
+
+// UpdateAvatarType sets the "avatar_type" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateAvatarType() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarType()
+	})
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (u *UserUpsertBulk) SetAvatarStyle(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetAvatarStyle(v)
+	})
+}
+
+// UpdateAvatarStyle sets the "avatar_style" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateAvatarStyle() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateAvatarStyle()
 	})
 }
 

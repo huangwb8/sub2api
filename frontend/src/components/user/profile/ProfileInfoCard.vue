@@ -5,11 +5,7 @@
     >
       <div class="flex items-center gap-4">
         <!-- Avatar -->
-        <div
-          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-2xl font-bold text-white shadow-lg shadow-primary-500/20"
-        >
-          {{ user?.email?.charAt(0).toUpperCase() || 'U' }}
-        </div>
+        <UserAvatar :user="user" size="lg" rounded="2xl" class="shadow-lg shadow-primary-500/20" />
         <div class="min-w-0 flex-1">
           <h2 class="truncate text-lg font-semibold text-gray-900 dark:text-white">
             {{ user?.email }}
@@ -48,6 +44,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
+import UserAvatar from '@/components/user/UserAvatar.vue'
 import type { User } from '@/types'
 
 defineProps<{

@@ -6,6 +6,13 @@
 import { apiClient } from './client'
 import type { User, ChangePasswordRequest } from '@/types'
 
+export interface UpdateProfilePayload {
+  username?: string
+  avatar_type?: User['avatar_type']
+  avatar_style?: User['avatar_style']
+  avatar_url?: string
+}
+
 /**
  * Get current user profile
  * @returns User profile data
@@ -20,9 +27,7 @@ export async function getProfile(): Promise<User> {
  * @param profile - Profile data to update
  * @returns Updated user profile data
  */
-export async function updateProfile(profile: {
-  username?: string
-}): Promise<User> {
+export async function updateProfile(profile: UpdateProfilePayload | FormData): Promise<User> {
   const { data } = await apiClient.put<User>('/user', profile)
   return data
 }

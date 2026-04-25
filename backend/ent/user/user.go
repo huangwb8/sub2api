@@ -37,6 +37,12 @@ const (
 	FieldStatus = "status"
 	// FieldUsername holds the string denoting the username field in the database.
 	FieldUsername = "username"
+	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
+	FieldAvatarURL = "avatar_url"
+	// FieldAvatarType holds the string denoting the avatar_type field in the database.
+	FieldAvatarType = "avatar_type"
+	// FieldAvatarStyle holds the string denoting the avatar_style field in the database.
+	FieldAvatarStyle = "avatar_style"
 	// FieldNotes holds the string denoting the notes field in the database.
 	FieldNotes = "notes"
 	// FieldTotpSecretEncrypted holds the string denoting the totp_secret_encrypted field in the database.
@@ -160,6 +166,9 @@ var Columns = []string{
 	FieldRpmLimit,
 	FieldStatus,
 	FieldUsername,
+	FieldAvatarURL,
+	FieldAvatarType,
+	FieldAvatarStyle,
 	FieldNotes,
 	FieldTotpSecretEncrypted,
 	FieldTotpEnabled,
@@ -216,6 +225,16 @@ var (
 	DefaultUsername string
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
+	// DefaultAvatarURL holds the default value on creation for the "avatar_url" field.
+	DefaultAvatarURL string
+	// DefaultAvatarType holds the default value on creation for the "avatar_type" field.
+	DefaultAvatarType string
+	// AvatarTypeValidator is a validator for the "avatar_type" field. It is called by the builders before save.
+	AvatarTypeValidator func(string) error
+	// DefaultAvatarStyle holds the default value on creation for the "avatar_style" field.
+	DefaultAvatarStyle string
+	// AvatarStyleValidator is a validator for the "avatar_style" field. It is called by the builders before save.
+	AvatarStyleValidator func(string) error
 	// DefaultNotes holds the default value on creation for the "notes" field.
 	DefaultNotes string
 	// DefaultTotpEnabled holds the default value on creation for the "totp_enabled" field.
@@ -283,6 +302,21 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByUsername orders the results by the username field.
 func ByUsername(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsername, opts...).ToFunc()
+}
+
+// ByAvatarURL orders the results by the avatar_url field.
+func ByAvatarURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatarURL, opts...).ToFunc()
+}
+
+// ByAvatarType orders the results by the avatar_type field.
+func ByAvatarType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatarType, opts...).ToFunc()
+}
+
+// ByAvatarStyle orders the results by the avatar_style field.
+func ByAvatarStyle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatarStyle, opts...).ToFunc()
 }
 
 // ByNotes orders the results by the notes field.

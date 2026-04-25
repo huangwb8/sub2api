@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"log"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/datadir"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/server/routes"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -102,6 +104,8 @@ func registerRoutes(
 	cfg *config.Config,
 	redisClient *redis.Client,
 ) {
+	r.StaticFS("/uploads", gin.Dir(filepath.Join(datadir.Get(), "uploads"), false))
+
 	// 通用路由（健康检查、状态等）
 	routes.RegisterCommonRoutes(r)
 

@@ -28,6 +28,9 @@ export interface User {
   id: number
   username: string
   email: string
+  avatar_url: string
+  avatar_type: 'generated' | 'external' | 'uploaded'
+  avatar_style: 'classic_letter' | 'aurora_ring' | 'orbit_burst' | 'pixel_patch' | 'paper_cut'
   role: 'admin' | 'user' // User role for authorization
   balance: number // User balance for API usage
   concurrency: number // Allowed concurrent requests
@@ -41,6 +44,8 @@ export interface User {
 export interface AdminUser extends User {
   // 管理员备注（普通用户接口不返回）
   notes: string
+  // 用户历史总充值（正向 balance/admin_balance 累计）
+  total_recharged?: number
   // 用户专属分组倍率配置 (group_id -> rate_multiplier)
   group_rates?: Record<number, number>
   // 当前并发数（仅管理员列表接口返回）

@@ -30587,6 +30587,9 @@ type UserMutation struct {
 	addrpm_limit                  *int
 	status                        *string
 	username                      *string
+	avatar_url                    *string
+	avatar_type                   *string
+	avatar_style                  *string
 	notes                         *string
 	totp_secret_encrypted         *string
 	totp_enabled                  *bool
@@ -31206,6 +31209,114 @@ func (m *UserMutation) OldUsername(ctx context.Context) (v string, err error) {
 // ResetUsername resets all changes to the "username" field.
 func (m *UserMutation) ResetUsername() {
 	m.username = nil
+}
+
+// SetAvatarURL sets the "avatar_url" field.
+func (m *UserMutation) SetAvatarURL(s string) {
+	m.avatar_url = &s
+}
+
+// AvatarURL returns the value of the "avatar_url" field in the mutation.
+func (m *UserMutation) AvatarURL() (r string, exists bool) {
+	v := m.avatar_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAvatarURL returns the old "avatar_url" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldAvatarURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAvatarURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAvatarURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAvatarURL: %w", err)
+	}
+	return oldValue.AvatarURL, nil
+}
+
+// ResetAvatarURL resets all changes to the "avatar_url" field.
+func (m *UserMutation) ResetAvatarURL() {
+	m.avatar_url = nil
+}
+
+// SetAvatarType sets the "avatar_type" field.
+func (m *UserMutation) SetAvatarType(s string) {
+	m.avatar_type = &s
+}
+
+// AvatarType returns the value of the "avatar_type" field in the mutation.
+func (m *UserMutation) AvatarType() (r string, exists bool) {
+	v := m.avatar_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAvatarType returns the old "avatar_type" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldAvatarType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAvatarType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAvatarType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAvatarType: %w", err)
+	}
+	return oldValue.AvatarType, nil
+}
+
+// ResetAvatarType resets all changes to the "avatar_type" field.
+func (m *UserMutation) ResetAvatarType() {
+	m.avatar_type = nil
+}
+
+// SetAvatarStyle sets the "avatar_style" field.
+func (m *UserMutation) SetAvatarStyle(s string) {
+	m.avatar_style = &s
+}
+
+// AvatarStyle returns the value of the "avatar_style" field in the mutation.
+func (m *UserMutation) AvatarStyle() (r string, exists bool) {
+	v := m.avatar_style
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAvatarStyle returns the old "avatar_style" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldAvatarStyle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAvatarStyle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAvatarStyle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAvatarStyle: %w", err)
+	}
+	return oldValue.AvatarStyle, nil
+}
+
+// ResetAvatarStyle resets all changes to the "avatar_style" field.
+func (m *UserMutation) ResetAvatarStyle() {
+	m.avatar_style = nil
 }
 
 // SetNotes sets the "notes" field.
@@ -31952,7 +32063,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -31985,6 +32096,15 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
+	}
+	if m.avatar_url != nil {
+		fields = append(fields, user.FieldAvatarURL)
+	}
+	if m.avatar_type != nil {
+		fields = append(fields, user.FieldAvatarType)
+	}
+	if m.avatar_style != nil {
+		fields = append(fields, user.FieldAvatarStyle)
 	}
 	if m.notes != nil {
 		fields = append(fields, user.FieldNotes)
@@ -32028,6 +32148,12 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case user.FieldUsername:
 		return m.Username()
+	case user.FieldAvatarURL:
+		return m.AvatarURL()
+	case user.FieldAvatarType:
+		return m.AvatarType()
+	case user.FieldAvatarStyle:
+		return m.AvatarStyle()
 	case user.FieldNotes:
 		return m.Notes()
 	case user.FieldTotpSecretEncrypted:
@@ -32067,6 +32193,12 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldStatus(ctx)
 	case user.FieldUsername:
 		return m.OldUsername(ctx)
+	case user.FieldAvatarURL:
+		return m.OldAvatarURL(ctx)
+	case user.FieldAvatarType:
+		return m.OldAvatarType(ctx)
+	case user.FieldAvatarStyle:
+		return m.OldAvatarStyle(ctx)
 	case user.FieldNotes:
 		return m.OldNotes(ctx)
 	case user.FieldTotpSecretEncrypted:
@@ -32160,6 +32292,27 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUsername(v)
+		return nil
+	case user.FieldAvatarURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAvatarURL(v)
+		return nil
+	case user.FieldAvatarType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAvatarType(v)
+		return nil
+	case user.FieldAvatarStyle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAvatarStyle(v)
 		return nil
 	case user.FieldNotes:
 		v, ok := value.(string)
@@ -32336,6 +32489,15 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldUsername:
 		m.ResetUsername()
+		return nil
+	case user.FieldAvatarURL:
+		m.ResetAvatarURL()
+		return nil
+	case user.FieldAvatarType:
+		m.ResetAvatarType()
+		return nil
+	case user.FieldAvatarStyle:
+		m.ResetAvatarStyle()
 		return nil
 	case user.FieldNotes:
 		m.ResetNotes()

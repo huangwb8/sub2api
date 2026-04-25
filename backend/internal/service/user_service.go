@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -61,6 +62,10 @@ type UpdateProfileRequest struct {
 	Email       *string `json:"email"`
 	Username    *string `json:"username"`
 	Concurrency *int    `json:"concurrency"`
+	AvatarType  *string `json:"avatar_type"`
+	AvatarStyle *string `json:"avatar_style"`
+	AvatarURL   *string `json:"avatar_url"`
+	AvatarFile  *AvatarUpload
 }
 
 // ChangePasswordRequest 修改密码请求
@@ -125,11 +130,15 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID int64, req Updat
 	}
 
 	if req.Username != nil {
-		user.Username = *req.Username
+		user.Username = strings.TrimSpace(*req.Username)
 	}
 
 	if req.Concurrency != nil {
 		user.Concurrency = *req.Concurrency
+	}
+
+	if err := s.applyAvatarProfileUpdate(ctx, user, req); err != nil {
+		return nil, err
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
@@ -140,6 +149,68 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID int64, req Updat
 	}
 
 	return user, nil
+}
+
+func (s *UserService) applyAvatarProfileUpdate(ctx context.Context, user *User, req UpdateProfileRequest) error {
+	if req.AvatarType == nil && req.AvatarStyle == nil && req.AvatarURL == nil && req.AvatarFile == nil {
+		return nil
+	}
+
+	nextType := user.AvatarType
+	if req.AvatarType != nil {
+		nextType = *req.AvatarType
+	}
+	normalizedType, err := normalizeAvatarType(nextType)
+	if err != nil {
+		return err
+	}
+
+	nextStyle := user.AvatarStyle
+	if req.AvatarStyle != nil {
+		nextStyle = *req.AvatarStyle
+	}
+	normalizedStyle, err := normalizeAvatarStyle(nextStyle)
+	if err != nil {
+		return err
+	}
+
+	nextURL := user.AvatarURL
+	if req.AvatarURL != nil {
+		nextURL = *req.AvatarURL
+	}
+
+	switch normalizedType {
+	case AvatarTypeGenerated:
+		if user.AvatarType == AvatarTypeUploaded {
+			deleteUploadedAvatar(ctx, user.AvatarURL)
+		}
+		nextURL = ""
+	case AvatarTypeExternal:
+		normalizedURL, err := normalizeExternalAvatarURL(nextURL)
+		if err != nil {
+			return err
+		}
+		if user.AvatarType == AvatarTypeUploaded {
+			deleteUploadedAvatar(ctx, user.AvatarURL)
+		}
+		nextURL = normalizedURL
+	case AvatarTypeUploaded:
+		if req.AvatarFile != nil {
+			storedURL, err := storeAvatarUpload(ctx, user.ID, req.AvatarFile, user.AvatarURL)
+			if err != nil {
+				return err
+			}
+			nextURL = storedURL
+		}
+		if strings.TrimSpace(nextURL) == "" {
+			return ErrAvatarFileRequired
+		}
+	}
+
+	user.AvatarType = normalizedType
+	user.AvatarStyle = normalizedStyle
+	user.AvatarURL = nextURL
+	return nil
 }
 
 // ChangePassword 修改密码

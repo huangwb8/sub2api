@@ -61,6 +61,18 @@ func (User) Fields() []ent.Field {
 		field.String("username").
 			MaxLen(100).
 			Default(""),
+		field.String("avatar_url").
+			SchemaType(map[string]string{dialect.Postgres: "text"}).
+			Default("").
+			Comment("用户头像 URL；可为外链或 /uploads/avatars 下的本地上传路径"),
+		field.String("avatar_type").
+			MaxLen(32).
+			Default("generated").
+			Comment("头像来源：generated/external/uploaded"),
+		field.String("avatar_style").
+			MaxLen(32).
+			Default("classic_letter").
+			Comment("生成头像风格"),
 		// wechat field migrated to user_attribute_values (see migration 019)
 		field.String("notes").
 			SchemaType(map[string]string{dialect.Postgres: "text"}).

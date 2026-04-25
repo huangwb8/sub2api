@@ -19,14 +19,26 @@ import (
 type mockUserRepo struct {
 	updateBalanceErr error
 	updateBalanceFn  func(ctx context.Context, id int64, amount float64) error
+	getByIDFn        func(ctx context.Context, id int64) (*User, error)
+	updateFn         func(ctx context.Context, user *User) error
 }
 
-func (m *mockUserRepo) Create(context.Context, *User) error               { return nil }
-func (m *mockUserRepo) GetByID(context.Context, int64) (*User, error)     { return &User{}, nil }
+func (m *mockUserRepo) Create(context.Context, *User) error { return nil }
+func (m *mockUserRepo) GetByID(ctx context.Context, id int64) (*User, error) {
+	if m.getByIDFn != nil {
+		return m.getByIDFn(ctx, id)
+	}
+	return &User{}, nil
+}
 func (m *mockUserRepo) GetByEmail(context.Context, string) (*User, error) { return &User{}, nil }
 func (m *mockUserRepo) GetFirstAdmin(context.Context) (*User, error)      { return &User{}, nil }
-func (m *mockUserRepo) Update(context.Context, *User) error               { return nil }
-func (m *mockUserRepo) Delete(context.Context, int64) error               { return nil }
+func (m *mockUserRepo) Update(ctx context.Context, user *User) error {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, user)
+	}
+	return nil
+}
+func (m *mockUserRepo) Delete(context.Context, int64) error { return nil }
 func (m *mockUserRepo) List(context.Context, pagination.PaginationParams) ([]User, *pagination.PaginationResult, error) {
 	return nil, nil, nil
 }
@@ -199,4 +211,88 @@ func TestNewUserService_FieldsAssignment(t *testing.T) {
 	require.Equal(t, repo, svc.userRepo)
 	require.Equal(t, auth, svc.authCacheInvalidator)
 	require.Equal(t, cache, svc.billingCache)
+}
+
+func TestUpdateProfile_ExternalAvatar(t *testing.T) {
+	var saved *User
+	repo := &mockUserRepo{
+		getByIDFn: func(context.Context, int64) (*User, error) {
+			return &User{ID: 42, Email: "user@example.com", Username: "old", AvatarType: AvatarTypeGenerated, AvatarStyle: DefaultAvatarStyle}, nil
+		},
+		updateFn: func(_ context.Context, user *User) error {
+			clone := *user
+			saved = &clone
+			return nil
+		},
+	}
+	svc := NewUserService(repo, nil, nil)
+
+	username := "  new-name  "
+	avatarType := AvatarTypeExternal
+	avatarStyle := "aurora_ring"
+	avatarURL := "https://cdn.example.com/avatar.png"
+	updated, err := svc.UpdateProfile(context.Background(), 42, UpdateProfileRequest{
+		Username:    &username,
+		AvatarType:  &avatarType,
+		AvatarStyle: &avatarStyle,
+		AvatarURL:   &avatarURL,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, saved)
+	require.Equal(t, "new-name", updated.Username)
+	require.Equal(t, AvatarTypeExternal, saved.AvatarType)
+	require.Equal(t, "aurora_ring", saved.AvatarStyle)
+	require.Equal(t, avatarURL, saved.AvatarURL)
+}
+
+func TestUpdateProfile_RejectsInvalidAvatarURL(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDFn: func(context.Context, int64) (*User, error) {
+			return &User{ID: 42, Email: "user@example.com"}, nil
+		},
+	}
+	svc := NewUserService(repo, nil, nil)
+
+	avatarType := AvatarTypeExternal
+	avatarURL := "javascript:alert(1)"
+	_, err := svc.UpdateProfile(context.Background(), 42, UpdateProfileRequest{
+		AvatarType: &avatarType,
+		AvatarURL:  &avatarURL,
+	})
+
+	require.ErrorIs(t, err, ErrInvalidAvatarURL)
+}
+
+func TestUpdateProfile_PreservesUploadedAvatarWithoutNewFile(t *testing.T) {
+	var saved *User
+	repo := &mockUserRepo{
+		getByIDFn: func(context.Context, int64) (*User, error) {
+			return &User{
+				ID:          42,
+				Email:       "user@example.com",
+				Username:    "user",
+				AvatarType:  AvatarTypeUploaded,
+				AvatarStyle: "pixel_patch",
+				AvatarURL:   "/uploads/avatars/2026/04/user-42-existing.png",
+			}, nil
+		},
+		updateFn: func(_ context.Context, user *User) error {
+			clone := *user
+			saved = &clone
+			return nil
+		},
+	}
+	svc := NewUserService(repo, nil, nil)
+
+	avatarType := AvatarTypeUploaded
+	updated, err := svc.UpdateProfile(context.Background(), 42, UpdateProfileRequest{
+		AvatarType: &avatarType,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, saved)
+	require.Equal(t, AvatarTypeUploaded, updated.AvatarType)
+	require.Equal(t, "/uploads/avatars/2026/04/user-42-existing.png", saved.AvatarURL)
+	require.Equal(t, "pixel_patch", saved.AvatarStyle)
 }
