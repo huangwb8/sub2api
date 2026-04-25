@@ -104,6 +104,18 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.security_secrets')").Scan(&securitySecretsRegclass))
 	require.True(t, securitySecretsRegclass.Valid, "expected security_secrets table to exist")
 
+	// refresh_tokens: durable login sessions across Docker image updates / Redis restarts
+	var refreshTokensRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.refresh_tokens')").Scan(&refreshTokensRegclass))
+	require.True(t, refreshTokensRegclass.Valid, "expected refresh_tokens table to exist")
+	requireColumn(t, tx, "refresh_tokens", "token_hash", "character varying", 64, false)
+	requireColumn(t, tx, "refresh_tokens", "user_id", "bigint", 0, false)
+	requireColumn(t, tx, "refresh_tokens", "family_id", "character varying", 64, false)
+	requireColumn(t, tx, "refresh_tokens", "expires_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "refresh_tokens", "idx_refresh_tokens_user_id")
+	requireIndex(t, tx, "refresh_tokens", "idx_refresh_tokens_family_id")
+	requireIndex(t, tx, "refresh_tokens", "idx_refresh_tokens_expires_at")
+
 	// user_allowed_groups table should exist
 	var uagRegclass sql.NullString
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.user_allowed_groups')").Scan(&uagRegclass))

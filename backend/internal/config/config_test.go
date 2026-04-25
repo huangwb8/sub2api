@@ -291,11 +291,19 @@ func TestLoadDefaultJWTAccessTokenExpireMinutes(t *testing.T) {
 	if cfg.JWT.AccessTokenExpireMinutes != 0 {
 		t.Fatalf("JWT.AccessTokenExpireMinutes = %d, want 0", cfg.JWT.AccessTokenExpireMinutes)
 	}
+	if cfg.JWT.RefreshTokenExpireDays != 30 {
+		t.Fatalf("JWT.RefreshTokenExpireDays = %d, want 30", cfg.JWT.RefreshTokenExpireDays)
+	}
+	if cfg.JWT.RefreshWindowMinutes != 2 {
+		t.Fatalf("JWT.RefreshWindowMinutes = %d, want 2", cfg.JWT.RefreshWindowMinutes)
+	}
 }
 
 func TestLoadJWTAccessTokenExpireMinutesFromEnv(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	t.Setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "90")
+	t.Setenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "45")
+	t.Setenv("JWT_REFRESH_WINDOW_MINUTES", "5")
 
 	cfg, err := Load()
 	if err != nil {
@@ -304,6 +312,12 @@ func TestLoadJWTAccessTokenExpireMinutesFromEnv(t *testing.T) {
 
 	if cfg.JWT.AccessTokenExpireMinutes != 90 {
 		t.Fatalf("JWT.AccessTokenExpireMinutes = %d, want 90", cfg.JWT.AccessTokenExpireMinutes)
+	}
+	if cfg.JWT.RefreshTokenExpireDays != 45 {
+		t.Fatalf("JWT.RefreshTokenExpireDays = %d, want 45", cfg.JWT.RefreshTokenExpireDays)
+	}
+	if cfg.JWT.RefreshWindowMinutes != 5 {
+		t.Fatalf("JWT.RefreshWindowMinutes = %d, want 5", cfg.JWT.RefreshWindowMinutes)
 	}
 }
 
@@ -979,6 +993,16 @@ func TestValidateConfigErrors(t *testing.T) {
 			name:    "jwt access token expire minutes non-negative",
 			mutate:  func(c *Config) { c.JWT.AccessTokenExpireMinutes = -1 },
 			wantErr: "jwt.access_token_expire_minutes must be non-negative",
+		},
+		{
+			name:    "jwt refresh token expire days positive",
+			mutate:  func(c *Config) { c.JWT.RefreshTokenExpireDays = 0 },
+			wantErr: "jwt.refresh_token_expire_days must be positive",
+		},
+		{
+			name:    "jwt refresh window minutes non-negative",
+			mutate:  func(c *Config) { c.JWT.RefreshWindowMinutes = -1 },
+			wantErr: "jwt.refresh_window_minutes must be non-negative",
 		},
 		{
 			name:    "csp policy required",

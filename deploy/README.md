@@ -260,6 +260,10 @@ This validates:
 |----------|----------|---------|-------------|
 | `POSTGRES_PASSWORD` | **Yes** | - | PostgreSQL password |
 | `JWT_SECRET` | **Recommended** | *(auto-generated)* | JWT secret (fixed for persistent sessions) |
+| `JWT_EXPIRE_HOUR` | No | `24` | Access token lifetime in hours when `JWT_ACCESS_TOKEN_EXPIRE_MINUTES=0` |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | No | `0` | Access token lifetime in minutes; `0` falls back to `JWT_EXPIRE_HOUR` |
+| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | No | `30` | Refresh token lifetime. Token hashes are persisted in PostgreSQL so sessions survive image updates and Redis restarts |
+| `JWT_REFRESH_WINDOW_MINUTES` | No | `2` | How many minutes before access-token expiry the frontend should refresh |
 | `TOTP_ENCRYPTION_KEY` | **Recommended** | *(auto-generated)* | TOTP encryption key (fixed for persistent 2FA) |
 | `SERVER_PORT` | No | `8080` | Server port |
 | `ADMIN_EMAIL` | No | `admin@sub2api.local` | Admin email |
@@ -273,6 +277,11 @@ This validates:
 See `.env.example` for all available options.
 
 > **Note:** The `docker-deploy.sh` script automatically generates `JWT_SECRET`, `TOTP_ENCRYPTION_KEY`, and `POSTGRES_PASSWORD` for you.
+
+Login sessions are designed to survive routine image updates. Access tokens are
+signed with the persisted JWT secret, and refresh token hashes are stored in
+PostgreSQL with Redis used only as a hot cache. Avoid `docker compose down -v`
+unless you intentionally want to remove all persistent state.
 
 ### Easy Migration (Local Directory Version)
 

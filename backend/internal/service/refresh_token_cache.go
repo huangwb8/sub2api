@@ -39,6 +39,10 @@ type RefreshTokenCache interface {
 	// 返回 (nil, err) 如果发生其他错误
 	GetRefreshToken(ctx context.Context, tokenHash string) (*RefreshTokenData, error)
 
+	// ConsumeRefreshToken 原子消费单个Refresh Token并返回其数据。
+	// 用于刷新时的Token轮转，确保同一个Refresh Token不能被并发重复使用。
+	ConsumeRefreshToken(ctx context.Context, tokenHash string) (*RefreshTokenData, error)
+
 	// DeleteRefreshToken 删除单个Refresh Token
 	// 用于Token轮转时使旧Token失效
 	DeleteRefreshToken(ctx context.Context, tokenHash string) error
