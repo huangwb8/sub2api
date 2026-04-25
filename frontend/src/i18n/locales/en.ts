@@ -1211,6 +1211,12 @@ export default {
         table: {
           title: 'Package Price Conversion',
           plan: 'Plan',
+          basis: 'Entitlement / Basis',
+          basisDetail: 'Quota ${quota} · Capacity {units} · Ratio {ratio}x',
+          basisMonthly: 'Monthly quota',
+          basisWeekly: 'Weekly quota annualized monthly',
+          basisDaily: 'Daily quota annualized monthly',
+          basisDurationOnly: 'Duration only',
           duration: 'Duration',
           currentMonthlyEquivalent: 'Current monthly equivalent',
           currentPrice: 'Current price',

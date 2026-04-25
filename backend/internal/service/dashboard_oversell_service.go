@@ -62,6 +62,10 @@ type DashboardOversellPlanRecommendation struct {
 	ValidityDays               int     `json:"validity_days"`
 	ValidityUnit               string  `json:"validity_unit"`
 	DurationDaysEquivalent     float64 `json:"duration_days_equivalent"`
+	MonthlyQuotaUSD            float64 `json:"monthly_quota_usd"`
+	EffectiveCapacityUnits     float64 `json:"effective_capacity_units"`
+	CapacityRatio              float64 `json:"capacity_ratio"`
+	PricingBasis               string  `json:"pricing_basis"`
 	CurrentPriceCNY            float64 `json:"current_price_cny"`
 	CurrentMonthlyPriceCNY     float64 `json:"current_monthly_price_cny"`
 	RecommendedPriceCNY        float64 `json:"recommended_price_cny"`
@@ -86,8 +90,16 @@ type dashboardOversellPlanSnapshot struct {
 	PriceCNY               float64
 	ValidityDays           int
 	ValidityUnit           string
+	RateMultiplier         float64
+	DailyLimitUSD          sql.NullFloat64
+	WeeklyLimitUSD         sql.NullFloat64
+	MonthlyLimitUSD        sql.NullFloat64
 	DurationDaysEquivalent float64
 	MonthlyPriceCNY        float64
+	MonthlyQuotaUSD        float64
+	EffectiveCapacityUnits float64
+	CapacityRatio          float64
+	PricingBasis           string
 }
 
 func (s *DashboardRecommendationService) GetOversellCalculator(ctx context.Context) (*DashboardOversellCalculatorResponse, error) {
@@ -170,7 +182,11 @@ SELECT
 	COALESCE(sp.name, '') AS plan_name,
 	COALESCE(sp.price, 0) AS price_cny,
 	COALESCE(sp.validity_days, 0) AS validity_days,
-	COALESCE(sp.validity_unit, 'day') AS validity_unit
+	COALESCE(sp.validity_unit, 'day') AS validity_unit,
+	COALESCE(g.rate_multiplier, 1) AS rate_multiplier,
+	g.daily_limit_usd,
+	g.weekly_limit_usd,
+	g.monthly_limit_usd
 FROM subscription_plans sp
 JOIN groups g ON g.id = sp.group_id
 WHERE sp.for_sale = TRUE
@@ -197,12 +213,22 @@ ORDER BY sp.sort_order ASC, sp.id ASC
 			&item.PriceCNY,
 			&item.ValidityDays,
 			&item.ValidityUnit,
+			&item.RateMultiplier,
+			&item.DailyLimitUSD,
+			&item.WeeklyLimitUSD,
+			&item.MonthlyLimitUSD,
 		); err != nil {
 			return nil, fmt.Errorf("scan dashboard oversell plan: %w", err)
 		}
 
 		item.DurationDaysEquivalent = oversellPlanDurationDays(item.ValidityDays, item.ValidityUnit)
 		item.MonthlyPriceCNY = oversellMonthlyEquivalentPrice(item.PriceCNY, item.DurationDaysEquivalent)
+		item.MonthlyQuotaUSD, item.PricingBasis = oversellPlanMonthlyQuotaUSD(
+			item.DailyLimitUSD,
+			item.WeeklyLimitUSD,
+			item.MonthlyLimitUSD,
+		)
+		item.EffectiveCapacityUnits = oversellPlanEffectiveCapacityUnits(item.MonthlyQuotaUSD, item.RateMultiplier)
 		plans = append(plans, item)
 	}
 
@@ -210,7 +236,7 @@ ORDER BY sp.sort_order ASC, sp.id ASC
 		return nil, fmt.Errorf("iterate dashboard oversell plans: %w", err)
 	}
 
-	return plans, nil
+	return normalizeDashboardOversellPlanCapacityRatios(plans), nil
 }
 
 func (s *DashboardRecommendationService) loadDashboardOversellEstimate(
@@ -272,8 +298,12 @@ FROM subscription_ratios
 		if plan.MonthlyPriceCNY <= 0 {
 			continue
 		}
-		if estimate.CurrentCheapestMonthlyPrice == 0 || plan.MonthlyPriceCNY < estimate.CurrentCheapestMonthlyPrice {
-			estimate.CurrentCheapestMonthlyPrice = plan.MonthlyPriceCNY
+		comparisonMonthlyPrice := plan.MonthlyPriceCNY
+		if plan.CapacityRatio > 0 {
+			comparisonMonthlyPrice = plan.MonthlyPriceCNY / plan.CapacityRatio
+		}
+		if estimate.CurrentCheapestMonthlyPrice == 0 || comparisonMonthlyPrice < estimate.CurrentCheapestMonthlyPrice {
+			estimate.CurrentCheapestMonthlyPrice = comparisonMonthlyPrice
 			estimate.CurrentCheapestPlanName = plan.PlanName
 		}
 	}
@@ -466,9 +496,14 @@ func buildDashboardOversellPlanRecommendations(
 ) []DashboardOversellPlanRecommendation {
 	result := make([]DashboardOversellPlanRecommendation, 0, len(plans))
 	for _, plan := range plans {
+		capacityRatio := plan.CapacityRatio
+		if capacityRatio <= 0 {
+			capacityRatio = 1
+		}
+		recommendedMonthlyPriceForPlan := recommendedMonthlyPrice * capacityRatio
 		recommendedPrice := 0.0
-		if recommendedMonthlyPrice > 0 {
-			recommendedPrice = recommendedMonthlyPrice * plan.DurationDaysEquivalent / dashboardOversellDaysPerMonth
+		if recommendedMonthlyPriceForPlan > 0 {
+			recommendedPrice = recommendedMonthlyPriceForPlan * plan.DurationDaysEquivalent / dashboardOversellDaysPerMonth
 		}
 
 		result = append(result, DashboardOversellPlanRecommendation{
@@ -479,14 +514,69 @@ func buildDashboardOversellPlanRecommendations(
 			ValidityDays:               plan.ValidityDays,
 			ValidityUnit:               plan.ValidityUnit,
 			DurationDaysEquivalent:     plan.DurationDaysEquivalent,
+			MonthlyQuotaUSD:            plan.MonthlyQuotaUSD,
+			EffectiveCapacityUnits:     plan.EffectiveCapacityUnits,
+			CapacityRatio:              capacityRatio,
+			PricingBasis:               plan.PricingBasis,
 			CurrentPriceCNY:            plan.PriceCNY,
 			CurrentMonthlyPriceCNY:     plan.MonthlyPriceCNY,
 			RecommendedPriceCNY:        recommendedPrice,
-			RecommendedMonthlyPriceCNY: recommendedMonthlyPrice,
+			RecommendedMonthlyPriceCNY: recommendedMonthlyPriceForPlan,
 			PriceDeltaCNY:              recommendedPrice - plan.PriceCNY,
 		})
 	}
 	return result
+}
+
+func normalizeDashboardOversellPlanCapacityRatios(plans []dashboardOversellPlanSnapshot) []dashboardOversellPlanSnapshot {
+	baselineCapacity := 0.0
+	for _, plan := range plans {
+		if plan.EffectiveCapacityUnits <= 0 {
+			continue
+		}
+		if baselineCapacity == 0 || plan.EffectiveCapacityUnits < baselineCapacity {
+			baselineCapacity = plan.EffectiveCapacityUnits
+		}
+	}
+
+	for idx := range plans {
+		if plans[idx].PricingBasis == "" {
+			plans[idx].PricingBasis = "duration_only"
+		}
+		plans[idx].CapacityRatio = 1
+		if baselineCapacity > 0 && plans[idx].EffectiveCapacityUnits > 0 {
+			plans[idx].CapacityRatio = plans[idx].EffectiveCapacityUnits / baselineCapacity
+		}
+	}
+
+	return plans
+}
+
+func oversellPlanMonthlyQuotaUSD(
+	dailyLimitUSD sql.NullFloat64,
+	weeklyLimitUSD sql.NullFloat64,
+	monthlyLimitUSD sql.NullFloat64,
+) (float64, string) {
+	if monthlyLimitUSD.Valid && monthlyLimitUSD.Float64 > 0 {
+		return monthlyLimitUSD.Float64, "monthly_limit_usd"
+	}
+	if weeklyLimitUSD.Valid && weeklyLimitUSD.Float64 > 0 {
+		return weeklyLimitUSD.Float64 * dashboardOversellDaysPerMonth / 7, "weekly_limit_usd"
+	}
+	if dailyLimitUSD.Valid && dailyLimitUSD.Float64 > 0 {
+		return dailyLimitUSD.Float64 * dashboardOversellDaysPerMonth, "daily_limit_usd"
+	}
+	return 0, "duration_only"
+}
+
+func oversellPlanEffectiveCapacityUnits(monthlyQuotaUSD, rateMultiplier float64) float64 {
+	if monthlyQuotaUSD <= 0 {
+		return 0
+	}
+	if rateMultiplier <= 0 {
+		rateMultiplier = 1
+	}
+	return monthlyQuotaUSD / rateMultiplier
 }
 
 func oversellPlanDurationDays(validityDays int, validityUnit string) float64 {

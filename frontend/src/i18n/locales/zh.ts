@@ -1221,6 +1221,12 @@ export default {
         table: {
           title: '套餐价格换算',
           plan: '套餐',
+          basis: '权益规模 / 测算依据',
+          basisDetail: '额度 ${quota} · 容量 {units} · 倍率 {ratio}x',
+          basisMonthly: '按月额度测算',
+          basisWeekly: '按周额度折月',
+          basisDaily: '按日额度折月',
+          basisDurationOnly: '仅按有效期测算',
           duration: '时长',
           currentMonthlyEquivalent: '当前月费等价',
           currentPrice: '当前单价',

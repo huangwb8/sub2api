@@ -141,6 +141,12 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.result.users': '{count} 人',
     'admin.dashboard.oversell.table.title': '套餐价格换算',
     'admin.dashboard.oversell.table.plan': '套餐',
+    'admin.dashboard.oversell.table.basis': '权益规模 / 测算依据',
+    'admin.dashboard.oversell.table.basisDetail': '额度 ${quota} · 容量 {units} · 倍率 {ratio}x',
+    'admin.dashboard.oversell.table.basisMonthly': '按月额度测算',
+    'admin.dashboard.oversell.table.basisWeekly': '按周额度折月',
+    'admin.dashboard.oversell.table.basisDaily': '按日额度折月',
+    'admin.dashboard.oversell.table.basisDurationOnly': '仅按有效期测算',
     'admin.dashboard.oversell.table.duration': '时长',
     'admin.dashboard.oversell.table.currentMonthlyEquivalent': '当前月费等价',
     'admin.dashboard.oversell.table.currentPrice': '当前单价',
@@ -305,11 +311,15 @@ describe('admin DashboardView', () => {
           validity_days: 30,
           validity_unit: 'day',
           duration_days_equivalent: 30,
+          monthly_quota_usd: 50,
+          effective_capacity_units: 1,
+          capacity_ratio: 1,
+          pricing_basis: '额度 $50 · 标准权益',
           current_price_cny: 50,
           current_monthly_price_cny: 50,
-          recommended_price_cny: 0,
-          recommended_monthly_price_cny: 0,
-          price_delta_cny: 0
+          recommended_price_cny: 36,
+          recommended_monthly_price_cny: 36,
+          price_delta_cny: -14
         }
       ]
     })
@@ -487,6 +497,7 @@ describe('admin DashboardView', () => {
     expect(wrapper.text()).toContain('套餐价格换算')
     expect(wrapper.text()).toContain('当前月费等价')
     expect(wrapper.text()).toContain('月付基础版')
+    expect(wrapper.text()).toContain('额度 $50')
 
     const initialRequiredPrice = wrapper.get('[data-testid="oversell-recommended-price"]').text()
     const userCountInput = wrapper.get('[data-testid="oversell-user-count"]')
@@ -495,6 +506,130 @@ describe('admin DashboardView', () => {
 
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).toMatch(/¥/)
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
+  })
+
+  it('uses per-plan recommended prices for plans with the same validity but different entitlements', async () => {
+    getOversellCalculator.mockResolvedValueOnce({
+      generated_at: '2026-04-20T09:30:00Z',
+      defaults: {
+        actual_cost_cny: 50,
+        capacity_units_per_product: 3,
+        confidence_level: 99,
+        profit_rate_percent: 20,
+        profit_mode: 'markup',
+        target_profit_total_cny: 120
+      },
+      input: {
+        actual_cost_cny: 50,
+        capacity_units_per_product: 3,
+        confidence_level: 99,
+        profit_rate_percent: 20,
+        profit_mode: 'markup',
+        target_profit_total_cny: 120
+      },
+      estimate: {
+        light_user_threshold_units: 0.3,
+        estimated_light_user_ratio: 0.73,
+        sampled_subscription_count: 126,
+        light_user_count: 92,
+        estimated_from_live_data: true,
+        fallback_applied: false,
+        basis: 'last_30_days',
+        current_cheapest_monthly_price_cny: 50,
+        current_cheapest_plan_name: '月付基础版'
+      },
+      result: {
+        feasible: true,
+        minimum_users: 10,
+        recommended_monthly_price_cny: 29.15,
+        current_cheapest_monthly_price_cny: 50,
+        monthly_price_gap_cny: -20.85,
+        expected_mean_units: 1.029,
+        risk_adjusted_mean_units: 2.5,
+        confidence_level: 99,
+        price_multiplier: 0.583,
+        reason: 'test'
+      },
+      plans: [
+        {
+          plan_id: 1,
+          group_id: 10,
+          group_name: 'OpenAI 月包',
+          plan_name: '月付基础版',
+          validity_days: 30,
+          validity_unit: 'day',
+          duration_days_equivalent: 30,
+          monthly_quota_usd: 50,
+          effective_capacity_units: 1,
+          capacity_ratio: 1,
+          pricing_basis: '额度 $50 · 标准权益',
+          current_price_cny: 50,
+          current_monthly_price_cny: 50,
+          recommended_price_cny: 36,
+          recommended_monthly_price_cny: 36,
+          price_delta_cny: -14
+        },
+        {
+          plan_id: 2,
+          group_id: 10,
+          group_name: 'OpenAI 月包',
+          plan_name: '月付增强版',
+          validity_days: 30,
+          validity_unit: 'day',
+          duration_days_equivalent: 30,
+          monthly_quota_usd: 100,
+          effective_capacity_units: 2,
+          capacity_ratio: 2,
+          pricing_basis: '额度 $100 · 双倍权益',
+          current_price_cny: 70,
+          current_monthly_price_cny: 70,
+          recommended_price_cny: 72,
+          recommended_monthly_price_cny: 72,
+          price_delta_cny: 2
+        }
+      ]
+    })
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('月付基础版')
+    expect(text).toContain('月付增强版')
+    expect(text).toContain('额度 $50 · 标准权益')
+    expect(text).toContain('额度 $100 · 双倍权益')
+
+    const initialPlanPrices = wrapper
+      .findAll('[data-testid="oversell-plan-recommended-price"]')
+      .map((cell) => cell.text())
+    expect(initialPlanPrices).toHaveLength(2)
+    expect(initialPlanPrices[0]).not.toEqual(initialPlanPrices[1])
+
+    const userCountInput = wrapper.get('[data-testid="oversell-user-count"]')
+    await userCountInput.setValue('20')
+    await flushPromises()
+
+    const updatedPlanPrices = wrapper
+      .findAll('[data-testid="oversell-plan-recommended-price"]')
+      .map((cell) => cell.text())
+    expect(updatedPlanPrices).toHaveLength(2)
+    expect(updatedPlanPrices[0]).not.toEqual(initialPlanPrices[0])
+    expect(updatedPlanPrices[0]).not.toEqual(updatedPlanPrices[1])
   })
 
   it('renders help tooltip triggers for unified package pricing parameters', async () => {

@@ -1296,6 +1296,10 @@ export interface DashboardOversellPlanRecommendation {
   validity_days: number
   validity_unit: string
   duration_days_equivalent: number
+  monthly_quota_usd: number
+  effective_capacity_units: number
+  capacity_ratio: number
+  pricing_basis: string
   current_price_cny: number
   current_monthly_price_cny: number
   recommended_price_cny: number

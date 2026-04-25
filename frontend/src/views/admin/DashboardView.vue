@@ -684,6 +684,7 @@
                   <thead class="bg-gray-50/80 dark:bg-dark-700/50">
                     <tr class="text-left text-xs uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.plan') }}</th>
+                      <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.basis') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.duration') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentMonthlyEquivalent') }}</th>
                       <th class="px-4 py-3 font-medium">{{ t('admin.dashboard.oversell.table.currentPrice') }}</th>
@@ -701,17 +702,32 @@
                         <div class="font-medium text-gray-900 dark:text-white">{{ plan.plan_name }}</div>
                         <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ plan.group_name }}</div>
                       </td>
+                      <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                        <div class="font-medium text-gray-700 dark:text-gray-300">{{ formatOversellPricingBasis(plan.pricing_basis) }}</div>
+                        <div class="mt-1">
+                          {{
+                            t('admin.dashboard.oversell.table.basisDetail', {
+                              quota: formatCost(plan.monthly_quota_usd),
+                              units: formatDecimal(plan.effective_capacity_units, 2),
+                              ratio: formatDecimal(plan.capacity_ratio, 2)
+                            })
+                          }}
+                        </div>
+                      </td>
                       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {{ plan.validity_days }}{{ plan.validity_unit === 'day' ? '天' : plan.validity_unit }}
                       </td>
                       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {{ formatCny(plan.current_monthly_equivalent_cny) }}
+                        {{ formatCny(plan.current_monthly_price_cny) }}
                       </td>
                       <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {{ formatCny(plan.current_price_cny) }}
                       </td>
-                      <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
-                        {{ formatCny(plan.derived_recommended_price_cny) }}
+                      <td
+                        class="px-4 py-3 font-semibold text-gray-900 dark:text-white"
+                        data-testid="oversell-plan-recommended-price"
+                      >
+                        {{ formatCny(plan.recommended_price_cny) }}
                       </td>
                       <td
                         class="px-4 py-3 font-semibold"
@@ -1268,18 +1284,29 @@ const oversellPlanRecommendations = computed(() => {
   const requiredMonthlyPrice = oversellScenario.value?.requiredPrice ?? 0
 
   return plans.map((plan) => {
-    const derivedRecommendedPrice =
+    const capacityRatio = plan.capacity_ratio > 0 ? plan.capacity_ratio : 1
+    const recommendedMonthlyPrice =
       requiredMonthlyPrice > 0
-        ? (requiredMonthlyPrice * plan.duration_days_equivalent) / 30
-        : 0
+        ? requiredMonthlyPrice * capacityRatio
+        : plan.recommended_monthly_price_cny ?? 0
+    const derivedRecommendedPrice =
+      recommendedMonthlyPrice > 0
+        ? (recommendedMonthlyPrice * plan.duration_days_equivalent) / 30
+        : plan.recommended_price_cny ?? 0
 
     return {
       ...plan,
-      current_monthly_equivalent_cny:
-        plan.duration_days_equivalent > 0
+      monthly_quota_usd: plan.monthly_quota_usd ?? 0,
+      effective_capacity_units: plan.effective_capacity_units ?? 0,
+      capacity_ratio: capacityRatio,
+      pricing_basis: plan.pricing_basis ?? '',
+      current_monthly_price_cny:
+        plan.current_monthly_price_cny ??
+        (plan.duration_days_equivalent > 0
           ? (plan.current_price_cny * 30) / plan.duration_days_equivalent
-          : plan.current_price_cny,
-      derived_recommended_price_cny: derivedRecommendedPrice,
+          : plan.current_price_cny),
+      recommended_monthly_price_cny: recommendedMonthlyPrice,
+      recommended_price_cny: derivedRecommendedPrice,
       price_delta_cny: derivedRecommendedPrice - plan.current_price_cny
     }
   })
@@ -1297,6 +1324,21 @@ const formatTokens = (value: number | undefined): string => {
     return `${(value / 1_000).toFixed(2)}K`
   }
   return value.toLocaleString()
+}
+
+const formatOversellPricingBasis = (basis: string | undefined): string => {
+  switch (basis) {
+    case 'monthly_limit_usd':
+      return t('admin.dashboard.oversell.table.basisMonthly')
+    case 'weekly_limit_usd':
+      return t('admin.dashboard.oversell.table.basisWeekly')
+    case 'daily_limit_usd':
+      return t('admin.dashboard.oversell.table.basisDaily')
+    case 'duration_only':
+      return t('admin.dashboard.oversell.table.basisDurationOnly')
+    default:
+      return basis || '--'
+  }
 }
 
 const formatNumber = (value: number): string => {
