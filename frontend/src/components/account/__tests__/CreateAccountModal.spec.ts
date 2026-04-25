@@ -22,6 +22,18 @@ vi.mock('@/api/admin', () => ({
     accounts: {
       create: vi.fn(),
       checkMixedChannelRisk: vi.fn()
+    },
+    tlsFingerprintProfiles: {
+      list: vi.fn().mockResolvedValue([])
+    }
+  }
+}))
+
+vi.mock('@/i18n', () => ({
+  getLocale: () => 'zh-CN',
+  i18n: {
+    global: {
+      t: (key: string) => key
     }
   }
 }))
@@ -148,5 +160,6 @@ describe('CreateAccountModal', () => {
       'ctx_pool',
       'passthrough'
     ])
+    expect((wsModeSelect!.element as HTMLSelectElement).value).toBe('ctx_pool')
   })
 })

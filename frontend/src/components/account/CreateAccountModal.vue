@@ -3017,6 +3017,13 @@ const getTempUnschedRuleKey = createStableObjectKeyResolver<TempUnschedRuleForm>
 const geminiOAuthType = ref<'code_assist' | 'google_one' | 'ai_studio'>('google_one')
 const geminiAIStudioOAuthEnabled = ref(false)
 
+const applyOpenAICreateDefaults = () => {
+  openaiPassthroughEnabled.value = true
+  openaiOAuthResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_CTX_POOL
+  openaiAPIKeyResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_CTX_POOL
+  codexCLIOnlyEnabled.value = accountCategory.value === 'oauth-based'
+}
+
 function buildAntigravityExtra(): Record<string, unknown> | undefined {
   const extra: Record<string, unknown> = {}
   if (mixedScheduling.value) extra.mixed_scheduling = true
@@ -3341,7 +3348,12 @@ watch(
     if (newPlatform !== 'anthropic' && newPlatform !== 'antigravity') {
       interceptWarmupRequests.value = false
     }
-    if (newPlatform !== 'openai') {
+    if (newPlatform === 'openai') {
+      if (accountCategory.value === 'bedrock') {
+        accountCategory.value = 'oauth-based'
+      }
+      applyOpenAICreateDefaults()
+    } else {
       openaiPassthroughEnabled.value = false
       openaiOAuthResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_OFF
       openaiAPIKeyResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_OFF
