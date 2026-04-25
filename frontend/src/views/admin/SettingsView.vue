@@ -1983,46 +1983,86 @@
                 {{ t('admin.settings.site.appearanceDescription') }}
               </p>
 
-              <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div class="mt-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-dark-700 dark:bg-dark-900/40">
                 <div>
-                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {{ t('admin.settings.site.themeMode') }}
                   </label>
-                  <select v-model="themeMode" class="input">
-                    <option
+                  <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" role="radiogroup">
+                    <button
                       v-for="option in themeModeOptions"
                       :key="option.value"
-                      :value="option.value"
+                      type="button"
+                      role="radio"
+                      :aria-checked="themeMode === option.value"
+                      :class="[
+                        'group flex min-h-[72px] items-center gap-2 rounded-xl border px-3 py-3 text-left transition-all duration-200',
+                        themeMode === option.value
+                          ? 'border-primary-500 bg-primary-500/10 text-primary-700 shadow-sm shadow-primary-500/10 dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-200'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:bg-primary-50/60 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:border-primary-500/60 dark:hover:bg-dark-700'
+                      ]"
+                      @click="themeMode = option.value"
                     >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <span
+                        :class="[
+                          'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors duration-200',
+                          themeMode === option.value
+                            ? 'bg-primary-500 text-white dark:bg-primary-400 dark:text-dark-950'
+                            : 'bg-gray-100 text-gray-500 group-hover:text-primary-600 dark:bg-dark-700 dark:text-gray-400 dark:group-hover:text-primary-300'
+                        ]"
+                      >
+                        <Icon :name="option.icon" size="sm" :stroke-width="2" />
+                      </span>
+                      <span class="min-w-0 flex-1 text-[13px] font-medium leading-5 sm:text-sm">
+                        {{ option.label }}
+                      </span>
+                      <Icon
+                        v-if="themeMode === option.value"
+                        name="checkCircle"
+                        size="sm"
+                        class="flex-shrink-0 text-primary-500 dark:text-primary-300"
+                        :stroke-width="2"
+                      />
+                    </button>
+                  </div>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {{ t('admin.settings.site.themeModeHint') }}
                   </p>
                 </div>
 
-                <div v-if="themeMode === 'schedule'" class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t('admin.settings.site.themeDarkStart') }}
-                    </label>
-                    <input v-model="themeDarkStart" type="time" class="input" />
+                <div
+                  v-if="themeMode === 'schedule'"
+                  class="mt-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800/80"
+                >
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-end">
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t('admin.settings.site.themeDarkStart') }}
+                      </label>
+                      <input v-model="themeDarkStart" type="time" class="input h-12" />
+                    </div>
+                    <div class="hidden h-12 items-center px-1 text-gray-400 dark:text-dark-400 md:flex">
+                      <Icon name="arrowRight" size="sm" />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ t('admin.settings.site.themeDarkEnd') }}
+                      </label>
+                      <input v-model="themeDarkEnd" type="time" class="input h-12" />
+                    </div>
                   </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t('admin.settings.site.themeDarkEnd') }}
-                    </label>
-                    <input v-model="themeDarkEnd" type="time" class="input" />
-                  </div>
-                  <p class="col-span-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t('admin.settings.site.themeScheduleHint') }}
+                  <p class="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <Icon name="clock" size="xs" class="flex-shrink-0" />
+                    <span>{{ t('admin.settings.site.themeScheduleHint') }}</span>
                   </p>
                 </div>
-                <div v-else class="flex items-end">
-                  <p class="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-500 dark:bg-dark-800 dark:text-gray-400">
-                    {{ t('admin.settings.site.themeSystemHint') }}
-                  </p>
+
+                <div
+                  v-else-if="themeMode === 'system'"
+                  class="mt-4 flex items-start gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-xs text-gray-500 dark:border-dark-700 dark:bg-dark-800/80 dark:text-gray-400"
+                >
+                  <Icon name="infoCircle" size="sm" class="mt-0.5 flex-shrink-0 text-primary-500 dark:text-primary-300" />
+                  <span>{{ t('admin.settings.site.themeSystemHint') }}</span>
                 </div>
               </div>
             </div>
@@ -2901,11 +2941,15 @@ const tablePageSizeMin = 5
 const tablePageSizeMax = 1000
 const tablePageSizeDefault = 20
 
-const themeModeOptions = computed(() => [
-  { value: 'system', label: t('admin.settings.site.themeModeSystem') },
-  { value: 'light', label: t('admin.settings.site.themeModeLight') },
-  { value: 'dark', label: t('admin.settings.site.themeModeDark') },
-  { value: 'schedule', label: t('admin.settings.site.themeModeSchedule') }
+const themeModeOptions = computed<Array<{
+  value: ThemeMode
+  label: string
+  icon: 'globe' | 'sun' | 'moon' | 'clock'
+}>>(() => [
+  { value: 'system', label: t('admin.settings.site.themeModeSystem'), icon: 'globe' },
+  { value: 'light', label: t('admin.settings.site.themeModeLight'), icon: 'sun' },
+  { value: 'dark', label: t('admin.settings.site.themeModeDark'), icon: 'moon' },
+  { value: 'schedule', label: t('admin.settings.site.themeModeSchedule'), icon: 'clock' }
 ])
 
 interface DefaultSubscriptionGroupOption {
