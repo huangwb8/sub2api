@@ -65,6 +65,10 @@ version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 
 ---
 
+使用本项目时，用户有时候会收到 warning: Heads up, you have less than 25% of your weekly limit left. Run /status for a breakdown. 这样的通知。 这是为什么？这是物理规则受限、管理员后台设置不到位，还是程序的设计缺陷所导致的？
+
+---
+
 个人设置里，目前用户不能自定义自己的头像。 你可以参考一下 /Volumes/2T01/winE/Starup/bensz-channel （只读）的思路，它支持比较丰富的用户头像功能。 我希望sub2api也支持类似的东西（当然，代码不能完全照搬； 而是让你学习、吸收好的方面）。使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
