@@ -462,6 +462,10 @@ type userGroupRateBatchReader interface {
 	GetByUserIDs(ctx context.Context, userIDs []int64) (map[int64]map[int64]float64, error)
 }
 
+type userRechargeBatchReader interface {
+	SumPositiveBalanceByUsers(ctx context.Context, userIDs []int64) (map[int64]float64, error)
+}
+
 // NewAdminService creates a new AdminService
 func NewAdminService(
 	userRepo UserRepository,
@@ -508,6 +512,7 @@ func (s *adminServiceImpl) ListUsers(ctx context.Context, page, pageSize int, fi
 	if err != nil {
 		return nil, 0, err
 	}
+	s.loadUsersTotalRecharged(ctx, users)
 	// 批量加载用户专属分组倍率
 	if s.userGroupRateRepo != nil && len(users) > 0 {
 		if batchRepo, ok := s.userGroupRateRepo.(userGroupRateBatchReader); ok {
@@ -531,6 +536,40 @@ func (s *adminServiceImpl) ListUsers(ctx context.Context, page, pageSize int, fi
 		}
 	}
 	return users, result.Total, nil
+}
+
+func (s *adminServiceImpl) loadUsersTotalRecharged(ctx context.Context, users []User) {
+	if s.redeemCodeRepo == nil || len(users) == 0 {
+		return
+	}
+	if batchRepo, ok := s.redeemCodeRepo.(userRechargeBatchReader); ok {
+		userIDs := make([]int64, 0, len(users))
+		for i := range users {
+			userIDs = append(userIDs, users[i].ID)
+		}
+		totals, err := batchRepo.SumPositiveBalanceByUsers(ctx, userIDs)
+		if err != nil {
+			logger.LegacyPrintf("service.admin", "failed to load user total recharged in batch: err=%v", err)
+			s.loadUsersTotalRechargedOneByOne(ctx, users)
+			return
+		}
+		for i := range users {
+			users[i].TotalRecharged = totals[users[i].ID]
+		}
+		return
+	}
+	s.loadUsersTotalRechargedOneByOne(ctx, users)
+}
+
+func (s *adminServiceImpl) loadUsersTotalRechargedOneByOne(ctx context.Context, users []User) {
+	for i := range users {
+		total, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, users[i].ID)
+		if err != nil {
+			logger.LegacyPrintf("service.admin", "failed to load user total recharged: user_id=%d err=%v", users[i].ID, err)
+			continue
+		}
+		users[i].TotalRecharged = total
+	}
 }
 
 func (s *adminServiceImpl) loadUserGroupRatesOneByOne(ctx context.Context, users []User) {

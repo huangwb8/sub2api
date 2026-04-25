@@ -86,6 +86,38 @@ func (s *userGroupRateRepoStubForListUsers) DeleteByUserID(_ context.Context, us
 	panic("unexpected DeleteByUserID call")
 }
 
+type redeemRepoStubForListUsers struct {
+	redeemRepoStub
+
+	batchCalls int
+	singleCall []int64
+
+	batchErr  error
+	batchData map[int64]float64
+
+	singleErr  map[int64]error
+	singleData map[int64]float64
+}
+
+func (s *redeemRepoStubForListUsers) SumPositiveBalanceByUsers(_ context.Context, _ []int64) (map[int64]float64, error) {
+	s.batchCalls++
+	if s.batchErr != nil {
+		return nil, s.batchErr
+	}
+	return s.batchData, nil
+}
+
+func (s *redeemRepoStubForListUsers) SumPositiveBalanceByUser(_ context.Context, userID int64) (float64, error) {
+	s.singleCall = append(s.singleCall, userID)
+	if err, ok := s.singleErr[userID]; ok {
+		return 0, err
+	}
+	if total, ok := s.singleData[userID]; ok {
+		return total, nil
+	}
+	return 0, nil
+}
+
 func TestAdminService_ListUsers_BatchRateFallbackToSingle(t *testing.T) {
 	userRepo := &userRepoStubForListUsers{
 		users: []User{
@@ -129,4 +161,61 @@ func TestAdminService_ListUsers_PassesSortParams(t *testing.T) {
 		SortBy:    "email",
 		SortOrder: "ASC",
 	}, userRepo.listWithFiltersParams)
+}
+
+func TestAdminService_ListUsers_LoadsTotalRechargedInBatch(t *testing.T) {
+	userRepo := &userRepoStubForListUsers{
+		users: []User{
+			{ID: 101, Username: "u1"},
+			{ID: 202, Username: "u2"},
+		},
+	}
+	redeemRepo := &redeemRepoStubForListUsers{
+		batchData: map[int64]float64{
+			101: 12.5,
+			202: 34.6,
+		},
+	}
+	svc := &adminServiceImpl{
+		userRepo:       userRepo,
+		redeemCodeRepo: redeemRepo,
+	}
+
+	users, total, err := svc.ListUsers(context.Background(), 1, 20, UserListFilters{}, "", "")
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, users, 2)
+	require.Equal(t, 1, redeemRepo.batchCalls)
+	require.Empty(t, redeemRepo.singleCall)
+	require.Equal(t, 12.5, users[0].TotalRecharged)
+	require.Equal(t, 34.6, users[1].TotalRecharged)
+}
+
+func TestAdminService_ListUsers_LoadsTotalRechargedFallbackToSingle(t *testing.T) {
+	userRepo := &userRepoStubForListUsers{
+		users: []User{
+			{ID: 101, Username: "u1"},
+			{ID: 202, Username: "u2"},
+		},
+	}
+	redeemRepo := &redeemRepoStubForListUsers{
+		batchErr: errors.New("batch unavailable"),
+		singleData: map[int64]float64{
+			101: 12.5,
+			202: 34.6,
+		},
+	}
+	svc := &adminServiceImpl{
+		userRepo:       userRepo,
+		redeemCodeRepo: redeemRepo,
+	}
+
+	users, total, err := svc.ListUsers(context.Background(), 1, 20, UserListFilters{}, "", "")
+	require.NoError(t, err)
+	require.Equal(t, int64(2), total)
+	require.Len(t, users, 2)
+	require.Equal(t, 1, redeemRepo.batchCalls)
+	require.ElementsMatch(t, []int64{101, 202}, redeemRepo.singleCall)
+	require.Equal(t, 12.5, users[0].TotalRecharged)
+	require.Equal(t, 34.6, users[1].TotalRecharged)
 }

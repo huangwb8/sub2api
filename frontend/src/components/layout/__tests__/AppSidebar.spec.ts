@@ -25,6 +25,10 @@ describe('AppSidebar custom SVG styles', () => {
 })
 
 describe('AppSidebar navigation', () => {
+  it('管理员侧边栏将 /admin/dashboard 标记为控制台文案', () => {
+    expect(componentSource).toMatch(/path:\s*'\/admin\/dashboard'[\s\S]*label:\s*t\('nav\.adminConsole'\)/)
+  })
+
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
