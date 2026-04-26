@@ -20,7 +20,8 @@ export default {
     tags: {
       subscriptionToApi: '订阅转 API',
       stickySession: '会话保持',
-      realtimeBilling: '按量计费'
+      realtimeBilling: '按量计费',
+      idleBilling: '闲时优惠'
     },
     // 用户痛点区块
     painPoints: {

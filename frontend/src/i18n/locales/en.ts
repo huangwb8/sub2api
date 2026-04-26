@@ -20,7 +20,8 @@ export default {
     tags: {
       subscriptionToApi: 'Subscription to API',
       stickySession: 'Session Persistence',
-      realtimeBilling: 'Pay As You Go'
+      realtimeBilling: 'Pay As You Go',
+      idleBilling: 'Off-Peak Savings'
     },
     // Pain points section
     painPoints: {

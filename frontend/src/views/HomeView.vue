@@ -222,6 +222,14 @@
               t('home.tags.realtimeBilling')
             }}</span>
           </div>
+          <div
+            class="inline-flex items-center gap-2.5 rounded-full border border-gray-200/50 bg-white/80 px-5 py-2.5 shadow-sm backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/80"
+          >
+            <Icon name="clock" size="sm" class="text-primary-500" />
+            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{
+              t('home.tags.idleBilling')
+            }}</span>
+          </div>
         </div>
 
         <!-- Features Grid -->
