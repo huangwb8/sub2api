@@ -16,7 +16,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.1.5
+version=1.1.6
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -62,6 +62,10 @@ version1 = 6449da6c8daf2a443854cf25de96f3a972e3297c
 ```
 
 # 日常
+
+---
+
+管理控制台 - 套餐定价测算里，要添加一个成本参数： 住宅ip。 因为这一般来说，是一个成本大头，甚至有时候比帐号本身还要昂贵。 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 
