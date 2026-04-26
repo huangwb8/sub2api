@@ -761,6 +761,7 @@ func TestAPIContracts(t *testing.T) {
 					GeneratedAt: time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC),
 					Defaults: service.DashboardOversellCalculatorRequest{
 						ActualCostCNY:           168,
+						ResidentialIPCostCNY:    45,
 						CapacityUnitsPerProduct: 3,
 						ConfidenceLevel:         0.95,
 						ProfitRatePercent:       20,
@@ -769,6 +770,7 @@ func TestAPIContracts(t *testing.T) {
 					},
 					Input: service.DashboardOversellCalculatorRequest{
 						ActualCostCNY:           168,
+						ResidentialIPCostCNY:    45,
 						CapacityUnitsPerProduct: 3,
 						ConfidenceLevel:         0.95,
 						ProfitRatePercent:       20,
@@ -830,6 +832,7 @@ func TestAPIContracts(t *testing.T) {
 					"generated_at": "2025-01-02T03:04:05Z",
 					"defaults": {
 						"actual_cost_cny": 168,
+						"residential_ip_cost_cny": 45,
 						"capacity_units_per_product": 3,
 						"confidence_level": 0.95,
 						"profit_rate_percent": 20,
@@ -838,6 +841,7 @@ func TestAPIContracts(t *testing.T) {
 					},
 					"input": {
 						"actual_cost_cny": 168,
+						"residential_ip_cost_cny": 45,
 						"capacity_units_per_product": 3,
 						"confidence_level": 0.95,
 						"profit_rate_percent": 20,
@@ -898,6 +902,7 @@ func TestAPIContracts(t *testing.T) {
 					GeneratedAt: time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC),
 					Defaults: service.DashboardOversellCalculatorRequest{
 						ActualCostCNY:           160,
+						ResidentialIPCostCNY:    35,
 						CapacityUnitsPerProduct: 3,
 						ConfidenceLevel:         0.95,
 						ProfitRatePercent:       20,
@@ -930,6 +935,7 @@ func TestAPIContracts(t *testing.T) {
 					Plans: []service.DashboardOversellPlanRecommendation{},
 					Input: service.DashboardOversellCalculatorRequest{
 						ActualCostCNY:           180,
+						ResidentialIPCostCNY:    60,
 						CapacityUnitsPerProduct: 3,
 						ConfidenceLevel:         0.99,
 						ProfitRatePercent:       25,
@@ -942,6 +948,7 @@ func TestAPIContracts(t *testing.T) {
 			path:   "/api/v1/admin/dashboard/oversell-calculator",
 			body: `{
 				"actual_cost_cny": 180,
+				"residential_ip_cost_cny": 60,
 				"capacity_units_per_product": 3,
 				"confidence_level": 0.99,
 				"profit_rate_percent": 25,
@@ -959,6 +966,7 @@ func TestAPIContracts(t *testing.T) {
 					"generated_at": "2025-01-02T03:04:05Z",
 					"defaults": {
 						"actual_cost_cny": 160,
+						"residential_ip_cost_cny": 35,
 						"capacity_units_per_product": 3,
 						"confidence_level": 0.95,
 						"profit_rate_percent": 20,
@@ -967,6 +975,7 @@ func TestAPIContracts(t *testing.T) {
 					},
 					"input": {
 						"actual_cost_cny": 180,
+						"residential_ip_cost_cny": 60,
 						"capacity_units_per_product": 3,
 						"confidence_level": 0.99,
 						"profit_rate_percent": 25,

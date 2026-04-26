@@ -99,6 +99,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.form.userCount': '测算用户数',
     'admin.dashboard.oversell.form.plannedPrice': '计划套餐售价',
     'admin.dashboard.oversell.form.procurementCost': '单个实际商品采购成本',
+    'admin.dashboard.oversell.form.residentialIpCost': '单个住宅 IP 成本',
     'admin.dashboard.oversell.form.capacity': '单个实际商品承载理论商品数',
     'admin.dashboard.oversell.form.profitRate': '目标盈利率',
     'admin.dashboard.oversell.form.profitMode': '盈利口径',
@@ -116,6 +117,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.tooltips.userCount': '超售测算用户数说明',
     'admin.dashboard.oversell.tooltips.plannedPrice': '超售计划售价说明',
     'admin.dashboard.oversell.tooltips.procurementCost': '超售采购成本说明',
+    'admin.dashboard.oversell.tooltips.residentialIpCost': '超售住宅 IP 成本说明',
     'admin.dashboard.oversell.tooltips.capacity': '超售承载能力说明',
     'admin.dashboard.oversell.tooltips.heavyUsage': '超售重度用户上限说明',
     'admin.dashboard.oversell.tooltips.profitRate': '超售目标盈利率说明',
@@ -265,6 +267,7 @@ describe('admin DashboardView', () => {
       generated_at: '2026-04-20T09:30:00Z',
       defaults: {
         actual_cost_cny: 50,
+        residential_ip_cost_cny: 30,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -273,6 +276,7 @@ describe('admin DashboardView', () => {
       },
       input: {
         actual_cost_cny: 50,
+        residential_ip_cost_cny: 30,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -488,7 +492,7 @@ describe('admin DashboardView', () => {
     expect(getOversellCalculator).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('套餐定价测算')
     expect(wrapper.text()).toContain('73%')
-    expect(wrapper.text()).toContain('采购 ¥50.00/个')
+    expect(wrapper.text()).toContain('住宅 IP 成本')
     expect(wrapper.text()).toContain('成本参数')
     expect(wrapper.text()).toContain('用户参数')
     expect(wrapper.text()).toContain('利润与风险')
@@ -513,6 +517,7 @@ describe('admin DashboardView', () => {
       generated_at: '2026-04-20T09:30:00Z',
       defaults: {
         actual_cost_cny: 50,
+        residential_ip_cost_cny: 30,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -521,6 +526,7 @@ describe('admin DashboardView', () => {
       },
       input: {
         actual_cost_cny: 50,
+        residential_ip_cost_cny: 30,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -632,6 +638,33 @@ describe('admin DashboardView', () => {
     expect(updatedPlanPrices[0]).not.toEqual(updatedPlanPrices[1])
   })
 
+  it('includes residential IP cost in oversell pricing calculations', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const initialRequiredPrice = wrapper.get('[data-testid="oversell-recommended-price"]').text()
+    const residentialIpCostInput = wrapper.get('[data-testid="oversell-residential-ip-cost"]')
+    await residentialIpCostInput.setValue('80')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
+  })
+
   it('renders help tooltip triggers for unified package pricing parameters', async () => {
     const wrapper = mount(DashboardView, {
       global: {
@@ -655,6 +688,7 @@ describe('admin DashboardView', () => {
       'oversell-user-count-help',
       'oversell-planned-price-help',
       'oversell-procurement-cost-help',
+      'oversell-residential-ip-cost-help',
       'oversell-capacity-help',
       'oversell-heavy-usage-help',
       'oversell-profit-rate-help',

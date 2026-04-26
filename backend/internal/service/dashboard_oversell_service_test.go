@@ -30,6 +30,7 @@ func TestDashboardOversellPriceMultiplier(t *testing.T) {
 func TestCalculateDashboardOversellScenario_Feasible(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
 		ActualCostCNY:           168,
+		ResidentialIPCostCNY:    12,
 		CapacityUnitsPerProduct: 3,
 		ConfidenceLevel:         0.95,
 		ProfitRatePercent:       20,
@@ -86,6 +87,7 @@ func TestCalculateDashboardOversellScenario_Feasible(t *testing.T) {
 func TestCalculateDashboardOversellScenario_RejectsMissingCost(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
 		ActualCostCNY:           0,
+		ResidentialIPCostCNY:    0,
 		CapacityUnitsPerProduct: 3,
 		ConfidenceLevel:         0.95,
 		ProfitRatePercent:       20,
@@ -105,6 +107,29 @@ func TestCalculateDashboardOversellScenario_RejectsMissingCost(t *testing.T) {
 	}
 	if len(recommendations) != 0 {
 		t.Fatalf("len(recommendations) = %d, want 0", len(recommendations))
+	}
+}
+
+func TestCalculateDashboardOversellScenario_AcceptsResidentialIPCostOnly(t *testing.T) {
+	req := DashboardOversellCalculatorRequest{
+		ActualCostCNY:           0,
+		ResidentialIPCostCNY:    90,
+		CapacityUnitsPerProduct: 3,
+		ConfidenceLevel:         0.95,
+		ProfitRatePercent:       20,
+		ProfitMode:              "markup",
+	}
+	estimate := DashboardOversellEstimate{
+		EstimatedLightUserRatio:     0.74,
+		CurrentCheapestMonthlyPrice: 88,
+	}
+
+	result, _ := calculateDashboardOversellScenario(req, estimate, nil)
+	if !result.Feasible {
+		t.Fatalf("Feasible = false, want true; reason = %q", result.Reason)
+	}
+	if result.RecommendedMonthlyPriceCNY <= 0 {
+		t.Fatalf("RecommendedMonthlyPriceCNY = %v, want > 0", result.RecommendedMonthlyPriceCNY)
 	}
 }
 
@@ -186,5 +211,16 @@ func TestDashboardOversellPlanCapacity_UsesQuotaAndRateMultiplier(t *testing.T) 
 	effectiveCapacity := oversellPlanEffectiveCapacityUnits(30, 0.5)
 	if effectiveCapacity != 60 {
 		t.Fatalf("effectiveCapacity = %v, want 60", effectiveCapacity)
+	}
+}
+
+func TestDashboardOversellCalculatorRequestTotalCostCNY(t *testing.T) {
+	req := DashboardOversellCalculatorRequest{
+		ActualCostCNY:        120,
+		ResidentialIPCostCNY: 48,
+	}
+
+	if got := req.TotalCostCNY(); got != 168 {
+		t.Fatalf("TotalCostCNY() = %v, want 168", got)
 	}
 }
