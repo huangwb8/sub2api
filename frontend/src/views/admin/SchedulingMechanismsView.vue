@@ -460,6 +460,7 @@ const buildMechanismPayload = (): SchedulingMechanism => ({
   temp_unschedulable_enabled: true,
   temp_unschedulable_rules: form.rules
     .map((rule) => ({
+      id: rule.id,
       error_code: Number(rule.error_code),
       keywords: rule.keywordsText
         .split(',')

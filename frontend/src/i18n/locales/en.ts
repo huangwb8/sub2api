@@ -2423,6 +2423,8 @@ export default {
         statusTitle: 'Temp Unschedulable Status',
         hint: 'Disable accounts temporarily when error code and keyword both match.',
         notice: 'Rules are evaluated in order and require both error code and keyword match.',
+        mechanismRules: 'Select rules from scheduling mechanisms',
+        selectedMechanismRules: '{count} selected',
         addRule: 'Add Rule',
         ruleOrder: 'Rule Order',
         ruleIndex: 'Rule #{index}',

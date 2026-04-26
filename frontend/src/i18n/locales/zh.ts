@@ -2550,6 +2550,8 @@ export default {
         statusTitle: '临时不可调度状态',
         hint: '当错误码与关键词同时匹配时，账号会在指定时间内被临时禁用。',
         notice: '规则按顺序匹配，需同时满足错误码与关键词。',
+        mechanismRules: '从调度机制选择规则',
+        selectedMechanismRules: '已选 {count} 条',
         addRule: '添加规则',
         ruleOrder: '规则序号',
         ruleIndex: '规则 #{index}',

@@ -69,10 +69,16 @@ type Account struct {
 }
 
 type TempUnschedulableRule struct {
+	ID              string   `json:"id,omitempty"`
 	ErrorCode       int      `json:"error_code"`
 	Keywords        []string `json:"keywords"`
 	DurationMinutes int      `json:"duration_minutes"`
 	Description     string   `json:"description"`
+}
+
+type TempUnschedulableRuleRef struct {
+	MechanismID string `json:"mechanism_id"`
+	RuleID      string `json:"rule_id"`
 }
 
 func (a *Account) IsActive() bool {
@@ -324,6 +330,7 @@ func (a *Account) GetTempUnschedulableRules() []TempUnschedulableRule {
 		}
 
 		rule := TempUnschedulableRule{
+			ID:              parseTempUnschedString(entry["id"]),
 			ErrorCode:       parseTempUnschedInt(entry["error_code"]),
 			Keywords:        parseTempUnschedStrings(entry["keywords"]),
 			DurationMinutes: parseTempUnschedInt(entry["duration_minutes"]),
@@ -338,6 +345,53 @@ func (a *Account) GetTempUnschedulableRules() []TempUnschedulableRule {
 	}
 
 	return rules
+}
+
+func (a *Account) GetTempUnschedulableRuleRefs() []TempUnschedulableRuleRef {
+	if a.Credentials == nil {
+		return nil
+	}
+	raw, ok := a.Credentials["temp_unschedulable_rule_refs"]
+	if !ok || raw == nil {
+		return nil
+	}
+
+	arr, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+
+	refs := make([]TempUnschedulableRuleRef, 0, len(arr))
+	seen := make(map[string]struct{}, len(arr))
+	for _, item := range arr {
+		var ref TempUnschedulableRuleRef
+		switch v := item.(type) {
+		case map[string]any:
+			ref = TempUnschedulableRuleRef{
+				MechanismID: parseTempUnschedString(v["mechanism_id"]),
+				RuleID:      parseTempUnschedString(v["rule_id"]),
+			}
+		case string:
+			parts := strings.SplitN(strings.TrimSpace(v), ":", 2)
+			if len(parts) == 2 {
+				ref = TempUnschedulableRuleRef{
+					MechanismID: strings.TrimSpace(parts[0]),
+					RuleID:      strings.TrimSpace(parts[1]),
+				}
+			}
+		}
+		if ref.MechanismID == "" || ref.RuleID == "" {
+			continue
+		}
+		key := ref.MechanismID + ":" + ref.RuleID
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		refs = append(refs, ref)
+	}
+
+	return refs
 }
 
 func parseTempUnschedString(value any) string {

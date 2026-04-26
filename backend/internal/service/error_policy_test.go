@@ -304,6 +304,115 @@ func TestCheckErrorPolicy_GlobalSchedulingMechanismRules(t *testing.T) {
 	require.Equal(t, 1, repo.tempCalls)
 }
 
+func TestCheckErrorPolicy_SelectedSchedulingMechanismRuleRefs(t *testing.T) {
+	repo := &errorPolicyRepoStub{}
+	settingRepo := newMockSettingRepo()
+	payload, err := json.Marshal(&SchedulingMechanismSettings{
+		Mechanisms: []SchedulingMechanism{
+			{
+				ID:                       "library-openai-502",
+				Name:                     "OpenAI 502 Library",
+				Platform:                 PlatformOpenAI,
+				AccountType:              AccountTypeOAuth,
+				Enabled:                  true,
+				Hidden:                   true,
+				TempUnschedulableEnabled: true,
+				TempUnschedulableRules: []TempUnschedulableRule{
+					{
+						ID:              "bad-gateway",
+						ErrorCode:       http.StatusBadGateway,
+						Keywords:        []string{"bad gateway"},
+						DurationMinutes: 3,
+					},
+					{
+						ID:              "maintenance",
+						ErrorCode:       http.StatusServiceUnavailable,
+						Keywords:        []string{"maintenance"},
+						DurationMinutes: 10,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	settingRepo.data[SettingKeySchedulingMechanismSettings] = string(payload)
+
+	svc := NewRateLimitService(repo, nil, &config.Config{}, nil, nil)
+	svc.SetSettingService(NewSettingService(settingRepo, &config.Config{}))
+
+	account := &Account{
+		ID:       89,
+		Type:     AccountTypeOAuth,
+		Platform: PlatformOpenAI,
+		Credentials: map[string]any{
+			"temp_unschedulable_enabled": true,
+			"temp_unschedulable_rule_refs": []any{
+				map[string]any{
+					"mechanism_id": "library-openai-502",
+					"rule_id":      "bad-gateway",
+				},
+			},
+		},
+	}
+
+	result := svc.CheckErrorPolicy(context.Background(), account, http.StatusBadGateway, []byte(`bad gateway from upstream`))
+	require.Equal(t, ErrorPolicyTempUnscheduled, result)
+	require.Equal(t, 1, repo.tempCalls)
+
+	result = svc.CheckErrorPolicy(context.Background(), account, http.StatusServiceUnavailable, []byte(`maintenance window`))
+	require.Equal(t, ErrorPolicyNone, result)
+	require.Equal(t, 1, repo.tempCalls)
+}
+
+func TestCheckErrorPolicy_SelectedSchedulingMechanismRuleRefsRequiresAccountSwitch(t *testing.T) {
+	repo := &errorPolicyRepoStub{}
+	settingRepo := newMockSettingRepo()
+	payload, err := json.Marshal(&SchedulingMechanismSettings{
+		Mechanisms: []SchedulingMechanism{
+			{
+				ID:                       "openai-502",
+				Name:                     "OpenAI 502",
+				Platform:                 PlatformOpenAI,
+				AccountType:              AccountTypeOAuth,
+				Enabled:                  true,
+				Hidden:                   true,
+				TempUnschedulableEnabled: true,
+				TempUnschedulableRules: []TempUnschedulableRule{
+					{
+						ID:              "bad-gateway",
+						ErrorCode:       http.StatusBadGateway,
+						Keywords:        []string{"bad gateway"},
+						DurationMinutes: 3,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	settingRepo.data[SettingKeySchedulingMechanismSettings] = string(payload)
+
+	svc := NewRateLimitService(repo, nil, &config.Config{}, nil, nil)
+	svc.SetSettingService(NewSettingService(settingRepo, &config.Config{}))
+
+	account := &Account{
+		ID:       90,
+		Type:     AccountTypeOAuth,
+		Platform: PlatformOpenAI,
+		Credentials: map[string]any{
+			"temp_unschedulable_rule_refs": []any{
+				map[string]any{
+					"mechanism_id": "openai-502",
+					"rule_id":      "bad-gateway",
+				},
+			},
+		},
+	}
+
+	result := svc.CheckErrorPolicy(context.Background(), account, http.StatusBadGateway, []byte(`bad gateway from upstream`))
+	require.Equal(t, ErrorPolicyNone, result)
+	require.Equal(t, 0, repo.tempCalls)
+}
+
 // ---------------------------------------------------------------------------
 // TestApplyErrorPolicy — 4 table-driven cases for the wrapper method
 // ---------------------------------------------------------------------------

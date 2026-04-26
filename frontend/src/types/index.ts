@@ -669,10 +669,16 @@ export interface GeminiCredentials {
 }
 
 export interface TempUnschedulableRule {
+  id?: string
   error_code: number
   keywords: string[]
   duration_minutes: number
   description: string
+}
+
+export interface TempUnschedulableRuleRef {
+  mechanism_id: string
+  rule_id: string
 }
 
 export interface TempUnschedulableState {

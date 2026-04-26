@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了账号级调度机制规则选择能力：账号创建与编辑中的“临时不可调度”现在可勾选调度机制中已配置的规则并保存为账号级引用，后端会在账号开启临时不可调度时按所选规则触发状态，同时保留账号自定义规则与原有全局调度机制规则。
 - 新增了 OpenAI 粘性会话错误率保护配置：`gateway.openai_ws.sticky_session_error_rate_threshold` 与 `gateway.openai_ws.sticky_session_error_rate_min_samples` 可控制高错误率账号的 session 绑定清理阈值，避免代理故障账号长期粘住同一会话。
 - 新增了 OpenAI 代理故障自动容错闭环：支持全局“调度机制”配置、代理自动巡检与账号自动迁移、`/api/v1/admin/settings/scheduling-mechanisms` 管理接口，以及可直接导入的 `docs/rules/调度机制.json` 内置规则集，用于缓解代理临时失效引发的 500/502/503/504/52x 连锁报错。
 - 新增了默认关闭的邀请返利系统：包含 `user_affiliates` / `user_affiliate_ledger` 迁移、用户邀请码与返利配额、管理员全局开关和参数配置、专属邀请码/返利比例管理、注册页返利码、用户返利页以及支付完成后的返利累计与转余额能力。

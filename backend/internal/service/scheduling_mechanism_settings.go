@@ -1,6 +1,9 @@
 package service
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -132,7 +135,7 @@ func normalizeTempUnschedulableRules(rules []TempUnschedulableRule) []TempUnsche
 		return nil
 	}
 	normalized := make([]TempUnschedulableRule, 0, len(rules))
-	for _, rule := range rules {
+	for idx, rule := range rules {
 		if rule.ErrorCode < 100 || rule.ErrorCode > 599 {
 			continue
 		}
@@ -152,9 +155,28 @@ func normalizeTempUnschedulableRules(rules []TempUnschedulableRule) []TempUnsche
 		}
 		rule.Keywords = keywords
 		rule.Description = strings.TrimSpace(rule.Description)
+		rule.ID = strings.TrimSpace(rule.ID)
+		if rule.ID == "" {
+			rule.ID = generatedTempUnschedulableRuleID(rule, idx)
+		}
 		normalized = append(normalized, rule)
 	}
 	return normalized
+}
+
+func generatedTempUnschedulableRuleID(rule TempUnschedulableRule, index int) string {
+	h := sha1.New()
+	h.Write([]byte(strconv.Itoa(index)))
+	h.Write([]byte{0})
+	h.Write([]byte(strconv.Itoa(rule.ErrorCode)))
+	h.Write([]byte{0})
+	h.Write([]byte(strconv.Itoa(rule.DurationMinutes)))
+	h.Write([]byte{0})
+	h.Write([]byte(strings.Join(rule.Keywords, "\x00")))
+	h.Write([]byte{0})
+	h.Write([]byte(rule.Description))
+	sum := h.Sum(nil)
+	return "rule_" + hex.EncodeToString(sum[:6])
 }
 
 func normalizeProxyFailoverSettings(settings ProxyFailoverSettings) ProxyFailoverSettings {
@@ -204,10 +226,17 @@ func normalizeProxyFailoverSettings(settings ProxyFailoverSettings) ProxyFailove
 }
 
 func mechanismMatchesAccount(mechanism SchedulingMechanism, account *Account) bool {
+	if !mechanismSelectableByAccount(mechanism, account) {
+		return false
+	}
+	return !mechanism.Hidden
+}
+
+func mechanismSelectableByAccount(mechanism SchedulingMechanism, account *Account) bool {
 	if account == nil {
 		return false
 	}
-	if !mechanism.Enabled || mechanism.Hidden || !mechanism.TempUnschedulableEnabled {
+	if !mechanism.Enabled || !mechanism.TempUnschedulableEnabled {
 		return false
 	}
 	if mechanism.Platform != SchedulingMechanismPlatformAll && mechanism.Platform != account.Platform {

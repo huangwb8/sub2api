@@ -885,6 +885,47 @@
             </p>
           </div>
 
+          <div v-if="availableTempUnschedMechanisms.length > 0" class="space-y-2">
+            <div class="flex items-center justify-between gap-3">
+              <label class="input-label mb-0">{{ t('admin.accounts.tempUnschedulable.mechanismRules') }}</label>
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.accounts.tempUnschedulable.selectedMechanismRules', { count: selectedTempUnschedRuleRefs.length }) }}
+              </span>
+            </div>
+            <div class="max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-dark-600">
+              <div
+                v-for="mechanism in availableTempUnschedMechanisms"
+                :key="mechanism.id"
+                class="space-y-2"
+              >
+                <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  <span>{{ mechanism.name }}</span>
+                  <span v-if="mechanism.hidden" class="badge badge-warning">{{ t('admin.schedulingMechanisms.hidden') }}</span>
+                </div>
+                <label
+                  v-for="rule in mechanism.temp_unschedulable_rules"
+                  :key="`${mechanism.id}:${rule.id || rule.error_code}`"
+                  class="flex cursor-pointer items-start gap-2 rounded border border-gray-100 p-2 text-sm hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700"
+                >
+                  <input
+                    type="checkbox"
+                    class="mt-1 rounded border-gray-300"
+                    :checked="isTempUnschedRuleRefSelected(mechanism.id, rule.id)"
+                    @change="toggleTempUnschedRuleRef(mechanism.id, rule.id)"
+                  />
+                  <span class="min-w-0 flex-1">
+                    <span class="font-medium text-gray-700 dark:text-gray-200">
+                      HTTP {{ rule.error_code }} · {{ rule.duration_minutes }}m
+                    </span>
+                    <span class="block truncate text-xs text-gray-500 dark:text-gray-400">
+                      {{ rule.description || rule.keywords.join(', ') }}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <div class="flex flex-wrap gap-2">
             <button
               v-for="preset in tempUnschedPresets"
@@ -1760,7 +1801,8 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
-import type { Account, Proxy, AdminGroup, CheckMixedChannelResponse } from '@/types'
+import type { Account, Proxy, AdminGroup, CheckMixedChannelResponse, TempUnschedulableRuleRef } from '@/types'
+import type { SchedulingMechanism } from '@/api/admin/settings'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
@@ -1821,6 +1863,24 @@ const baseUrlHint = computed(() => {
 const antigravityPresetMappings = computed(() => getPresetMappingsByPlatform('antigravity'))
 const bedrockPresets = computed(() => getPresetMappingsByPlatform('bedrock'))
 
+const mechanismMatchesCurrentAccount = (mechanism: SchedulingMechanism) => {
+  if (!props.account || !mechanism.enabled || mechanism.temp_unschedulable_enabled === false) return false
+  const platform = mechanism.platform || 'all'
+  const accountType = mechanism.account_type || 'all'
+  return (platform === 'all' || platform === props.account.platform) &&
+    (accountType === 'all' || accountType === props.account.type)
+}
+
+const availableTempUnschedMechanisms = computed(() =>
+  schedulingMechanisms.value
+    .map((mechanism) => ({
+      ...mechanism,
+      temp_unschedulable_rules: (mechanism.temp_unschedulable_rules || [])
+        .filter((rule) => typeof rule.id === 'string' && rule.id.trim().length > 0)
+    }))
+    .filter((mechanism) => mechanismMatchesCurrentAccount(mechanism) && mechanism.temp_unschedulable_rules.length > 0)
+)
+
 // Model mapping type
 interface ModelMapping {
   from: string
@@ -1868,6 +1928,9 @@ const antigravityWhitelistModels = ref<string[]>([])
 const antigravityModelMappings = ref<ModelMapping[]>([])
 const tempUnschedEnabled = ref(false)
 const tempUnschedRules = ref<TempUnschedRuleForm[]>([])
+const schedulingMechanisms = ref<SchedulingMechanism[]>([])
+const schedulingMechanismsLoaded = ref(false)
+const selectedTempUnschedRuleRefs = ref<TempUnschedulableRuleRef[]>([])
 const getModelMappingKey = createStableObjectKeyResolver<ModelMapping>('edit-model-mapping')
 const getAntigravityModelMappingKey = createStableObjectKeyResolver<ModelMapping>('edit-antigravity-model-mapping')
 const getTempUnschedRuleKey = createStableObjectKeyResolver<TempUnschedRuleForm>('edit-temp-unsched-rule')
@@ -2330,9 +2393,17 @@ watch(
     if (!wasShow || newAccount !== previousAccount) {
       syncFormFromAccount(newAccount)
       loadTLSProfiles()
+      loadSchedulingMechanisms()
     }
   },
   { immediate: true }
+)
+
+watch(
+  availableTempUnschedMechanisms,
+  () => {
+    selectedTempUnschedRuleRefs.value = buildTempUnschedRuleRefs()
+  }
 )
 
 async function loadTLSProfiles() {
@@ -2341,6 +2412,17 @@ async function loadTLSProfiles() {
     tlsFingerprintProfiles.value = profiles.map(p => ({ id: p.id, name: p.name }))
   } catch {
     tlsFingerprintProfiles.value = []
+  }
+}
+
+async function loadSchedulingMechanisms() {
+  if (schedulingMechanismsLoaded.value) return
+  try {
+    const payload = await adminAPI.settings.getSchedulingMechanismSettings()
+    schedulingMechanisms.value = payload.mechanisms || []
+    schedulingMechanismsLoaded.value = true
+  } catch {
+    schedulingMechanisms.value = []
   }
 }
 
@@ -2458,6 +2540,40 @@ const moveTempUnschedRule = (index: number, direction: number) => {
   rules[target] = current
 }
 
+const isTempUnschedRuleRefSelected = (mechanismId: string, ruleId?: string) => {
+  if (!ruleId) return false
+  return selectedTempUnschedRuleRefs.value.some(
+    (ref) => ref.mechanism_id === mechanismId && ref.rule_id === ruleId
+  )
+}
+
+const toggleTempUnschedRuleRef = (mechanismId: string, ruleId?: string) => {
+  if (!ruleId) return
+  const index = selectedTempUnschedRuleRefs.value.findIndex(
+    (ref) => ref.mechanism_id === mechanismId && ref.rule_id === ruleId
+  )
+  if (index === -1) {
+    selectedTempUnschedRuleRefs.value.push({ mechanism_id: mechanismId, rule_id: ruleId })
+  } else {
+    selectedTempUnschedRuleRefs.value.splice(index, 1)
+  }
+}
+
+const buildTempUnschedRuleRefs = () => {
+  if (!schedulingMechanismsLoaded.value) {
+    return [...selectedTempUnschedRuleRefs.value]
+  }
+  const selectable = new Set<string>()
+  for (const mechanism of availableTempUnschedMechanisms.value) {
+    for (const rule of mechanism.temp_unschedulable_rules || []) {
+      if (rule.id) selectable.add(`${mechanism.id}:${rule.id}`)
+    }
+  }
+  return selectedTempUnschedRuleRefs.value.filter((ref) =>
+    selectable.has(`${ref.mechanism_id}:${ref.rule_id}`)
+  )
+}
+
 const buildTempUnschedRules = (rules: TempUnschedRuleForm[]) => {
   const out: Array<{
     error_code: number
@@ -2494,22 +2610,45 @@ const applyTempUnschedConfig = (credentials: Record<string, unknown>) => {
   if (!tempUnschedEnabled.value) {
     delete credentials.temp_unschedulable_enabled
     delete credentials.temp_unschedulable_rules
+    delete credentials.temp_unschedulable_rule_refs
     return true
   }
 
   const rules = buildTempUnschedRules(tempUnschedRules.value)
-  if (rules.length === 0) {
+  const ruleRefs = buildTempUnschedRuleRefs()
+  if (rules.length === 0 && ruleRefs.length === 0) {
     appStore.showError(t('admin.accounts.tempUnschedulable.rulesInvalid'))
     return false
   }
 
   credentials.temp_unschedulable_enabled = true
-  credentials.temp_unschedulable_rules = rules
+  if (rules.length > 0) {
+    credentials.temp_unschedulable_rules = rules
+  } else {
+    delete credentials.temp_unschedulable_rules
+  }
+  if (ruleRefs.length > 0) {
+    credentials.temp_unschedulable_rule_refs = ruleRefs
+  } else {
+    delete credentials.temp_unschedulable_rule_refs
+  }
   return true
 }
 
 function loadTempUnschedRules(credentials?: Record<string, unknown>) {
   tempUnschedEnabled.value = credentials?.temp_unschedulable_enabled === true
+  const rawRefs = credentials?.temp_unschedulable_rule_refs
+  selectedTempUnschedRuleRefs.value = Array.isArray(rawRefs)
+    ? rawRefs
+      .map((item) => {
+        const entry = item as Record<string, unknown>
+        return {
+          mechanism_id: typeof entry.mechanism_id === 'string' ? entry.mechanism_id : '',
+          rule_id: typeof entry.rule_id === 'string' ? entry.rule_id : ''
+        }
+      })
+      .filter((ref) => ref.mechanism_id.length > 0 && ref.rule_id.length > 0)
+    : []
   const rawRules = credentials?.temp_unschedulable_rules
   if (!Array.isArray(rawRules)) {
     tempUnschedRules.value = []

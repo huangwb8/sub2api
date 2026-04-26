@@ -1510,8 +1510,9 @@ func (s *RateLimitService) resolveTempUnschedulableRules(ctx context.Context, ac
 	}
 
 	rules := make([]TempUnschedulableRule, 0, 8)
+	seen := make(map[string]struct{}, 8)
 	if account.IsTempUnschedulableEnabled() {
-		rules = append(rules, account.GetTempUnschedulableRules()...)
+		rules = appendDedupTempUnschedulableRules(rules, account.GetTempUnschedulableRules(), seen)
 	}
 	if s.settingService == nil {
 		return rules
@@ -1522,13 +1523,78 @@ func (s *RateLimitService) resolveTempUnschedulableRules(ctx context.Context, ac
 		slog.Warn("temp_unsched_load_scheduling_settings_failed", "account_id", account.ID, "error", err)
 		return rules
 	}
+	if account.IsTempUnschedulableEnabled() {
+		rules = appendDedupTempUnschedulableRules(rules, selectedMechanismTempUnschedulableRules(settings, account), seen)
+	}
 	for _, mechanism := range settings.Mechanisms {
 		if !mechanismMatchesAccount(mechanism, account) {
 			continue
 		}
-		rules = append(rules, mechanism.TempUnschedulableRules...)
+		rules = appendDedupTempUnschedulableRules(rules, mechanism.TempUnschedulableRules, seen)
 	}
 	return rules
+}
+
+func selectedMechanismTempUnschedulableRules(settings *SchedulingMechanismSettings, account *Account) []TempUnschedulableRule {
+	if settings == nil || account == nil {
+		return nil
+	}
+	refs := account.GetTempUnschedulableRuleRefs()
+	if len(refs) == 0 {
+		return nil
+	}
+
+	refSet := make(map[string]struct{}, len(refs))
+	for _, ref := range refs {
+		refSet[ref.MechanismID+":"+ref.RuleID] = struct{}{}
+	}
+
+	rules := make([]TempUnschedulableRule, 0, len(refs))
+	for _, mechanism := range settings.Mechanisms {
+		if !mechanismSelectableByAccount(mechanism, account) {
+			continue
+		}
+		for _, rule := range mechanism.TempUnschedulableRules {
+			if rule.ID == "" {
+				continue
+			}
+			if _, ok := refSet[mechanism.ID+":"+rule.ID]; ok {
+				rules = append(rules, rule)
+			}
+		}
+	}
+	return rules
+}
+
+func appendDedupTempUnschedulableRules(dst []TempUnschedulableRule, src []TempUnschedulableRule, seen map[string]struct{}) []TempUnschedulableRule {
+	for _, rule := range src {
+		key := tempUnschedulableRuleDedupKey(rule)
+		if key != "" {
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+		}
+		dst = append(dst, rule)
+	}
+	return dst
+}
+
+func tempUnschedulableRuleDedupKey(rule TempUnschedulableRule) string {
+	if rule.ErrorCode <= 0 || rule.DurationMinutes <= 0 || len(rule.Keywords) == 0 {
+		return ""
+	}
+	keywords := make([]string, 0, len(rule.Keywords))
+	for _, keyword := range rule.Keywords {
+		trimmed := strings.ToLower(strings.TrimSpace(keyword))
+		if trimmed != "" {
+			keywords = append(keywords, trimmed)
+		}
+	}
+	if len(keywords) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("sig:%s:%d:%d:%s:%s", strings.TrimSpace(rule.ID), rule.ErrorCode, rule.DurationMinutes, strings.Join(keywords, "\x00"), strings.TrimSpace(rule.Description))
 }
 
 func (s *RateLimitService) recordProxyUpstreamFailure(ctx context.Context, account *Account, statusCode int, responseBody []byte) {
