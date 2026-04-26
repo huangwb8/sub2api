@@ -554,6 +554,16 @@ const userNavItems = computed((): NavItem[] => {
         ]
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    ...(appStore.cachedPublicSettings?.affiliate_enabled
+      ? [
+          {
+            path: '/affiliate',
+            label: t('nav.affiliate'),
+            icon: UsersIcon,
+            hideInSimpleMode: true
+          },
+        ]
+      : []),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
       path: `/custom/${item.id}`,
@@ -592,6 +602,16 @@ const personalNavItems = computed((): NavItem[] => {
         ]
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    ...(appStore.cachedPublicSettings?.affiliate_enabled
+      ? [
+          {
+            path: '/affiliate',
+            label: t('nav.affiliate'),
+            icon: UsersIcon,
+            hideInSimpleMode: true
+          },
+        ]
+      : []),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
       path: `/custom/${item.id}`,
@@ -637,6 +657,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/proxies', label: t('nav.proxies'), icon: ServerIcon },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
+    { path: '/admin/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true },
     ...(paymentNavigationEnabled.value
       ? [
           {

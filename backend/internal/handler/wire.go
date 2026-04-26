@@ -23,6 +23,7 @@ func ProvideAdminHandlers(
 	proxyHandler *admin.ProxyHandler,
 	redeemHandler *admin.RedeemHandler,
 	promoHandler *admin.PromoHandler,
+	affiliateHandler *admin.AffiliateHandler,
 	settingHandler *admin.SettingHandler,
 	opsHandler *admin.OpsHandler,
 	systemHandler *admin.SystemHandler,
@@ -51,6 +52,7 @@ func ProvideAdminHandlers(
 		Proxy:                 proxyHandler,
 		Redeem:                redeemHandler,
 		Promo:                 promoHandler,
+		Affiliate:             affiliateHandler,
 		Setting:               settingHandler,
 		Ops:                   opsHandler,
 		System:                systemHandler,
@@ -131,7 +133,7 @@ var ProviderSet = wire.NewSet(
 	NewPaymentWebhookHandler,
 
 	// Admin handlers
-	admin.NewDashboardHandler,
+	admin.ProvideDashboardHandler,
 	admin.NewUserHandler,
 	admin.NewGroupHandler,
 	admin.NewAccountHandler,
@@ -145,6 +147,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewProxyHandler,
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,
+	admin.NewAffiliateHandler,
 	admin.NewSettingHandler,
 	admin.NewOpsHandler,
 	ProvideSystemHandler,

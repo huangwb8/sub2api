@@ -103,6 +103,11 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PasswordResetEnabled:                 settings.PasswordResetEnabled,
 		FrontendURL:                          settings.FrontendURL,
 		InvitationCodeEnabled:                settings.InvitationCodeEnabled,
+		AffiliateEnabled:                     settings.AffiliateEnabled,
+		AffiliateRebateRate:                  settings.AffiliateRebateRate,
+		AffiliateRebateFreezeHours:           settings.AffiliateRebateFreezeHours,
+		AffiliateRebateDurationDays:          settings.AffiliateRebateDurationDays,
+		AffiliateRebatePerInviteeCap:         settings.AffiliateRebatePerInviteeCap,
 		TotpEnabled:                          settings.TotpEnabled,
 		TotpEncryptionKeyConfigured:          h.settingService.IsTotpEncryptionKeyConfigured(),
 		SMTPHost:                             settings.SMTPHost,
@@ -219,6 +224,11 @@ type UpdateSettingsRequest struct {
 	PasswordResetEnabled             bool     `json:"password_reset_enabled"`
 	FrontendURL                      string   `json:"frontend_url"`
 	InvitationCodeEnabled            bool     `json:"invitation_code_enabled"`
+	AffiliateEnabled                 *bool    `json:"affiliate_enabled"`
+	AffiliateRebateRate              *float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours       *int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays      *int     `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap     *float64 `json:"affiliate_rebate_per_invitee_cap"`
 	TotpEnabled                      bool     `json:"totp_enabled"` // TOTP 双因素认证
 
 	// 邮件服务设置
@@ -813,63 +823,93 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PasswordResetEnabled:             req.PasswordResetEnabled,
 		FrontendURL:                      req.FrontendURL,
 		InvitationCodeEnabled:            req.InvitationCodeEnabled,
-		TotpEnabled:                      req.TotpEnabled,
-		SMTPHost:                         req.SMTPHost,
-		SMTPPort:                         req.SMTPPort,
-		SMTPUsername:                     req.SMTPUsername,
-		SMTPPassword:                     req.SMTPPassword,
-		SMTPFrom:                         req.SMTPFrom,
-		SMTPFromName:                     req.SMTPFromName,
-		SMTPUseTLS:                       req.SMTPUseTLS,
-		SubscriptionNotificationEmail:    req.SubscriptionNotificationEmail,
-		TurnstileEnabled:                 req.TurnstileEnabled,
-		TurnstileSiteKey:                 req.TurnstileSiteKey,
-		TurnstileSecretKey:               req.TurnstileSecretKey,
-		LinuxDoConnectEnabled:            req.LinuxDoConnectEnabled,
-		LinuxDoConnectClientID:           req.LinuxDoConnectClientID,
-		LinuxDoConnectClientSecret:       req.LinuxDoConnectClientSecret,
-		LinuxDoConnectRedirectURL:        req.LinuxDoConnectRedirectURL,
-		OIDCConnectEnabled:               req.OIDCConnectEnabled,
-		OIDCConnectProviderName:          req.OIDCConnectProviderName,
-		OIDCConnectClientID:              req.OIDCConnectClientID,
-		OIDCConnectClientSecret:          req.OIDCConnectClientSecret,
-		OIDCConnectIssuerURL:             req.OIDCConnectIssuerURL,
-		OIDCConnectDiscoveryURL:          req.OIDCConnectDiscoveryURL,
-		OIDCConnectAuthorizeURL:          req.OIDCConnectAuthorizeURL,
-		OIDCConnectTokenURL:              req.OIDCConnectTokenURL,
-		OIDCConnectUserInfoURL:           req.OIDCConnectUserInfoURL,
-		OIDCConnectJWKSURL:               req.OIDCConnectJWKSURL,
-		OIDCConnectScopes:                req.OIDCConnectScopes,
-		OIDCConnectRedirectURL:           req.OIDCConnectRedirectURL,
-		OIDCConnectFrontendRedirectURL:   req.OIDCConnectFrontendRedirectURL,
-		OIDCConnectTokenAuthMethod:       req.OIDCConnectTokenAuthMethod,
-		OIDCConnectUsePKCE:               req.OIDCConnectUsePKCE,
-		OIDCConnectValidateIDToken:       req.OIDCConnectValidateIDToken,
-		OIDCConnectAllowedSigningAlgs:    req.OIDCConnectAllowedSigningAlgs,
-		OIDCConnectClockSkewSeconds:      req.OIDCConnectClockSkewSeconds,
-		OIDCConnectRequireEmailVerified:  req.OIDCConnectRequireEmailVerified,
-		OIDCConnectUserInfoEmailPath:     req.OIDCConnectUserInfoEmailPath,
-		OIDCConnectUserInfoIDPath:        req.OIDCConnectUserInfoIDPath,
-		OIDCConnectUserInfoUsernamePath:  req.OIDCConnectUserInfoUsernamePath,
-		SiteName:                         req.SiteName,
-		SiteLogo:                         req.SiteLogo,
-		SiteSubtitle:                     req.SiteSubtitle,
-		APIBaseURL:                       req.APIBaseURL,
-		ContactInfo:                      req.ContactInfo,
-		DocURL:                           req.DocURL,
-		HomeContent:                      req.HomeContent,
-		TermsOfServiceContent:            req.TermsOfServiceContent,
-		PrivacyPolicyContent:             req.PrivacyPolicyContent,
-		HideCcsImportButton:              req.HideCcsImportButton,
-		PurchaseSubscriptionEnabled:      purchaseEnabled,
-		PurchaseSubscriptionURL:          purchaseURL,
-		TableDefaultPageSize:             req.TableDefaultPageSize,
-		TablePageSizeOptions:             req.TablePageSizeOptions,
-		CustomMenuItems:                  customMenuJSON,
-		CustomEndpoints:                  customEndpointsJSON,
-		DefaultConcurrency:               req.DefaultConcurrency,
-		DefaultBalance:                   req.DefaultBalance,
-		DefaultSubscriptions:             defaultSubscriptions,
+		AffiliateEnabled: func() bool {
+			if req.AffiliateEnabled != nil {
+				return *req.AffiliateEnabled
+			}
+			return previousSettings.AffiliateEnabled
+		}(),
+		AffiliateRebateRate: func() float64 {
+			if req.AffiliateRebateRate != nil {
+				return *req.AffiliateRebateRate
+			}
+			return previousSettings.AffiliateRebateRate
+		}(),
+		AffiliateRebateFreezeHours: func() int {
+			if req.AffiliateRebateFreezeHours != nil {
+				return *req.AffiliateRebateFreezeHours
+			}
+			return previousSettings.AffiliateRebateFreezeHours
+		}(),
+		AffiliateRebateDurationDays: func() int {
+			if req.AffiliateRebateDurationDays != nil {
+				return *req.AffiliateRebateDurationDays
+			}
+			return previousSettings.AffiliateRebateDurationDays
+		}(),
+		AffiliateRebatePerInviteeCap: func() float64 {
+			if req.AffiliateRebatePerInviteeCap != nil {
+				return *req.AffiliateRebatePerInviteeCap
+			}
+			return previousSettings.AffiliateRebatePerInviteeCap
+		}(),
+		TotpEnabled:                     req.TotpEnabled,
+		SMTPHost:                        req.SMTPHost,
+		SMTPPort:                        req.SMTPPort,
+		SMTPUsername:                    req.SMTPUsername,
+		SMTPPassword:                    req.SMTPPassword,
+		SMTPFrom:                        req.SMTPFrom,
+		SMTPFromName:                    req.SMTPFromName,
+		SMTPUseTLS:                      req.SMTPUseTLS,
+		SubscriptionNotificationEmail:   req.SubscriptionNotificationEmail,
+		TurnstileEnabled:                req.TurnstileEnabled,
+		TurnstileSiteKey:                req.TurnstileSiteKey,
+		TurnstileSecretKey:              req.TurnstileSecretKey,
+		LinuxDoConnectEnabled:           req.LinuxDoConnectEnabled,
+		LinuxDoConnectClientID:          req.LinuxDoConnectClientID,
+		LinuxDoConnectClientSecret:      req.LinuxDoConnectClientSecret,
+		LinuxDoConnectRedirectURL:       req.LinuxDoConnectRedirectURL,
+		OIDCConnectEnabled:              req.OIDCConnectEnabled,
+		OIDCConnectProviderName:         req.OIDCConnectProviderName,
+		OIDCConnectClientID:             req.OIDCConnectClientID,
+		OIDCConnectClientSecret:         req.OIDCConnectClientSecret,
+		OIDCConnectIssuerURL:            req.OIDCConnectIssuerURL,
+		OIDCConnectDiscoveryURL:         req.OIDCConnectDiscoveryURL,
+		OIDCConnectAuthorizeURL:         req.OIDCConnectAuthorizeURL,
+		OIDCConnectTokenURL:             req.OIDCConnectTokenURL,
+		OIDCConnectUserInfoURL:          req.OIDCConnectUserInfoURL,
+		OIDCConnectJWKSURL:              req.OIDCConnectJWKSURL,
+		OIDCConnectScopes:               req.OIDCConnectScopes,
+		OIDCConnectRedirectURL:          req.OIDCConnectRedirectURL,
+		OIDCConnectFrontendRedirectURL:  req.OIDCConnectFrontendRedirectURL,
+		OIDCConnectTokenAuthMethod:      req.OIDCConnectTokenAuthMethod,
+		OIDCConnectUsePKCE:              req.OIDCConnectUsePKCE,
+		OIDCConnectValidateIDToken:      req.OIDCConnectValidateIDToken,
+		OIDCConnectAllowedSigningAlgs:   req.OIDCConnectAllowedSigningAlgs,
+		OIDCConnectClockSkewSeconds:     req.OIDCConnectClockSkewSeconds,
+		OIDCConnectRequireEmailVerified: req.OIDCConnectRequireEmailVerified,
+		OIDCConnectUserInfoEmailPath:    req.OIDCConnectUserInfoEmailPath,
+		OIDCConnectUserInfoIDPath:       req.OIDCConnectUserInfoIDPath,
+		OIDCConnectUserInfoUsernamePath: req.OIDCConnectUserInfoUsernamePath,
+		SiteName:                        req.SiteName,
+		SiteLogo:                        req.SiteLogo,
+		SiteSubtitle:                    req.SiteSubtitle,
+		APIBaseURL:                      req.APIBaseURL,
+		ContactInfo:                     req.ContactInfo,
+		DocURL:                          req.DocURL,
+		HomeContent:                     req.HomeContent,
+		TermsOfServiceContent:           req.TermsOfServiceContent,
+		PrivacyPolicyContent:            req.PrivacyPolicyContent,
+		HideCcsImportButton:             req.HideCcsImportButton,
+		PurchaseSubscriptionEnabled:     purchaseEnabled,
+		PurchaseSubscriptionURL:         purchaseURL,
+		TableDefaultPageSize:            req.TableDefaultPageSize,
+		TablePageSizeOptions:            req.TablePageSizeOptions,
+		CustomMenuItems:                 customMenuJSON,
+		CustomEndpoints:                 customEndpointsJSON,
+		DefaultConcurrency:              req.DefaultConcurrency,
+		DefaultBalance:                  req.DefaultBalance,
+		DefaultSubscriptions:            defaultSubscriptions,
 		SubscriptionCapacityTightness: func() int {
 			if req.SubscriptionCapacityTightness != nil {
 				return *req.SubscriptionCapacityTightness
@@ -1040,6 +1080,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PasswordResetEnabled:                 updatedSettings.PasswordResetEnabled,
 		FrontendURL:                          updatedSettings.FrontendURL,
 		InvitationCodeEnabled:                updatedSettings.InvitationCodeEnabled,
+		AffiliateEnabled:                     updatedSettings.AffiliateEnabled,
+		AffiliateRebateRate:                  updatedSettings.AffiliateRebateRate,
+		AffiliateRebateFreezeHours:           updatedSettings.AffiliateRebateFreezeHours,
+		AffiliateRebateDurationDays:          updatedSettings.AffiliateRebateDurationDays,
+		AffiliateRebatePerInviteeCap:         updatedSettings.AffiliateRebatePerInviteeCap,
 		TotpEnabled:                          updatedSettings.TotpEnabled,
 		TotpEncryptionKeyConfigured:          h.settingService.IsTotpEncryptionKeyConfigured(),
 		SMTPHost:                             updatedSettings.SMTPHost,

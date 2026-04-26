@@ -20,6 +20,7 @@ type AdminHandlers struct {
 	Proxy                 *admin.ProxyHandler
 	Redeem                *admin.RedeemHandler
 	Promo                 *admin.PromoHandler
+	Affiliate             *admin.AffiliateHandler
 	Setting               *admin.SettingHandler
 	Ops                   *admin.OpsHandler
 	System                *admin.SystemHandler

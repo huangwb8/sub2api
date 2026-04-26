@@ -235,8 +235,12 @@ User selects amount and payment method
   Webhook callback verified → Order PAID
        │
        ▼
-  Auto top-up to user balance → Order COMPLETED
+  Auto top-up to user balance
+  ├─ If affiliate rebates are enabled and the user has a valid inviter, accrue rebate
+  └─ Order COMPLETED
 ```
+
+> Affiliate rebates are disabled by default. Admins can enable them in **Settings → Security → Affiliate Rebates** and configure the global rebate rate, freeze period, validity window, and per-invitee cap. When disabled, the existing recharge flow does not issue rebates.
 
 ### Order Status Reference
 

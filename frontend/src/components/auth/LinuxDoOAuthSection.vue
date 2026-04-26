@@ -55,6 +55,10 @@ const { t } = useI18n()
 
 function startLogin(): void {
   const redirectTo = (route.query.redirect as string) || '/dashboard'
+  const affCode = ((route.query.aff_code || route.query.aff) as string | undefined)?.trim()
+  if (affCode) {
+    sessionStorage.setItem('oauth_aff_code', affCode)
+  }
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
   const normalized = apiBase.replace(/\/$/, '')
   const startURL = `${normalized}/auth/oauth/linuxdo/start?redirect=${encodeURIComponent(redirectTo)}`

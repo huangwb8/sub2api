@@ -44,6 +44,16 @@ func NewDashboardHandler(
 	}
 }
 
+// ProvideDashboardHandler keeps Wire away from the package-private
+// dashboardRecommendationProvider interface while preserving the handler API.
+func ProvideDashboardHandler(
+	dashboardService *service.DashboardService,
+	dashboardRecommendationService *service.DashboardRecommendationService,
+	aggregationService *service.DashboardAggregationService,
+) *DashboardHandler {
+	return NewDashboardHandler(dashboardService, dashboardRecommendationService, aggregationService)
+}
+
 // parseTimeRange parses start_date, end_date query parameters
 // Uses user's timezone if provided, otherwise falls back to server timezone
 func parseTimeRange(c *gin.Context) (time.Time, time.Time) {

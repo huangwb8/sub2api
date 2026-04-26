@@ -346,6 +346,7 @@ func (h *AuthHandler) OIDCOAuthCallback(c *gin.Context) {
 type completeOIDCOAuthRequest struct {
 	PendingOAuthToken string `json:"pending_oauth_token" binding:"required"`
 	InvitationCode    string `json:"invitation_code"     binding:"required"`
+	AffCode           string `json:"aff_code"`
 }
 
 // CompleteOIDCOAuthRegistration completes a pending OAuth registration by validating
@@ -364,7 +365,7 @@ func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 		return
 	}
 
-	tokenPair, _, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode)
+	tokenPair, _, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, req.AffCode)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

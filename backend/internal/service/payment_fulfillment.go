@@ -317,6 +317,9 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 
 	switch action {
 	case redeemActionSkipCompleted:
+		if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
+			return err
+		}
 		// Code already created and redeemed — just mark completed
 		return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
 	case redeemActionCreate:
@@ -330,7 +333,39 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 	if _, err := s.redeemService.Redeem(ctx, o.UserID, o.RechargeCode); err != nil {
 		return fmt.Errorf("redeem balance: %w", err)
 	}
+	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
+		return err
+	}
 	return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
+}
+
+func (s *PaymentService) applyAffiliateRebateForOrder(ctx context.Context, o *dbent.PaymentOrder) error {
+	if s == nil || s.affiliateSvc == nil || o == nil || o.OrderType != payment.OrderTypeBalance {
+		return nil
+	}
+	if s.hasAuditLog(ctx, o.ID, "AFFILIATE_REBATE_APPLIED") || s.hasAuditLog(ctx, o.ID, "AFFILIATE_REBATE_SKIPPED") {
+		return nil
+	}
+	if !s.affiliateSvc.IsEnabled(ctx) {
+		s.writeAuditLog(ctx, o.ID, "AFFILIATE_REBATE_SKIPPED", "system", map[string]any{
+			"reason": "affiliate disabled",
+		})
+		return nil
+	}
+	rebate, err := s.affiliateSvc.AccrueInviteRebate(ctx, o.UserID, o.Amount)
+	if err != nil {
+		return fmt.Errorf("affiliate rebate: %w", err)
+	}
+	if rebate <= 0 {
+		s.writeAuditLog(ctx, o.ID, "AFFILIATE_REBATE_SKIPPED", "system", map[string]any{
+			"reason": "no eligible inviter",
+		})
+		return nil
+	}
+	s.writeAuditLog(ctx, o.ID, "AFFILIATE_REBATE_APPLIED", "system", map[string]any{
+		"rebate": rebate,
+	})
+	return nil
 }
 
 func (s *PaymentService) markCompleted(ctx context.Context, o *dbent.PaymentOrder, auditAction string) error {

@@ -137,8 +137,10 @@ async function handleSubmitInvitation() {
   try {
     const tokenData = await completeOIDCOAuthRegistration(
       pendingOAuthToken.value,
-      invitationCode.value.trim()
+      invitationCode.value.trim(),
+      sessionStorage.getItem('oauth_aff_code') || undefined
     )
+    sessionStorage.removeItem('oauth_aff_code')
     if (tokenData.refresh_token) {
       localStorage.setItem('refresh_token', tokenData.refresh_token)
     }

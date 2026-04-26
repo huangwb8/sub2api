@@ -575,6 +575,7 @@ var ProviderSet = wire.NewSet(
 	NewEmailService,
 	ProvideEmailQueueService,
 	NewTurnstileService,
+	NewAffiliateService,
 	ProvideSubscriptionService,
 	wire.Bind(new(DefaultSubscriptionAssigner), new(*SubscriptionService)),
 	ProvideConcurrencyService,
@@ -608,7 +609,7 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	ProvidePaymentConfigService,
 	NewSubscriptionUpgradeService,
-	NewPaymentService,
+	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,
 )
 

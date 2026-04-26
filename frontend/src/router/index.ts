@@ -205,6 +205,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/affiliate',
+    name: 'Affiliate',
+    component: () => import('@/views/user/AffiliateView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Affiliate',
+      titleKey: 'affiliate.title',
+      requiresAffiliate: true
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),
@@ -450,6 +462,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/affiliate',
+    name: 'AdminAffiliate',
+    component: () => import('@/views/admin/AffiliateView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Affiliate Management',
+      titleKey: 'affiliate.adminTitle'
+    }
+  },
+  {
     path: '/admin/settings',
     name: 'AdminSettings',
     component: () => import('@/views/admin/SettingsView.vue'),
@@ -637,6 +660,11 @@ router.beforeEach((to, _from, next) => {
       next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
       return
     }
+  }
+
+  if (to.meta.requiresAffiliate && !appStore.cachedPublicSettings?.affiliate_enabled) {
+    next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+    return
   }
 
   // 简易模式下限制访问某些页面

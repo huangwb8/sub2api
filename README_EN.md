@@ -48,7 +48,8 @@ Sub2API is an AI API gateway platform designed for subscription-backed resource 
 - Smart scheduling with sticky sessions, account rotation, failover, and model mapping
 - Built-in payments with EasyPay, official Alipay, official WeChat Pay, and Stripe
 - Self-service top-up, subscription purchase, renewal, upgrade-with-difference payment, order lookup, and payment status pages
-- Admin console for users, groups, channels, subscriptions, announcements, promo codes, and system settings
+- Affiliate rebates are disabled by default and can be enabled by admins with configurable rebate rate, freeze period, validity window, and custom invite codes
+- Admin console for users, groups, channels, subscriptions, announcements, promo codes, affiliate rebates, and system settings
 - External page embedding through iframe for tickets, docs, purchase flows, and custom integrations
 - Online update checks, release automation, Docker image publishing, and data-management integration
 

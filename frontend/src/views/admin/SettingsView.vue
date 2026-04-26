@@ -891,6 +891,35 @@
               </div>
               <Toggle v-model="form.invitation_code_enabled" />
             </div>
+            <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="font-medium text-gray-900 dark:text-white">邀请返利</label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    开启后用户可通过返利邀请码绑定邀请关系，充值完成后按比例累计可转余额。
+                  </p>
+                </div>
+                <Toggle v-model="form.affiliate_enabled" />
+              </div>
+              <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div>
+                  <label class="input-label">全局返利比例 (%)</label>
+                  <input v-model.number="form.affiliate_rebate_rate" type="number" min="0" max="100" step="0.01" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">冻结期 (小时)</label>
+                  <input v-model.number="form.affiliate_rebate_freeze_hours" type="number" min="0" max="8760" step="1" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">有效期 (天)</label>
+                  <input v-model.number="form.affiliate_rebate_duration_days" type="number" min="0" max="3650" step="1" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">单人上限</label>
+                  <input v-model.number="form.affiliate_rebate_per_invitee_cap" type="number" min="0" step="0.01" class="input" />
+                </div>
+              </div>
+            </div>
             <!-- Password Reset - Only show when email verification is enabled -->
             <div
               v-if="form.email_verify_enabled"
@@ -2975,6 +3004,11 @@ const form = reactive<SettingsForm>({
   registration_email_suffix_whitelist: [],
   promo_code_enabled: true,
   invitation_code_enabled: false,
+  affiliate_enabled: false,
+  affiliate_rebate_rate: 5,
+  affiliate_rebate_freeze_hours: 0,
+  affiliate_rebate_duration_days: 0,
+  affiliate_rebate_per_invitee_cap: 0,
   password_reset_enabled: false,
   totp_enabled: false,
   totp_encryption_key_configured: false,
@@ -3435,6 +3469,11 @@ async function saveSettings() {
       ),
       promo_code_enabled: form.promo_code_enabled,
       invitation_code_enabled: form.invitation_code_enabled,
+      affiliate_enabled: form.affiliate_enabled,
+      affiliate_rebate_rate: Math.min(100, Math.max(0, Number(form.affiliate_rebate_rate) || 0)),
+      affiliate_rebate_freeze_hours: Math.min(8760, Math.max(0, Math.floor(Number(form.affiliate_rebate_freeze_hours) || 0))),
+      affiliate_rebate_duration_days: Math.min(3650, Math.max(0, Math.floor(Number(form.affiliate_rebate_duration_days) || 0))),
+      affiliate_rebate_per_invitee_cap: Math.max(0, Number(form.affiliate_rebate_per_invitee_cap) || 0),
       password_reset_enabled: form.password_reset_enabled,
       totp_enabled: form.totp_enabled,
       default_balance: form.default_balance,

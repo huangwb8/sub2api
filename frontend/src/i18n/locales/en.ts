@@ -375,6 +375,7 @@ export default {
     apiKeys: 'API Keys',
     usage: 'Usage',
     redeem: 'Redeem',
+    affiliate: 'Affiliate',
     profile: 'Profile',
     users: 'Users',
     groups: 'Groups',
@@ -401,6 +402,11 @@ export default {
     paymentDashboard: 'Payment Dashboard',
     paymentConfig: 'Payment Config',
     paymentPlans: 'Plans'
+  },
+
+  affiliate: {
+    title: 'Affiliate',
+    adminTitle: 'Affiliate Management'
   },
 
   // Auth
@@ -475,6 +481,8 @@ export default {
     invitationCodeInvalid: 'Invalid or used invitation code',
     invitationCodeValidating: 'Validating invitation code...',
     invitationCodeInvalidCannotRegister: 'Invalid invitation code. Please check and try again',
+    affiliateCodeLabel: 'Affiliate Code',
+    affiliateCodePlaceholder: 'Enter affiliate code (optional)',
     oauthOrContinue: 'or continue with email',
     linuxdo: {
       signIn: 'Continue with Linux.do',

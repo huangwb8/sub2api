@@ -18,13 +18,15 @@ import (
 
 // UserHandler handles user-related requests
 type UserHandler struct {
-	userService *service.UserService
+	userService      *service.UserService
+	affiliateService *service.AffiliateService
 }
 
 // NewUserHandler creates a new UserHandler
-func NewUserHandler(userService *service.UserService) *UserHandler {
+func NewUserHandler(userService *service.UserService, affiliateService *service.AffiliateService) *UserHandler {
 	return &UserHandler{
-		userService: userService,
+		userService:      userService,
+		affiliateService: affiliateService,
 	}
 }
 
@@ -132,6 +134,49 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	response.Success(c, dto.UserFromService(updatedUser))
+}
+
+// GetAffiliate returns the current user's affiliate details.
+// GET /api/v1/user/aff
+func (h *UserHandler) GetAffiliate(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.affiliateService == nil {
+		response.InternalError(c, "affiliate service unavailable")
+		return
+	}
+	detail, err := h.affiliateService.GetAffiliateDetail(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, detail)
+}
+
+// TransferAffiliateQuota transfers available affiliate quota into current balance.
+// POST /api/v1/user/aff/transfer
+func (h *UserHandler) TransferAffiliateQuota(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.affiliateService == nil {
+		response.InternalError(c, "affiliate service unavailable")
+		return
+	}
+	transferred, balance, err := h.affiliateService.TransferAffiliateQuota(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"transferred_quota": transferred,
+		"balance":           balance,
+	})
 }
 
 func isMultipartRequest(contentType string) bool {

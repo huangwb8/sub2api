@@ -375,6 +375,7 @@ export default {
     apiKeys: 'API 密钥',
     usage: '使用记录',
     redeem: '兑换',
+    affiliate: '邀请返利',
     profile: '个人资料',
     users: '用户管理',
     groups: '分组管理',
@@ -401,6 +402,11 @@ export default {
     paymentDashboard: '支付概览',
     paymentConfig: '支付配置',
     paymentPlans: '订阅套餐'
+  },
+
+  affiliate: {
+    title: '邀请返利',
+    adminTitle: '邀请返利管理'
   },
 
   // Auth
@@ -474,6 +480,8 @@ export default {
     invitationCodeInvalid: '邀请码无效或已被使用',
     invitationCodeValidating: '正在验证邀请码...',
     invitationCodeInvalidCannotRegister: '邀请码无效，请检查后重试',
+    affiliateCodeLabel: '返利邀请码',
+    affiliateCodePlaceholder: '输入返利邀请码（可选）',
     oauthOrContinue: '或使用邮箱密码继续',
     linuxdo: {
       signIn: '使用 Linux.do 登录',

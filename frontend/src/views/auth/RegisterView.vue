@@ -217,6 +217,27 @@
           </transition>
         </div>
 
+        <!-- Affiliate Code Input (Optional) -->
+        <div v-if="affiliateEnabled">
+          <label for="aff_code" class="input-label">
+            {{ t('auth.affiliateCodeLabel') }}
+            <span class="ml-1 text-xs font-normal text-gray-400 dark:text-dark-500">({{ t('common.optional') }})</span>
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <Icon name="userPlus" size="md" class="text-gray-400 dark:text-dark-500" />
+            </div>
+            <input
+              id="aff_code"
+              v-model="formData.aff_code"
+              type="text"
+              :disabled="isLoading"
+              class="input pl-11"
+              :placeholder="t('auth.affiliateCodePlaceholder')"
+            />
+          </div>
+        </div>
+
         <!-- Turnstile Widget -->
         <div v-if="turnstileEnabled && turnstileSiteKey">
           <TurnstileWidget
@@ -339,6 +360,7 @@ const registrationEnabled = ref<boolean>(true)
 const emailVerifyEnabled = ref<boolean>(false)
 const promoCodeEnabled = ref<boolean>(true)
 const invitationCodeEnabled = ref<boolean>(false)
+const affiliateEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
 const siteName = ref<string>('Sub2API')
@@ -374,7 +396,8 @@ const formData = reactive({
   email: '',
   password: '',
   promo_code: '',
-  invitation_code: ''
+  invitation_code: '',
+  aff_code: ''
 })
 
 const errors = reactive({
@@ -393,6 +416,7 @@ onMounted(async () => {
     emailVerifyEnabled.value = settings.email_verify_enabled
     promoCodeEnabled.value = settings.promo_code_enabled
     invitationCodeEnabled.value = settings.invitation_code_enabled
+    affiliateEnabled.value = settings.affiliate_enabled
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     siteName.value = settings.site_name || 'Sub2API'
@@ -410,6 +434,12 @@ onMounted(async () => {
         formData.promo_code = promoParam
         // Validate the promo code from URL
         await validatePromoCodeDebounced(promoParam)
+      }
+    }
+    if (affiliateEnabled.value) {
+      const affParam = (route.query.aff_code || route.query.aff) as string
+      if (affParam) {
+        formData.aff_code = affParam
       }
     }
   } catch (error) {
@@ -713,7 +743,8 @@ async function handleRegister(): Promise<void> {
           password: formData.password,
           turnstile_token: turnstileToken.value,
           promo_code: formData.promo_code || undefined,
-          invitation_code: formData.invitation_code || undefined
+          invitation_code: formData.invitation_code || undefined,
+          aff_code: affiliateEnabled.value ? formData.aff_code || undefined : undefined
         })
       )
 
@@ -728,7 +759,8 @@ async function handleRegister(): Promise<void> {
       password: formData.password,
       turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined,
       promo_code: formData.promo_code || undefined,
-      invitation_code: formData.invitation_code || undefined
+      invitation_code: formData.invitation_code || undefined,
+      aff_code: affiliateEnabled.value ? formData.aff_code || undefined : undefined
     })
 
     // Show success toast
