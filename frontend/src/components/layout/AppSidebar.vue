@@ -640,6 +640,7 @@ const customMenuItemsForAdmin = computed(() => {
 const paymentNavigationEnabled = computed(() =>
   adminSettingsStore.paymentEnabled || !!appStore.cachedPublicSettings?.payment_enabled
 )
+const affiliateNavigationEnabled = computed(() => appStore.cachedPublicSettings?.affiliate_enabled === true)
 
 // Admin navigation items
 const adminNavItems = computed((): NavItem[] => {
@@ -658,7 +659,9 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/scheduling-mechanisms', label: t('nav.schedulingMechanisms'), icon: CogIcon },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
-    { path: '/admin/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true },
+    ...(affiliateNavigationEnabled.value
+      ? [{ path: '/admin/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true }]
+      : []),
     ...(paymentNavigationEnabled.value
       ? [
           {

@@ -10,9 +10,61 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import { i18n } from '@/i18n'
 import AppSidebar from '../AppSidebar.vue'
 import { useAppStore } from '@/stores'
+import { useAdminSettingsStore } from '@/stores/adminSettings'
+import { useAuthStore } from '@/stores/auth'
+import type { PublicSettings, User } from '@/types'
 
 const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppSidebar.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
+
+const makePublicSettings = (overrides: Partial<PublicSettings> = {}): PublicSettings => ({
+  registration_enabled: true,
+  email_verify_enabled: false,
+  registration_email_suffix_whitelist: [],
+  promo_code_enabled: true,
+  password_reset_enabled: true,
+  invitation_code_enabled: false,
+  affiliate_enabled: false,
+  turnstile_enabled: false,
+  turnstile_site_key: '',
+  site_name: 'Sub2API',
+  site_logo: '',
+  site_subtitle: '',
+  api_base_url: '',
+  contact_info: '',
+  doc_url: '',
+  home_content: '',
+  terms_of_service_content: '',
+  privacy_policy_content: '',
+  hide_ccs_import_button: false,
+  payment_enabled: false,
+  table_default_page_size: 20,
+  table_page_size_options: [10, 20, 50, 100],
+  custom_menu_items: [],
+  custom_endpoints: [],
+  linuxdo_oauth_enabled: false,
+  oidc_oauth_enabled: false,
+  oidc_oauth_provider_name: 'OIDC',
+  backend_mode_enabled: false,
+  version: 'dev',
+  ...overrides
+})
+
+const adminUser: User = {
+  id: 1,
+  username: 'admin',
+  email: 'admin@example.com',
+  avatar_url: '',
+  avatar_type: 'generated',
+  avatar_style: 'classic_letter',
+  role: 'admin',
+  balance: 0,
+  concurrency: 0,
+  status: 'active',
+  allowed_groups: null,
+  created_at: '2026-04-26T00:00:00Z',
+  updated_at: '2026-04-26T00:00:00Z'
+}
 
 describe('AppSidebar custom SVG styles', () => {
   it('does not override uploaded SVG fill or stroke colors', () => {
@@ -90,5 +142,73 @@ describe('AppSidebar navigation', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/home')
+  })
+
+  it('邀请返利关闭时隐藏管理员侧边栏入口', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+
+    const appStore = useAppStore()
+    appStore.cachedPublicSettings = makePublicSettings({ affiliate_enabled: false })
+    appStore.publicSettingsLoaded = true
+
+    const authStore = useAuthStore()
+    authStore.user = adminUser
+    authStore.token = 'admin-token'
+
+    const adminSettingsStore = useAdminSettingsStore()
+    adminSettingsStore.loaded = true
+
+    await router.push('/admin/dashboard')
+    await router.isReady()
+
+    const wrapper = mount(AppSidebar, {
+      global: {
+        plugins: [router, i18n],
+        stubs: {
+          VersionBadge: {
+            template: '<div class="version-badge-stub" />'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.find('a[href="/admin/affiliate"]').exists()).toBe(false)
+  })
+
+  it('邀请返利开启时显示管理员侧边栏入口', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+    })
+
+    const appStore = useAppStore()
+    appStore.cachedPublicSettings = makePublicSettings({ affiliate_enabled: true })
+    appStore.publicSettingsLoaded = true
+
+    const authStore = useAuthStore()
+    authStore.user = adminUser
+    authStore.token = 'admin-token'
+
+    const adminSettingsStore = useAdminSettingsStore()
+    adminSettingsStore.loaded = true
+
+    await router.push('/admin/dashboard')
+    await router.isReady()
+
+    const wrapper = mount(AppSidebar, {
+      global: {
+        plugins: [router, i18n],
+        stubs: {
+          VersionBadge: {
+            template: '<div class="version-badge-stub" />'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.find('a[href="/admin/affiliate"]').exists()).toBe(true)
   })
 })
