@@ -29,17 +29,21 @@ func TestDashboardOversellPriceMultiplier(t *testing.T) {
 
 func TestCalculateDashboardOversellScenario_Feasible(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
-		ActualCostCNY:           168,
-		ResidentialIPCostCNY:    12,
-		CapacityUnitsPerProduct: 3,
-		ConfidenceLevel:         0.95,
-		ProfitRatePercent:       20,
-		ProfitMode:              "net_margin",
-		TargetProfitTotalCNY:    36,
+		ActualCostCNY:                   168,
+		ResidentialIPPriceUSDPerGBMonth: 12,
+		CapacityUnitsPerProduct:         3,
+		ConfidenceLevel:                 0.95,
+		ProfitRatePercent:               20,
+		ProfitMode:                      "net_margin",
+		TargetProfitTotalCNY:            36,
 	}
 	estimate := DashboardOversellEstimate{
 		EstimatedLightUserRatio:     0.74,
 		CurrentCheapestMonthlyPrice: 88,
+		ResidentialIPMonthlyCostCNY: 12,
+		ResidentialIPActualDays:     7,
+		ResidentialIPTotalTrafficGB: 1.4,
+		ResidentialIPFXRateUSDCNY:   7.2,
 	}
 	plans := []dashboardOversellPlanSnapshot{
 		{
@@ -86,12 +90,12 @@ func TestCalculateDashboardOversellScenario_Feasible(t *testing.T) {
 
 func TestCalculateDashboardOversellScenario_RejectsMissingCost(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
-		ActualCostCNY:           0,
-		ResidentialIPCostCNY:    0,
-		CapacityUnitsPerProduct: 3,
-		ConfidenceLevel:         0.95,
-		ProfitRatePercent:       20,
-		ProfitMode:              "net_margin",
+		ActualCostCNY:                   0,
+		ResidentialIPPriceUSDPerGBMonth: 0,
+		CapacityUnitsPerProduct:         3,
+		ConfidenceLevel:                 0.95,
+		ProfitRatePercent:               20,
+		ProfitMode:                      "net_margin",
 	}
 	estimate := DashboardOversellEstimate{
 		EstimatedLightUserRatio:     0.7,
@@ -112,16 +116,20 @@ func TestCalculateDashboardOversellScenario_RejectsMissingCost(t *testing.T) {
 
 func TestCalculateDashboardOversellScenario_AcceptsResidentialIPCostOnly(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
-		ActualCostCNY:           0,
-		ResidentialIPCostCNY:    90,
-		CapacityUnitsPerProduct: 3,
-		ConfidenceLevel:         0.95,
-		ProfitRatePercent:       20,
-		ProfitMode:              "markup",
+		ActualCostCNY:                   0,
+		ResidentialIPPriceUSDPerGBMonth: 12,
+		CapacityUnitsPerProduct:         3,
+		ConfidenceLevel:                 0.95,
+		ProfitRatePercent:               20,
+		ProfitMode:                      "markup",
 	}
 	estimate := DashboardOversellEstimate{
 		EstimatedLightUserRatio:     0.74,
 		CurrentCheapestMonthlyPrice: 88,
+		ResidentialIPMonthlyCostCNY: 90,
+		ResidentialIPActualDays:     7,
+		ResidentialIPTotalTrafficGB: 1.75,
+		ResidentialIPFXRateUSDCNY:   7.2,
 	}
 
 	result, _ := calculateDashboardOversellScenario(req, estimate, nil)
@@ -214,13 +222,18 @@ func TestDashboardOversellPlanCapacity_UsesQuotaAndRateMultiplier(t *testing.T) 
 	}
 }
 
-func TestDashboardOversellCalculatorRequestTotalCostCNY(t *testing.T) {
+func TestDashboardOversellResidentialIPMonthlyCostCNY(t *testing.T) {
 	req := DashboardOversellCalculatorRequest{
-		ActualCostCNY:        120,
-		ResidentialIPCostCNY: 48,
+		ActualCostCNY:                   120,
+		ResidentialIPPriceUSDPerGBMonth: 10,
+	}
+	estimate := DashboardOversellEstimate{
+		ResidentialIPActualDays:     5,
+		ResidentialIPTotalTrafficGB: 2,
+		ResidentialIPFXRateUSDCNY:   7.5,
 	}
 
-	if got := req.TotalCostCNY(); got != 168 {
-		t.Fatalf("TotalCostCNY() = %v, want 168", got)
+	if got := dashboardOversellResidentialIPMonthlyCostCNY(req, estimate); got != 900 {
+		t.Fatalf("dashboardOversellResidentialIPMonthlyCostCNY() = %v, want 900", got)
 	}
 }

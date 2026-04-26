@@ -546,7 +546,7 @@
                 </div>
               </div>
               <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                <div class="calculator-result-card calculator-result-card--hero lg:col-span-5">
+                <div class="calculator-result-card calculator-result-card--hero lg:col-span-4">
                   <span class="calculator-result-card__stripe bg-cyan-400"></span>
                   <div class="flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.75)]"></span>
@@ -562,7 +562,30 @@
                   </p>
                 </div>
 
-                <div class="calculator-result-card calculator-result-card--amber lg:col-span-3">
+                <div class="calculator-result-card calculator-result-card--violet lg:col-span-2">
+                  <span class="calculator-result-card__stripe bg-violet-400"></span>
+                  <div class="calculator-result-card__label">
+                    <span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+                    <p>{{ t('admin.dashboard.oversell.result.residentialIpCost') }}</p>
+                  </div>
+                  <p data-testid="oversell-residential-ip-cost" class="calculator-result-card__value">
+                    {{ oversellScenario ? formatCny(oversellScenario.residentialIp.monthlyCostCNY) : '--' }}
+                  </p>
+                  <p class="calculator-result-card__meta">
+                    {{
+                      oversellScenario
+                        ? t('admin.dashboard.oversell.result.residentialIpCostHint', {
+                            days: oversellScenario.residentialIp.actualDays,
+                            traffic: formatDecimal(oversellScenario.residentialIp.totalTrafficGB, 3),
+                            users: oversellScenario.residentialIp.involvedUsers,
+                            fx: formatDecimal(oversellScenario.residentialIp.fxRateUSDCNY, 2)
+                          })
+                        : '--'
+                    }}
+                  </p>
+                </div>
+
+                <div class="calculator-result-card calculator-result-card--amber lg:col-span-2">
                   <span class="calculator-result-card__stripe bg-amber-400"></span>
                   <div class="calculator-result-card__label">
                     <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
@@ -592,7 +615,7 @@
                   <p class="calculator-result-card__meta">
                     {{
                       oversellScenario
-                        ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')} · ${formatCny(oversellScenario.procurementCost)} + ${formatCny(oversellScenario.residentialIpCost)}`
+                        ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')} · ${formatCny(oversellScenario.procurementCost)} + ${formatCny(oversellScenario.residentialIp.monthlyCostCNY)}`
                         : '--'
                     }}
                   </p>
@@ -654,11 +677,11 @@
 
                     <div class="calculator-field">
                       <div class="calculator-field__header">
-                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.residentialIpCost') }}</label>
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.residentialIpPrice') }}</label>
                         <HelpTooltip
-                          data-testid="oversell-residential-ip-cost-help"
+                          data-testid="oversell-residential-ip-price-help"
                           class="shrink-0"
-                          :content="t('admin.dashboard.oversell.tooltips.residentialIpCost')"
+                          :content="t('admin.dashboard.oversell.tooltips.residentialIpPrice')"
                         >
                           <template #trigger>
                             <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
@@ -666,14 +689,14 @@
                         </HelpTooltip>
                       </div>
                       <input
-                        v-model.number="oversellForm.residentialIpCost"
-                        data-testid="oversell-residential-ip-cost"
+                        v-model.number="oversellForm.residentialIpPriceUSDPerGBMonth"
+                        data-testid="oversell-residential-ip-price"
                         type="number"
                         min="0"
                         step="0.01"
                         class="input calculator-field__control"
                       />
-                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.cnyPerItem') }}</p>
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.usdPerGbMonth') }}</p>
                     </div>
 
                     <div class="calculator-field">
@@ -1005,7 +1028,7 @@ const oversellForm = reactive({
   userCount: 30,
   plannedPrice: 50,
   procurementCost: 50,
-  residentialIpCost: 0,
+  residentialIpPriceUSDPerGBMonth: 0,
   capacityPerItem: 3,
   profitRatePercent: 20,
   profitMode: 'costPlus' as OversellProfitMode,
@@ -1246,6 +1269,34 @@ const resolveUsageDistribution = (
   }
 }
 
+const resolveResidentialIPMonthlyCost = (
+  estimate: DashboardOversellCalculatorResponse['estimate'],
+  priceUSDPerGBMonth: number
+) => {
+  const actualDays = Math.max(Math.round(estimate.residential_ip_actual_days || 0), 0)
+  const involvedUsers = Math.max(Math.round(estimate.residential_ip_involved_users || 0), 0)
+  const totalTrafficGB = Math.max(estimate.residential_ip_total_traffic_gb || 0, 0)
+  const normalizedPrice = Math.max(priceUSDPerGBMonth || 0, 0)
+  const fxRateUSDCNY = Math.max(estimate.residential_ip_fx_rate_usd_cny || 0, 0)
+  const monthlyCostUSD =
+    actualDays > 0 && totalTrafficGB > 0 && normalizedPrice > 0
+      ? (totalTrafficGB / actualDays) * normalizedPrice * 30
+      : 0
+  const monthlyCostCNY = monthlyCostUSD * fxRateUSDCNY
+
+  return {
+    actualDays,
+    involvedUsers,
+    totalTrafficGB,
+    priceUSDPerGBMonth: normalizedPrice,
+    fxRateUSDCNY,
+    fxRateSource: estimate.residential_ip_fx_rate_source || '',
+    trafficBasis: estimate.residential_ip_traffic_basis || '',
+    monthlyCostUSD,
+    monthlyCostCNY
+  }
+}
+
 const oversellScenario = computed(() => {
   const estimate = oversellCalculator.value?.estimate
   if (!estimate || !Number.isFinite(estimate.estimated_light_user_ratio)) {
@@ -1256,8 +1307,11 @@ const oversellScenario = computed(() => {
   const distribution = resolveUsageDistribution(estimate, oversellForm.heavyUsage)
   const rangeWidth = distribution.heavyUsage
   const procurementCost = Math.max(oversellForm.procurementCost || 0, 0)
-  const residentialIpCost = Math.max(oversellForm.residentialIpCost || 0, 0)
-  const totalProcurementCost = procurementCost + residentialIpCost
+  const residentialIp = resolveResidentialIPMonthlyCost(
+    estimate,
+    oversellForm.residentialIpPriceUSDPerGBMonth
+  )
+  const totalProcurementCost = procurementCost + residentialIp.monthlyCostCNY
   const capacityPerItem = Math.max(oversellForm.capacityPerItem || 0, 0.0001)
   const plannedPrice = Math.max(oversellForm.plannedPrice || 0, 0)
   const profitRate = resolveProfitRate(oversellForm.profitRatePercent || 0)
@@ -1283,7 +1337,7 @@ const oversellScenario = computed(() => {
   return {
     userCount,
     procurementCost,
-    residentialIpCost,
+    residentialIp,
     totalProcurementCost,
     meanUpperBound: distribution.meanUpperBound,
     riskAdjustedMeanUnits,
@@ -1651,7 +1705,7 @@ const loadOversellMathBaseline = async () => {
 
     const initialInput = response.input || response.defaults
     oversellForm.procurementCost = initialInput.actual_cost_cny
-    oversellForm.residentialIpCost = initialInput.residential_ip_cost_cny || 0
+    oversellForm.residentialIpPriceUSDPerGBMonth = initialInput.residential_ip_price_usd_per_gb_month || 0
     oversellForm.capacityPerItem = initialInput.capacity_units_per_product
     oversellForm.heavyUsage = initialInput.capacity_units_per_product
     oversellForm.userCount = Math.max(response.estimate.sampled_subscription_count || 0, 1)

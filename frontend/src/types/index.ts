@@ -1261,7 +1261,7 @@ export interface DashboardRecommendationsResponse {
 
 export interface DashboardOversellCalculatorRequest {
   actual_cost_cny: number
-  residential_ip_cost_cny: number
+  residential_ip_price_usd_per_gb_month: number
   capacity_units_per_product: number
   confidence_level: number
   profit_rate_percent: number
@@ -1279,6 +1279,15 @@ export interface DashboardOversellEstimate {
   basis: string
   current_cheapest_monthly_price_cny: number
   current_cheapest_plan_name: string
+  residential_ip_actual_days: number
+  residential_ip_involved_users: number
+  residential_ip_total_traffic_gb: number
+  residential_ip_monthly_cost_usd: number
+  residential_ip_monthly_cost_cny: number
+  residential_ip_price_usd_per_gb_month: number
+  residential_ip_fx_rate_usd_cny: number
+  residential_ip_fx_rate_source: string
+  residential_ip_traffic_basis: string
 }
 
 export interface DashboardOversellCalculationResult {

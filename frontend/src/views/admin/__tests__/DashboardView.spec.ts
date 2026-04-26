@@ -99,7 +99,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.form.userCount': '测算用户数',
     'admin.dashboard.oversell.form.plannedPrice': '计划套餐售价',
     'admin.dashboard.oversell.form.procurementCost': '单个实际商品采购成本',
-    'admin.dashboard.oversell.form.residentialIpCost': '单个住宅 IP 成本',
+    'admin.dashboard.oversell.form.residentialIpPrice': '住宅 IP 价格',
     'admin.dashboard.oversell.form.capacity': '单个实际商品承载理论商品数',
     'admin.dashboard.oversell.form.profitRate': '目标盈利率',
     'admin.dashboard.oversell.form.profitMode': '盈利口径',
@@ -117,7 +117,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.tooltips.userCount': '超售测算用户数说明',
     'admin.dashboard.oversell.tooltips.plannedPrice': '超售计划售价说明',
     'admin.dashboard.oversell.tooltips.procurementCost': '超售采购成本说明',
-    'admin.dashboard.oversell.tooltips.residentialIpCost': '超售住宅 IP 成本说明',
+    'admin.dashboard.oversell.tooltips.residentialIpPrice': '超售住宅 IP 价格说明',
     'admin.dashboard.oversell.tooltips.capacity': '超售承载能力说明',
     'admin.dashboard.oversell.tooltips.heavyUsage': '超售重度用户上限说明',
     'admin.dashboard.oversell.tooltips.profitRate': '超售目标盈利率说明',
@@ -127,6 +127,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.metrics.unitCost': '理论商品单位成本',
     'admin.dashboard.oversell.metrics.floorPrice': '保守保本价',
     'admin.dashboard.oversell.result.recommendedPrice': '达标套餐价格',
+    'admin.dashboard.oversell.result.residentialIpCost': '住宅 IP 成本',
     'admin.dashboard.oversell.result.minimumUsers': '测算用户数',
     'admin.dashboard.oversell.result.plannedProfit': '预测月利润',
     'admin.dashboard.oversell.result.conservativeCost': '保守月成本',
@@ -137,6 +138,7 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.result.helper': '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
     'admin.dashboard.oversell.result.floorPriceHint': '保守保本价 ¥{floor}',
     'admin.dashboard.oversell.result.priceGapHint': '与达标单价差额 {gap}',
+    'admin.dashboard.oversell.result.residentialIpCostHint': '近 {days} 天约 {traffic} GB · {users} 人 · 汇率 {fx}',
     'admin.dashboard.oversell.result.revenueHint': '月收入 ¥{value}',
     'admin.dashboard.oversell.result.costHint': '保守月成本 ¥{value}',
     'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
@@ -267,7 +269,7 @@ describe('admin DashboardView', () => {
       generated_at: '2026-04-20T09:30:00Z',
       defaults: {
         actual_cost_cny: 50,
-        residential_ip_cost_cny: 30,
+        residential_ip_price_usd_per_gb_month: 12,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -276,7 +278,7 @@ describe('admin DashboardView', () => {
       },
       input: {
         actual_cost_cny: 50,
-        residential_ip_cost_cny: 30,
+        residential_ip_price_usd_per_gb_month: 12,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -292,7 +294,16 @@ describe('admin DashboardView', () => {
         fallback_applied: false,
         basis: 'last_30_days',
         current_cheapest_monthly_price_cny: 50,
-        current_cheapest_plan_name: '月付基础版'
+        current_cheapest_plan_name: '月付基础版',
+        residential_ip_actual_days: 6,
+        residential_ip_involved_users: 12,
+        residential_ip_total_traffic_gb: 1.8,
+        residential_ip_monthly_cost_usd: 108,
+        residential_ip_monthly_cost_cny: 777.6,
+        residential_ip_price_usd_per_gb_month: 12,
+        residential_ip_fx_rate_usd_cny: 7.2,
+        residential_ip_fx_rate_source: 'fallback_floor',
+        residential_ip_traffic_basis: 'recent_residential_proxy_usage'
       },
       result: {
         feasible: true,
@@ -492,6 +503,7 @@ describe('admin DashboardView', () => {
     expect(getOversellCalculator).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('套餐定价测算')
     expect(wrapper.text()).toContain('73%')
+    expect(wrapper.text()).toContain('住宅 IP 价格')
     expect(wrapper.text()).toContain('住宅 IP 成本')
     expect(wrapper.text()).toContain('成本参数')
     expect(wrapper.text()).toContain('用户参数')
@@ -517,7 +529,7 @@ describe('admin DashboardView', () => {
       generated_at: '2026-04-20T09:30:00Z',
       defaults: {
         actual_cost_cny: 50,
-        residential_ip_cost_cny: 30,
+        residential_ip_price_usd_per_gb_month: 12,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -526,7 +538,7 @@ describe('admin DashboardView', () => {
       },
       input: {
         actual_cost_cny: 50,
-        residential_ip_cost_cny: 30,
+        residential_ip_price_usd_per_gb_month: 12,
         capacity_units_per_product: 3,
         confidence_level: 99,
         profit_rate_percent: 20,
@@ -542,7 +554,16 @@ describe('admin DashboardView', () => {
         fallback_applied: false,
         basis: 'last_30_days',
         current_cheapest_monthly_price_cny: 50,
-        current_cheapest_plan_name: '月付基础版'
+        current_cheapest_plan_name: '月付基础版',
+        residential_ip_actual_days: 6,
+        residential_ip_involved_users: 12,
+        residential_ip_total_traffic_gb: 1.8,
+        residential_ip_monthly_cost_usd: 108,
+        residential_ip_monthly_cost_cny: 777.6,
+        residential_ip_price_usd_per_gb_month: 12,
+        residential_ip_fx_rate_usd_cny: 7.2,
+        residential_ip_fx_rate_source: 'fallback_floor',
+        residential_ip_traffic_basis: 'recent_residential_proxy_usage'
       },
       result: {
         feasible: true,
@@ -658,8 +679,8 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     const initialRequiredPrice = wrapper.get('[data-testid="oversell-recommended-price"]').text()
-    const residentialIpCostInput = wrapper.get('[data-testid="oversell-residential-ip-cost"]')
-    await residentialIpCostInput.setValue('80')
+    const residentialIpPriceInput = wrapper.get('[data-testid="oversell-residential-ip-price"]')
+    await residentialIpPriceInput.setValue('80')
     await flushPromises()
 
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
@@ -688,7 +709,7 @@ describe('admin DashboardView', () => {
       'oversell-user-count-help',
       'oversell-planned-price-help',
       'oversell-procurement-cost-help',
-      'oversell-residential-ip-cost-help',
+      'oversell-residential-ip-price-help',
       'oversell-capacity-help',
       'oversell-heavy-usage-help',
       'oversell-profit-rate-help',

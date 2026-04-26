@@ -31,6 +31,7 @@ type DashboardRecommendationService struct {
 	entClient            *dbent.Client
 	groupCapacityService *GroupCapacityService
 	settingRepo          SettingRepository
+	exchangeRateService  ExchangeRateService
 }
 
 type DashboardCapacityRecommendationResponse struct {
@@ -118,12 +119,14 @@ func NewDashboardRecommendationService(
 	entClient *dbent.Client,
 	groupCapacityService *GroupCapacityService,
 	settingRepo SettingRepository,
+	exchangeRateService ExchangeRateService,
 ) *DashboardRecommendationService {
 	return &DashboardRecommendationService{
 		db:                   db,
 		entClient:            entClient,
 		groupCapacityService: groupCapacityService,
 		settingRepo:          settingRepo,
+		exchangeRateService:  exchangeRateService,
 	}
 }
 
