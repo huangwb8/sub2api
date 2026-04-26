@@ -11,6 +11,7 @@
 - 新增了订阅套餐闲时动态计费展示：用户侧套餐 API 现在会透传分组的闲时时间窗、闲时倍率与闲时盈利率，产品页/购买页套餐卡片会在支持时突出展示该卖点。
 - 新增了前端统一主题偏好机制：支持浅色、深色、跟随系统与按时间自动切换深色模式，并在系统设置的通用设置中提供对应可调参数。
 - 新增了 `docs/plans/2026-04-24-upstream-6449da-to-1ce9dc-optimization-plan.md`：基于上游 `6449da6c..1ce9dc03` 的提交区间，沉淀当前 fork 对 Channel Monitor、Available Channels、RPM 限流、OpenAI/Codex 兼容、403 冷却、支付 webhook 与 license 同步状态的选择性吸收计划。
+- 新增了 `docs/plans/2026-04-26-upstream-1ce9dc-to-c056db-optimization-plan.md`：基于上游 `1ce9dc03..c056db74` 的提交区间，沉淀当前 fork 对 Claude Code mimicry / prompt cache、Responses pre-output failover、affiliate、支付退款端点、Anthropic usage 语义与 license 同步状态的选择性吸收计划。
 - 新增了 OpenAI 403 连续失败计数缓存与回归测试：OpenAI 账号遇到偶发 403 时先进入短时临时不可调度，连续达到阈值后才正式标记错误，降低风控抖动导致的误杀风险。
 - 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
 
