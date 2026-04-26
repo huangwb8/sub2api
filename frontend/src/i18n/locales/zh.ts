@@ -1138,7 +1138,7 @@ export default {
       pricingStrategy: {
         title: '定价策略测算',
         description: '基于系统自动估算的用户消耗分布，在指定用户规模和目标盈利率下客观测算保守成本、达标单价与当前定价利润。',
-        estimateInfo: '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅）',
+        estimateInfo: '最近 30 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（采样 {count} 个活跃订阅，含管理员）',
         fallbackInfo: '暂无足够样本，使用保守默认估算（70% 轻度用户）',
         costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',
         form: {
@@ -1196,7 +1196,7 @@ export default {
         title: '套餐定价测算',
         description: '基于账号成本、住宅 IP 流量单价、用户消耗分布、目标盈利率和风险把握度，统一测算套餐达标售价与预测月利润。',
         estimateTitle: '系统估算条件',
-        estimateDescription: '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品。',
+        estimateDescription: '最近 {days} 天样本中，{share} 的用户月消耗不超过 {threshold} 个理论商品（含管理员）。',
         sampleUsers: '样本用户 {count}',
         updatedAt: '更新于 {time}',
         costBadge: '采购 ¥{cost}/个 · 容量 {capacity}个/商品',

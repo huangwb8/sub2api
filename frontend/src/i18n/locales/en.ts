@@ -1128,7 +1128,7 @@ export default {
       pricingStrategy: {
         title: 'Pricing Strategy Calculator',
         description: 'Based on the auto-estimated user consumption pattern, objectively calculate conservative cost, required price, and current pricing profit at your chosen user count and target profit rate.',
-        estimateInfo: 'Within the last 30 days of samples, {share} of users stayed within {threshold} theoretical units per month ({count} active subscriptions sampled)',
+        estimateInfo: 'Within the last 30 days of samples, {share} of users stayed within {threshold} theoretical units per month ({count} active subscriptions sampled, including admin users)',
         fallbackInfo: 'Insufficient sample data; using conservative default estimate (70% light users)',
         costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
         form: {
@@ -1186,7 +1186,7 @@ export default {
         title: 'Package Pricing Calculator',
         description: 'Use account cost, residential IP traffic pricing, user consumption, target profit rate, and risk confidence to calculate required package prices and projected monthly profit in one place.',
         estimateTitle: 'System Estimate',
-        estimateDescription: 'Within the last {days} days of samples, {share} of users stayed within {threshold} theoretical units per month.',
+        estimateDescription: 'Within the last {days} days of samples, {share} of users stayed within {threshold} theoretical units per month (including admin users).',
         sampleUsers: '{count} sampled users',
         updatedAt: 'Updated {time}',
         costBadge: 'Cost ¥{cost}/item · Capacity {capacity} units/item',
