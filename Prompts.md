@@ -39,14 +39,14 @@ version=1.1.6
 - 源项目最新的历史版本
 
 ```
-version2 = 
+version2 = c056db740d56ce008292a7b414c804cc6f308208
 version1 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
 ```
 
 - 吸收源项目的优势
 
 ```
-version2 = 
+version2 = c056db740d56ce008292a7b414c804cc6f308208
 version1 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
 我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
