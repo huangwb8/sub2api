@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -262,6 +263,45 @@ func TestHandleUpstreamError_PoolModeCustomErrorCodesOverride(t *testing.T) {
 		require.Equal(t, 1, repo.setErrCalls)
 		require.Equal(t, 0, repo.tempCalls)
 	})
+}
+
+func TestCheckErrorPolicy_GlobalSchedulingMechanismRules(t *testing.T) {
+	repo := &errorPolicyRepoStub{}
+	settingRepo := newMockSettingRepo()
+	payload, err := json.Marshal(&SchedulingMechanismSettings{
+		Mechanisms: []SchedulingMechanism{
+			{
+				ID:                       "openai-502",
+				Name:                     "OpenAI 502",
+				Platform:                 PlatformOpenAI,
+				AccountType:              AccountTypeOAuth,
+				Enabled:                  true,
+				TempUnschedulableEnabled: true,
+				TempUnschedulableRules: []TempUnschedulableRule{
+					{
+						ErrorCode:       http.StatusBadGateway,
+						Keywords:        []string{"bad gateway", "upstream"},
+						DurationMinutes: 3,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	settingRepo.data[SettingKeySchedulingMechanismSettings] = string(payload)
+
+	svc := NewRateLimitService(repo, nil, &config.Config{}, nil, nil)
+	svc.SetSettingService(NewSettingService(settingRepo, &config.Config{}))
+
+	account := &Account{
+		ID:       88,
+		Type:     AccountTypeOAuth,
+		Platform: PlatformOpenAI,
+	}
+
+	result := svc.CheckErrorPolicy(context.Background(), account, http.StatusBadGateway, []byte(`bad gateway from upstream`))
+	require.Equal(t, ErrorPolicyTempUnscheduled, result)
+	require.Equal(t, 1, repo.tempCalls)
 }
 
 // ---------------------------------------------------------------------------

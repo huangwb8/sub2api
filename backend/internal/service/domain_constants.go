@@ -222,6 +222,10 @@ const (
 	// SettingKeyStreamTimeoutSettings stores JSON config for stream timeout handling.
 	SettingKeyStreamTimeoutSettings = "stream_timeout_settings"
 
+	// SettingKeySchedulingMechanismSettings stores JSON config for global scheduling mechanisms
+	// and proxy failover automation.
+	SettingKeySchedulingMechanismSettings = "scheduling_mechanism_settings"
+
 	// =========================
 	// Request Rectifier (请求整流器)
 	// =========================

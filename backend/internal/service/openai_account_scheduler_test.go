@@ -237,6 +237,44 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_SessionSticky(t *testin
 	}
 }
 
+func TestDefaultOpenAIAccountScheduler_SelectBySessionHashClearsHighErrorRateSticky(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(11)
+	sessionHash := "session_hash_high_error"
+	account := Account{
+		ID:          2101,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+	}
+	cache := &stubGatewayCache{
+		sessionBindings: map[string]int64{sessionHash: account.ID},
+	}
+	stats := newOpenAIAccountRuntimeStats()
+	for i := 0; i < 4; i++ {
+		stats.report(account.ID, false, nil)
+	}
+	svc := &OpenAIGatewayService{
+		accountRepo: stubOpenAIAccountRepo{accounts: []Account{account}},
+		cache:       cache,
+		cfg:         &config.Config{},
+	}
+	scheduler := &defaultOpenAIAccountScheduler{service: svc, stats: stats}
+
+	selection, err := scheduler.selectBySessionHash(ctx, OpenAIAccountScheduleRequest{
+		GroupID:         &groupID,
+		SessionHash:     sessionHash,
+		RequestedModel:  "gpt-5.1",
+		StickyAccountID: account.ID,
+	})
+
+	require.NoError(t, err)
+	require.Nil(t, selection)
+	require.Equal(t, 1, cache.deletedSessions["openai:"+sessionHash])
+}
+
 func TestOpenAIGatewayService_SelectAccountWithScheduler_SessionStickyBusyKeepsSticky(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(10100)
@@ -913,6 +951,8 @@ func TestOpenAIGatewayService_SchedulerWrappersAndDefaults(t *testing.T) {
 	require.GreaterOrEqual(t, snapshot.AccountSwitchTotal, int64(1))
 	require.Equal(t, 7, svc.openAIWSLBTopK())
 	require.Equal(t, openaiStickySessionTTL, svc.openAIWSSessionStickyTTL())
+	require.Equal(t, 0.5, svc.openAIWSStickySessionErrorRateThreshold())
+	require.Equal(t, 3, svc.openAIWSStickySessionErrorRateMinSamples())
 
 	defaultWeights := svc.openAIWSSchedulerWeights()
 	require.Equal(t, 1.0, defaultWeights.Priority)
@@ -924,6 +964,8 @@ func TestOpenAIGatewayService_SchedulerWrappersAndDefaults(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Gateway.OpenAIWS.LBTopK = 9
 	cfg.Gateway.OpenAIWS.StickySessionTTLSeconds = 180
+	cfg.Gateway.OpenAIWS.StickySessionErrorRateThreshold = 0.7
+	cfg.Gateway.OpenAIWS.StickySessionErrorRateMinSamples = 5
 	cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Priority = 0.2
 	cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Load = 0.3
 	cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Queue = 0.4
@@ -933,6 +975,8 @@ func TestOpenAIGatewayService_SchedulerWrappersAndDefaults(t *testing.T) {
 
 	require.Equal(t, 9, svcWithCfg.openAIWSLBTopK())
 	require.Equal(t, 180*time.Second, svcWithCfg.openAIWSSessionStickyTTL())
+	require.Equal(t, 0.7, svcWithCfg.openAIWSStickySessionErrorRateThreshold())
+	require.Equal(t, 5, svcWithCfg.openAIWSStickySessionErrorRateMinSamples())
 	customWeights := svcWithCfg.openAIWSSchedulerWeights()
 	require.Equal(t, 0.2, customWeights.Priority)
 	require.Equal(t, 0.3, customWeights.Load)

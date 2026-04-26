@@ -2,7 +2,66 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="space-y-4">
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-900/60">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div class="max-w-3xl">
+                <div class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
+                  {{ t('admin.proxies.failoverEyebrow') }}
+                </div>
+                <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.proxies.failoverTitle') }}
+                </div>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {{ t('admin.proxies.failoverDescription') }}
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <router-link to="/admin/scheduling-mechanisms" class="btn btn-secondary">
+                  {{ t('admin.proxies.goSchedulingMechanisms') }}
+                </router-link>
+                <button class="btn btn-primary" :disabled="loadingFailoverSettings || savingFailoverSettings" @click="saveProxyFailoverSettings">
+                  <Icon v-if="savingFailoverSettings" name="refresh" size="sm" class="mr-2 animate-spin" />
+                  {{ t('admin.proxies.saveFailoverSettings') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.enabled') }}
+                </span>
+                <input v-model="proxyFailoverSettings.enabled" type="checkbox" class="toggle" />
+              </label>
+              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.autoTestEnabled') }}
+                </span>
+                <input v-model="proxyFailoverSettings.auto_test_enabled" type="checkbox" class="toggle" />
+              </label>
+              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.probeIntervalMinutes') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.probe_interval_minutes" type="number" min="1" max="120" class="input" />
+              </label>
+              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.failureThreshold') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.failure_threshold" type="number" min="1" max="10" class="input" />
+              </label>
+              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.cooldownMinutes') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.cooldown_minutes" type="number" min="1" max="240" class="input" />
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
           <!-- Left: Search + Filters -->
           <div class="relative w-full sm:w-64">
             <Icon
@@ -84,6 +143,7 @@
               {{ t('admin.proxies.createProxy') }}
             </button>
           </div>
+        </div>
         </div>
       </template>
 
@@ -877,6 +937,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import type { Proxy, ProxyAccountSummary, ProxyProtocol, ProxyQualityCheckResult } from '@/types'
+import type { ProxyFailoverSettings, SchedulingMechanismSettings } from '@/api/admin/settings'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -943,6 +1004,8 @@ const proxies = ref<Proxy[]>([])
 const visiblePasswordIds = reactive(new Set<number>())
 const copyMenuProxyId = ref<number | null>(null)
 const loading = ref(false)
+const loadingFailoverSettings = ref(false)
+const savingFailoverSettings = ref(false)
 const searchQuery = ref('')
 const filters = reactive({
   protocol: '',
@@ -1003,6 +1066,20 @@ const deletingProxy = ref<Proxy | null>(null)
 const showQualityReportDialog = ref(false)
 const qualityReportProxy = ref<Proxy | null>(null)
 const qualityReport = ref<ProxyQualityCheckResult | null>(null)
+const schedulingSettings = ref<SchedulingMechanismSettings | null>(null)
+const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
+  enabled: true,
+  auto_test_enabled: true,
+  probe_interval_minutes: 5,
+  failure_threshold: 3,
+  failure_window_minutes: 10,
+  cooldown_minutes: 15,
+  max_accounts_per_proxy: 6,
+  max_migrations_per_cycle: 12,
+  prefer_same_country: true,
+  only_openai_oauth: true,
+  temp_unsched_minutes: 10
+})
 
 // Batch import state
 const createMode = ref<'standard' | 'batch'>('standard')
@@ -1101,6 +1178,37 @@ const loadProxies = async () => {
       loading.value = false
       abortController = null
     }
+  }
+}
+
+const loadProxyFailoverSettings = async () => {
+  loadingFailoverSettings.value = true
+  try {
+    const payload = await adminAPI.settings.getSchedulingMechanismSettings()
+    schedulingSettings.value = payload
+    Object.assign(proxyFailoverSettings, payload.proxy_failover || {})
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('common.error'))
+  } finally {
+    loadingFailoverSettings.value = false
+  }
+}
+
+const saveProxyFailoverSettings = async () => {
+  savingFailoverSettings.value = true
+  try {
+    const payload: SchedulingMechanismSettings = {
+      mechanisms: schedulingSettings.value?.mechanisms || [],
+      proxy_failover: { ...proxyFailoverSettings }
+    }
+    const updated = await adminAPI.settings.updateSchedulingMechanismSettings(payload)
+    schedulingSettings.value = updated
+    Object.assign(proxyFailoverSettings, updated.proxy_failover || {})
+    appStore.showSuccess(t('admin.proxies.failoverSettingsSaved'))
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.proxies.failoverSettingsSaveFailed'))
+  } finally {
+    savingFailoverSettings.value = false
   }
 }
 
@@ -1869,6 +1977,7 @@ function closeCopyMenu() {
 
 onMounted(() => {
   loadProxies()
+  loadProxyFailoverSettings()
   document.addEventListener('click', closeCopyMenu)
 })
 

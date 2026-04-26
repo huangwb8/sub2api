@@ -164,6 +164,9 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		setOpsUpstreamError(c, 0, safeErr, "")
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -174,8 +177,7 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeAnthropicError(c, http.StatusBadGateway, "api_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		return nil, newUpstreamRequestFailoverError(safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

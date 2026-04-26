@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../client'
-import type { CustomMenuItem, CustomEndpoint } from '@/types'
+import type { CustomMenuItem, CustomEndpoint, TempUnschedulableRule } from '@/types'
 
 export interface DefaultSubscriptionSetting {
   group_id: number
@@ -255,6 +255,38 @@ export interface UpdateSettingsRequest {
   payment_cancel_rate_limit_window_mode?: string
 }
 
+export interface SchedulingMechanism {
+  id: string
+  name: string
+  platform: string
+  account_type: string
+  enabled: boolean
+  hidden: boolean
+  description?: string
+  temp_unschedulable_enabled: boolean
+  temp_unschedulable_rules: TempUnschedulableRule[]
+  updated_at_unix?: number
+}
+
+export interface ProxyFailoverSettings {
+  enabled: boolean
+  auto_test_enabled: boolean
+  probe_interval_minutes: number
+  failure_threshold: number
+  failure_window_minutes: number
+  cooldown_minutes: number
+  max_accounts_per_proxy: number
+  max_migrations_per_cycle: number
+  prefer_same_country: boolean
+  only_openai_oauth: boolean
+  temp_unsched_minutes: number
+}
+
+export interface SchedulingMechanismSettings {
+  mechanisms: SchedulingMechanism[]
+  proxy_failover: ProxyFailoverSettings
+}
+
 /**
  * Get all system settings
  * @returns System settings
@@ -271,6 +303,23 @@ export async function getSettings(): Promise<SystemSettings> {
  */
 export async function updateSettings(settings: UpdateSettingsRequest): Promise<SystemSettings> {
   const { data } = await apiClient.put<SystemSettings>('/admin/settings', settings)
+  return data
+}
+
+export async function getSchedulingMechanismSettings(): Promise<SchedulingMechanismSettings> {
+  const { data } = await apiClient.get<SchedulingMechanismSettings>(
+    '/admin/settings/scheduling-mechanisms'
+  )
+  return data
+}
+
+export async function updateSchedulingMechanismSettings(
+  settings: SchedulingMechanismSettings
+): Promise<SchedulingMechanismSettings> {
+  const { data } = await apiClient.put<SchedulingMechanismSettings>(
+    '/admin/settings/scheduling-mechanisms',
+    settings
+  )
   return data
 }
 
@@ -569,6 +618,8 @@ export async function testWebSearchEmulation(query: string): Promise<WebSearchTe
 export const settingsAPI = {
   getSettings,
   updateSettings,
+  getSchedulingMechanismSettings,
+  updateSchedulingMechanismSettings,
   testSmtpConnection,
   sendTestEmail,
   getAdminApiKey,

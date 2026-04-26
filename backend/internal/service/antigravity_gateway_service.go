@@ -2506,8 +2506,15 @@ const emptyResponseCooldown = 1 * time.Minute
 // tempUnscheduleEmptyResponse 对空流式响应触发临时封禁，
 // 避免短时间内反复调度到同一个返回空响应的账号。
 func tempUnscheduleEmptyResponse(ctx context.Context, repo AccountRepository, accountID int64, logPrefix string) {
+	tempUnscheduleWithBadGatewayCooldown(ctx, repo, accountID, logPrefix, "empty stream response (auto temp-unschedule 1m)")
+}
+
+func tempUnscheduleBadGateway(ctx context.Context, repo AccountRepository, accountID int64, logPrefix string) {
+	tempUnscheduleWithBadGatewayCooldown(ctx, repo, accountID, logPrefix, "502: upstream connection/request error (auto temp-unschedule 1m)")
+}
+
+func tempUnscheduleWithBadGatewayCooldown(ctx context.Context, repo AccountRepository, accountID int64, logPrefix, reason string) {
 	until := time.Now().Add(emptyResponseCooldown)
-	reason := "empty stream response (auto temp-unschedule 1m)"
 	if err := repo.SetTempUnschedulable(ctx, accountID, until, reason); err != nil {
 		log.Printf("%s temp_unschedule_failed account=%d error=%v", logPrefix, accountID, err)
 	} else {
@@ -4258,8 +4265,12 @@ func (s *AntigravityGatewayService) ForwardUpstream(ctx context.Context, c *gin.
 	// 发送请求
 	resp, err := s.httpUpstream.Do(req, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		logger.LegacyPrintf("service.antigravity_gateway", "%s upstream request failed: %v", prefix, err)
-		return nil, fmt.Errorf("upstream request failed: %w", err)
+		return nil, newUpstreamRequestFailoverError(safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

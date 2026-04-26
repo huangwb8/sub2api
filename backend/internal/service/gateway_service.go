@@ -516,10 +516,23 @@ func (e *UpstreamFailoverError) Error() string {
 	return fmt.Sprintf("upstream error: %d (failover)", e.StatusCode)
 }
 
-// TempUnscheduleRetryableError 对 RetryableOnSameAccount 类型的 failover 错误触发临时封禁。
-// 由 handler 层在同账号重试全部用尽、切换账号时调用。
+func newUpstreamRequestFailoverError(message string) *UpstreamFailoverError {
+	return &UpstreamFailoverError{
+		StatusCode:   http.StatusBadGateway,
+		ResponseBody: []byte(message),
+	}
+}
+
+// TempUnscheduleRetryableError 对同账号重试耗尽或连接级 502 failover 错误触发临时封禁。
+// 由 handler 层在同账号重试全部用尽、或连接错误切换账号时调用。
 func (s *GatewayService) TempUnscheduleRetryableError(ctx context.Context, accountID int64, failoverErr *UpstreamFailoverError) {
-	if failoverErr == nil || !failoverErr.RetryableOnSameAccount {
+	if failoverErr == nil {
+		return
+	}
+	if s == nil || s.accountRepo == nil {
+		return
+	}
+	if !failoverErr.RetryableOnSameAccount && failoverErr.StatusCode != http.StatusBadGateway {
 		return
 	}
 	// 根据状态码选择封禁策略
@@ -527,7 +540,7 @@ func (s *GatewayService) TempUnscheduleRetryableError(ctx context.Context, accou
 	case http.StatusBadRequest:
 		tempUnscheduleGoogleConfigError(ctx, s.accountRepo, accountID, "[handler]")
 	case http.StatusBadGateway:
-		tempUnscheduleEmptyResponse(ctx, s.accountRepo, accountID, "[handler]")
+		tempUnscheduleBadGateway(ctx, s.accountRepo, accountID, "[handler]")
 	}
 }
 
@@ -4095,7 +4108,6 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
-			// Ensure the client receives an error response (handlers assume Forward writes on non-failover errors).
 			safeErr := sanitizeUpstreamErrorMessage(err.Error())
 			setOpsUpstreamError(c, 0, safeErr, "")
 			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -4107,14 +4119,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
-			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+			return nil, newUpstreamRequestFailoverError(safeErr)
 		}
 
 		// 优先检测thinking block签名错误（400）并重试一次
@@ -4597,14 +4602,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
-			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+			return nil, newUpstreamRequestFailoverError(safeErr)
 		}
 
 		// 透传分支禁止 400 请求体降级重试（该重试会改写请求体）
@@ -5304,14 +5302,7 @@ func (s *GatewayService) executeBedrockUpstream(
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
-			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+			return nil, newUpstreamRequestFailoverError(safeErr)
 		}
 
 		if resp.StatusCode >= 400 && resp.StatusCode != 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
@@ -8251,9 +8242,21 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 	// 发送请求
 	resp, err := s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 	if err != nil {
-		setOpsUpstreamError(c, 0, sanitizeUpstreamErrorMessage(err.Error()), "")
-		s.countTokensError(c, http.StatusBadGateway, "upstream_error", "Request failed")
-		return fmt.Errorf("upstream request failed: %w", err)
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		safeErr := sanitizeUpstreamErrorMessage(err.Error())
+		setOpsUpstreamError(c, 0, safeErr, "")
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: 0,
+			UpstreamURL:        safeUpstreamURL(upstreamReq.URL.String()),
+			Kind:               "request_error",
+			Message:            safeErr,
+		})
+		return newUpstreamRequestFailoverError(safeErr)
 	}
 
 	// 读取响应体
@@ -8368,7 +8371,11 @@ func (s *GatewayService) forwardCountTokensAnthropicAPIKeyPassthrough(ctx contex
 
 	resp, err := s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 	if err != nil {
-		setOpsUpstreamError(c, 0, sanitizeUpstreamErrorMessage(err.Error()), "")
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		safeErr := sanitizeUpstreamErrorMessage(err.Error())
+		setOpsUpstreamError(c, 0, safeErr, "")
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
 			Platform:           account.Platform,
 			AccountID:          account.ID,
@@ -8377,10 +8384,9 @@ func (s *GatewayService) forwardCountTokensAnthropicAPIKeyPassthrough(ctx contex
 			UpstreamURL:        safeUpstreamURL(upstreamReq.URL.String()),
 			Passthrough:        true,
 			Kind:               "request_error",
-			Message:            sanitizeUpstreamErrorMessage(err.Error()),
+			Message:            safeErr,
 		})
-		s.countTokensError(c, http.StatusBadGateway, "upstream_error", "Request failed")
-		return fmt.Errorf("upstream request failed: %w", err)
+		return newUpstreamRequestFailoverError(safeErr)
 	}
 
 	maxReadBytes := resolveUpstreamResponseReadLimit(s.cfg)

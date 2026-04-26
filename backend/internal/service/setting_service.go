@@ -2431,3 +2431,33 @@ func (s *SettingService) SetStreamTimeoutSettings(ctx context.Context, settings 
 
 	return s.settingRepo.Set(ctx, SettingKeyStreamTimeoutSettings, string(data))
 }
+
+// GetSchedulingMechanismSettings 获取全局调度机制与代理自动容错配置。
+func (s *SettingService) GetSchedulingMechanismSettings(ctx context.Context) (*SchedulingMechanismSettings, error) {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeySchedulingMechanismSettings)
+	if err != nil {
+		if errors.Is(err, ErrSettingNotFound) {
+			return DefaultSchedulingMechanismSettings(), nil
+		}
+		return nil, fmt.Errorf("get scheduling mechanism settings: %w", err)
+	}
+	if strings.TrimSpace(value) == "" {
+		return DefaultSchedulingMechanismSettings(), nil
+	}
+
+	var settings SchedulingMechanismSettings
+	if err := json.Unmarshal([]byte(value), &settings); err != nil {
+		return DefaultSchedulingMechanismSettings(), nil
+	}
+	return normalizeSchedulingMechanismSettings(&settings), nil
+}
+
+// SetSchedulingMechanismSettings 设置全局调度机制与代理自动容错配置。
+func (s *SettingService) SetSchedulingMechanismSettings(ctx context.Context, settings *SchedulingMechanismSettings) error {
+	normalized := normalizeSchedulingMechanismSettings(settings)
+	data, err := json.Marshal(normalized)
+	if err != nil {
+		return fmt.Errorf("marshal scheduling mechanism settings: %w", err)
+	}
+	return s.settingRepo.Set(ctx, SettingKeySchedulingMechanismSettings, string(data))
+}

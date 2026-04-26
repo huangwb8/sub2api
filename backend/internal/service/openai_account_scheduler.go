@@ -107,6 +107,7 @@ type openAIAccountRuntimeStats struct {
 type openAIAccountRuntimeStat struct {
 	errorRateEWMABits atomic.Uint64
 	ttftEWMABits      atomic.Uint64
+	sampleCount       atomic.Int64
 }
 
 func newOpenAIAccountRuntimeStats() *openAIAccountRuntimeStats {
@@ -158,6 +159,7 @@ func (s *openAIAccountRuntimeStats) report(accountID int64, success bool, firstT
 		errorSample = 0.0
 	}
 	updateEWMAAtomic(&stat.errorRateEWMABits, errorSample, alpha)
+	stat.sampleCount.Add(1)
 
 	if firstTokenMs != nil && *firstTokenMs > 0 {
 		ttft := float64(*firstTokenMs)
@@ -180,23 +182,29 @@ func (s *openAIAccountRuntimeStats) report(accountID int64, success bool, firstT
 }
 
 func (s *openAIAccountRuntimeStats) snapshot(accountID int64) (errorRate float64, ttft float64, hasTTFT bool) {
+	errorRate, ttft, hasTTFT, _ = s.snapshotWithSampleCount(accountID)
+	return errorRate, ttft, hasTTFT
+}
+
+func (s *openAIAccountRuntimeStats) snapshotWithSampleCount(accountID int64) (errorRate float64, ttft float64, hasTTFT bool, sampleCount int64) {
 	if s == nil || accountID <= 0 {
-		return 0, 0, false
+		return 0, 0, false, 0
 	}
 	value, ok := s.accounts.Load(accountID)
 	if !ok {
-		return 0, 0, false
+		return 0, 0, false, 0
 	}
 	stat, _ := value.(*openAIAccountRuntimeStat)
 	if stat == nil {
-		return 0, 0, false
+		return 0, 0, false, 0
 	}
 	errorRate = clamp01(math.Float64frombits(stat.errorRateEWMABits.Load()))
+	sampleCount = stat.sampleCount.Load()
 	ttftValue := math.Float64frombits(stat.ttftEWMABits.Load())
 	if math.IsNaN(ttftValue) {
-		return errorRate, 0, false
+		return errorRate, 0, false, sampleCount
 	}
-	return errorRate, ttftValue, true
+	return errorRate, ttftValue, true, sampleCount
 }
 
 func (s *openAIAccountRuntimeStats) size() int {
@@ -324,6 +332,10 @@ func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
 		return nil, nil
 	}
+	if s.shouldClearStickySessionByRuntimeErrorRate(accountID) {
+		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
+		return nil, nil
+	}
 	if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
 		return nil, nil
 	}
@@ -361,6 +373,16 @@ func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 		}, nil
 	}
 	return nil, nil
+}
+
+func (s *defaultOpenAIAccountScheduler) shouldClearStickySessionByRuntimeErrorRate(accountID int64) bool {
+	if s == nil || s.service == nil || s.stats == nil || accountID <= 0 {
+		return false
+	}
+	errorRate, _, _, sampleCount := s.stats.snapshotWithSampleCount(accountID)
+	minSamples := s.service.openAIWSStickySessionErrorRateMinSamples()
+	threshold := s.service.openAIWSStickySessionErrorRateThreshold()
+	return sampleCount >= int64(minSamples) && errorRate > threshold
 }
 
 type openAIAccountCandidateScore struct {
@@ -891,6 +913,20 @@ func (s *OpenAIGatewayService) openAIWSLBTopK() int {
 		return s.cfg.Gateway.OpenAIWS.LBTopK
 	}
 	return 7
+}
+
+func (s *OpenAIGatewayService) openAIWSStickySessionErrorRateThreshold() float64 {
+	if s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.StickySessionErrorRateThreshold > 0 {
+		return clamp01(s.cfg.Gateway.OpenAIWS.StickySessionErrorRateThreshold)
+	}
+	return 0.5
+}
+
+func (s *OpenAIGatewayService) openAIWSStickySessionErrorRateMinSamples() int {
+	if s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.StickySessionErrorRateMinSamples > 0 {
+		return s.cfg.Gateway.OpenAIWS.StickySessionErrorRateMinSamples
+	}
+	return 3
 }
 
 func (s *OpenAIGatewayService) openAIWSSchedulerWeights() GatewayOpenAIWSSchedulerScoreWeightsView {

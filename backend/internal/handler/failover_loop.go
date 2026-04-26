@@ -95,6 +95,9 @@ func (s *FailoverState) HandleFailoverError(
 	if failoverErr.RetryableOnSameAccount {
 		gatewayService.TempUnscheduleRetryableError(ctx, accountID, failoverErr)
 	}
+	if !failoverErr.RetryableOnSameAccount && failoverErr.StatusCode == http.StatusBadGateway {
+		gatewayService.TempUnscheduleRetryableError(ctx, accountID, failoverErr)
+	}
 
 	// 加入失败列表
 	s.FailedAccountIDs[accountID] = struct{}{}

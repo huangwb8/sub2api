@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 OpenAI 粘性会话错误率保护配置：`gateway.openai_ws.sticky_session_error_rate_threshold` 与 `gateway.openai_ws.sticky_session_error_rate_min_samples` 可控制高错误率账号的 session 绑定清理阈值，避免代理故障账号长期粘住同一会话。
+- 新增了 OpenAI 代理故障自动容错闭环：支持全局“调度机制”配置、代理自动巡检与账号自动迁移、`/api/v1/admin/settings/scheduling-mechanisms` 管理接口，以及可直接导入的 `docs/rules/调度机制.json` 内置规则集，用于缓解代理临时失效引发的 500/502/503/504/52x 连锁报错。
 - 新增了默认关闭的邀请返利系统：包含 `user_affiliates` / `user_affiliate_ledger` 迁移、用户邀请码与返利配额、管理员全局开关和参数配置、专属邀请码/返利比例管理、注册页返利码、用户返利页以及支付完成后的返利累计与转余额能力。
 - 新增了 EasyPay/ZPay 退款端点回归测试：覆盖 base URL 归一化、`out_trade_no` 优先退款、`trade_no` 回退、非 JSON/HTML 响应与上游错误处理。
 - 新增了用户头像自定义能力：个人设置支持默认生成头像、外链头像与本地图片上传，头像文件持久化到 `data/uploads/avatars/` 并通过 `/uploads/...` 访问。
@@ -18,6 +20,7 @@
 - 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
 
 ### Changed（变更）
+- 调整了后台代理与调度配置入口：管理员侧边栏现在在 `IP管理` 与 `兑换码` 之间新增“调度机制”页面，`IP管理` 页面同步提供自动巡检/自动迁移核心参数的快捷编辑入口，减少 OpenAI 账号遇到代理抖动时的人工介入成本。
 - 更新了 README 多语言能力说明：补充邀请返利默认关闭、管理员可控启用与专属邀请码配置口径。
 - 更新了 `AGENTS.md` 的关键注意事项：新增「代码优化与修改」规则，要求代码类任务使用 `awesome-code` skill 辅助规划与优化、全部解决问题、自主决策最优方案、不破坏已有功能并保证最终成品稳定高效。
 - 调整了管理控制台 Dashboard“套餐定价测算”的住宅 IP 成本口径：移除手填“住宅 IP 成本”，改为填写“住宅 IP 价格（USD / (GB*月)）”，并自动基于最近最多 14 天的非管理员活跃代理 usage 折算住宅 IP 月成本、按现有汇率机制转成人民币，再统一参与达标售价、保守月成本、预测利润与套餐换算测算；结果区同步新增住宅 IP 成本卡并放在达标套餐价格右侧。
@@ -41,6 +44,8 @@
 - 强化了 Codex Spark 模型限制提示：`gpt-5.3-codex-spark` 请求会注入图片能力限制说明，并拒绝图片输入或 `image_generation` 工具请求，避免把模型能力限制误判为本地工具缺失。
 
 ### Fixed（修复）
+- 修复了上游连接级错误绕过 failover 的问题：Forward 层在代理连接拒绝、超时等无 HTTP 响应场景下不再提前写 502，而是返回 `UpstreamFailoverError` 交由 handler 切换账号，同时对连接级 502 触发临时不可调度并补齐 `count_tokens` failover 闭环。
+- 修复了 OpenAI OAuth 账号在共享代理临时失效时缺少自动恢复路径的问题：现在上游 5xx 会同时驱动请求内 failover、跨请求临时不可调度与代理级故障识别，连续失败的代理会被隔离并优先把账号迁移到健康代理，降低 `unexpected status 502 Bad Gateway` 长时间反复打到同一坏代理的概率。
 - 修复了 EasyPay/ZPay 退款端点拼接不稳的问题：退款请求现在会剥离配置中的 `/mapi.php`、`/api.php` 等接口尾巴后再拼接退款接口，并优先使用商户订单号避免部分服务商按平台流水号退款失败。
 - 修复了个人资料上传本地图片头像时可能发送为 JSON 请求导致更新失败的问题：前端 API 客户端现在会为 `FormData` 请求移除默认 JSON 请求头，并在资料页展示后端返回的真实错误信息。
 - 修复了管理员自身 usage 被计入收入/盈利口径的问题：Dashboard 财务汇总、盈利趋势、订阅成本分摊、最近用户花费排行和分组花费汇总现在都会排除 `role=admin` 用户，并新增迁移重置仪表盘聚合水位以便按新口径重算保留期内聚合数据。

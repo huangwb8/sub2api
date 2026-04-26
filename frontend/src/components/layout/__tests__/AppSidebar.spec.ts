@@ -29,6 +29,16 @@ describe('AppSidebar navigation', () => {
     expect(componentSource).toMatch(/path:\s*'\/admin\/dashboard'[\s\S]*label:\s*t\('nav\.adminConsole'\)/)
   })
 
+  it('管理员侧边栏会在代理与兑换码之间显示调度机制入口', () => {
+    const proxiesIndex = componentSource.indexOf("path: '/admin/proxies'")
+    const schedulingIndex = componentSource.indexOf("path: '/admin/scheduling-mechanisms'")
+    const redeemIndex = componentSource.indexOf("path: '/admin/redeem'")
+
+    expect(proxiesIndex).toBeGreaterThan(-1)
+    expect(schedulingIndex).toBeGreaterThan(proxiesIndex)
+    expect(redeemIndex).toBeGreaterThan(schedulingIndex)
+  })
+
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()

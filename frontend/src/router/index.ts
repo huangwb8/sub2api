@@ -438,6 +438,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/scheduling-mechanisms',
+    name: 'AdminSchedulingMechanisms',
+    component: () => import('@/views/admin/SchedulingMechanismsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Scheduling Mechanisms',
+      titleKey: 'admin.schedulingMechanisms.title',
+      descriptionKey: 'admin.schedulingMechanisms.description'
+    }
+  },
+  {
     path: '/admin/redeem',
     name: 'AdminRedeem',
     component: () => import('@/views/admin/RedeemView.vue'),

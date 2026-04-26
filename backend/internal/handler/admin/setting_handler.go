@@ -1738,6 +1738,52 @@ func (h *SettingHandler) DeleteAdminAPIKey(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Admin API key deleted"})
 }
 
+// GetSchedulingMechanismSettings 获取全局调度机制与代理自动容错配置
+// GET /api/v1/admin/settings/scheduling-mechanisms
+func (h *SettingHandler) GetSchedulingMechanismSettings(c *gin.Context) {
+	settings, err := h.settingService.GetSchedulingMechanismSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, settings)
+}
+
+// UpdateSchedulingMechanismSettingsRequest 更新全局调度机制与代理自动容错配置请求
+type UpdateSchedulingMechanismSettingsRequest struct {
+	Mechanisms    []service.SchedulingMechanism `json:"mechanisms"`
+	ProxyFailover service.ProxyFailoverSettings `json:"proxy_failover"`
+}
+
+// UpdateSchedulingMechanismSettings 更新全局调度机制与代理自动容错配置
+// PUT /api/v1/admin/settings/scheduling-mechanisms
+func (h *SettingHandler) UpdateSchedulingMechanismSettings(c *gin.Context) {
+	var req UpdateSchedulingMechanismSettingsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	settings := &service.SchedulingMechanismSettings{
+		Mechanisms:    req.Mechanisms,
+		ProxyFailover: req.ProxyFailover,
+	}
+
+	if err := h.settingService.SetSchedulingMechanismSettings(c.Request.Context(), settings); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	updatedSettings, err := h.settingService.GetSchedulingMechanismSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, updatedSettings)
+}
+
 // GetOverloadCooldownSettings 获取529过载冷却配置
 // GET /api/v1/admin/settings/overload-cooldown
 func (h *SettingHandler) GetOverloadCooldownSettings(c *gin.Context) {

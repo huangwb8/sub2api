@@ -303,6 +303,9 @@ gateway:
     sticky_response_id_ttl_seconds: 3600
     # 兼容旧键：当 sticky_response_id_ttl_seconds 缺失时回退该值
     sticky_previous_response_ttl_seconds: 3600
+    # 粘性账号运行时错误率超过阈值且达到最小样本数时，清除 session 绑定以便重新调度
+    sticky_session_error_rate_threshold: 0.5
+    sticky_session_error_rate_min_samples: 3
     scheduler_score_weights:
       priority: 1.0
       load: 1.0

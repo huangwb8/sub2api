@@ -107,6 +107,12 @@ func TestLoadDefaultOpenAIWSConfig(t *testing.T) {
 	if cfg.Gateway.OpenAIWS.StickySessionTTLSeconds != 3600 {
 		t.Fatalf("Gateway.OpenAIWS.StickySessionTTLSeconds = %d, want 3600", cfg.Gateway.OpenAIWS.StickySessionTTLSeconds)
 	}
+	if cfg.Gateway.OpenAIWS.StickySessionErrorRateThreshold != 0.5 {
+		t.Fatalf("Gateway.OpenAIWS.StickySessionErrorRateThreshold = %v, want 0.5", cfg.Gateway.OpenAIWS.StickySessionErrorRateThreshold)
+	}
+	if cfg.Gateway.OpenAIWS.StickySessionErrorRateMinSamples != 3 {
+		t.Fatalf("Gateway.OpenAIWS.StickySessionErrorRateMinSamples = %d, want 3", cfg.Gateway.OpenAIWS.StickySessionErrorRateMinSamples)
+	}
 	if !cfg.Gateway.OpenAIWS.SessionHashReadOldFallback {
 		t.Fatalf("Gateway.OpenAIWS.SessionHashReadOldFallback = false, want true")
 	}
@@ -1526,6 +1532,16 @@ func TestValidateConfig_OpenAIWSRules(t *testing.T) {
 			name:    "sticky_previous_response_ttl_seconds 不能为负数",
 			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StickyPreviousResponseTTLSeconds = -1 },
 			wantErr: "gateway.openai_ws.sticky_previous_response_ttl_seconds",
+		},
+		{
+			name:    "sticky_session_error_rate_threshold 必须在范围内",
+			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StickySessionErrorRateThreshold = 1.1 },
+			wantErr: "gateway.openai_ws.sticky_session_error_rate_threshold",
+		},
+		{
+			name:    "sticky_session_error_rate_min_samples 不能为负数",
+			mutate:  func(c *Config) { c.Gateway.OpenAIWS.StickySessionErrorRateMinSamples = -1 },
+			wantErr: "gateway.openai_ws.sticky_session_error_rate_min_samples",
 		},
 		{
 			name:    "scheduler_score_weights 不能为负数",

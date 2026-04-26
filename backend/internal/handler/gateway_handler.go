@@ -1448,19 +1448,63 @@ func (h *GatewayHandler) CountTokens(c *gin.Context) {
 	}
 	sessionHash := h.gatewayService.GenerateSessionHash(parsedReq)
 
-	// 选择支持该模型的账号
-	account, err := h.gatewayService.SelectAccountForModel(c.Request.Context(), apiKey.GroupID, sessionHash, parsedReq.Model)
-	if err != nil {
-		reqLog.Warn("gateway.count_tokens_select_account_failed", zap.Error(err))
-		h.errorResponse(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable")
-		return
-	}
-	setOpsSelectedAccount(c, account.ID, account.Platform)
+	// 转发请求（不记录使用量、不占用并发槽位），但连接级错误仍参与账号 failover。
+	fs := NewFailoverState(h.maxAccountSwitches, false)
+	for {
+		account, err := h.gatewayService.SelectAccountForModelWithExclusions(c.Request.Context(), apiKey.GroupID, sessionHash, parsedReq.Model, fs.FailedAccountIDs)
+		if err != nil {
+			reqLog.Warn("gateway.count_tokens_select_account_failed", zap.Error(err))
+			if len(fs.FailedAccountIDs) == 0 {
+				h.errorResponse(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable")
+				return
+			}
+			action := fs.HandleSelectionExhausted(c.Request.Context())
+			switch action {
+			case FailoverContinue:
+				continue
+			case FailoverCanceled:
+				return
+			default:
+				if fs.LastFailoverErr != nil {
+					h.handleFailoverExhausted(c, fs.LastFailoverErr, service.PlatformAnthropic, false)
+				} else {
+					h.errorResponse(c, http.StatusBadGateway, "upstream_error", "All available accounts exhausted")
+				}
+				return
+			}
+		}
+		setOpsSelectedAccount(c, account.ID, account.Platform)
 
-	// 转发请求（不记录使用量）
-	if err := h.gatewayService.ForwardCountTokens(c.Request.Context(), c, account, parsedReq); err != nil {
-		reqLog.Error("gateway.count_tokens_forward_failed", zap.Int64("account_id", account.ID), zap.Error(err))
-		// 错误响应已在 ForwardCountTokens 中处理
+		writerSizeBeforeForward := c.Writer.Size()
+		err = h.gatewayService.ForwardCountTokens(c.Request.Context(), c, account, parsedReq)
+		if err == nil {
+			return
+		}
+
+		var failoverErr *service.UpstreamFailoverError
+		if errors.As(err, &failoverErr) {
+			if c.Writer.Size() != writerSizeBeforeForward {
+				h.handleFailoverExhausted(c, failoverErr, account.Platform, false)
+				return
+			}
+			action := fs.HandleFailoverError(c.Request.Context(), h.gatewayService, account.ID, account.Platform, failoverErr)
+			switch action {
+			case FailoverContinue:
+				continue
+			case FailoverExhausted:
+				h.handleFailoverExhausted(c, fs.LastFailoverErr, account.Platform, false)
+				return
+			case FailoverCanceled:
+				return
+			}
+		}
+
+		wroteFallback := h.ensureForwardErrorResponse(c, false)
+		reqLog.Error("gateway.count_tokens_forward_failed",
+			zap.Int64("account_id", account.ID),
+			zap.Bool("fallback_error_response_written", wroteFallback),
+			zap.Error(err),
+		)
 		return
 	}
 }

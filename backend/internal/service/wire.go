@@ -227,14 +227,38 @@ func ProvideRateLimitService(
 	tempUnschedCache TempUnschedCache,
 	timeoutCounterCache TimeoutCounterCache,
 	openAI403CounterCache OpenAI403CounterCache,
+	proxyFailoverService *ProxyFailoverService,
 	settingService *SettingService,
 	tokenCacheInvalidator TokenCacheInvalidator,
 ) *RateLimitService {
 	svc := NewRateLimitService(accountRepo, usageRepo, cfg, geminiQuotaService, tempUnschedCache)
 	svc.SetTimeoutCounterCache(timeoutCounterCache)
 	svc.SetOpenAI403CounterCache(openAI403CounterCache)
+	svc.SetProxyFailoverService(proxyFailoverService)
 	svc.SetSettingService(settingService)
 	svc.SetTokenCacheInvalidator(tokenCacheInvalidator)
+	return svc
+}
+
+func ProvideProxyFailoverService(
+	settingService *SettingService,
+	accountRepo AccountRepository,
+	proxyRepo ProxyRepository,
+	proxyProber ProxyExitInfoProber,
+	proxyLatencyCache ProxyLatencyCache,
+	tempUnschedCache TempUnschedCache,
+	schedulerSnapshot *SchedulerSnapshotService,
+) *ProxyFailoverService {
+	svc := NewProxyFailoverService(
+		settingService,
+		accountRepo,
+		proxyRepo,
+		proxyProber,
+		proxyLatencyCache,
+		tempUnschedCache,
+		schedulerSnapshot,
+	)
+	svc.Start()
 	return svc
 }
 
@@ -559,6 +583,7 @@ var ProviderSet = wire.NewSet(
 	ProvideOpenAITokenProvider,
 	ProvideClaudeTokenProvider,
 	NewAntigravityGatewayService,
+	ProvideProxyFailoverService,
 	ProvideRateLimitService,
 	NewAccountUsageService,
 	NewAccountTestService,

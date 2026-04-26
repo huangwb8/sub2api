@@ -228,6 +228,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 						continue
 					}
 				}
+				h.gatewayService.TempUnscheduleRetryableError(c.Request.Context(), account.ID, failoverErr)
 				h.gatewayService.RecordOpenAIAccountSwitch()
 				failedAccountIDs[account.ID] = struct{}{}
 				lastFailoverErr = failoverErr

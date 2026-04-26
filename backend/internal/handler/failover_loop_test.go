@@ -378,6 +378,19 @@ func TestHandleFailoverError_TempUnschedule(t *testing.T) {
 		require.Empty(t, mock.calls)
 	})
 
+	t.Run("连接级502错误立即调用TempUnschedule", func(t *testing.T) {
+		mock := &mockTempUnscheduler{}
+		fs := NewFailoverState(3, false)
+		err := newTestFailoverErr(502, false, false)
+
+		fs.HandleFailoverError(context.Background(), mock, 42, "openai", err)
+
+		require.Len(t, mock.calls, 1)
+		require.Equal(t, int64(42), mock.calls[0].accountID)
+		require.Equal(t, 502, mock.calls[0].failoverErr.StatusCode)
+		require.False(t, mock.calls[0].failoverErr.RetryableOnSameAccount)
+	})
+
 	t.Run("重试错误耗尽后调用TempUnschedule_传入正确参数", func(t *testing.T) {
 		mock := &mockTempUnscheduler{}
 		fs := NewFailoverState(3, false)

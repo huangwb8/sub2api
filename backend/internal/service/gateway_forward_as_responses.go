@@ -132,8 +132,7 @@ func (s *GatewayService) ForwardAsResponses(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeResponsesError(c, http.StatusBadGateway, "server_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		return nil, newUpstreamRequestFailoverError(safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
 

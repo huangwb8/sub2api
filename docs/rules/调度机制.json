@@ -1,0 +1,113 @@
+{
+  "mechanisms": [
+    {
+      "id": "openai-oauth-502-gateway",
+      "name": "OpenAI OAuth 502 Gateway",
+      "platform": "openai",
+      "account_type": "oauth",
+      "enabled": true,
+      "hidden": false,
+      "description": "针对 Bad Gateway、upstream gateway 抖动的短冷却规则。",
+      "temp_unschedulable_enabled": true,
+      "temp_unschedulable_rules": [
+        {
+          "error_code": 502,
+          "keywords": ["bad gateway", "server error", "upstream"],
+          "duration_minutes": 3,
+          "description": "OpenAI 或代理链路返回 502，短暂冷却 3 分钟。"
+        }
+      ]
+    },
+    {
+      "id": "openai-oauth-503-overloaded",
+      "name": "OpenAI OAuth 503 Overloaded",
+      "platform": "openai",
+      "account_type": "oauth",
+      "enabled": true,
+      "hidden": false,
+      "description": "针对上游过载或容量不足的中等冷却规则。",
+      "temp_unschedulable_enabled": true,
+      "temp_unschedulable_rules": [
+        {
+          "error_code": 503,
+          "keywords": ["overloaded", "unavailable", "capacity"],
+          "duration_minutes": 5,
+          "description": "上游返回 503 / capacity 相关报错时冷却 5 分钟。"
+        }
+      ]
+    },
+    {
+      "id": "openai-oauth-500-internal",
+      "name": "OpenAI OAuth 500 Internal",
+      "platform": "openai",
+      "account_type": "oauth",
+      "enabled": true,
+      "hidden": false,
+      "description": "针对 OpenAI 内部错误的短冷却规则。",
+      "temp_unschedulable_enabled": true,
+      "temp_unschedulable_rules": [
+        {
+          "error_code": 500,
+          "keywords": ["internal", "error", "server"],
+          "duration_minutes": 3,
+          "description": "OpenAI 内部错误通常较短，先冷却 3 分钟。"
+        }
+      ]
+    },
+    {
+      "id": "openai-oauth-504-timeout",
+      "name": "OpenAI OAuth 504 Timeout",
+      "platform": "openai",
+      "account_type": "oauth",
+      "enabled": true,
+      "hidden": false,
+      "description": "针对上游网关超时的短冷却规则。",
+      "temp_unschedulable_enabled": true,
+      "temp_unschedulable_rules": [
+        {
+          "error_code": 504,
+          "keywords": ["gateway timeout", "timeout", "upstream"],
+          "duration_minutes": 4,
+          "description": "代理链路或上游网关超时，冷却 4 分钟。"
+        }
+      ]
+    },
+    {
+      "id": "openai-oauth-52x-edge-timeout",
+      "name": "OpenAI OAuth 52x Edge Timeout",
+      "platform": "openai",
+      "account_type": "oauth",
+      "enabled": true,
+      "hidden": false,
+      "description": "针对 Cloudflare 边缘超时或连接中断的补充规则。",
+      "temp_unschedulable_enabled": true,
+      "temp_unschedulable_rules": [
+        {
+          "error_code": 522,
+          "keywords": ["connection timed out", "cloudflare", "timeout"],
+          "duration_minutes": 4,
+          "description": "Cloudflare 522 连接超时时冷却 4 分钟。"
+        },
+        {
+          "error_code": 524,
+          "keywords": ["a timeout occurred", "cloudflare", "timeout"],
+          "duration_minutes": 4,
+          "description": "Cloudflare 524 上游响应超时时冷却 4 分钟。"
+        }
+      ]
+    }
+  ],
+  "proxy_failover": {
+    "enabled": true,
+    "auto_test_enabled": true,
+    "probe_interval_minutes": 5,
+    "failure_threshold": 3,
+    "failure_window_minutes": 10,
+    "cooldown_minutes": 15,
+    "max_accounts_per_proxy": 6,
+    "max_migrations_per_cycle": 12,
+    "prefer_same_country": true,
+    "only_openai_oauth": true,
+    "temp_unsched_minutes": 10
+  }
+}

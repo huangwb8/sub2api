@@ -25,6 +25,7 @@ type RateLimitService struct {
 	tempUnschedCache      TempUnschedCache
 	timeoutCounterCache   TimeoutCounterCache
 	openAI403CounterCache OpenAI403CounterCache
+	proxyFailoverService  *ProxyFailoverService
 	settingService        *SettingService
 	tokenCacheInvalidator TokenCacheInvalidator
 	usageCacheMu          sync.RWMutex
@@ -82,6 +83,11 @@ func (s *RateLimitService) SetOpenAI403CounterCache(cache OpenAI403CounterCache)
 	s.openAI403CounterCache = cache
 }
 
+// SetProxyFailoverService 设置代理自动容错服务（可选依赖）
+func (s *RateLimitService) SetProxyFailoverService(proxyFailoverService *ProxyFailoverService) {
+	s.proxyFailoverService = proxyFailoverService
+}
+
 // SetSettingService 设置系统设置服务（可选依赖）
 func (s *RateLimitService) SetSettingService(settingService *SettingService) {
 	s.settingService = settingService
@@ -105,6 +111,9 @@ const (
 // CheckErrorPolicy 检查自定义错误码和临时不可调度规则。
 // 自定义错误码开启时覆盖后续所有逻辑（包括临时不可调度）。
 func (s *RateLimitService) CheckErrorPolicy(ctx context.Context, account *Account, statusCode int, responseBody []byte) ErrorPolicyResult {
+	if s == nil {
+		return ErrorPolicyNone
+	}
 	if account.IsCustomErrorCodesEnabled() {
 		if account.ShouldHandleErrorCode(statusCode) {
 			return ErrorPolicyMatched
@@ -124,7 +133,11 @@ func (s *RateLimitService) CheckErrorPolicy(ctx context.Context, account *Accoun
 // HandleUpstreamError 处理上游错误响应，标记账号状态
 // 返回是否应该停止该账号的调度
 func (s *RateLimitService) HandleUpstreamError(ctx context.Context, account *Account, statusCode int, headers http.Header, responseBody []byte) (shouldDisable bool) {
+	if s == nil || account == nil {
+		return false
+	}
 	customErrorCodesEnabled := account.IsCustomErrorCodesEnabled()
+	s.recordProxyUpstreamFailure(ctx, account, statusCode, responseBody)
 
 	// 池模式默认不标记本地账号状态；仅当用户显式配置自定义错误码时按本地策略处理。
 	if account.IsPoolMode() && !customErrorCodesEnabled {
@@ -1440,10 +1453,7 @@ const tempUnschedBodyMaxBytes = 64 << 10
 const tempUnschedMessageMaxBytes = 2048
 
 func (s *RateLimitService) tryTempUnschedulable(ctx context.Context, account *Account, statusCode int, responseBody []byte) bool {
-	if account == nil {
-		return false
-	}
-	if !account.IsTempUnschedulableEnabled() {
+	if s == nil || account == nil {
 		return false
 	}
 	// 401 首次命中可临时不可调度（给 token 刷新窗口）；
@@ -1463,7 +1473,7 @@ func (s *RateLimitService) tryTempUnschedulable(ctx context.Context, account *Ac
 			return false
 		}
 	}
-	rules := account.GetTempUnschedulableRules()
+	rules := s.resolveTempUnschedulableRules(ctx, account)
 	if len(rules) == 0 {
 		return false
 	}
@@ -1492,6 +1502,45 @@ func (s *RateLimitService) tryTempUnschedulable(ctx context.Context, account *Ac
 	}
 
 	return false
+}
+
+func (s *RateLimitService) resolveTempUnschedulableRules(ctx context.Context, account *Account) []TempUnschedulableRule {
+	if account == nil {
+		return nil
+	}
+
+	rules := make([]TempUnschedulableRule, 0, 8)
+	if account.IsTempUnschedulableEnabled() {
+		rules = append(rules, account.GetTempUnschedulableRules()...)
+	}
+	if s.settingService == nil {
+		return rules
+	}
+
+	settings, err := s.settingService.GetSchedulingMechanismSettings(ctx)
+	if err != nil {
+		slog.Warn("temp_unsched_load_scheduling_settings_failed", "account_id", account.ID, "error", err)
+		return rules
+	}
+	for _, mechanism := range settings.Mechanisms {
+		if !mechanismMatchesAccount(mechanism, account) {
+			continue
+		}
+		rules = append(rules, mechanism.TempUnschedulableRules...)
+	}
+	return rules
+}
+
+func (s *RateLimitService) recordProxyUpstreamFailure(ctx context.Context, account *Account, statusCode int, responseBody []byte) {
+	if s == nil || s.proxyFailoverService == nil || account == nil {
+		return
+	}
+
+	message := sanitizeUpstreamErrorMessage(strings.TrimSpace(extractUpstreamErrorMessage(responseBody)))
+	if message == "" && len(responseBody) > 0 {
+		message = truncateForLog(responseBody, 512)
+	}
+	s.proxyFailoverService.RecordUpstreamFailure(ctx, account, statusCode, message)
 }
 
 func wasTempUnschedByStatusCode(reason string, statusCode int) bool {

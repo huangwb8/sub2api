@@ -135,8 +135,7 @@ func (s *GatewayService) ForwardAsChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeGatewayCCError(c, http.StatusBadGateway, "server_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		return nil, newUpstreamRequestFailoverError(safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
