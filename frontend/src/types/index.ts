@@ -1261,6 +1261,7 @@ export interface DashboardRecommendationsResponse {
 
 export interface DashboardOversellCalculatorRequest {
   actual_cost_cny: number
+  residential_ip_cost_cny: number
   capacity_units_per_product: number
   confidence_level: number
   profit_rate_percent: number

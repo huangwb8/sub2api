@@ -22,11 +22,20 @@ const (
 
 type DashboardOversellCalculatorRequest struct {
 	ActualCostCNY           float64 `json:"actual_cost_cny"`
+	ResidentialIPCostCNY    float64 `json:"residential_ip_cost_cny"`
 	CapacityUnitsPerProduct float64 `json:"capacity_units_per_product"`
 	ConfidenceLevel         float64 `json:"confidence_level"`
 	ProfitRatePercent       float64 `json:"profit_rate_percent"`
 	ProfitMode              string  `json:"profit_mode"`
 	TargetProfitTotalCNY    float64 `json:"target_profit_total_cny"`
+}
+
+func (r DashboardOversellCalculatorRequest) TotalCostCNY() float64 {
+	total := r.ActualCostCNY + r.ResidentialIPCostCNY
+	if total < 0 {
+		return 0
+	}
+	return total
 }
 
 type DashboardOversellEstimate struct {
@@ -320,6 +329,9 @@ func normalizeDashboardOversellRequest(
 	if normalized.ActualCostCNY <= 0 {
 		normalized.ActualCostCNY = defaults.ActualCostCNY
 	}
+	if normalized.ResidentialIPCostCNY < 0 {
+		normalized.ResidentialIPCostCNY = defaults.ResidentialIPCostCNY
+	}
 	if normalized.CapacityUnitsPerProduct <= 0 {
 		normalized.CapacityUnitsPerProduct = defaults.CapacityUnitsPerProduct
 	}
@@ -368,8 +380,9 @@ func calculateDashboardOversellScenario(
 	}
 	result.PriceMultiplier = priceMultiplier
 
-	if req.ActualCostCNY <= 0 {
-		result.Reason = "缺少可用的实际商品成本，暂时无法给出超售建议"
+	totalCostCNY := req.TotalCostCNY()
+	if totalCostCNY <= 0 {
+		result.Reason = "缺少可用的实际商品或住宅 IP 成本，暂时无法给出超售建议"
 		return result, buildDashboardOversellPlanRecommendations(plans, 0)
 	}
 	if req.CapacityUnitsPerProduct <= 0 {
@@ -485,7 +498,7 @@ func dashboardOversellRequiredMonthlyPrice(
 		return 0
 	}
 
-	costPerUnit := req.ActualCostCNY / req.CapacityUnitsPerProduct
+	costPerUnit := req.TotalCostCNY() / req.CapacityUnitsPerProduct
 	basePrice := costPerUnit * riskAdjustedMeanUnits * priceMultiplier
 	return basePrice + req.TargetProfitTotalCNY/float64(users)
 }

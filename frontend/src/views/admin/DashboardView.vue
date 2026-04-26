@@ -572,7 +572,11 @@
                     {{ oversellScenario ? formatSignedCny(oversellScenario.plannedMonthlyProfit) : '--' }}
                   </p>
                   <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) }) : '--' }}
+                    {{
+                      oversellScenario
+                        ? `${t('admin.dashboard.oversell.result.revenueHint', { value: formatCost(oversellScenario.plannedMonthlyRevenue) })} · ${formatCny(oversellScenario.totalProcurementCost)}/个`
+                        : '--'
+                    }}
                   </p>
                 </div>
 
@@ -586,7 +590,11 @@
                     {{ oversellScenario ? formatCny(oversellScenario.conservativeMonthlyCost) : '--' }}
                   </p>
                   <p class="calculator-result-card__meta">
-                    {{ oversellScenario ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')}` : '--' }}
+                    {{
+                      oversellScenario
+                        ? `${formatDecimal(oversellScenario.riskAdjustedMeanUnits, 3)} ${t('admin.dashboard.oversell.form.units')} / ${t('admin.dashboard.oversell.form.users')} · ${formatCny(oversellScenario.procurementCost)} + ${formatCny(oversellScenario.residentialIpCost)}`
+                        : '--'
+                    }}
                   </p>
                 </div>
 
@@ -620,7 +628,7 @@
                   <h5 class="calculator-parameter-group__title">
                     {{ t('admin.dashboard.oversell.sections.cost') }}
                   </h5>
-                  <div class="calculator-parameter-group__fields grid-cols-1 sm:grid-cols-2">
+                  <div class="calculator-parameter-group__fields grid-cols-1 sm:grid-cols-3">
                     <div class="calculator-field">
                       <div class="calculator-field__header">
                         <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.procurementCost') }}</label>
@@ -636,6 +644,30 @@
                       </div>
                       <input
                         v-model.number="oversellForm.procurementCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="input calculator-field__control"
+                      />
+                      <p class="calculator-field__hint">{{ t('admin.dashboard.oversell.form.cnyPerItem') }}</p>
+                    </div>
+
+                    <div class="calculator-field">
+                      <div class="calculator-field__header">
+                        <label class="input-label min-w-0 flex-1">{{ t('admin.dashboard.oversell.form.residentialIpCost') }}</label>
+                        <HelpTooltip
+                          data-testid="oversell-residential-ip-cost-help"
+                          class="shrink-0"
+                          :content="t('admin.dashboard.oversell.tooltips.residentialIpCost')"
+                        >
+                          <template #trigger>
+                            <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500 dark:hover:text-gray-200">?</span>
+                          </template>
+                        </HelpTooltip>
+                      </div>
+                      <input
+                        v-model.number="oversellForm.residentialIpCost"
+                        data-testid="oversell-residential-ip-cost"
                         type="number"
                         min="0"
                         step="0.01"
@@ -973,6 +1005,7 @@ const oversellForm = reactive({
   userCount: 30,
   plannedPrice: 50,
   procurementCost: 50,
+  residentialIpCost: 0,
   capacityPerItem: 3,
   profitRatePercent: 20,
   profitMode: 'costPlus' as OversellProfitMode,
@@ -1223,12 +1256,14 @@ const oversellScenario = computed(() => {
   const distribution = resolveUsageDistribution(estimate, oversellForm.heavyUsage)
   const rangeWidth = distribution.heavyUsage
   const procurementCost = Math.max(oversellForm.procurementCost || 0, 0)
+  const residentialIpCost = Math.max(oversellForm.residentialIpCost || 0, 0)
+  const totalProcurementCost = procurementCost + residentialIpCost
   const capacityPerItem = Math.max(oversellForm.capacityPerItem || 0, 0.0001)
   const plannedPrice = Math.max(oversellForm.plannedPrice || 0, 0)
   const profitRate = resolveProfitRate(oversellForm.profitRatePercent || 0)
   const priceMultiplier = resolvePriceMultiplier(oversellForm.profitMode, profitRate)
   const lossRisk = resolveLossRisk(oversellForm.confidenceLevel)
-  const unitCostPerTheoretical = procurementCost / capacityPerItem
+  const unitCostPerTheoretical = totalProcurementCost / capacityPerItem
   const riskBufferUnits = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / (2 * userCount))
   const riskAdjustedMeanUnits = distribution.meanUpperBound + riskBufferUnits
   const expectedCostPerUser = unitCostPerTheoretical * distribution.meanUpperBound
@@ -1247,6 +1282,9 @@ const oversellScenario = computed(() => {
 
   return {
     userCount,
+    procurementCost,
+    residentialIpCost,
+    totalProcurementCost,
     meanUpperBound: distribution.meanUpperBound,
     riskAdjustedMeanUnits,
     riskBufferUnits,
@@ -1613,6 +1651,7 @@ const loadOversellMathBaseline = async () => {
 
     const initialInput = response.input || response.defaults
     oversellForm.procurementCost = initialInput.actual_cost_cny
+    oversellForm.residentialIpCost = initialInput.residential_ip_cost_cny || 0
     oversellForm.capacityPerItem = initialInput.capacity_units_per_product
     oversellForm.heavyUsage = initialInput.capacity_units_per_product
     oversellForm.userCount = Math.max(response.estimate.sampled_subscription_count || 0, 1)
