@@ -770,6 +770,73 @@
     line-height: 1.35;
   }
 
+  .bensz-home__pricing-idle {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(212, 148, 10, 0.06));
+  }
+
+  .bensz-home__pricing-idle-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .bensz-home__pricing-idle-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: var(--accent-dark);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+
+  .bensz-home__pricing-idle-title::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.95) 0 2px, transparent 3px),
+      conic-gradient(from 180deg, rgba(15, 118, 110, 0.9), rgba(212, 148, 10, 0.86), rgba(15, 118, 110, 0.9));
+    box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.14);
+  }
+
+  .bensz-home__pricing-idle-window {
+    flex: 0 0 auto;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .bensz-home__pricing-idle-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .bensz-home__pricing-idle-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 25px;
+    padding: 4px 8px;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--accent-dark);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
   .bensz-home__pricing-list {
     display: grid;
     gap: 10px;
@@ -992,6 +1059,16 @@
     .bensz-home__pricing-stats {
       grid-template-columns: 1fr;
       gap: 8px;
+    }
+
+    .bensz-home__pricing-idle-head {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bensz-home__pricing-idle-window {
+      white-space: normal;
     }
 
     .bensz-home__feat {
@@ -1385,6 +1462,49 @@
       return items;
     }
 
+    function formatCompactNumber(value) {
+      var number = Number(value);
+      if (!isFinite(number)) return '';
+      return Number(number.toPrecision(10)).toString();
+    }
+
+    function formatClockTime(value) {
+      var time = String(value || '').trim();
+      if (/^\d{2}:\d{2}:00$/.test(time)) return time.slice(0, 5);
+      return time;
+    }
+
+    function buildIdleBilling(plan) {
+      var start = formatClockTime(plan.idle_start_time);
+      var end = formatClockTime(plan.idle_end_time);
+      var hasIdleRate = plan.idle_rate_multiplier != null;
+      var hasIdleProfit = plan.idle_extra_profit_rate_percent != null;
+
+      if (!start || !end || (!hasIdleRate && !hasIdleProfit)) return '';
+
+      var tags = [];
+      if (hasIdleRate) {
+        tags.push('闲时倍率 ×' + formatCompactNumber(plan.idle_rate_multiplier));
+      }
+      if (hasIdleProfit) {
+        tags.push('闲时盈利率 ' + formatCompactNumber(plan.idle_extra_profit_rate_percent) + '%');
+      }
+
+      return [
+        '<div class="bensz-home__pricing-idle">',
+        '  <div class="bensz-home__pricing-idle-head">',
+        '    <span class="bensz-home__pricing-idle-title">闲时动态计费</span>',
+        '    <span class="bensz-home__pricing-idle-window">' + escapeHtml(start + '-' + end + ' 北京时间') + '</span>',
+        '  </div>',
+        '  <div class="bensz-home__pricing-idle-tags">',
+             tags.map(function (tag) {
+               return '<span class="bensz-home__pricing-idle-tag">' + escapeHtml(tag) + '</span>';
+             }).join(''),
+        '  </div>',
+        '</div>'
+      ].join('');
+    }
+
     function isAuthenticated() {
       if (typeof runtime.isAuthenticated === 'boolean') {
         return runtime.isAuthenticated;
@@ -1416,6 +1536,7 @@
       var quotaItems = buildQuotaItems(plan);
       var featured = index === 0;
       var rateMultiplier = Number(plan.rate_multiplier);
+      var idleBilling = buildIdleBilling(plan);
       var platformLabel = plan.group_platform ? String(plan.group_platform).toUpperCase() : 'AI';
       var description = plan.description ? escapeHtml(plan.description) : '适合需要稳定、规范化接入科研 AI 工作流的使用场景。';
       var originalPrice = plan.original_price != null ? '<span class="bensz-home__pricing-original">' + escapeHtml(formatPrice(plan.original_price)) + '</span>' : '';
@@ -1459,6 +1580,7 @@
               }).join(''),
         '    </div>',
         '  </div>',
+        idleBilling,
         '  <div class="bensz-home__pricing-block">',
         '    <ul class="bensz-home__pricing-list">',
               featureList.slice(0, 4).map(function (item) {

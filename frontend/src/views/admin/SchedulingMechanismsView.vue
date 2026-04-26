@@ -1,94 +1,93 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-dark-700 dark:bg-dark-800">
+      <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-800">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div class="max-w-3xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-              {{ t('admin.schedulingMechanisms.proxyFailoverEyebrow') }}
-            </p>
-            <h2 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
               {{ t('admin.schedulingMechanisms.proxyFailoverTitle') }}
             </h2>
-            <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+            <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-300">
               {{ t('admin.schedulingMechanisms.proxyFailoverDescription') }}
             </p>
           </div>
-          <div class="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
-            {{ t('admin.schedulingMechanisms.proxyFailoverHint') }}
+        </div>
+
+        <div class="mt-5 space-y-3">
+          <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            <label class="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900/40">
+              <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.enabled') }}
+              </span>
+              <input v-model="settings.proxy_failover.enabled" type="checkbox" class="toggle shrink-0" />
+            </label>
+            <label class="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900/40">
+              <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.autoTestEnabled') }}
+              </span>
+              <input v-model="settings.proxy_failover.auto_test_enabled" type="checkbox" class="toggle shrink-0" />
+            </label>
+            <label class="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900/40">
+              <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.preferSameCountry') }}
+              </span>
+              <input v-model="settings.proxy_failover.prefer_same_country" type="checkbox" class="toggle shrink-0" />
+            </label>
+            <label class="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900/40">
+              <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.onlyOpenAIOAuth') }}
+              </span>
+              <input v-model="settings.proxy_failover.only_openai_oauth" type="checkbox" class="toggle shrink-0" />
+            </label>
+          </div>
+
+          <div class="grid gap-2 md:grid-cols-2">
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.probeIntervalMinutes') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.probe_interval_minutes" type="number" min="1" max="120" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.failureThreshold') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.failure_threshold" type="number" min="1" max="10" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.failureWindowMinutes') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.failure_window_minutes" type="number" min="1" max="120" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.cooldownMinutes') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.cooldown_minutes" type="number" min="1" max="240" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.tempUnschedMinutes') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.temp_unsched_minutes" type="number" min="1" max="240" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.maxAccountsPerProxy') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.max_accounts_per_proxy" type="number" min="1" max="100" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
+            <label class="flex min-h-12 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-700">
+              <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ t('admin.schedulingMechanisms.fields.maxMigrationsPerCycle') }}
+              </span>
+              <input v-model.number="settings.proxy_failover.max_migrations_per_cycle" type="number" min="1" max="200" class="input h-9 w-24 shrink-0 px-3 py-1.5 text-right" />
+            </label>
           </div>
         </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.enabled') }}
-            </span>
-            <input v-model="settings.proxy_failover.enabled" type="checkbox" class="toggle" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.autoTestEnabled') }}
-            </span>
-            <input v-model="settings.proxy_failover.auto_test_enabled" type="checkbox" class="toggle" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.preferSameCountry') }}
-            </span>
-            <input v-model="settings.proxy_failover.prefer_same_country" type="checkbox" class="toggle" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.onlyOpenAIOAuth') }}
-            </span>
-            <input v-model="settings.proxy_failover.only_openai_oauth" type="checkbox" class="toggle" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.probeIntervalMinutes') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.probe_interval_minutes" type="number" min="1" max="120" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.failureThreshold') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.failure_threshold" type="number" min="1" max="10" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.failureWindowMinutes') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.failure_window_minutes" type="number" min="1" max="120" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.cooldownMinutes') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.cooldown_minutes" type="number" min="1" max="240" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.tempUnschedMinutes') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.temp_unsched_minutes" type="number" min="1" max="240" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.maxAccountsPerProxy') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.max_accounts_per_proxy" type="number" min="1" max="100" class="input" />
-          </label>
-          <label class="space-y-2 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
-            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {{ t('admin.schedulingMechanisms.fields.maxMigrationsPerCycle') }}
-            </span>
-            <input v-model.number="settings.proxy_failover.max_migrations_per_cycle" type="number" min="1" max="200" class="input" />
-          </label>
-        </div>
-
-        <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
           <router-link to="/admin/proxies" class="btn btn-secondary">
             {{ t('admin.schedulingMechanisms.backToProxies') }}
           </router-link>

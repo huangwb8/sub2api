@@ -3,16 +3,13 @@
     <TablePageLayout>
       <template #filters>
         <div class="space-y-4">
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-900/60">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div class="rounded-xl border border-gray-200 bg-white/80 p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900/70">
+            <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
               <div class="max-w-3xl">
-                <div class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-                  {{ t('admin.proxies.failoverEyebrow') }}
-                </div>
-                <div class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                <div class="text-lg font-semibold text-gray-900 dark:text-white">
                   {{ t('admin.proxies.failoverTitle') }}
                 </div>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
                   {{ t('admin.proxies.failoverDescription') }}
                 </p>
               </div>
@@ -27,36 +24,36 @@
               </div>
             </div>
 
-            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+            <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.enabled') }}
                 </span>
                 <input v-model="proxyFailoverSettings.enabled" type="checkbox" class="toggle" />
               </label>
-              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.autoTestEnabled') }}
                 </span>
                 <input v-model="proxyFailoverSettings.auto_test_enabled" type="checkbox" class="toggle" />
               </label>
-              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.probeIntervalMinutes') }}
                 </span>
-                <input v-model.number="proxyFailoverSettings.probe_interval_minutes" type="number" min="1" max="120" class="input" />
+                <input v-model.number="proxyFailoverSettings.probe_interval_minutes" type="number" min="1" max="120" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
               </label>
-              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.failureThreshold') }}
                 </span>
-                <input v-model.number="proxyFailoverSettings.failure_threshold" type="number" min="1" max="10" class="input" />
+                <input v-model.number="proxyFailoverSettings.failure_threshold" type="number" min="1" max="10" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
               </label>
-              <label class="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.cooldownMinutes') }}
                 </span>
-                <input v-model.number="proxyFailoverSettings.cooldown_minutes" type="number" min="1" max="240" class="input" />
+                <input v-model.number="proxyFailoverSettings.cooldown_minutes" type="number" min="1" max="240" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
               </label>
             </div>
           </div>

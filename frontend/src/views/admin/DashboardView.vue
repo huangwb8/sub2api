@@ -571,6 +571,15 @@
                   <p data-testid="oversell-residential-ip-cost" class="calculator-result-card__value">
                     {{ oversellScenario ? formatCny(oversellScenario.residentialIp.monthlyCostCNY) : '--' }}
                   </p>
+                  <p data-testid="oversell-residential-ip-traffic" class="calculator-result-card__meta font-semibold text-violet-700 dark:text-violet-100">
+                    {{
+                      oversellScenario
+                        ? t('admin.dashboard.oversell.result.residentialIpTraffic', {
+                            traffic: formatDecimal(oversellScenario.residentialIp.monthlyTrafficGB, 2)
+                          })
+                        : '--'
+                    }}
+                  </p>
                   <p class="calculator-result-card__meta">
                     {{
                       oversellScenario
@@ -1271,11 +1280,15 @@ const resolveUsageDistribution = (
 
 const resolveResidentialIPMonthlyCost = (
   estimate: DashboardOversellCalculatorResponse['estimate'],
-  priceUSDPerGBMonth: number
+  priceUSDPerGBMonth: number,
+  modeledUserCount: number
 ) => {
   const actualDays = Math.max(Math.round(estimate.residential_ip_actual_days || 0), 0)
-  const involvedUsers = Math.max(Math.round(estimate.residential_ip_involved_users || 0), 0)
-  const totalTrafficGB = Math.max(estimate.residential_ip_total_traffic_gb || 0, 0)
+  const sampledInvolvedUsers = Math.max(Math.round(estimate.residential_ip_involved_users || 0), 0)
+  const modeledUsers = Math.max(Math.round(modeledUserCount || 0), 1)
+  const sampledTotalTrafficGB = Math.max(estimate.residential_ip_total_traffic_gb || 0, 0)
+  const projectionRatio = sampledInvolvedUsers > 0 ? modeledUsers / sampledInvolvedUsers : 0
+  const totalTrafficGB = sampledTotalTrafficGB * projectionRatio
   const normalizedPrice = Math.max(priceUSDPerGBMonth || 0, 0)
   const fxRateUSDCNY = Math.max(estimate.residential_ip_fx_rate_usd_cny || 0, 0)
   const monthlyCostUSD =
@@ -1283,11 +1296,18 @@ const resolveResidentialIPMonthlyCost = (
       ? (totalTrafficGB / actualDays) * normalizedPrice * 30
       : 0
   const monthlyCostCNY = monthlyCostUSD * fxRateUSDCNY
+  const monthlyTrafficGB =
+    actualDays > 0 && totalTrafficGB > 0
+      ? (totalTrafficGB / actualDays) * 30
+      : 0
 
   return {
     actualDays,
-    involvedUsers,
+    involvedUsers: modeledUsers,
+    sampledInvolvedUsers,
     totalTrafficGB,
+    sampledTotalTrafficGB,
+    monthlyTrafficGB,
     priceUSDPerGBMonth: normalizedPrice,
     fxRateUSDCNY,
     fxRateSource: estimate.residential_ip_fx_rate_source || '',
@@ -1309,28 +1329,38 @@ const oversellScenario = computed(() => {
   const procurementCost = Math.max(oversellForm.procurementCost || 0, 0)
   const residentialIp = resolveResidentialIPMonthlyCost(
     estimate,
-    oversellForm.residentialIpPriceUSDPerGBMonth
+    oversellForm.residentialIpPriceUSDPerGBMonth,
+    userCount
   )
-  const totalProcurementCost = procurementCost + residentialIp.monthlyCostCNY
+  const residentialIpCostPerUser = residentialIp.monthlyCostCNY / userCount
   const capacityPerItem = Math.max(oversellForm.capacityPerItem || 0, 0.0001)
   const plannedPrice = Math.max(oversellForm.plannedPrice || 0, 0)
   const profitRate = resolveProfitRate(oversellForm.profitRatePercent || 0)
   const priceMultiplier = resolvePriceMultiplier(oversellForm.profitMode, profitRate)
   const lossRisk = resolveLossRisk(oversellForm.confidenceLevel)
-  const unitCostPerTheoretical = totalProcurementCost / capacityPerItem
+  const unitCostPerTheoretical = procurementCost / capacityPerItem
   const riskBufferUnits = rangeWidth * Math.sqrt(Math.log(1 / lossRisk) / (2 * userCount))
   const riskAdjustedMeanUnits = distribution.meanUpperBound + riskBufferUnits
-  const expectedCostPerUser = unitCostPerTheoretical * distribution.meanUpperBound
-  const riskAdjustedCostPerUser = unitCostPerTheoretical * riskAdjustedMeanUnits
-  const conservativeMonthlyCost = riskAdjustedCostPerUser * userCount
+  const expectedProcurementCostPerUser = unitCostPerTheoretical * distribution.meanUpperBound
+  const riskAdjustedProcurementCostPerUser = unitCostPerTheoretical * riskAdjustedMeanUnits
+  const expectedCostPerUser = expectedProcurementCostPerUser + residentialIpCostPerUser
+  const riskAdjustedCostPerUser = riskAdjustedProcurementCostPerUser + residentialIpCostPerUser
+  const conservativeMonthlyCost = riskAdjustedProcurementCostPerUser * userCount + residentialIp.monthlyCostCNY
   const floorPrice = riskAdjustedCostPerUser * priceMultiplier
   const requiredPrice = floorPrice
   const plannedMonthlyRevenue = plannedPrice * userCount
   const plannedMonthlyProfit = plannedMonthlyRevenue - conservativeMonthlyCost
-  const affordableUsageThreshold =
+  const affordableCostBeforeProfit =
     oversellForm.profitMode === 'netMargin'
-      ? (plannedPrice * Math.max(1 - profitRate, 0.0001)) / Math.max(unitCostPerTheoretical, 0.0001)
-      : plannedPrice / Math.max(unitCostPerTheoretical * priceMultiplier, 0.0001)
+      ? plannedPrice * Math.max(1 - profitRate, 0.0001)
+      : plannedPrice / priceMultiplier
+  const affordableProcurementCost = Math.max(affordableCostBeforeProfit - residentialIpCostPerUser, 0)
+  const affordableUsageThreshold =
+    unitCostPerTheoretical > 0
+      ? affordableProcurementCost / unitCostPerTheoretical
+      : affordableProcurementCost > 0
+        ? Number.POSITIVE_INFINITY
+        : 0
   const safetyBuffer = affordableUsageThreshold - riskAdjustedMeanUnits
   const priceGap = plannedPrice - requiredPrice
 
@@ -1338,11 +1368,14 @@ const oversellScenario = computed(() => {
     userCount,
     procurementCost,
     residentialIp,
-    totalProcurementCost,
+    residentialIpCostPerUser,
+    totalProcurementCost: procurementCost,
     meanUpperBound: distribution.meanUpperBound,
     riskAdjustedMeanUnits,
     riskBufferUnits,
     unitCostPerTheoretical,
+    expectedProcurementCostPerUser,
+    riskAdjustedProcurementCostPerUser,
     expectedCostPerUser,
     riskAdjustedCostPerUser,
     conservativeMonthlyCost,

@@ -138,7 +138,8 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.result.helper': '建议价取“保底套餐价”和“目标盈利推导价”中的较高值。',
     'admin.dashboard.oversell.result.floorPriceHint': '保守保本价 ¥{floor}',
     'admin.dashboard.oversell.result.priceGapHint': '与达标单价差额 {gap}',
-    'admin.dashboard.oversell.result.residentialIpCostHint': '近 {days} 天约 {traffic} GB · {users} 人 · 汇率 {fx}',
+    'admin.dashboard.oversell.result.residentialIpTraffic': '预计需 {traffic} GB/月',
+    'admin.dashboard.oversell.result.residentialIpCostHint': '按近 {days} 天人均流量折算 · 约 {traffic} GB · {users} 人 · 汇率 {fx}',
     'admin.dashboard.oversell.result.revenueHint': '月收入 ¥{value}',
     'admin.dashboard.oversell.result.costHint': '保守月成本 ¥{value}',
     'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
@@ -684,6 +685,46 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
+  })
+
+  it('projects residential IP cost from modeled user count instead of current site user count', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const userCountInput = wrapper.get('[data-testid="oversell-user-count"]')
+
+    await userCountInput.setValue('20')
+    await flushPromises()
+    const costAt20Users = wrapper.get('[data-testid="oversell-residential-ip-cost"]').text()
+    const trafficAt20Users = wrapper.get('[data-testid="oversell-residential-ip-traffic"]').text()
+
+    await userCountInput.setValue('40')
+    await flushPromises()
+    const costAt40Users = wrapper.get('[data-testid="oversell-residential-ip-cost"]').text()
+    const trafficAt40Users = wrapper.get('[data-testid="oversell-residential-ip-traffic"]').text()
+
+    expect(costAt20Users).toBe('¥1.30K')
+    expect(trafficAt20Users).toBe('预计需 15 GB/月')
+    expect(costAt40Users).toBe('¥2.59K')
+    expect(trafficAt40Users).toBe('预计需 30 GB/月')
+    expect(costAt40Users).not.toEqual(costAt20Users)
+    expect(trafficAt40Users).not.toEqual(trafficAt20Users)
+    expect(wrapper.text()).toContain('40 人')
   })
 
   it('renders help tooltip triggers for unified package pricing parameters', async () => {
