@@ -6,6 +6,12 @@
 你觉得目前这个计划里提到的缺陷有必要优化吗？我不太确定。 你给个建议。
 ```
 
+- Awesome-cod简化
+
+```
+请按计划优化； 不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+```
+
 - Awesome-code
 
 ```
@@ -42,18 +48,11 @@ version=1.2.3
 
 - v1.0.9我还没有调整美元/人民币的相关逻辑。如果我改不好，可以回退到这个版本。
 
-- 源项目最新的历史版本
-
-```
-version2 = c056db740d56ce008292a7b414c804cc6f308208
-version1 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
-```
-
 - 吸收源项目的优势
 
 ```
-version2 = c056db740d56ce008292a7b414c804cc6f308208
-version1 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
+version2 = c92b88e34abd1b032aa5307d760b8bc0aad49b28
+version1 = c056db740d56ce008292a7b414c804cc6f308208
 我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
 - 这些变化对目前我的个人sub2api项目有没有启发？你觉得那些优化我有必要吸收吗？如果有，先不要改本项目的源代码； 而是在 ./docs/plans 里写一个优化计划。
@@ -64,11 +63,16 @@ version1 = 1ce9dc03f9d15e8a633dafc0e5f1bbf5ac1e179a
 - 按计划吸收源项目优势
 
 ```
-PlanMarkdown = ./docs/plans/2026-04-14-upstream-sync-optimization-plan.md
+PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan.md
 根据{PlanMarkdown}将上游项目的新特性的优点吸收在本项目里；这个过程应该是在你彻底了解新特性的源代码以及本项目的源代码的前提下进行。本项目有不少我独有的开发功能，你千万不要干扰； 如果上游项目的新特性与我的个性化功能有冲突，以保我的个性化功能为首要前提。上述过程比较复杂， 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 ```
 
 # 日常
+
+---
+
+PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan.md
+根据{PlanMarkdown}将上游项目的新特性的优点吸收在本项目里；这个过程应该是在你彻底了解新特性的源代码以及本项目的源代码的前提下进行。本项目有不少我独有的开发功能，你千万不要干扰； 如果上游项目的新特性与我的个性化功能有冲突，以保我的个性化功能为首要前提。上述过程比较复杂， 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 
