@@ -84,14 +84,7 @@
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
-                <span class="truncate font-medium">{{ proxy.name }}</span>
-                <!-- Account count badge -->
-                <span
-                  v-if="proxy.account_count !== undefined"
-                  class="inline-flex flex-shrink-0 items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 dark:bg-dark-600 dark:text-gray-400"
-                >
-                  {{ proxy.account_count }}
-                </span>
+                <span class="truncate font-medium">{{ formatProxyName(proxy) }}</span>
                 <!-- Test result badges -->
                 <template v-if="testResults[proxy.id]">
                   <span
@@ -220,8 +213,15 @@ const selectedLabel = computed(() => {
     return t('admin.accounts.noProxy')
   }
   const proxy = selectedProxy.value
-  return `${proxy.name} (${proxy.protocol}://${proxy.host}:${proxy.port})`
+  return `${formatProxyName(proxy)} (${proxy.protocol}://${proxy.host}:${proxy.port})`
 })
+
+const formatProxyName = (proxy: Proxy) => {
+  if (proxy.account_count === undefined) {
+    return proxy.name
+  }
+  return `${proxy.name}（${proxy.account_count}）`
+}
 
 const filteredProxies = computed(() => {
   if (!searchQuery.value) {
