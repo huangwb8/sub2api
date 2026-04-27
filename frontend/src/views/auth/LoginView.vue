@@ -205,9 +205,11 @@ import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, isTotp2FARequired } from '@/api/auth'
+import { extractApiErrorCode } from '@/utils/apiError'
 import type { TotpLoginResponse } from '@/types'
 
 const { t } = useI18n()
+const TURNSTILE_TOKEN_MAX_AGE_MS = 240 * 1000
 
 // ==================== Router & Stores ====================
 
@@ -233,6 +235,7 @@ const passwordResetEnabled = ref<boolean>(false)
 // Turnstile
 const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
 const turnstileToken = ref<string>('')
+const turnstileVerifiedAt = ref<number | null>(null)
 
 // 2FA state
 const show2FAModal = ref<boolean>(false)
@@ -281,17 +284,40 @@ onMounted(async () => {
 
 function onTurnstileVerify(token: string): void {
   turnstileToken.value = token
+  turnstileVerifiedAt.value = Date.now()
   errors.turnstile = ''
 }
 
 function onTurnstileExpire(): void {
   turnstileToken.value = ''
+  turnstileVerifiedAt.value = null
   errors.turnstile = t('auth.turnstileExpired')
 }
 
 function onTurnstileError(): void {
   turnstileToken.value = ''
+  turnstileVerifiedAt.value = null
   errors.turnstile = t('auth.turnstileFailed')
+}
+
+function resetTurnstile(message?: string): void {
+  turnstileToken.value = ''
+  turnstileVerifiedAt.value = null
+  if (turnstileRef.value) {
+    turnstileRef.value.reset()
+  }
+  if (message) {
+    errors.turnstile = message
+  }
+}
+
+function isTurnstileTokenExpired(): boolean {
+  return (
+    turnstileEnabled.value &&
+    turnstileToken.value !== '' &&
+    turnstileVerifiedAt.value !== null &&
+    Date.now() - turnstileVerifiedAt.value >= TURNSTILE_TOKEN_MAX_AGE_MS
+  )
 }
 
 // ==================== Validation ====================
@@ -326,6 +352,9 @@ function validateForm(): boolean {
   if (turnstileEnabled.value && !turnstileToken.value) {
     errors.turnstile = t('auth.completeVerification')
     isValid = false
+  } else if (isTurnstileTokenExpired()) {
+    resetTurnstile(t('auth.turnstileExpired'))
+    isValid = false
   }
 
   return isValid
@@ -351,6 +380,9 @@ async function handleLogin(): Promise<void> {
       password: formData.password,
       turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined
     })
+    if (turnstileEnabled.value) {
+      resetTurnstile()
+    }
 
     // Check if 2FA is required
     if (isTotp2FARequired(response)) {
@@ -370,15 +402,15 @@ async function handleLogin(): Promise<void> {
     await router.push(redirectTo)
   } catch (error: unknown) {
     // Reset Turnstile on error
-    if (turnstileRef.value) {
-      turnstileRef.value.reset()
-      turnstileToken.value = ''
-    }
+    resetTurnstile()
 
     // Handle login error
     const err = error as { message?: string; response?: { data?: { detail?: string } } }
 
-    if (err.response?.data?.detail) {
+    if (extractApiErrorCode(error) === 'TURNSTILE_VERIFICATION_FAILED') {
+      errorMessage.value = t('auth.turnstileInvalid')
+      errors.turnstile = t('auth.completeVerification')
+    } else if (err.response?.data?.detail) {
       errorMessage.value = err.response.data.detail
     } else if (err.message) {
       errorMessage.value = err.message

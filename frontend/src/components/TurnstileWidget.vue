@@ -50,6 +50,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null)
 const widgetId = ref<string | null>(null)
 const scriptLoaded = ref(false)
+const verifiedAt = ref<number | null>(null)
 
 const loadScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -108,12 +109,15 @@ const renderWidget = () => {
   widgetId.value = window.turnstile.render(containerRef.value, {
     sitekey: props.siteKey,
     callback: (token: string) => {
+      verifiedAt.value = Date.now()
       emit('verify', token)
     },
     'expired-callback': () => {
+      verifiedAt.value = null
       emit('expire')
     },
     'error-callback': () => {
+      verifiedAt.value = null
       emit('error')
     },
     theme: props.theme,
@@ -122,13 +126,20 @@ const renderWidget = () => {
 }
 
 const reset = () => {
+  verifiedAt.value = null
   if (window.turnstile && widgetId.value) {
     window.turnstile.reset(widgetId.value)
   }
 }
 
-// Expose reset method to parent
-defineExpose({ reset })
+const getWidgetState = () => ({
+  widgetId: widgetId.value,
+  scriptLoaded: scriptLoaded.value,
+  verifiedAt: verifiedAt.value
+})
+
+// Expose widget controls to parent views.
+defineExpose({ reset, getWidgetState })
 
 onMounted(async () => {
   if (!props.siteKey) {
