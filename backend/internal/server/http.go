@@ -46,6 +46,7 @@ func ProvideRouter(
 	}
 
 	r := gin.New()
+	r.RemoteIPHeaders = []string{"CF-Connecting-IP", "X-Forwarded-For", "X-Real-IP"}
 	r.Use(middleware2.Recovery())
 	if len(cfg.Server.TrustedProxies) > 0 {
 		if err := r.SetTrustedProxies(cfg.Server.TrustedProxies); err != nil {

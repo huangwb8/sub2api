@@ -54,6 +54,29 @@ func GetTrustedClientIP(c *gin.Context) string {
 	return normalizeIP(c.ClientIP())
 }
 
+// IsPrivateOrLoopbackIP 检查 IP 是否为私网、回环或链路本地地址。
+func IsPrivateOrLoopbackIP(ip string) bool {
+	addr := net.ParseIP(normalizeIP(ip))
+	if addr == nil {
+		return false
+	}
+	return addr.IsPrivate() || addr.IsLoopback() || addr.IsLinkLocalUnicast() || addr.IsLinkLocalMulticast()
+}
+
+// SanitizeTurnstileRemoteIP 清洗发送给 Cloudflare Turnstile siteverify 的 remoteip。
+// Turnstile 的 remoteip 是可选参数；当只能得到私网、回环、链路本地或非法地址时返回空字符串。
+func SanitizeTurnstileRemoteIP(ip string) string {
+	normalized := normalizeIP(ip)
+	addr := net.ParseIP(normalized)
+	if addr == nil {
+		return ""
+	}
+	if addr.IsPrivate() || addr.IsLoopback() || addr.IsLinkLocalUnicast() || addr.IsLinkLocalMulticast() || addr.IsUnspecified() || addr.IsMulticast() {
+		return ""
+	}
+	return addr.String()
+}
+
 // normalizeIP 规范化 IP 地址，去除端口号和空格。
 func normalizeIP(ip string) string {
 	ip = strings.TrimSpace(ip)
