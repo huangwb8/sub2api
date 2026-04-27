@@ -1,15 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 
-const { updateAccountMock, checkMixedChannelRiskMock } = vi.hoisted(() => ({
+const {
+  updateAccountMock,
+  checkMixedChannelRiskMock,
+  getSchedulingMechanismSettingsMock,
+  showErrorMock
+} = vi.hoisted(() => ({
   updateAccountMock: vi.fn(),
-  checkMixedChannelRiskMock: vi.fn()
+  checkMixedChannelRiskMock: vi.fn(),
+  getSchedulingMechanismSettingsMock: vi.fn(),
+  showErrorMock: vi.fn()
 }))
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
-    showError: vi.fn(),
+    showError: showErrorMock,
     showSuccess: vi.fn(),
     showInfo: vi.fn()
   })
@@ -26,6 +33,9 @@ vi.mock('@/api/admin', () => ({
     accounts: {
       update: updateAccountMock,
       checkMixedChannelRisk: checkMixedChannelRiskMock
+    },
+    settings: {
+      getSchedulingMechanismSettings: getSchedulingMechanismSettingsMock
     }
   }
 }))
@@ -67,13 +77,18 @@ const SelectStub = defineComponent({
     options: {
       type: Array,
       default: () => []
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'change'],
   template: `
     <select
       :value="modelValue"
-      @change="$emit('update:modelValue', $event.target.value)"
+      :disabled="disabled"
+      @change="$emit('update:modelValue', $event.target.value); $emit('change', $event.target.value)"
     >
       <option v-for="option in options" :key="option.value" :value="option.value">
         {{ option.label }}
@@ -155,6 +170,15 @@ function mountModal(account = buildAccount()) {
 }
 
 describe('EditAccountModal', () => {
+  beforeEach(() => {
+    updateAccountMock.mockReset()
+    checkMixedChannelRiskMock.mockReset()
+    getSchedulingMechanismSettingsMock.mockReset()
+    showErrorMock.mockReset()
+    getSchedulingMechanismSettingsMock.mockResolvedValue({ mechanisms: [], proxy_failover: {} })
+    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
+  })
+
   it('API Key 输入框应禁用密码管理器自动填充', () => {
     const wrapper = mountModal()
     const apiKeyInput = wrapper.find('input[type="password"].font-mono')
@@ -187,9 +211,6 @@ describe('EditAccountModal', () => {
 
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {
     const account = buildAccount()
-    updateAccountMock.mockReset()
-    checkMixedChannelRiskMock.mockReset()
-    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
     updateAccountMock.mockResolvedValue(account)
 
     const wrapper = mountModal(account)
@@ -210,5 +231,62 @@ describe('EditAccountModal', () => {
     expect(updateAccountMock.mock.calls[0]?.[1]?.credentials?.model_mapping).toEqual({
       'gpt-5.2': 'gpt-5.2'
     })
+  })
+
+  it('没有匹配的调度机制规则时不能启用临时不可调度', async () => {
+    const wrapper = mountModal()
+    await flushPromises()
+
+    const toggle = wrapper.get('[data-testid="temp-unsched-toggle"]')
+
+    expect((toggle.element as HTMLButtonElement).disabled).toBe(true)
+    expect(wrapper.text()).toContain('admin.accounts.tempUnschedulable.noMechanismRules')
+  })
+
+  it('临时不可调度只保存从调度机制选择的规则引用', async () => {
+    const account = buildAccount()
+    updateAccountMock.mockResolvedValue(account)
+    getSchedulingMechanismSettingsMock.mockResolvedValue({
+      mechanisms: [
+        {
+          id: 'default',
+          name: '默认临时不可调度',
+          platform: 'openai',
+          account_type: 'apikey',
+          enabled: true,
+          hidden: false,
+          temp_unschedulable_enabled: true,
+          temp_unschedulable_rules: [
+            {
+              id: 'rate-limit',
+              error_code: 429,
+              keywords: ['rate limit'],
+              duration_minutes: 10,
+              description: '限流'
+            }
+          ]
+        }
+      ],
+      proxy_failover: {}
+    })
+
+    const wrapper = mountModal(account)
+    await flushPromises()
+
+    await wrapper.get('[data-testid="temp-unsched-toggle"]').trigger('click')
+    const ruleSelect = wrapper.findAll('select').find((select) =>
+      select.find('option[value="default:rate-limit"]').exists()
+    )
+    expect(ruleSelect).toBeTruthy()
+
+    await ruleSelect!.setValue('default:rate-limit')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.credentials?.temp_unschedulable_enabled).toBe(true)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.credentials?.temp_unschedulable_rule_refs).toEqual([
+      { mechanism_id: 'default', rule_id: 'rate-limit' }
+    ])
+    expect(updateAccountMock.mock.calls[0]?.[1]?.credentials).not.toHaveProperty('temp_unschedulable_rules')
   })
 })

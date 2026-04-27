@@ -24,6 +24,7 @@
 - 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
 
 ### Changed（变更）
+- 调整了账号编辑弹窗的“临时不可调度”配置：移除账号内手写/预设规则编辑，改为只能从匹配当前账号平台与类型的调度机制规则下拉选择；无可用规则时禁止启用，保存时仅写入规则引用，减少账号级配置漂移。
 - 增强了 Turnstile 登录链路可观测性：服务端校验失败日志现在记录脱敏 error code、hostname、challenge timestamp、HTTP 状态、耗时和 remoteip 传递状态，同时避免记录 secret、完整 token 与密码。
 - 调整了 Turnstile remoteip 处理：登录、注册、验证码与忘记密码只使用可信代理链解析到的客户端 IP，并在调用 Cloudflare 前过滤私网、回环、链路本地和非法 IP。
 - 优化了登录页 Turnstile token 生命周期：前端会在 token 超过 240 秒、过期回调、错误回调或登录失败后清空并 reset widget，避免复用过期或已消费 token。

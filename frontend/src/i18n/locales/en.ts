@@ -2427,6 +2427,12 @@ export default {
         notice: 'Rules are evaluated in order and require both error code and keyword match.',
         mechanismRules: 'Select rules from scheduling mechanisms',
         selectedMechanismRules: '{count} selected',
+        selectMechanismRulePlaceholder: 'Select a configured rule',
+        selectMechanismRuleHint:
+          'Only enabled scheduling mechanism rules matching this account platform and type can be selected.',
+        noMechanismRules:
+          'No scheduling mechanism rules are available for this account. Configure and enable rules in Scheduling Mechanisms first.',
+        noSelectedMechanismRules: 'Select at least one rule from the dropdown above.',
         addRule: 'Add Rule',
         ruleOrder: 'Rule Order',
         ruleIndex: 'Rule #{index}',
@@ -2439,7 +2445,7 @@ export default {
         keywordsHint: 'Separate keywords with commas; any keyword match will trigger.',
         description: 'Description',
         descriptionPlaceholder: 'Optional note for this rule',
-        rulesInvalid: 'Add at least one rule with error code, keywords, and duration.',
+        rulesInvalid: 'Select at least one available rule from scheduling mechanisms.',
         viewDetails: 'View temp unschedulable details',
         accountName: 'Account',
         triggeredAt: 'Triggered At',

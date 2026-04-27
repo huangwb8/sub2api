@@ -862,10 +862,13 @@
           </div>
           <button
             type="button"
-            @click="tempUnschedEnabled = !tempUnschedEnabled"
+            data-testid="temp-unsched-toggle"
+            :disabled="!tempUnschedEnabled && availableTempUnschedRuleOptions.length === 0"
+            @click="handleTempUnschedToggle"
             :class="[
-              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-              tempUnschedEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+              'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+              tempUnschedEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600',
+              (!tempUnschedEnabled && availableTempUnschedRuleOptions.length === 0) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
             ]"
           >
             <span
@@ -877,166 +880,84 @@
           </button>
         </div>
 
+        <div
+          v-if="!tempUnschedEnabled && schedulingMechanismsLoaded && availableTempUnschedRuleOptions.length === 0"
+          class="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20"
+        >
+          <p class="text-xs text-amber-700 dark:text-amber-300">
+            <Icon name="exclamationTriangle" size="sm" class="mr-1 inline" :stroke-width="2" />
+            {{ t('admin.accounts.tempUnschedulable.noMechanismRules') }}
+          </p>
+        </div>
+
         <div v-if="tempUnschedEnabled" class="space-y-3">
-          <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-            <p class="text-xs text-blue-700 dark:text-blue-400">
+          <div
+            v-if="availableTempUnschedRuleOptions.length === 0"
+            class="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20"
+          >
+            <p class="text-xs text-amber-700 dark:text-amber-300">
               <Icon name="exclamationTriangle" size="sm" class="mr-1 inline" :stroke-width="2" />
-              {{ t('admin.accounts.tempUnschedulable.notice') }}
+              {{ t('admin.accounts.tempUnschedulable.noMechanismRules') }}
             </p>
           </div>
 
-          <div v-if="availableTempUnschedMechanisms.length > 0" class="space-y-2">
-            <div class="flex items-center justify-between gap-3">
-              <label class="input-label mb-0">{{ t('admin.accounts.tempUnschedulable.mechanismRules') }}</label>
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('admin.accounts.tempUnschedulable.selectedMechanismRules', { count: selectedTempUnschedRuleRefs.length }) }}
-              </span>
-            </div>
-            <div class="max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-dark-600">
-              <div
-                v-for="mechanism in availableTempUnschedMechanisms"
-                :key="mechanism.id"
-                class="space-y-2"
-              >
-                <div class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-                  <span>{{ mechanism.name }}</span>
-                  <span v-if="mechanism.hidden" class="badge badge-warning">{{ t('admin.schedulingMechanisms.hidden') }}</span>
-                </div>
-                <label
-                  v-for="rule in mechanism.temp_unschedulable_rules"
-                  :key="`${mechanism.id}:${rule.id || rule.error_code}`"
-                  class="flex cursor-pointer items-start gap-2 rounded border border-gray-100 p-2 text-sm hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700"
-                >
-                  <input
-                    type="checkbox"
-                    class="mt-1 rounded border-gray-300"
-                    :checked="isTempUnschedRuleRefSelected(mechanism.id, rule.id)"
-                    @change="toggleTempUnschedRuleRef(mechanism.id, rule.id)"
-                  />
-                  <span class="min-w-0 flex-1">
-                    <span class="font-medium text-gray-700 dark:text-gray-200">
-                      HTTP {{ rule.error_code }} · {{ rule.duration_minutes }}m
-                    </span>
-                    <span class="block truncate text-xs text-gray-500 dark:text-gray-400">
-                      {{ rule.description || rule.keywords.join(', ') }}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="preset in tempUnschedPresets"
-              :key="preset.label"
-              type="button"
-              @click="addTempUnschedRule(preset.rule)"
-              class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-300 dark:hover:bg-dark-500"
-            >
-              + {{ preset.label }}
-            </button>
-          </div>
-
-          <div v-if="tempUnschedRules.length > 0" class="space-y-3">
-            <div
-              v-for="(rule, index) in tempUnschedRules"
-              :key="getTempUnschedRuleKey(rule)"
-              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
-            >
-              <div class="mb-2 flex items-center justify-between">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.accounts.tempUnschedulable.ruleIndex', { index: index + 1 }) }}
+          <template v-else>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3">
+                <label class="input-label mb-0">{{ t('admin.accounts.tempUnschedulable.mechanismRules') }}</label>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.accounts.tempUnschedulable.selectedMechanismRules', { count: selectedTempUnschedRules.length }) }}
                 </span>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    :disabled="index === 0"
-                    @click="moveTempUnschedRule(index, -1)"
-                    class="rounded p-1 text-gray-400 transition-colors hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-gray-200"
-                  >
-                    <Icon name="chevronUp" size="sm" :stroke-width="2" />
-                  </button>
-                  <button
-                    type="button"
-                    :disabled="index === tempUnschedRules.length - 1"
-                    @click="moveTempUnschedRule(index, 1)"
-                    class="rounded p-1 text-gray-400 transition-colors hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:text-gray-200"
-                  >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    @click="removeTempUnschedRule(index)"
-                    class="rounded p-1 text-red-500 transition-colors hover:text-red-600"
-                  >
-                    <Icon name="x" size="sm" :stroke-width="2" />
-                  </button>
-                </div>
               </div>
+              <Select
+                v-model="tempUnschedRulePickerValue"
+                :options="unselectedTempUnschedRuleOptions"
+                :placeholder="t('admin.accounts.tempUnschedulable.selectMechanismRulePlaceholder')"
+                :disabled="unselectedTempUnschedRuleOptions.length === 0"
+                searchable
+                @change="handleTempUnschedRuleSelect"
+              />
+              <p class="input-hint">{{ t('admin.accounts.tempUnschedulable.selectMechanismRuleHint') }}</p>
+            </div>
 
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="input-label">{{ t('admin.accounts.tempUnschedulable.errorCode') }}</label>
-                  <input
-                    v-model.number="rule.error_code"
-                    type="number"
-                    min="100"
-                    max="599"
-                    class="input"
-                    :placeholder="t('admin.accounts.tempUnschedulable.errorCodePlaceholder')"
-                  />
+            <div
+              v-if="selectedTempUnschedRules.length > 0"
+              class="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+            >
+              <div
+                v-for="item in selectedTempUnschedRules"
+                :key="item.value"
+                class="flex items-start gap-3 rounded-md bg-gray-50 p-2.5 dark:bg-dark-700"
+              >
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                    <span>{{ item.mechanismName }}</span>
+                    <span v-if="item.hidden" class="badge badge-warning">{{ t('admin.schedulingMechanisms.hidden') }}</span>
+                  </div>
+                  <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    HTTP {{ item.rule.error_code }} · {{ item.rule.duration_minutes }}m
+                  </div>
+                  <div class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {{ item.rule.description || item.rule.keywords.join(', ') }}
+                  </div>
                 </div>
-                <div>
-                  <label class="input-label">{{ t('admin.accounts.tempUnschedulable.durationMinutes') }}</label>
-                  <input
-                    v-model.number="rule.duration_minutes"
-                    type="number"
-                    min="1"
-                    class="input"
-                    :placeholder="t('admin.accounts.tempUnschedulable.durationPlaceholder')"
-                  />
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="input-label">{{ t('admin.accounts.tempUnschedulable.keywords') }}</label>
-                  <input
-                    v-model="rule.keywords"
-                    type="text"
-                    class="input"
-                    :placeholder="t('admin.accounts.tempUnschedulable.keywordsPlaceholder')"
-                  />
-                  <p class="input-hint">{{ t('admin.accounts.tempUnschedulable.keywordsHint') }}</p>
-                </div>
-                <div class="sm:col-span-2">
-                  <label class="input-label">{{ t('admin.accounts.tempUnschedulable.description') }}</label>
-                  <input
-                    v-model="rule.description"
-                    type="text"
-                    class="input"
-                    :placeholder="t('admin.accounts.tempUnschedulable.descriptionPlaceholder')"
-                  />
-                </div>
+                <button
+                  type="button"
+                  class="rounded p-1 text-gray-400 transition-colors hover:text-red-500 dark:hover:text-red-400"
+                  :aria-label="t('common.delete')"
+                  @click="removeTempUnschedRuleRef(item.mechanismId, item.ruleId)"
+                >
+                  <Icon name="x" size="sm" :stroke-width="2" />
+                </button>
               </div>
             </div>
-          </div>
-
-          <button
-            type="button"
-            @click="addTempUnschedRule()"
-            class="w-full rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-sm text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-700 dark:border-dark-500 dark:text-gray-400 dark:hover:border-dark-400 dark:hover:text-gray-300"
-          >
-            <svg
-              class="mr-1 inline h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <div
+              v-else
+              class="rounded-lg border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 dark:border-dark-500 dark:text-gray-400"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            {{ t('admin.accounts.tempUnschedulable.addRule') }}
-          </button>
+              {{ t('admin.accounts.tempUnschedulable.noSelectedMechanismRules') }}
+            </div>
+          </template>
         </div>
       </div>
 
@@ -1801,7 +1722,14 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
-import type { Account, Proxy, AdminGroup, CheckMixedChannelResponse, TempUnschedulableRuleRef } from '@/types'
+import type {
+  Account,
+  Proxy,
+  AdminGroup,
+  CheckMixedChannelResponse,
+  TempUnschedulableRule,
+  TempUnschedulableRuleRef
+} from '@/types'
 import type { SchedulingMechanism } from '@/api/admin/settings'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -1887,13 +1815,6 @@ interface ModelMapping {
   to: string
 }
 
-interface TempUnschedRuleForm {
-  error_code: number | null
-  keywords: string
-  duration_minutes: number | null
-  description: string
-}
-
 // State
 const submitting = ref(false)
 const editBaseUrl = ref('https://api.anthropic.com')
@@ -1927,13 +1848,64 @@ const antigravityModelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist'
 const antigravityWhitelistModels = ref<string[]>([])
 const antigravityModelMappings = ref<ModelMapping[]>([])
 const tempUnschedEnabled = ref(false)
-const tempUnschedRules = ref<TempUnschedRuleForm[]>([])
+const tempUnschedRulePickerValue = ref<string | null>(null)
 const schedulingMechanisms = ref<SchedulingMechanism[]>([])
 const schedulingMechanismsLoaded = ref(false)
 const selectedTempUnschedRuleRefs = ref<TempUnschedulableRuleRef[]>([])
 const getModelMappingKey = createStableObjectKeyResolver<ModelMapping>('edit-model-mapping')
 const getAntigravityModelMappingKey = createStableObjectKeyResolver<ModelMapping>('edit-antigravity-model-mapping')
-const getTempUnschedRuleKey = createStableObjectKeyResolver<TempUnschedRuleForm>('edit-temp-unsched-rule')
+
+interface TempUnschedRuleOption extends Record<string, unknown> {
+  value: string
+  label: string
+  description: string
+  mechanismId: string
+  mechanismName: string
+  ruleId: string
+  rule: TempUnschedulableRule
+  hidden: boolean
+}
+
+const buildTempUnschedRefValue = (mechanismId: string, ruleId: string) => `${mechanismId}:${ruleId}`
+
+const availableTempUnschedRuleOptions = computed<TempUnschedRuleOption[]>(() =>
+  availableTempUnschedMechanisms.value.flatMap((mechanism) =>
+    mechanism.temp_unschedulable_rules.map((rule) => {
+      const ruleId = rule.id || ''
+      return {
+        value: buildTempUnschedRefValue(mechanism.id, ruleId),
+        label: `${mechanism.name} · HTTP ${rule.error_code} · ${rule.duration_minutes}m`,
+        description: rule.description || rule.keywords.join(', '),
+        mechanismId: mechanism.id,
+        mechanismName: mechanism.name,
+        ruleId,
+        rule,
+        hidden: mechanism.hidden
+      }
+    })
+  )
+)
+
+const isTempUnschedRuleRefSelected = (mechanismId: string, ruleId?: string) => {
+  if (!ruleId) return false
+  return selectedTempUnschedRuleRefs.value.some(
+    (ref) => ref.mechanism_id === mechanismId && ref.rule_id === ruleId
+  )
+}
+
+const unselectedTempUnschedRuleOptions = computed(() =>
+  availableTempUnschedRuleOptions.value.filter(
+    (option) => !isTempUnschedRuleRefSelected(option.mechanismId, option.ruleId)
+  )
+)
+
+const selectedTempUnschedRules = computed(() =>
+  selectedTempUnschedRuleRefs.value
+    .map((ref) => availableTempUnschedRuleOptions.value.find(
+      (option) => option.mechanismId === ref.mechanism_id && option.ruleId === ref.rule_id
+    ))
+    .filter((option): option is TempUnschedRuleOption => !!option)
+)
 
 const showMixedChannelWarning = ref(false)
 const mixedChannelWarningDetails = ref<{ groupName: string; currentPlatform: string; otherPlatform: string } | null>(
@@ -2013,35 +1985,6 @@ const isOpenAIModelRestrictionDisabled = computed(() =>
 
 // Computed: current preset mappings based on platform
 const presetMappings = computed(() => getPresetMappingsByPlatform(props.account?.platform || 'anthropic'))
-const tempUnschedPresets = computed(() => [
-  {
-    label: t('admin.accounts.tempUnschedulable.presets.overloadLabel'),
-    rule: {
-      error_code: 529,
-      keywords: 'overloaded, too many',
-      duration_minutes: 60,
-      description: t('admin.accounts.tempUnschedulable.presets.overloadDesc')
-    }
-  },
-  {
-    label: t('admin.accounts.tempUnschedulable.presets.rateLimitLabel'),
-    rule: {
-      error_code: 429,
-      keywords: 'rate limit, too many requests',
-      duration_minutes: 10,
-      description: t('admin.accounts.tempUnschedulable.presets.rateLimitDesc')
-    }
-  },
-  {
-    label: t('admin.accounts.tempUnschedulable.presets.unavailableLabel'),
-    rule: {
-      error_code: 503,
-      keywords: 'unavailable, maintenance',
-      duration_minutes: 30,
-      description: t('admin.accounts.tempUnschedulable.presets.unavailableDesc')
-    }
-  }
-])
 
 // Computed: default base URL based on platform
 const defaultBaseUrl = computed(() => {
@@ -2420,9 +2363,10 @@ async function loadSchedulingMechanisms() {
   try {
     const payload = await adminAPI.settings.getSchedulingMechanismSettings()
     schedulingMechanisms.value = payload.mechanisms || []
-    schedulingMechanismsLoaded.value = true
   } catch {
     schedulingMechanisms.value = []
+  } finally {
+    schedulingMechanismsLoaded.value = true
   }
 }
 
@@ -2514,49 +2458,40 @@ const removeErrorCode = (code: number) => {
   }
 }
 
-const addTempUnschedRule = (preset?: TempUnschedRuleForm) => {
-  if (preset) {
-    tempUnschedRules.value.push({ ...preset })
+const handleTempUnschedToggle = () => {
+  if (tempUnschedEnabled.value) {
+    tempUnschedEnabled.value = false
     return
   }
-  tempUnschedRules.value.push({
-    error_code: null,
-    keywords: '',
-    duration_minutes: 30,
-    description: ''
-  })
+  if (availableTempUnschedRuleOptions.value.length === 0) {
+    appStore.showError(t('admin.accounts.tempUnschedulable.noMechanismRules'))
+    return
+  }
+  tempUnschedEnabled.value = true
 }
 
-const removeTempUnschedRule = (index: number) => {
-  tempUnschedRules.value.splice(index, 1)
+const addTempUnschedRuleRef = (mechanismId: string, ruleId?: string) => {
+  if (!ruleId || isTempUnschedRuleRefSelected(mechanismId, ruleId)) return
+  selectedTempUnschedRuleRefs.value.push({ mechanism_id: mechanismId, rule_id: ruleId })
 }
 
-const moveTempUnschedRule = (index: number, direction: number) => {
-  const target = index + direction
-  if (target < 0 || target >= tempUnschedRules.value.length) return
-  const rules = tempUnschedRules.value
-  const current = rules[index]
-  rules[index] = rules[target]
-  rules[target] = current
-}
-
-const isTempUnschedRuleRefSelected = (mechanismId: string, ruleId?: string) => {
-  if (!ruleId) return false
-  return selectedTempUnschedRuleRefs.value.some(
-    (ref) => ref.mechanism_id === mechanismId && ref.rule_id === ruleId
-  )
-}
-
-const toggleTempUnschedRuleRef = (mechanismId: string, ruleId?: string) => {
+const removeTempUnschedRuleRef = (mechanismId: string, ruleId?: string) => {
   if (!ruleId) return
   const index = selectedTempUnschedRuleRefs.value.findIndex(
     (ref) => ref.mechanism_id === mechanismId && ref.rule_id === ruleId
   )
-  if (index === -1) {
-    selectedTempUnschedRuleRefs.value.push({ mechanism_id: mechanismId, rule_id: ruleId })
-  } else {
+  if (index !== -1) {
     selectedTempUnschedRuleRefs.value.splice(index, 1)
   }
+}
+
+const handleTempUnschedRuleSelect = (value: string | number | boolean | null) => {
+  if (typeof value !== 'string' || value.length === 0) return
+  const option = availableTempUnschedRuleOptions.value.find((item) => item.value === value)
+  if (option) {
+    addTempUnschedRuleRef(option.mechanismId, option.ruleId)
+  }
+  tempUnschedRulePickerValue.value = null
 }
 
 const buildTempUnschedRuleRefs = () => {
@@ -2574,38 +2509,6 @@ const buildTempUnschedRuleRefs = () => {
   )
 }
 
-const buildTempUnschedRules = (rules: TempUnschedRuleForm[]) => {
-  const out: Array<{
-    error_code: number
-    keywords: string[]
-    duration_minutes: number
-    description: string
-  }> = []
-
-  for (const rule of rules) {
-    const errorCode = Number(rule.error_code)
-    const duration = Number(rule.duration_minutes)
-    const keywords = splitTempUnschedKeywords(rule.keywords)
-    if (!Number.isFinite(errorCode) || errorCode < 100 || errorCode > 599) {
-      continue
-    }
-    if (!Number.isFinite(duration) || duration <= 0) {
-      continue
-    }
-    if (keywords.length === 0) {
-      continue
-    }
-    out.push({
-      error_code: Math.trunc(errorCode),
-      keywords,
-      duration_minutes: Math.trunc(duration),
-      description: rule.description.trim()
-    })
-  }
-
-  return out
-}
-
 const applyTempUnschedConfig = (credentials: Record<string, unknown>) => {
   if (!tempUnschedEnabled.value) {
     delete credentials.temp_unschedulable_enabled
@@ -2614,24 +2517,15 @@ const applyTempUnschedConfig = (credentials: Record<string, unknown>) => {
     return true
   }
 
-  const rules = buildTempUnschedRules(tempUnschedRules.value)
   const ruleRefs = buildTempUnschedRuleRefs()
-  if (rules.length === 0 && ruleRefs.length === 0) {
+  if (ruleRefs.length === 0) {
     appStore.showError(t('admin.accounts.tempUnschedulable.rulesInvalid'))
     return false
   }
 
   credentials.temp_unschedulable_enabled = true
-  if (rules.length > 0) {
-    credentials.temp_unschedulable_rules = rules
-  } else {
-    delete credentials.temp_unschedulable_rules
-  }
-  if (ruleRefs.length > 0) {
-    credentials.temp_unschedulable_rule_refs = ruleRefs
-  } else {
-    delete credentials.temp_unschedulable_rule_refs
-  }
+  delete credentials.temp_unschedulable_rules
+  credentials.temp_unschedulable_rule_refs = ruleRefs
   return true
 }
 
@@ -2649,21 +2543,7 @@ function loadTempUnschedRules(credentials?: Record<string, unknown>) {
       })
       .filter((ref) => ref.mechanism_id.length > 0 && ref.rule_id.length > 0)
     : []
-  const rawRules = credentials?.temp_unschedulable_rules
-  if (!Array.isArray(rawRules)) {
-    tempUnschedRules.value = []
-    return
-  }
-
-  tempUnschedRules.value = rawRules.map((rule) => {
-    const entry = rule as Record<string, unknown>
-    return {
-      error_code: toPositiveNumber(entry.error_code),
-      keywords: formatTempUnschedKeywords(entry.keywords),
-      duration_minutes: toPositiveNumber(entry.duration_minutes),
-      description: typeof entry.description === 'string' ? entry.description : ''
-    }
-  })
+  tempUnschedRulePickerValue.value = null
 }
 
 // Load quota control settings from account (Anthropic OAuth/SetupToken only)
@@ -2739,35 +2619,6 @@ function loadQuotaControlSettings(account: Account) {
     customBaseUrlEnabled.value = true
     customBaseUrl.value = account.custom_base_url || ''
   }
-}
-
-function formatTempUnschedKeywords(value: unknown) {
-  if (Array.isArray(value)) {
-    return value
-      .filter((item): item is string => typeof item === 'string')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .join(', ')
-  }
-  if (typeof value === 'string') {
-    return value
-  }
-  return ''
-}
-
-const splitTempUnschedKeywords = (value: string) => {
-  return value
-    .split(/[,;]/)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-}
-
-function toPositiveNumber(value: unknown) {
-  const num = Number(value)
-  if (!Number.isFinite(num) || num <= 0) {
-    return null
-  }
-  return Math.trunc(num)
 }
 
 const needsMixedChannelCheck = () => props.account?.platform === 'antigravity' || props.account?.platform === 'anthropic'
