@@ -2432,7 +2432,7 @@ func (s *SettingService) SetStreamTimeoutSettings(ctx context.Context, settings 
 	return s.settingRepo.Set(ctx, SettingKeyStreamTimeoutSettings, string(data))
 }
 
-// GetSchedulingMechanismSettings 获取全局调度机制与代理自动容错配置。
+// GetSchedulingMechanismSettings 获取全局临时不可调度规则与代理自动容错配置。
 func (s *SettingService) GetSchedulingMechanismSettings(ctx context.Context) (*SchedulingMechanismSettings, error) {
 	value, err := s.settingRepo.GetValue(ctx, SettingKeySchedulingMechanismSettings)
 	if err != nil {
@@ -2452,7 +2452,7 @@ func (s *SettingService) GetSchedulingMechanismSettings(ctx context.Context) (*S
 	return normalizeSchedulingMechanismSettings(&settings), nil
 }
 
-// SetSchedulingMechanismSettings 设置全局调度机制与代理自动容错配置。
+// SetSchedulingMechanismSettings 设置全局临时不可调度规则与代理自动容错配置。
 func (s *SettingService) SetSchedulingMechanismSettings(ctx context.Context, settings *SchedulingMechanismSettings) error {
 	normalized := normalizeSchedulingMechanismSettings(settings)
 	data, err := json.Marshal(normalized)
@@ -2460,4 +2460,40 @@ func (s *SettingService) SetSchedulingMechanismSettings(ctx context.Context, set
 		return fmt.Errorf("marshal scheduling mechanism settings: %w", err)
 	}
 	return s.settingRepo.Set(ctx, SettingKeySchedulingMechanismSettings, string(data))
+}
+
+// SetSchedulingMechanisms 更新临时不可调度规则，并保留代理自动容错配置。
+func (s *SettingService) SetSchedulingMechanisms(ctx context.Context, mechanisms []SchedulingMechanism) error {
+	current, err := s.GetSchedulingMechanismSettings(ctx)
+	if err != nil {
+		return err
+	}
+	current.Mechanisms = mechanisms
+	return s.SetSchedulingMechanismSettings(ctx, current)
+}
+
+// GetProxyFailoverSettings 获取代理自动容错配置。
+func (s *SettingService) GetProxyFailoverSettings(ctx context.Context) (ProxyFailoverSettings, error) {
+	settings, err := s.GetSchedulingMechanismSettings(ctx)
+	if err != nil {
+		return ProxyFailoverSettings{}, err
+	}
+	return settings.ProxyFailover, nil
+}
+
+// SetProxyFailoverSettings 更新代理自动容错配置，并保留临时不可调度规则。
+func (s *SettingService) SetProxyFailoverSettings(ctx context.Context, settings ProxyFailoverSettings) (ProxyFailoverSettings, error) {
+	current, err := s.GetSchedulingMechanismSettings(ctx)
+	if err != nil {
+		return ProxyFailoverSettings{}, err
+	}
+	current.ProxyFailover = settings
+	if err := s.SetSchedulingMechanismSettings(ctx, current); err != nil {
+		return ProxyFailoverSettings{}, err
+	}
+	updated, err := s.GetProxyFailoverSettings(ctx)
+	if err != nil {
+		return ProxyFailoverSettings{}, err
+	}
+	return updated, nil
 }

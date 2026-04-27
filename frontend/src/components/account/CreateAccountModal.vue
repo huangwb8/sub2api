@@ -911,6 +911,18 @@
             <div class="mb-4 flex gap-2">
               <button
                 type="button"
+                @click="modelRestrictionMode = 'inherit_default'"
+                :class="[
+                  'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                  modelRestrictionMode === 'inherit_default'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500'
+                ]"
+              >
+                {{ t('admin.accounts.modelInheritDefault') }}
+              </button>
+              <button
+                type="button"
                 @click="modelRestrictionMode = 'whitelist'"
                 :class="[
                   'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
@@ -961,8 +973,14 @@
               </button>
             </div>
 
+            <div v-if="modelRestrictionMode === 'inherit_default'" class="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+              <p class="text-xs text-emerald-700 dark:text-emerald-400">
+                {{ t('admin.accounts.modelInheritDefaultHint') }}
+              </p>
+            </div>
+
             <!-- Whitelist Mode -->
-            <div v-if="modelRestrictionMode === 'whitelist'">
+            <div v-else-if="modelRestrictionMode === 'whitelist'">
               <ModelWhitelistSelector v-model="allowedModels" :platform="form.platform" />
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ t('admin.accounts.selectedModels', { count: allowedModels.length }) }}
@@ -973,7 +991,7 @@
             </div>
 
             <!-- Mapping Mode -->
-            <div v-else>
+            <div v-else-if="modelRestrictionMode === 'mapping'">
               <div class="mb-3 rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
                 <p class="text-xs text-purple-700 dark:text-purple-400">
                   <svg
@@ -1363,6 +1381,18 @@
           <div class="mb-4 flex gap-2">
             <button
               type="button"
+              @click="modelRestrictionMode = 'inherit_default'"
+              :class="[
+                'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                modelRestrictionMode === 'inherit_default'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500'
+              ]"
+            >
+              {{ t('admin.accounts.modelInheritDefault') }}
+            </button>
+            <button
+              type="button"
               @click="modelRestrictionMode = 'whitelist'"
               :class="[
                 'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
@@ -1387,8 +1417,14 @@
             </button>
           </div>
 
+          <div v-if="modelRestrictionMode === 'inherit_default'" class="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">
+              {{ t('admin.accounts.modelInheritDefaultHint') }}
+            </p>
+          </div>
+
           <!-- Whitelist Mode -->
-          <div v-if="modelRestrictionMode === 'whitelist'">
+          <div v-else-if="modelRestrictionMode === 'whitelist'">
             <ModelWhitelistSelector v-model="allowedModels" platform="anthropic" />
             <p class="text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.selectedModels', { count: allowedModels.length }) }}
@@ -1397,7 +1433,7 @@
           </div>
 
           <!-- Mapping Mode -->
-          <div v-else class="space-y-3">
+          <div v-else-if="modelRestrictionMode === 'mapping'" class="space-y-3">
             <div v-for="(mapping, index) in modelMappings" :key="index" class="flex items-center gap-2">
               <input v-model="mapping.from" type="text" class="input flex-1" :placeholder="t('admin.accounts.fromModel')" />
               <span class="text-gray-400">→</span>
@@ -1528,6 +1564,18 @@
           <div class="mb-4 flex gap-2">
             <button
               type="button"
+              @click="modelRestrictionMode = 'inherit_default'"
+              :class="[
+                'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                modelRestrictionMode === 'inherit_default'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500'
+              ]"
+            >
+              {{ t('admin.accounts.modelInheritDefault') }}
+            </button>
+            <button
+              type="button"
               @click="modelRestrictionMode = 'whitelist'"
               :class="[
                 'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
@@ -1552,8 +1600,14 @@
             </button>
           </div>
 
+          <div v-if="modelRestrictionMode === 'inherit_default'" class="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+            <p class="text-xs text-emerald-700 dark:text-emerald-400">
+              {{ t('admin.accounts.modelInheritDefaultHint') }}
+            </p>
+          </div>
+
           <!-- Whitelist Mode -->
-          <div v-if="modelRestrictionMode === 'whitelist'">
+          <div v-else-if="modelRestrictionMode === 'whitelist'">
             <ModelWhitelistSelector v-model="allowedModels" :platform="form.platform" />
             <p class="text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.selectedModels', { count: allowedModels.length }) }}
@@ -1564,7 +1618,7 @@
           </div>
 
           <!-- Mapping Mode -->
-          <div v-else>
+          <div v-else-if="modelRestrictionMode === 'mapping'">
             <div class="mb-3 rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
               <p class="text-xs text-purple-700 dark:text-purple-400">
                 {{ t('admin.accounts.mapRequestModels') }}
@@ -3017,7 +3071,7 @@ const editWeeklyResetDay = ref<number | null>(null)
 const editWeeklyResetHour = ref<number | null>(null)
 const editResetTimezone = ref<string | null>(null)
 const modelMappings = ref<ModelMapping[]>([])
-const modelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
+const modelRestrictionMode = ref<'inherit_default' | 'whitelist' | 'mapping'>('inherit_default')
 const allowedModels = ref<string[]>([])
 const DEFAULT_POOL_MODE_RETRY_COUNT = 3
 const MAX_POOL_MODE_RETRY_COUNT = 10
@@ -3062,6 +3116,24 @@ const getAntigravityModelMappingKey = createStableObjectKeyResolver<ModelMapping
 const getTempUnschedRuleKey = createStableObjectKeyResolver<TempUnschedRuleForm>('create-temp-unsched-rule')
 const geminiOAuthType = ref<'code_assist' | 'google_one' | 'ai_studio'>('google_one')
 const geminiAIStudioOAuthEnabled = ref(false)
+
+const applyModelCapabilityCredentials = (credentials: Record<string, unknown>) => {
+  if (modelRestrictionMode.value === 'inherit_default') {
+    credentials.model_capability_strategy = 'inherit_default'
+    delete credentials.model_mapping
+    return
+  }
+
+  const modelMapping = buildModelMappingObject(
+    modelRestrictionMode.value,
+    allowedModels.value,
+    modelMappings.value
+  )
+  if (modelMapping) {
+    credentials.model_capability_strategy = modelRestrictionMode.value
+    credentials.model_mapping = modelMapping
+  }
+}
 
 const applyOpenAICreateDefaults = () => {
   openaiPassthroughEnabled.value = true
@@ -3342,8 +3414,6 @@ watch(
       adminAPI.tlsFingerprintProfiles.list()
         .then(profiles => { tlsFingerprintProfiles.value = profiles.map(p => ({ id: p.id, name: p.name })) })
         .catch(() => { tlsFingerprintProfiles.value = [] })
-      // Modal opened - fill related models
-      allowedModels.value = [...getModelsByPlatform(form.platform)]
       // Antigravity: 默认使用映射模式并填充默认映射
       if (form.platform === 'antigravity') {
         antigravityModelRestrictionMode.value = 'mapping'
@@ -3866,7 +3936,7 @@ const resetForm = () => {
   editWeeklyResetHour.value = null
   editResetTimezone.value = null
   modelMappings.value = []
-  modelRestrictionMode.value = 'whitelist'
+  modelRestrictionMode.value = 'inherit_default'
   allowedModels.value = [...claudeModels] // Default fill related models
 
   antigravityModelRestrictionMode.value = 'mapping'
@@ -4078,13 +4148,7 @@ const handleSubmit = async () => {
       credentials.aws_force_global = 'true'
     }
 
-    // Model mapping
-    const modelMapping = buildModelMappingObject(
-      modelRestrictionMode.value, allowedModels.value, modelMappings.value
-    )
-    if (modelMapping) {
-      credentials.model_mapping = modelMapping
-    }
+    applyModelCapabilityCredentials(credentials)
 
     // Pool mode
     if (poolModeEnabled.value) {
@@ -4161,10 +4225,7 @@ const handleSubmit = async () => {
 
   // Add model mapping if configured（OpenAI 开启自动透传时不应用）
   if (!isOpenAIModelRestrictionDisabled.value) {
-    const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
-    if (modelMapping) {
-      credentials.model_mapping = modelMapping
-    }
+    applyModelCapabilityCredentials(credentials)
   }
 
   // Add pool mode if enabled
@@ -4328,10 +4389,7 @@ const handleOpenAIExchange = async (authCode: string) => {
 
     // Add model mapping for OpenAI OAuth accounts（透传模式下不应用）
     if (shouldCreateOpenAI && !isOpenAIModelRestrictionDisabled.value) {
-      const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
-      if (modelMapping) {
-        credentials.model_mapping = modelMapping
-      }
+      applyModelCapabilityCredentials(credentials)
     }
 
     // 应用临时不可调度配置
@@ -4421,10 +4479,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
 
         // Add model mapping for OpenAI OAuth accounts（透传模式下不应用）
         if (shouldCreateOpenAI && !isOpenAIModelRestrictionDisabled.value) {
-          const modelMapping = buildModelMappingObject(modelRestrictionMode.value, allowedModels.value, modelMappings.value)
-          if (modelMapping) {
-            credentials.model_mapping = modelMapping
-          }
+          applyModelCapabilityCredentials(credentials)
         }
 
         // Generate account name; fallback to email if name is empty (ent schema requires NotEmpty)

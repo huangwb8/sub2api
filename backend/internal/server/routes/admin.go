@@ -419,6 +419,8 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		adminSettings.DELETE("/admin-api-key", h.Admin.Setting.DeleteAdminAPIKey)
 		adminSettings.GET("/scheduling-mechanisms", h.Admin.Setting.GetSchedulingMechanismSettings)
 		adminSettings.PUT("/scheduling-mechanisms", h.Admin.Setting.UpdateSchedulingMechanismSettings)
+		adminSettings.GET("/proxy-failover", h.Admin.Setting.GetProxyFailoverSettings)
+		adminSettings.PUT("/proxy-failover", h.Admin.Setting.UpdateProxyFailoverSettings)
 		// 529过载冷却配置
 		adminSettings.GET("/overload-cooldown", h.Admin.Setting.GetOverloadCooldownSettings)
 		adminSettings.PUT("/overload-cooldown", h.Admin.Setting.UpdateOverloadCooldownSettings)

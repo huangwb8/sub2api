@@ -79,3 +79,68 @@ func TestSetSchedulingMechanismSettings_NormalizesPayload(t *testing.T) {
 	require.Equal(t, 200, settings.ProxyFailover.MaxMigrationsPerCycle)
 	require.Equal(t, defaultProxyFailoverTempUnschedMin, settings.ProxyFailover.TempUnschedMinutes)
 }
+
+func TestSetSchedulingMechanisms_PreservesProxyFailoverSettings(t *testing.T) {
+	repo := newMockSettingRepo()
+	svc := NewSettingService(repo, &config.Config{})
+
+	customFailover := DefaultProxyFailoverSettings()
+	customFailover.ProbeIntervalMinutes = 17
+	customFailover.MaxAccountsPerProxy = 9
+	require.NoError(t, svc.SetSchedulingMechanismSettings(context.Background(), &SchedulingMechanismSettings{
+		Mechanisms: []SchedulingMechanism{
+			{Name: "old", Enabled: true},
+		},
+		ProxyFailover: customFailover,
+	}))
+
+	require.NoError(t, svc.SetSchedulingMechanisms(context.Background(), []SchedulingMechanism{
+		{
+			Name:                     "new",
+			Enabled:                  true,
+			TempUnschedulableEnabled: true,
+			TempUnschedulableRules: []TempUnschedulableRule{
+				{ErrorCode: 502, Keywords: []string{"upstream"}, DurationMinutes: 5},
+			},
+		},
+	}))
+
+	settings, err := svc.GetSchedulingMechanismSettings(context.Background())
+	require.NoError(t, err)
+	require.Len(t, settings.Mechanisms, 1)
+	require.Equal(t, "new", settings.Mechanisms[0].Name)
+	require.Equal(t, customFailover, settings.ProxyFailover)
+}
+
+func TestSetProxyFailoverSettings_PreservesSchedulingMechanisms(t *testing.T) {
+	repo := newMockSettingRepo()
+	svc := NewSettingService(repo, &config.Config{})
+	mechanisms := []SchedulingMechanism{
+		{
+			Name:                     "OpenAI 502",
+			Platform:                 PlatformOpenAI,
+			AccountType:              AccountTypeOAuth,
+			Enabled:                  true,
+			TempUnschedulableEnabled: true,
+			TempUnschedulableRules: []TempUnschedulableRule{
+				{ErrorCode: 502, Keywords: []string{"bad gateway"}, DurationMinutes: 3},
+			},
+		},
+	}
+	require.NoError(t, svc.SetSchedulingMechanismSettings(context.Background(), &SchedulingMechanismSettings{
+		Mechanisms:    mechanisms,
+		ProxyFailover: DefaultProxyFailoverSettings(),
+	}))
+
+	nextFailover := DefaultProxyFailoverSettings()
+	nextFailover.FailureThreshold = 4
+	updated, err := svc.SetProxyFailoverSettings(context.Background(), nextFailover)
+	require.NoError(t, err)
+	require.Equal(t, 4, updated.FailureThreshold)
+
+	settings, err := svc.GetSchedulingMechanismSettings(context.Background())
+	require.NoError(t, err)
+	require.Len(t, settings.Mechanisms, 1)
+	require.Equal(t, "OpenAI 502", settings.Mechanisms[0].Name)
+	require.Equal(t, nextFailover, settings.ProxyFailover)
+}

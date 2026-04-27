@@ -16,7 +16,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.2.2
+version=1.2.3
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -63,6 +63,22 @@ PlanMarkdown = ./docs/plans/2026-04-14-upstream-sync-optimization-plan.md
 ```
 
 # 日常
+
+---
+
+基于 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-27-scheduling-proxy-failover-settings-findings.md 和 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-27-account-model-capability-snapshot-analysis.md 发现的问题， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
+调度机制 - 自动巡检、隔离与迁移，这些参数不应该是在IP管理界面？为什么在这里？ 而且有一些参数是重复的？把存在的问题总结在 docs/plans 里
+
+---
+
+之前有遇到一个很奇怪的bug：
+
+- 比如，一个帐号添加了。 这个时候模型A还没有面世。 然而，后面模型A出世了。 开发者可能会让软件更新并支持模型A。 但是，这个旧的帐号却对这个模型A没有自动支持。 
+
+这提示了帐号添加策略的一些固有缺陷。 你查看一下源代码，使用 awesome-code skill 辅助总结一下问题出在哪？ 
 
 ---
 

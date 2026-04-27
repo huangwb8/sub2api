@@ -156,6 +156,18 @@
                 type="button"
                 :class="[
                   'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                  modelRestrictionMode === 'inherit_default'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500'
+                ]"
+                @click="modelRestrictionMode = 'inherit_default'"
+              >
+                {{ t('admin.accounts.modelInheritDefault') }}
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all',
                   modelRestrictionMode === 'whitelist'
                     ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-600 dark:text-gray-400 dark:hover:bg-dark-500'
@@ -204,8 +216,14 @@
               </button>
             </div>
 
+            <div v-if="modelRestrictionMode === 'inherit_default'" class="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+              <p class="text-xs text-emerald-700 dark:text-emerald-400">
+                {{ t('admin.accounts.modelInheritDefaultHint') }}
+              </p>
+            </div>
+
             <!-- Whitelist Mode -->
-            <div v-if="modelRestrictionMode === 'whitelist'">
+            <div v-else-if="modelRestrictionMode === 'whitelist'">
               <div class="mb-3 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
                 <p class="text-xs text-blue-700 dark:text-blue-400">
                   <svg
@@ -239,7 +257,7 @@
             </div>
 
             <!-- Mapping Mode -->
-            <div v-else>
+            <div v-else-if="modelRestrictionMode === 'mapping'">
               <div class="mb-3 rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
                 <p class="text-xs text-purple-700 dark:text-purple-400">
                   <svg
@@ -1057,7 +1075,7 @@ const showMixedChannelWarning = ref(false)
 const mixedChannelWarningMessage = ref('')
 const pendingUpdatesForConfirm = ref<Record<string, unknown> | null>(null)
 const baseUrl = ref('')
-const modelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
+const modelRestrictionMode = ref<'inherit_default' | 'whitelist' | 'mapping'>('inherit_default')
 const allowedModels = ref<string[]>([])
 const modelMappings = ref<ModelMapping[]>([])
 const selectedErrorCodes = ref<number[]>([])
@@ -1279,19 +1297,24 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
   }
 
   if (enableModelRestriction.value && !isOpenAIModelRestrictionDisabled.value) {
-    // 统一使用 model_mapping 字段
-    if (modelRestrictionMode.value === 'whitelist') {
+    if (modelRestrictionMode.value === 'inherit_default') {
+      credentials.model_capability_strategy = 'inherit_default'
+      credentials.model_mapping = {}
+      credentialsChanged = true
+    } else if (modelRestrictionMode.value === 'whitelist') {
       // 白名单模式：将模型转换为 model_mapping 格式（key=value）
       // 空白名单表示“支持所有模型”，需显式发送空对象以覆盖已有限制。
       const mapping: Record<string, string> = {}
       for (const m of allowedModels.value) {
         mapping[m] = m
       }
+      credentials.model_capability_strategy = 'whitelist'
       credentials.model_mapping = mapping
       credentialsChanged = true
     } else {
       // 映射模式下空配置同样表示“支持所有模型”。
       const modelMapping = buildModelMappingObject()
+      credentials.model_capability_strategy = 'mapping'
       credentials.model_mapping = modelMapping ?? {}
       credentialsChanged = true
     }
@@ -1518,7 +1541,7 @@ watch(
       // Reset all values
       baseUrl.value = ''
       openaiPassthroughEnabled.value = false
-      modelRestrictionMode.value = 'whitelist'
+      modelRestrictionMode.value = 'inherit_default'
       allowedModels.value = []
       modelMappings.value = []
       selectedErrorCodes.value = []

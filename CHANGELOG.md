@@ -4,9 +4,12 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [1.2.3] - 2026-04-27
 
 ### Added（新增）
+- 新增了代理自动容错独立设置接口：`GET/PUT /api/v1/admin/settings/proxy-failover` 现在只读写 `proxy_failover` 子配置，避免 IP 管理与调度机制页面保存旧快照时互相覆盖。
+- 新增了账号模型能力策略：账号可显式保存 `model_capability_strategy=inherit_default|whitelist|mapping`，默认继承平台当前默认模型集，后续新增默认模型无需改旧账号快照即可参与调度。
+- 新增了 `docs/plans/2026-04-27-account-model-capability-snapshot-analysis.md`：沉淀旧账号不会自动支持后续新增模型的根因分析，明确问题来自创建时模型白名单快照、`model_mapping` 双重语义和调度过滤策略，并给出后续策略化修复方向。
 - 新增了 `docs/TURNSTILE_TROUBLESHOOTING.md`：提供 Cloudflare Turnstile 登录失败的快速排查、error code 对照、真实 IP 链路、CSP 与临时处置顺序。
 - 新增了 `docs/plans/2026-04-27-turnstile-login-stability-plan.md`：沉淀 Cloudflare Turnstile 登录偶发校验失败的 best practice 改良计划，覆盖服务端观测、真实 IP 信任链、前端 token 生命周期、部署资产稳定性与运维排查 runbook。
 - 新增了首页参考模板的套餐闲时动态计费展示：`docs/page-demo/2026-04-13-benszresearch-homepage-reference.html` 现在会在费用页套餐卡中展示闲时时间窗、闲时倍率与闲时盈利率，让自定义首页 `home_content` 与正式产品页能力保持一致。
@@ -24,6 +27,8 @@
 - 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
 
 ### Changed（变更）
+- 调整了代理自动容错配置入口：IP 管理页现在承载完整巡检、隔离、迁移和承载上限字段；调度机制页收敛为临时不可调度规则管理，内置 `docs/rules/调度机制.json` 也不再携带代理容错默认值。
+- 调整了账号创建与批量编辑的模型限制默认值：默认使用“继承默认”策略，不再把当前前端模型列表固化写入 `credentials.model_mapping`。
 - 调整了账号编辑弹窗的“临时不可调度”配置：移除账号内手写/预设规则编辑，改为只能从匹配当前账号平台与类型的调度机制规则下拉选择；无可用规则时禁止启用，保存时仅写入规则引用，减少账号级配置漂移。
 - 增强了 Turnstile 登录链路可观测性：服务端校验失败日志现在记录脱敏 error code、hostname、challenge timestamp、HTTP 状态、耗时和 remoteip 传递状态，同时避免记录 secret、完整 token 与密码。
 - 调整了 Turnstile remoteip 处理：登录、注册、验证码与忘记密码只使用可信代理链解析到的客户端 IP，并在调用 Cloudflare 前过滤私网、回环、链路本地和非法 IP。
@@ -53,6 +58,8 @@
 - 强化了 Codex Spark 模型限制提示：`gpt-5.3-codex-spark` 请求会注入图片能力限制说明，并拒绝图片输入或 `image_generation` 工具请求，避免把模型能力限制误判为本地工具缺失。
 
 ### Fixed（修复）
+- 修复了调度机制保存可能覆盖代理自动容错设置的问题：后端保存临时不可调度规则时会保留当前 `proxy_failover`，保存代理自动容错时也会保留当前规则列表。
+- 修复了旧账号模型白名单快照导致新增默认模型不可调度的问题：后端会识别历史大规模等值默认模型快照为继承默认，并让 `/v1/models` 对继承默认账号返回当前平台默认模型。
 - 修复了上游连接级错误绕过 failover 的问题：Forward 层在代理连接拒绝、超时等无 HTTP 响应场景下不再提前写 502，而是返回 `UpstreamFailoverError` 交由 handler 切换账号，同时对连接级 502 触发临时不可调度并补齐 `count_tokens` failover 闭环。
 - 修复了 OpenAI OAuth 账号在共享代理临时失效时缺少自动恢复路径的问题：现在上游 5xx 会同时驱动请求内 failover、跨请求临时不可调度与代理级故障识别，连续失败的代理会被隔离并优先把账号迁移到健康代理，降低 `unexpected status 502 Bad Gateway` 长时间反复打到同一坏代理的概率。
 - 修复了 EasyPay/ZPay 退款端点拼接不稳的问题：退款请求现在会剥离配置中的 `/mapi.php`、`/api.php` 等接口尾巴后再拼接退款接口，并优先使用商户订单号避免部分服务商按平台流水号退款失败。

@@ -421,11 +421,8 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// For API Key accounts with model mapping, map the model
 	if account.Type == "apikey" {
-		mapping := account.GetModelMapping()
-		if len(mapping) > 0 {
-			if mappedModel, exists := mapping[testModelID]; exists {
-				testModelID = mappedModel
-			}
+		if mappedModel, matched := account.ResolveMappedModel(testModelID); matched {
+			testModelID = mappedModel
 		}
 	}
 
@@ -546,11 +543,8 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 
 	// For API Key accounts with model mapping, map the model
 	if account.Type == AccountTypeAPIKey {
-		mapping := account.GetModelMapping()
-		if len(mapping) > 0 {
-			if mappedModel, exists := mapping[testModelID]; exists {
-				testModelID = mappedModel
-			}
+		if mappedModel, matched := account.ResolveMappedModel(testModelID); matched {
+			testModelID = mappedModel
 		}
 	}
 

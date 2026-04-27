@@ -665,6 +665,7 @@ export interface GeminiCredentials {
   token_type?: string
   scope?: string
   expires_at?: string
+  model_capability_strategy?: 'inherit_default' | 'whitelist' | 'mapping' | string
   model_mapping?: Record<string, string>
 }
 

@@ -151,6 +151,46 @@ func TestAccountIsModelSupported(t *testing.T) {
 			requestedModel: "any-model",
 			expected:       true,
 		},
+		{
+			name:     "inherit default supports newly added default model",
+			platform: PlatformOpenAI,
+			credentials: map[string]any{
+				"model_capability_strategy": AccountModelCapabilityStrategyInheritDefault,
+			},
+			requestedModel: "gpt-5.5",
+			expected:       true,
+		},
+		{
+			name:     "inherit default rejects model outside current defaults",
+			platform: PlatformOpenAI,
+			credentials: map[string]any{
+				"model_capability_strategy": AccountModelCapabilityStrategyInheritDefault,
+			},
+			requestedModel: "not-a-default-model",
+			expected:       false,
+		},
+		{
+			name:     "legacy openai default snapshot inherits future defaults",
+			platform: PlatformOpenAI,
+			credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gpt-3.5-turbo": "gpt-3.5-turbo",
+					"gpt-4":         "gpt-4",
+					"gpt-4-turbo":   "gpt-4-turbo",
+					"gpt-4o":        "gpt-4o",
+					"gpt-4o-mini":   "gpt-4o-mini",
+					"gpt-4.1":       "gpt-4.1",
+					"o1":            "o1",
+					"o1-mini":       "o1-mini",
+					"o3":            "o3",
+					"o3-mini":       "o3-mini",
+					"o4-mini":       "o4-mini",
+					"gpt-5":         "gpt-5",
+				},
+			},
+			requestedModel: "gpt-5.5",
+			expected:       true,
+		},
 
 		// 精确匹配
 		{

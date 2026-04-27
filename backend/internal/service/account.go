@@ -13,6 +13,9 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
 )
 
 type Account struct {
@@ -66,7 +69,14 @@ type Account struct {
 	modelMappingCacheRawPtr         uintptr
 	modelMappingCacheRawLen         int
 	modelMappingCacheRawSig         uint64
+	modelMappingCacheStrategy       string
 }
+
+const (
+	AccountModelCapabilityStrategyInheritDefault = "inherit_default"
+	AccountModelCapabilityStrategyWhitelist      = "whitelist"
+	AccountModelCapabilityStrategyMapping        = "mapping"
+)
 
 type TempUnschedulableRule struct {
 	ID              string   `json:"id,omitempty"`
@@ -463,18 +473,64 @@ func parseTempUnschedInt(value any) int {
 	return 0
 }
 
+func normalizeModelCapabilityStrategy(value any) string {
+	strategy, _ := value.(string)
+	switch strings.ToLower(strings.TrimSpace(strategy)) {
+	case AccountModelCapabilityStrategyInheritDefault:
+		return AccountModelCapabilityStrategyInheritDefault
+	case AccountModelCapabilityStrategyWhitelist:
+		return AccountModelCapabilityStrategyWhitelist
+	case AccountModelCapabilityStrategyMapping:
+		return AccountModelCapabilityStrategyMapping
+	default:
+		return ""
+	}
+}
+
+func rawAccountModelMapping(credentials map[string]any) map[string]any {
+	if credentials == nil {
+		return nil
+	}
+	rawMapping, _ := credentials["model_mapping"].(map[string]any)
+	return rawMapping
+}
+
+func (a *Account) modelCapabilityStrategy(rawMapping map[string]any) string {
+	if a == nil {
+		return ""
+	}
+	strategy := normalizeModelCapabilityStrategy(a.Credentials["model_capability_strategy"])
+	if strategy != "" {
+		return strategy
+	}
+	if isLegacyDefaultModelSnapshot(a.Platform, rawMapping) {
+		return AccountModelCapabilityStrategyInheritDefault
+	}
+	return ""
+}
+
+func (a *Account) ModelCapabilityStrategy() string {
+	return a.modelCapabilityStrategy(rawAccountModelMapping(a.Credentials))
+}
+
+func (a *Account) inheritsDefaultModelCapabilities(rawMapping map[string]any) bool {
+	return a.modelCapabilityStrategy(rawMapping) == AccountModelCapabilityStrategyInheritDefault
+}
+
 func (a *Account) GetModelMapping() map[string]string {
 	credentialsPtr := mapPtr(a.Credentials)
-	rawMapping, _ := a.Credentials["model_mapping"].(map[string]any)
+	rawMapping := rawAccountModelMapping(a.Credentials)
 	rawPtr := mapPtr(rawMapping)
 	rawLen := len(rawMapping)
+	strategy := a.modelCapabilityStrategy(rawMapping)
 	rawSig := uint64(0)
 	rawSigReady := false
 
 	if a.modelMappingCacheReady &&
 		a.modelMappingCacheCredentialsPtr == credentialsPtr &&
 		a.modelMappingCacheRawPtr == rawPtr &&
-		a.modelMappingCacheRawLen == rawLen {
+		a.modelMappingCacheRawLen == rawLen &&
+		a.modelMappingCacheStrategy == strategy {
 		rawSig = modelMappingSignature(rawMapping)
 		rawSigReady = true
 		if a.modelMappingCacheRawSig == rawSig {
@@ -493,6 +549,7 @@ func (a *Account) GetModelMapping() map[string]string {
 	a.modelMappingCacheRawPtr = rawPtr
 	a.modelMappingCacheRawLen = rawLen
 	a.modelMappingCacheRawSig = rawSig
+	a.modelMappingCacheStrategy = strategy
 	return mapping
 }
 
@@ -510,6 +567,9 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
 		}
+		return nil
+	}
+	if a.inheritsDefaultModelCapabilities(rawMapping) {
 		return nil
 	}
 
@@ -568,6 +628,102 @@ func modelMappingSignature(rawMapping map[string]any) uint64 {
 	return h.Sum64()
 }
 
+func defaultModelIDsByPlatform(platform string) []string {
+	switch platform {
+	case PlatformOpenAI:
+		return openai.DefaultModelIDs()
+	case PlatformAnthropic:
+		return claude.DefaultModelIDs()
+	case PlatformGemini:
+		ids := make([]string, 0, len(geminicli.DefaultModels))
+		for _, model := range geminicli.DefaultModels {
+			ids = append(ids, model.ID)
+		}
+		return ids
+	case PlatformAntigravity:
+		ids := make([]string, 0, len(domain.DefaultAntigravityModelMapping))
+		for model := range domain.DefaultAntigravityModelMapping {
+			ids = append(ids, model)
+		}
+		sort.Strings(ids)
+		return ids
+	default:
+		return nil
+	}
+}
+
+func defaultModelIDSetByPlatform(platform string) map[string]struct{} {
+	ids := defaultModelIDsByPlatform(platform)
+	if len(ids) == 0 {
+		return nil
+	}
+	set := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		set[id] = struct{}{}
+	}
+	return set
+}
+
+func defaultModelSupported(platform, requestedModel string) bool {
+	if strings.TrimSpace(requestedModel) == "" {
+		return false
+	}
+	set := defaultModelIDSetByPlatform(platform)
+	if len(set) == 0 {
+		return true
+	}
+	if _, ok := set[requestedModel]; ok {
+		return true
+	}
+	normalized := normalizeRequestedModelForLookup(platform, requestedModel)
+	if normalized != requestedModel {
+		_, ok := set[normalized]
+		return ok
+	}
+	return false
+}
+
+func isLegacyDefaultModelSnapshot(platform string, rawMapping map[string]any) bool {
+	if len(rawMapping) == 0 {
+		return false
+	}
+	minSize := 0
+	prefixes := []string{}
+	switch platform {
+	case PlatformOpenAI:
+		minSize = 12
+		prefixes = []string{"gpt-", "o", "chatgpt-"}
+	case PlatformAnthropic:
+		minSize = 8
+		prefixes = []string{"claude-"}
+	case PlatformGemini:
+		minSize = 6
+		prefixes = []string{"gemini-"}
+	default:
+		return false
+	}
+	if len(rawMapping) < minSize {
+		return false
+	}
+	for from, rawTo := range rawMapping {
+		to, ok := rawTo.(string)
+		if !ok || from == "" || from != to || strings.Contains(from, "*") {
+			return false
+		}
+		matchedPrefix := false
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(from, prefix) {
+				matchedPrefix = true
+				break
+			}
+		}
+		if !matchedPrefix {
+			return false
+		}
+	}
+	return true
+}
+
 func ensureAntigravityDefaultPassthrough(mapping map[string]string, model string) {
 	if mapping == nil || model == "" {
 		return
@@ -595,6 +751,11 @@ func normalizeRequestedModelForLookup(platform, requestedModel string) string {
 		return ""
 	}
 	if platform != PlatformGemini && platform != PlatformAntigravity {
+		if platform == PlatformAnthropic {
+			if mapped, ok := claude.ModelIDOverrides[trimmed]; ok {
+				return mapped
+			}
+		}
 		return trimmed
 	}
 	if trimmed == "gemini-3.1-pro-preview-customtools" {
@@ -628,9 +789,14 @@ func resolveRequestedModelInMapping(mapping map[string]string, requestedModel st
 	return matchWildcardMappingResult(mapping, requestedModel)
 }
 
-// IsModelSupported 检查模型是否在 model_mapping 中（支持通配符）
-// 如果未配置 mapping，返回 true（允许所有模型）
+// IsModelSupported checks the account model capability strategy.
+// inherit_default uses the current platform defaults; otherwise model_mapping
+// acts as the explicit allowlist/mapping, and absent mapping keeps legacy allow-all behavior.
 func (a *Account) IsModelSupported(requestedModel string) bool {
+	rawMapping := rawAccountModelMapping(a.Credentials)
+	if a.inheritsDefaultModelCapabilities(rawMapping) {
+		return defaultModelSupported(a.Platform, requestedModel)
+	}
 	mapping := a.GetModelMapping()
 	if len(mapping) == 0 {
 		return true // 无映射 = 允许所有

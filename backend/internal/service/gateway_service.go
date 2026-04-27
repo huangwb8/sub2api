@@ -8758,6 +8758,13 @@ func (s *GatewayService) GetAvailableModels(ctx context.Context, groupID *int64,
 	hasAnyMapping := false
 
 	for _, acc := range accounts {
+		if acc.ModelCapabilityStrategy() == AccountModelCapabilityStrategyInheritDefault {
+			hasAnyMapping = true
+			for _, model := range defaultModelIDsByPlatform(acc.Platform) {
+				modelSet[model] = struct{}{}
+			}
+			continue
+		}
 		mapping := acc.GetModelMapping()
 		if len(mapping) > 0 {
 			hasAnyMapping = true

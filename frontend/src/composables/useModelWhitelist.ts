@@ -416,10 +416,14 @@ export function isValidWildcardPattern(pattern: string): boolean {
 }
 
 export function buildModelMappingObject(
-  mode: 'whitelist' | 'mapping',
+  mode: 'inherit_default' | 'whitelist' | 'mapping',
   allowedModels: string[],
   modelMappings: { from: string; to: string }[]
 ): Record<string, string> | null {
+  if (mode === 'inherit_default') {
+    return null
+  }
+
   const mapping: Record<string, string> = {}
 
   if (mode === 'whitelist') {

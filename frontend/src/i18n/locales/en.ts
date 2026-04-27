@@ -2617,6 +2617,8 @@ export default {
           'Only applies to Anthropic API Key accounts. When enabled, messages/count_tokens are forwarded in passthrough mode with auth replacement only, while billing/concurrency/audit and safety filtering are preserved. Disable to roll back immediately.'
       },
       modelRestriction: 'Model Restriction (Optional)',
+      modelInheritDefault: 'Inherit Defaults',
+      modelInheritDefaultHint: 'Use the current default model catalog for this platform. Newly added default models become available automatically.',
       modelWhitelist: 'Model Whitelist',
       modelMapping: 'Model Mapping',
       selectAllowedModels: 'Select allowed models. Leave empty to support all models.',
@@ -3421,7 +3423,13 @@ export default {
         autoTestEnabled: 'Auto probe',
         probeIntervalMinutes: 'Probe interval (min)',
         failureThreshold: 'Failure threshold',
-        cooldownMinutes: 'Cooldown (min)'
+        failureWindowMinutes: 'Failure window (min)',
+        cooldownMinutes: 'Cooldown (min)',
+        tempUnschedMinutes: 'Fallback temp unsched (min)',
+        maxAccountsPerProxy: 'Max accounts per proxy',
+        maxMigrationsPerCycle: 'Max migrations per cycle',
+        preferSameCountry: 'Prefer same-country proxies',
+        onlyOpenAIOAuth: 'Only OpenAI OAuth'
       },
       deleteConfirm:
         "Are you sure you want to delete '{name}'? Accounts using this proxy will have their proxy removed."
@@ -3429,7 +3437,7 @@ export default {
 
     schedulingMechanisms: {
       title: 'Scheduling Mechanisms',
-      description: 'Manage global temporary unschedulable rules and proxy auto-failover in one place.',
+      description: 'Manage global temporary unschedulable rules. Proxy auto-failover settings now live in IP management.',
       proxyFailoverEyebrow: 'Proxy Auto-Failover',
       proxyFailoverTitle: 'Probe, isolate, and migrate automatically',
       proxyFailoverDescription: 'These settings define probe cadence, repeated failure thresholds, migration load caps, and fallback cooldown behavior for unhealthy proxies.',

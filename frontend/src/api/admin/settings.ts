@@ -323,6 +323,21 @@ export async function updateSchedulingMechanismSettings(
   return data
 }
 
+export async function getProxyFailoverSettings(): Promise<ProxyFailoverSettings> {
+  const { data } = await apiClient.get<ProxyFailoverSettings>('/admin/settings/proxy-failover')
+  return data
+}
+
+export async function updateProxyFailoverSettings(
+  settings: ProxyFailoverSettings
+): Promise<ProxyFailoverSettings> {
+  const { data } = await apiClient.put<ProxyFailoverSettings>(
+    '/admin/settings/proxy-failover',
+    settings
+  )
+  return data
+}
+
 /**
  * Test SMTP connection request
  */
@@ -620,6 +635,8 @@ export const settingsAPI = {
   updateSettings,
   getSchedulingMechanismSettings,
   updateSchedulingMechanismSettings,
+  getProxyFailoverSettings,
+  updateProxyFailoverSettings,
   testSmtpConnection,
   sendTestEmail,
   getAdminApiKey,

@@ -2765,6 +2765,8 @@ export default {
           '仅对 Anthropic API Key 生效。开启后，messages/count_tokens 请求将透传上游并仅替换认证，保留计费/并发/审计及必要安全过滤；关闭即可回滚到现有兼容链路。'
       },
       modelRestriction: '模型限制（可选）',
+      modelInheritDefault: '继承默认',
+      modelInheritDefaultHint: '使用平台当前默认模型集，后续新增默认模型会自动生效。',
       modelWhitelist: '模型白名单',
       modelMapping: '模型映射',
       selectAllowedModels: '选择允许的模型。留空则支持所有模型。',
@@ -3551,14 +3553,20 @@ export default {
         autoTestEnabled: '启用自动巡检',
         probeIntervalMinutes: '巡检间隔（分钟）',
         failureThreshold: '失败阈值',
-        cooldownMinutes: '冷却时间（分钟）'
+        failureWindowMinutes: '失败统计窗口（分钟）',
+        cooldownMinutes: '冷却时间（分钟）',
+        tempUnschedMinutes: '无可迁移代理时冷却（分钟）',
+        maxAccountsPerProxy: '每代理最大承载账号数',
+        maxMigrationsPerCycle: '每轮最大迁移账号数',
+        preferSameCountry: '优先同国家代理',
+        onlyOpenAIOAuth: '仅处理 OpenAI OAuth'
       },
       deleteConfirm: "确定要删除代理 '{name}' 吗？使用此代理的账号将被移除代理设置。"
     },
 
     schedulingMechanisms: {
       title: '调度机制',
-      description: '统一管理全局临时不可调度规则，并维护代理故障巡检与迁移策略。',
+      description: '统一管理全局临时不可调度规则；代理自动容错设置已收敛到 IP 管理。',
       proxyFailoverEyebrow: '巡检设置',
       proxyFailoverTitle: '自动巡检、隔离与迁移',
       proxyFailoverDescription: '这里定义代理级故障的巡检节奏、连续失败门槛、迁移负载上限与兜底冷却时间。',
