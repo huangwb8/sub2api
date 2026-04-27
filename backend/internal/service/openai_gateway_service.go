@@ -1105,6 +1105,10 @@ func isOpenAITransientProcessingError(upstreamStatusCode int, upstreamMsg string
 // ExtractSessionID extracts the raw session ID from headers or body without hashing.
 // Used by ForwardAsAnthropic to pass as prompt_cache_key for upstream cache.
 func (s *OpenAIGatewayService) ExtractSessionID(c *gin.Context, body []byte) string {
+	return explicitOpenAISessionID(c, body)
+}
+
+func explicitOpenAISessionID(c *gin.Context, body []byte) string {
 	if c == nil {
 		return ""
 	}
@@ -1116,6 +1120,20 @@ func (s *OpenAIGatewayService) ExtractSessionID(c *gin.Context, body []byte) str
 		sessionID = strings.TrimSpace(gjson.GetBytes(body, "prompt_cache_key").String())
 	}
 	return sessionID
+}
+
+// GenerateExplicitSessionHash generates a sticky-session hash only from explicit
+// client session signals. Stateless endpoints can use it to avoid content-derived
+// account binding while preserving opt-in sticky sessions.
+func (s *OpenAIGatewayService) GenerateExplicitSessionHash(c *gin.Context, body []byte) string {
+	sessionID := explicitOpenAISessionID(c, body)
+	if sessionID == "" {
+		return ""
+	}
+
+	currentHash, legacyHash := deriveOpenAISessionHashes(sessionID)
+	attachOpenAILegacySessionHashToGin(c, legacyHash)
+	return currentHash
 }
 
 // GenerateSessionHash generates a sticky-session hash for OpenAI requests.
@@ -1130,13 +1148,7 @@ func (s *OpenAIGatewayService) GenerateSessionHash(c *gin.Context, body []byte) 
 		return ""
 	}
 
-	sessionID := strings.TrimSpace(c.GetHeader("session_id"))
-	if sessionID == "" {
-		sessionID = strings.TrimSpace(c.GetHeader("conversation_id"))
-	}
-	if sessionID == "" && len(body) > 0 {
-		sessionID = strings.TrimSpace(gjson.GetBytes(body, "prompt_cache_key").String())
-	}
+	sessionID := explicitOpenAISessionID(c, body)
 	if sessionID == "" && len(body) > 0 {
 		sessionID = deriveOpenAIContentSessionSeed(body)
 	}

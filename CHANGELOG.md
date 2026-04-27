@@ -7,6 +7,7 @@
 ## [1.2.3] - 2026-04-27
 
 ### Added（新增）
+- 新增了 OpenAI 显式会话 hash 能力：`GenerateExplicitSessionHash` 只使用 `session_id`、`conversation_id` 与 `prompt_cache_key`，为后续无状态 Images 入口避免 prompt 内容隐式粘住固定账号提供安全接线点，同时不改变聊天、Responses 与 WS ingress 的既有粘性会话逻辑。
 - 新增了代理自动容错独立设置接口：`GET/PUT /api/v1/admin/settings/proxy-failover` 现在只读写 `proxy_failover` 子配置，避免 IP 管理与调度机制页面保存旧快照时互相覆盖。
 - 新增了账号模型能力策略：账号可显式保存 `model_capability_strategy=inherit_default|whitelist|mapping`，默认继承平台当前默认模型集，后续新增默认模型无需改旧账号快照即可参与调度。
 - 新增了 `docs/plans/2026-04-27-account-model-capability-snapshot-analysis.md`：沉淀旧账号不会自动支持后续新增模型的根因分析，明确问题来自创建时模型白名单快照、`model_mapping` 双重语义和调度过滤策略，并给出后续策略化修复方向。
@@ -58,6 +59,7 @@
 - 强化了 Codex Spark 模型限制提示：`gpt-5.3-codex-spark` 请求会注入图片能力限制说明，并拒绝图片输入或 `image_generation` 工具请求，避免把模型能力限制误判为本地工具缺失。
 
 ### Fixed（修复）
+- 修复了 Responses 转 Anthropic 时 Claude Code `Read` 工具的 `pages:""` 空字符串参数会透传给 Anthropic 的问题：现在仅对 `Read.pages` 空字符串做清理，其他工具的空字符串字段保持原样，流式路径也会在参数完成后输出清理后的完整 JSON。
 - 修复了 OpenAI `/v1/messages` 兼容 Responses 转发在 buffered 上游 SSE 缺少 terminal event 时不会触发 failover 的问题：现在该路径会保持客户端响应未提交、记录 Ops 上游错误，并返回 `UpstreamFailoverError` 交由 handler 自动切换账号。
 - 修复了 Admin Ops 健康诊断暴露的稳定性问题：账号可用性与并发统计在无分组过滤时只按账号主分组聚合，带分组过滤时按目标分组聚合，避免多分组账号被重复计入所有分组；TTFT 健康评分阈值校准为更适合住宅代理链路的 3s 目标、15s 严重退化区间；Chat Completions 兼容 Responses 转发在上游 SSE 缺少 terminal event 时改走 failover，不再直接把单账号断流写成最终 502。
 - 修复了调度机制保存可能覆盖代理自动容错设置的问题：后端保存临时不可调度规则时会保留当前 `proxy_failover`，保存代理自动容错时也会保留当前规则列表。
