@@ -345,7 +345,7 @@
 
           <!-- User Usage Trend (Full Width) -->
           <div class="card p-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+            <h3 class="dashboard-panel-title mb-4">
               {{ t('admin.dashboard.recentUsage') }} (Top 12)
             </h3>
             <div class="h-64">
