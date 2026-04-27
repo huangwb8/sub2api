@@ -24,8 +24,14 @@ server:
   # 用于生成邮件中的外部链接（例如：重置密码链接）的前端基础地址
   # Example: "https://example.com"
   frontend_url: ""
-  # Trusted proxies for X-Forwarded-For parsing (CIDR/IP). Empty disables trusted proxies.
-  # 信任的代理地址（CIDR/IP 格式），用于解析 X-Forwarded-For 头。留空则禁用代理信任。
+  # Trusted proxies for real client IP parsing (CIDR/IP). Empty disables trusted proxies.
+  # 信任的代理地址（CIDR/IP 格式），用于解析 CF-Connecting-IP / X-Forwarded-For / X-Real-IP。留空则禁用代理信任。
+  # Production examples / 生产示例:
+  # - Docker bridge: ["172.16.0.0/12"] or the exact docker network CIDR used by your compose stack
+  # - Local reverse proxy: ["127.0.0.1/32", "::1/128"]
+  # - Internal Nginx/Caddy/Traefik: use the exact private IP or CIDR of that proxy
+  # Do not use 0.0.0.0/0 in production; it lets clients spoof forwarding headers.
+  # 生产环境不要使用 0.0.0.0/0，否则客户端可伪造转发头。
   trusted_proxies: []
   # Global max request body size in bytes (default: 256MB)
   # 全局最大请求体大小（字节，默认 256MB）
@@ -982,6 +988,8 @@ billing:
 turnstile:
   # Require Turnstile in release mode (when enabled, login/register will fail if not configured)
   # 在 release 模式下要求 Turnstile 验证（启用后，若未配置则登录/注册会失败）
+  # The server only sends sanitized public client IPs to Cloudflare siteverify.
+  # 服务端只会把清洗后的公网客户端 IP 作为 remoteip 传给 Cloudflare siteverify。
   required: false
 
 # =============================================================================

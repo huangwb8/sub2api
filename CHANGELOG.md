@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 `docs/TURNSTILE_TROUBLESHOOTING.md`：提供 Cloudflare Turnstile 登录失败的快速排查、error code 对照、真实 IP 链路、CSP 与临时处置顺序。
+- 新增了 `docs/plans/2026-04-27-turnstile-login-stability-plan.md`：沉淀 Cloudflare Turnstile 登录偶发校验失败的 best practice 改良计划，覆盖服务端观测、真实 IP 信任链、前端 token 生命周期、部署资产稳定性与运维排查 runbook。
 - 新增了首页参考模板的套餐闲时动态计费展示：`docs/page-demo/2026-04-13-benszresearch-homepage-reference.html` 现在会在费用页套餐卡中展示闲时时间窗、闲时倍率与闲时盈利率，让自定义首页 `home_content` 与正式产品页能力保持一致。
 - 新增了账号级调度机制规则选择能力：账号创建与编辑中的“临时不可调度”现在可勾选调度机制中已配置的规则并保存为账号级引用，后端会在账号开启临时不可调度时按所选规则触发状态，同时保留账号自定义规则与原有全局调度机制规则。
 - 新增了 OpenAI 粘性会话错误率保护配置：`gateway.openai_ws.sticky_session_error_rate_threshold` 与 `gateway.openai_ws.sticky_session_error_rate_min_samples` 可控制高错误率账号的 session 绑定清理阈值，避免代理故障账号长期粘住同一会话。
@@ -22,6 +24,9 @@
 - 新增了网关 RPM 限流最小闭环：支持用户级与分组级 RPM 配置字段、Redis 分钟窗口计数、Claude/OpenAI/Gemini/Antigravity 网关认证后限流，以及对应迁移与单元测试；字段语义为 `NULL` 未配置、`0` 不限制、正数限流。
 
 ### Changed（变更）
+- 增强了 Turnstile 登录链路可观测性：服务端校验失败日志现在记录脱敏 error code、hostname、challenge timestamp、HTTP 状态、耗时和 remoteip 传递状态，同时避免记录 secret、完整 token 与密码。
+- 调整了 Turnstile remoteip 处理：登录、注册、验证码与忘记密码只使用可信代理链解析到的客户端 IP，并在调用 Cloudflare 前过滤私网、回环、链路本地和非法 IP。
+- 优化了登录页 Turnstile token 生命周期：前端会在 token 超过 240 秒、过期回调、错误回调或登录失败后清空并 reset widget，避免复用过期或已消费 token。
 - 优化了调度机制页面的巡检参数区：移除冗余提示文案，将开关与数值参数收敛为更紧凑的横排控制项，降低配置区空白占用并保持原有保存、导入和规则管理行为不变。
 - 调整了后台代理与调度配置入口：管理员侧边栏现在在 `IP管理` 与 `兑换码` 之间新增“调度机制”页面，`IP管理` 页面同步提供自动巡检/自动迁移核心参数的快捷编辑入口，减少 OpenAI 账号遇到代理抖动时的人工介入成本。
 - 更新了 README 多语言能力说明：补充邀请返利默认关闭、管理员可控启用与专属邀请码配置口径。

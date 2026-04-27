@@ -612,6 +612,7 @@ sudo systemctl status redis
 2. **Database connection failed**: Check PostgreSQL is running and credentials are correct
 3. **Redis connection failed**: Check Redis is running and password is correct
 4. **Permission denied**: Ensure proper file ownership for binary install
+5. **Turnstile login verification failed**: Check `server.trusted_proxies`, CSP, widget keys, and service logs with the runbook in [`docs/TURNSTILE_TROUBLESHOOTING.md`](../docs/TURNSTILE_TROUBLESHOOTING.md)
 
 ---
 

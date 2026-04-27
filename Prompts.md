@@ -66,6 +66,14 @@ PlanMarkdown = ./docs/plans/2026-04-14-upstream-sync-optimization-plan.md
 
 ---
 
+对 docs/plans/2026-04-27-turnstile-login-stability-plan.md 里暴露的问题， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
+现在在登陆界面，通过cloudflare 后， 当用户点击登陆后， 出现turnstile verification failed ，导致无法登陆。 你结合 remote.env，看一下我的站点。 是cloudflare的问题，还是sub2api的程序设计问题？
+
+---
+
 套餐定价测算的bug
 
 - 当测算用户数增加时， 住宅 IP 成本的数字应该会增加； 因为它展示的不应该是目前项目里的人数，而是基于测算用户（因为这个panel是给管理员预估成本的）
