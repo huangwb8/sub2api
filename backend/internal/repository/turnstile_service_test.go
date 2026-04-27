@@ -52,6 +52,7 @@ func (s *TurnstileServiceSuite) TestVerifyToken_SendsFormAndDecodesJSON() {
 	require.NoError(s.T(), err, "VerifyToken")
 	require.NotNil(s.T(), resp)
 	require.True(s.T(), resp.Success, "expected success response")
+	require.Equal(s.T(), http.StatusOK, resp.HTTPStatus)
 
 	// Assert form fields in main goroutine
 	select {
@@ -62,6 +63,24 @@ func (s *TurnstileServiceSuite) TestVerifyToken_SendsFormAndDecodesJSON() {
 	default:
 		require.Fail(s.T(), "expected server to receive request")
 	}
+}
+
+func (s *TurnstileServiceSuite) TestVerifyToken_Non2xxJSONStillReturnsErrorCodes() {
+	s.setupTransport(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		_ = json.NewEncoder(w).Encode(service.TurnstileVerifyResponse{
+			Success:    false,
+			ErrorCodes: []string{"invalid-input-response"},
+		})
+	}))
+
+	resp, err := s.verifier.VerifyToken(s.ctx, "sk", "token", "1.1.1.1")
+	require.NoError(s.T(), err, "VerifyToken should expose Cloudflare JSON payload even on non-2xx")
+	require.NotNil(s.T(), resp)
+	require.False(s.T(), resp.Success)
+	require.Equal(s.T(), http.StatusBadGateway, resp.HTTPStatus)
+	require.Contains(s.T(), resp.ErrorCodes, "invalid-input-response")
 }
 
 func (s *TurnstileServiceSuite) TestVerifyToken_ContentType() {

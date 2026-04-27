@@ -42,7 +42,7 @@ func TestCalculateDashboardOversellScenario_Feasible(t *testing.T) {
 		CurrentCheapestMonthlyPrice: 88,
 		ResidentialIPMonthlyCostCNY: 12,
 		ResidentialIPActualDays:     7,
-		ResidentialIPTotalTrafficGB: 1.4,
+		ResidentialIPTotalTrafficGB: 0.03,
 		ResidentialIPFXRateUSDCNY:   7.2,
 	}
 	plans := []dashboardOversellPlanSnapshot{
@@ -128,7 +128,7 @@ func TestCalculateDashboardOversellScenario_AcceptsResidentialIPCostOnly(t *test
 		CurrentCheapestMonthlyPrice: 88,
 		ResidentialIPMonthlyCostCNY: 90,
 		ResidentialIPActualDays:     7,
-		ResidentialIPTotalTrafficGB: 1.75,
+		ResidentialIPTotalTrafficGB: 0.2,
 		ResidentialIPFXRateUSDCNY:   7.2,
 	}
 
