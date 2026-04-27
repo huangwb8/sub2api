@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/httpclient"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"go.uber.org/zap"
 )
 
 const turnstileVerifyURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
@@ -35,6 +37,7 @@ func NewTurnstileVerifier() service.TurnstileVerifier {
 }
 
 func (v *turnstileVerifier) VerifyToken(ctx context.Context, secretKey, token, remoteIP string) (*service.TurnstileVerifyResponse, error) {
+	started := time.Now()
 	formData := url.Values{}
 	formData.Set("secret", secretKey)
 	formData.Set("response", token)
@@ -50,13 +53,34 @@ func (v *turnstileVerifier) VerifyToken(ctx context.Context, secretKey, token, r
 
 	resp, err := v.httpClient.Do(req)
 	if err != nil {
+		logger.With(zap.String("component", "repository.turnstile")).Error("[Turnstile] siteverify request failed",
+			zap.Error(err),
+			zap.Int64("duration_ms", time.Since(started).Milliseconds()),
+			zap.Bool("remoteip_passed", remoteIP != ""),
+		)
 		return nil, fmt.Errorf("send request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	var result service.TurnstileVerifyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logger.With(zap.String("component", "repository.turnstile")).Warn("[Turnstile] siteverify response decode failed",
+			zap.Error(err),
+			zap.Int("http_status", resp.StatusCode),
+			zap.Int64("duration_ms", time.Since(started).Milliseconds()),
+			zap.Bool("remoteip_passed", remoteIP != ""),
+		)
 		return nil, fmt.Errorf("decode response: %w", err)
+	}
+	result.HTTPStatus = resp.StatusCode
+	result.VerifyDurationMS = time.Since(started).Milliseconds()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		logger.With(zap.String("component", "repository.turnstile")).Warn("[Turnstile] siteverify returned non-2xx",
+			zap.Int("http_status", resp.StatusCode),
+			zap.Strings("error_codes", result.ErrorCodes),
+			zap.Int64("duration_ms", result.VerifyDurationMS),
+			zap.Bool("remoteip_passed", remoteIP != ""),
+		)
 	}
 
 	return &result, nil

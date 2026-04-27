@@ -3,9 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"go.uber.org/zap"
 )
 
 var (
@@ -27,12 +31,14 @@ type TurnstileService struct {
 
 // TurnstileVerifyResponse Cloudflare Turnstile 验证响应
 type TurnstileVerifyResponse struct {
-	Success     bool     `json:"success"`
-	ChallengeTS string   `json:"challenge_ts"`
-	Hostname    string   `json:"hostname"`
-	ErrorCodes  []string `json:"error-codes"`
-	Action      string   `json:"action"`
-	CData       string   `json:"cdata"`
+	Success          bool     `json:"success"`
+	ChallengeTS      string   `json:"challenge_ts"`
+	Hostname         string   `json:"hostname"`
+	ErrorCodes       []string `json:"error-codes"`
+	Action           string   `json:"action"`
+	CData            string   `json:"cdata"`
+	HTTPStatus       int      `json:"-"`
+	VerifyDurationMS int64    `json:"-"`
 }
 
 // NewTurnstileService 创建 Turnstile 服务实例
@@ -64,20 +70,57 @@ func (s *TurnstileService) VerifyToken(ctx context.Context, token string, remote
 		return ErrTurnstileVerificationFailed
 	}
 
-	logger.LegacyPrintf("service.turnstile", "[Turnstile] Verifying token for IP: %s", remoteIP)
-	result, err := s.verifier.VerifyToken(ctx, secretKey, token, remoteIP)
+	sanitizedRemoteIP := ip.SanitizeTurnstileRemoteIP(remoteIP)
+	remoteIPPrivate := remoteIP != "" && ip.IsPrivateOrLoopbackIP(remoteIP)
+	logger.LegacyPrintf("service.turnstile", "[Turnstile] Verifying token, remoteip_passed=%v remote_ip_private=%v", sanitizedRemoteIP != "", remoteIPPrivate)
+	started := time.Now()
+	result, err := s.verifier.VerifyToken(ctx, secretKey, token, sanitizedRemoteIP)
 	if err != nil {
-		logger.LegacyPrintf("service.turnstile", "[Turnstile] Request failed: %v", err)
+		logger.With(zap.String("component", "service.turnstile")).Error("[Turnstile] Request failed",
+			zap.Error(err),
+			zap.Int64("duration_ms", time.Since(started).Milliseconds()),
+			zap.Bool("remoteip_passed", sanitizedRemoteIP != ""),
+			zap.String("remote_ip_redacted", redactRemoteIPForLog(remoteIP)),
+			zap.Bool("remote_ip_private", remoteIPPrivate),
+		)
 		return fmt.Errorf("send request: %w", err)
 	}
 
 	if !result.Success {
-		logger.LegacyPrintf("service.turnstile", "[Turnstile] Verification failed, error codes: %v", result.ErrorCodes)
+		logger.With(zap.String("component", "service.turnstile")).Warn("[Turnstile] Verification failed",
+			zap.Strings("error_codes", result.ErrorCodes),
+			zap.String("hostname", result.Hostname),
+			zap.String("challenge_ts", result.ChallengeTS),
+			zap.String("action", result.Action),
+			zap.Int("http_status", result.HTTPStatus),
+			zap.Int64("duration_ms", result.VerifyDurationMS),
+			zap.Bool("remoteip_passed", sanitizedRemoteIP != ""),
+			zap.String("remote_ip_redacted", redactRemoteIPForLog(remoteIP)),
+			zap.Bool("remote_ip_private", remoteIPPrivate),
+		)
 		return ErrTurnstileVerificationFailed
 	}
 
 	logger.LegacyPrintf("service.turnstile", "%s", "[Turnstile] Verification successful")
 	return nil
+}
+
+func redactRemoteIPForLog(raw string) string {
+	sanitized := ip.SanitizeTurnstileRemoteIP(raw)
+	if sanitized == "" {
+		if raw == "" {
+			return ""
+		}
+		return "[redacted]"
+	}
+	parts := strings.Split(sanitized, ".")
+	if len(parts) == 4 {
+		return parts[0] + "." + parts[1] + "." + parts[2] + ".0"
+	}
+	if colon := strings.LastIndex(sanitized, ":"); colon > 0 {
+		return sanitized[:colon] + ":"
+	}
+	return "[redacted]"
 }
 
 // IsEnabled 检查 Turnstile 是否启用
