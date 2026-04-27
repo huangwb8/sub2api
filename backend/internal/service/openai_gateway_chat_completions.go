@@ -189,7 +189,7 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	if clientStream {
 		result, handleErr = s.handleChatStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, includeUsage, startTime)
 	} else {
-		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
 	}
 
 	// Propagate ServiceTier and ReasoningEffort to result for billing
@@ -230,6 +230,7 @@ func (s *OpenAIGatewayService) handleChatCompletionsErrorResponse(
 func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	resp *http.Response,
 	c *gin.Context,
+	account *Account,
 	originalModel string,
 	billingModel string,
 	upstreamModel string,
@@ -293,8 +294,21 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	}
 
 	if finalResponse == nil {
-		writeChatCompletionsError(c, http.StatusBadGateway, "api_error", "Upstream stream ended without a terminal response event")
-		return nil, fmt.Errorf("upstream stream ended without terminal event")
+		msg := "Upstream stream ended without a terminal response event"
+		setOpsUpstreamError(c, http.StatusBadGateway, msg, "")
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: http.StatusBadGateway,
+			UpstreamRequestID:  requestID,
+			Kind:               "failover",
+			Message:            msg,
+		})
+		return nil, &UpstreamFailoverError{
+			StatusCode:   http.StatusBadGateway,
+			ResponseBody: []byte(`{"error":{"type":"api_error","message":"Upstream stream ended without a terminal response event"}}`),
+		}
 	}
 
 	// When the terminal event has an empty output array, reconstruct from

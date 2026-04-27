@@ -86,10 +86,7 @@ func (s *OpsService) GetAccountAvailabilityStats(ctx context.Context, platformFi
 			}
 		}
 
-		for _, grp := range acc.Groups {
-			if grp == nil || grp.ID <= 0 {
-				continue
-			}
+		if grp := selectOpsAggregationGroup(acc, groupIDFilter); grp != nil {
 			if _, ok := group[grp.ID]; !ok {
 				group[grp.ID] = &GroupAvailability{
 					GroupID:   grp.ID,
@@ -112,9 +109,9 @@ func (s *OpsService) GetAccountAvailabilityStats(ctx context.Context, platformFi
 
 		displayGroupID := int64(0)
 		displayGroupName := ""
-		if len(acc.Groups) > 0 && acc.Groups[0] != nil {
-			displayGroupID = acc.Groups[0].ID
-			displayGroupName = acc.Groups[0].Name
+		if grp := selectOpsAggregationGroup(acc, groupIDFilter); grp != nil {
+			displayGroupID = grp.ID
+			displayGroupName = grp.Name
 		}
 
 		item := &AccountAvailability{

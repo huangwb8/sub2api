@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	opsTTFTHealthyP99MS  = 3_000
+	opsTTFTCriticalP99MS = 15_000
+)
+
 // computeDashboardHealthScore computes a 0-100 health score from the metrics returned by the dashboard overview.
 //
 // Design goals:
@@ -48,14 +53,15 @@ func computeBusinessHealth(overview *OpsDashboardOverview) float64 {
 		}
 	}
 
-	// TTFT score: 1s → 100, 3s → 0 (linear)
-	// Time to first token is critical for user experience
+	// TTFT score: 3s → 100, 15s → 0 (linear).
+	// The gateway often routes through residential proxies; a 3s hard-fail threshold makes healthy-but-slow
+	// proxy baselines look completely broken. Keep 3s as the target, but reserve zero for severe long-tail latency.
 	ttftScore := 100.0
 	if overview.TTFT.P99 != nil {
 		p99 := float64(*overview.TTFT.P99)
-		if p99 > 1000 {
-			if p99 <= 3000 {
-				ttftScore = (3000 - p99) / 2000 * 100
+		if p99 > opsTTFTHealthyP99MS {
+			if p99 <= opsTTFTCriticalP99MS {
+				ttftScore = (float64(opsTTFTCriticalP99MS) - p99) / float64(opsTTFTCriticalP99MS-opsTTFTHealthyP99MS) * 100
 			} else {
 				ttftScore = 0
 			}

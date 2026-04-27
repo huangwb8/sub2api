@@ -303,15 +303,37 @@ func TestComputeBusinessHealth(t *testing.T) {
 			wantMax: 78,
 		},
 		{
-			name: "TTFT boundary 2s",
+			name: "TTFT at proxy-adjusted target",
 			overview: &OpsDashboardOverview{
 				SLA:               0.99,
 				ErrorRate:         0,
 				UpstreamErrorRate: 0,
-				TTFT:              OpsPercentiles{P99: intPtr(2000)},
+				TTFT:              OpsPercentiles{P99: intPtr(opsTTFTHealthyP99MS)},
+			},
+			wantMin: 100,
+			wantMax: 100,
+		},
+		{
+			name: "TTFT degrades linearly across proxy-adjusted range",
+			overview: &OpsDashboardOverview{
+				SLA:               0.99,
+				ErrorRate:         0,
+				UpstreamErrorRate: 0,
+				TTFT:              OpsPercentiles{P99: intPtr(9000)},
 			},
 			wantMin: 75,
 			wantMax: 75,
+		},
+		{
+			name: "TTFT critical threshold",
+			overview: &OpsDashboardOverview{
+				SLA:               0.99,
+				ErrorRate:         0,
+				UpstreamErrorRate: 0,
+				TTFT:              OpsPercentiles{P99: intPtr(opsTTFTCriticalP99MS)},
+			},
+			wantMin: 50,
+			wantMax: 50,
 		},
 		{
 			name: "upstream error dominates",

@@ -101,6 +101,23 @@ func (s *OpsService) getAccountsLoadMapBestEffort(ctx context.Context, accounts 
 	return out
 }
 
+func selectOpsAggregationGroup(acc Account, groupIDFilter *int64) *Group {
+	if groupIDFilter != nil && *groupIDFilter > 0 {
+		for _, grp := range acc.Groups {
+			if grp != nil && grp.ID == *groupIDFilter {
+				return grp
+			}
+		}
+		return nil
+	}
+	for _, grp := range acc.Groups {
+		if grp != nil && grp.ID > 0 {
+			return grp
+		}
+	}
+	return nil
+}
+
 // GetConcurrencyStats returns real-time concurrency usage aggregated by platform/group/account.
 //
 // Optional filters:
@@ -132,17 +149,8 @@ func (s *OpsService) GetConcurrencyStats(
 			continue
 		}
 
-		var matchedGroup *Group
+		matchedGroup := selectOpsAggregationGroup(acc, groupIDFilter)
 		if groupIDFilter != nil && *groupIDFilter > 0 {
-			for _, grp := range acc.Groups {
-				if grp == nil || grp.ID <= 0 {
-					continue
-				}
-				if grp.ID == *groupIDFilter {
-					matchedGroup = grp
-					break
-				}
-			}
 			// Group filter provided: skip accounts not in that group.
 			if matchedGroup == nil {
 				continue
@@ -163,9 +171,6 @@ func (s *OpsService) GetConcurrencyStats(
 		if matchedGroup != nil {
 			displayGroupID = matchedGroup.ID
 			displayGroupName = matchedGroup.Name
-		} else if len(acc.Groups) > 0 && acc.Groups[0] != nil {
-			displayGroupID = acc.Groups[0].ID
-			displayGroupName = acc.Groups[0].Name
 		}
 
 		if _, ok := account[acc.ID]; !ok {
@@ -198,7 +203,7 @@ func (s *OpsService) GetConcurrencyStats(
 			p.WaitingInQueue += waiting
 		}
 
-		// Group aggregation (one account may contribute to multiple groups).
+		// Group aggregation uses the account's primary display group unless a filter asks for a specific group.
 		if matchedGroup != nil {
 			grp := matchedGroup
 			if _, ok := group[grp.ID]; !ok {
@@ -219,30 +224,6 @@ func (s *OpsService) GetConcurrencyStats(
 			g.MaxCapacity += int64(acc.Concurrency)
 			g.CurrentInUse += currentInUse
 			g.WaitingInQueue += waiting
-		} else {
-			for _, grp := range acc.Groups {
-				if grp == nil || grp.ID <= 0 {
-					continue
-				}
-				if _, ok := group[grp.ID]; !ok {
-					group[grp.ID] = &GroupConcurrencyInfo{
-						GroupID:   grp.ID,
-						GroupName: grp.Name,
-						Platform:  grp.Platform,
-					}
-				}
-				g := group[grp.ID]
-				if g.GroupName == "" && grp.Name != "" {
-					g.GroupName = grp.Name
-				}
-				if g.Platform != "" && grp.Platform != "" && g.Platform != grp.Platform {
-					// Groups are expected to be platform-scoped. If mismatch is observed, avoid misleading labels.
-					g.Platform = ""
-				}
-				g.MaxCapacity += int64(acc.Concurrency)
-				g.CurrentInUse += currentInUse
-				g.WaitingInQueue += waiting
-			}
 		}
 	}
 
