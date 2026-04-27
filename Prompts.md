@@ -66,6 +66,28 @@ PlanMarkdown = ./docs/plans/2026-04-14-upstream-sync-optimization-plan.md
 
 ---
 
+基于 docs/plans/2026-04-27-admin-ops-health-diagnosis.md ，使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
+
+---
+
+帐号管理-编辑账号前端UI优化
+
+- 编辑账号界面，如果用户需要给帐号选代理时，命名里看不到某代理目前有几个帐号与它有关。 我希望管理员可以看到这个信息。
+- 显示格式是`名称(账号数)`。比如`Decodo-JP-帐号2（2）`
+
+---
+
+管理控制台的前端UI优化：
+
+- 这些字体的样式应该一样（它们大多是某个panel的主标题）； 以`套餐定价测算`为准
+  - 模型分布
+  - Token 使用趋势
+  - 盈利水平
+  - 最近使用 (Top 12)
+  - 加号推荐
+
+---
+
 基于 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-27-scheduling-proxy-failover-settings-findings.md 和 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-27-account-model-capability-snapshot-analysis.md 发现的问题， 使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
