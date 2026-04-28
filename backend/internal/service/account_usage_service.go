@@ -79,6 +79,10 @@ type UsageLogRepository interface {
 	GetAccountStatsAggregated(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.UsageStats, error)
 	GetModelStatsAggregated(ctx context.Context, modelName string, startTime, endTime time.Time) (*usagestats.UsageStats, error)
 	GetDailyStatsAggregated(ctx context.Context, userID int64, startTime, endTime time.Time) ([]map[string]any, error)
+
+	// User risk evaluation helpers
+	ListUserIDsWithUsageBetween(ctx context.Context, startTime, endTime time.Time) ([]int64, error)
+	GetUserRiskUsageSummary(ctx context.Context, userID int64, startTime, endTime time.Time) (*UserRiskUsageSummary, error)
 }
 
 type accountWindowStatsBatchReader interface {

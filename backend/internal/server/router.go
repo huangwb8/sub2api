@@ -30,6 +30,8 @@ func SetupRouter(
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
+	riskService *service.UserRiskService,
+	signalService *service.UserRiskSignalService,
 	rpmCache service.GatewayRPMCache,
 	opsService *service.OpsService,
 	settingService *service.SettingService,
@@ -84,7 +86,7 @@ func SetupRouter(
 	}
 
 	// 注册路由
-	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, subscriptionService, rpmCache, opsService, settingService, cfg, redisClient)
+	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, subscriptionService, riskService, signalService, rpmCache, opsService, settingService, cfg, redisClient)
 
 	return r
 }
@@ -98,6 +100,8 @@ func registerRoutes(
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
+	riskService *service.UserRiskService,
+	signalService *service.UserRiskSignalService,
 	rpmCache service.GatewayRPMCache,
 	opsService *service.OpsService,
 	settingService *service.SettingService,
@@ -116,6 +120,6 @@ func registerRoutes(
 	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService)
 	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService)
 	routes.RegisterAdminRoutes(v1, h, adminAuth)
-	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, rpmCache)
+	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, riskService, signalService, rpmCache)
 	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
 }

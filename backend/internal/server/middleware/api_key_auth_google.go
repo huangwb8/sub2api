@@ -5,26 +5,25 @@ import (
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/googleapi"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 // APIKeyAuthGoogle is a Google-style error wrapper for API key auth.
-func APIKeyAuthGoogle(apiKeyService *service.APIKeyService, cfg *config.Config) gin.HandlerFunc {
-	return APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg, nil)
+func APIKeyAuthGoogle(apiKeyService *service.APIKeyService, cfg *config.Config, extras ...any) gin.HandlerFunc {
+	return APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg, extras...)
 }
 
 // APIKeyAuthWithSubscriptionGoogle behaves like ApiKeyAuthWithSubscription but returns Google-style errors:
 // {"error":{"code":401,"message":"...","status":"UNAUTHENTICATED"}}
 //
 // It is intended for Gemini native endpoints (/v1beta) to match Gemini SDK expectations.
-func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCaches ...service.GatewayRPMCache) gin.HandlerFunc {
-	var rpmCache service.GatewayRPMCache
-	if len(rpmCaches) > 0 {
-		rpmCache = rpmCaches[0]
-	}
+func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, extras ...any) gin.HandlerFunc {
+	riskService, signalService, rpmCache := extractAPIKeyAuthDeps(extras...)
 	return func(c *gin.Context) {
 		if v := strings.TrimSpace(c.Query("api_key")); v != "" {
 			abortWithGoogleError(c, 400, "Query parameter api_key is deprecated. Use Authorization header or key instead.")
@@ -54,6 +53,12 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			abortWithGoogleError(c, 401, "User associated with API key not found")
 			return
 		}
+		if riskService != nil {
+			if _, err := riskService.CheckAccess(c.Request.Context(), apiKey.User.ID); err != nil {
+				abortWithGoogleError(c, 403, infraerrors.Message(err))
+				return
+			}
+		}
 		if !apiKey.User.IsActive() {
 			abortWithGoogleError(c, 401, "User account is not active")
 			return
@@ -69,6 +74,9 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 			setGroupContext(c, apiKey.Group)
 			_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
+			if signalService != nil {
+				_ = signalService.RecordTrustedRequest(c.Request.Context(), apiKey.User.ID, apiKey.ID, ip.GetTrustedClientIP(c), c.GetHeader("User-Agent"))
+			}
 			c.Next()
 			return
 		}
@@ -126,6 +134,9 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 		c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 		setGroupContext(c, apiKey.Group)
 		_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
+		if signalService != nil {
+			_ = signalService.RecordTrustedRequest(c.Request.Context(), apiKey.User.ID, apiKey.ID, ip.GetTrustedClientIP(c), c.GetHeader("User-Agent"))
+		}
 		c.Next()
 	}
 }

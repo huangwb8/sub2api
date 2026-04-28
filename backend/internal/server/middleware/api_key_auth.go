@@ -7,19 +7,18 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-// NewAPIKeyAuthMiddleware 创建 API Key 认证中间件
-func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCaches ...service.GatewayRPMCache) APIKeyAuthMiddleware {
-	var rpmCache service.GatewayRPMCache
-	if len(rpmCaches) > 0 {
-		rpmCache = rpmCaches[0]
-	}
-	return APIKeyAuthMiddleware(apiKeyAuthWithSubscription(apiKeyService, subscriptionService, cfg, rpmCache))
+// NewAPIKeyAuthMiddleware 创建 API Key 认证中间件。
+// extras 支持按任意顺序传入 *service.UserRiskService、*service.UserRiskSignalService、service.GatewayRPMCache。
+func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, extras ...any) APIKeyAuthMiddleware {
+	riskService, signalService, rpmCache := extractAPIKeyAuthDeps(extras...)
+	return APIKeyAuthMiddleware(apiKeyAuthWithSubscription(apiKeyService, subscriptionService, cfg, riskService, signalService, rpmCache))
 }
 
 // apiKeyAuthWithSubscription API Key认证中间件（支持订阅验证）
@@ -29,7 +28,7 @@ func NewAPIKeyAuthMiddleware(apiKeyService *service.APIKeyService, subscriptionS
 //   - 计费执行（Billing Enforcement）：过期/配额/订阅/余额检查 —— skipBilling 时整块跳过
 //
 // /v1/usage 端点只需鉴权，不需要计费执行（允许过期/配额耗尽的 Key 查询自身用量）。
-func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, rpmCache service.GatewayRPMCache) gin.HandlerFunc {
+func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, riskService *service.UserRiskService, signalService *service.UserRiskSignalService, rpmCache service.GatewayRPMCache) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ── 1. 提取 API Key ──────────────────────────────────────────
 
@@ -107,6 +106,13 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			return
 		}
 
+		if riskService != nil {
+			if _, err := riskService.CheckAccess(c.Request.Context(), apiKey.User.ID); err != nil {
+				AbortWithError(c, 403, "USER_RISK_LOCKED", infraerrors.Message(err))
+				return
+			}
+		}
+
 		// 检查用户状态
 		if !apiKey.User.IsActive() {
 			AbortWithError(c, 401, "USER_INACTIVE", "User account is not active")
@@ -124,6 +130,9 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 			setGroupContext(c, apiKey.Group)
 			_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
+			if signalService != nil {
+				_ = signalService.RecordTrustedRequest(c.Request.Context(), apiKey.User.ID, apiKey.ID, ip.GetTrustedClientIP(c), c.GetHeader("User-Agent"))
+			}
 			c.Next()
 			return
 		}
@@ -228,9 +237,37 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 		setGroupContext(c, apiKey.Group)
 		_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
+		if signalService != nil {
+			_ = signalService.RecordTrustedRequest(c.Request.Context(), apiKey.User.ID, apiKey.ID, ip.GetTrustedClientIP(c), c.GetHeader("User-Agent"))
+		}
 
 		c.Next()
 	}
+}
+
+func extractAPIKeyAuthDeps(extras ...any) (*service.UserRiskService, *service.UserRiskSignalService, service.GatewayRPMCache) {
+	var (
+		riskService   *service.UserRiskService
+		signalService *service.UserRiskSignalService
+		rpmCache      service.GatewayRPMCache
+	)
+	for _, extra := range extras {
+		switch value := extra.(type) {
+		case *service.UserRiskService:
+			if riskService == nil {
+				riskService = value
+			}
+		case *service.UserRiskSignalService:
+			if signalService == nil {
+				signalService = value
+			}
+		case service.GatewayRPMCache:
+			if rpmCache == nil {
+				rpmCache = value
+			}
+		}
+	}
+	return riskService, signalService, rpmCache
 }
 
 // GetAPIKeyFromContext 从上下文中获取API key

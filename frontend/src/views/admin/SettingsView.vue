@@ -1477,6 +1477,250 @@
 
         <!-- Tab: Users -->
         <div v-show="activeTab === 'users'" class="space-y-6">
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.userRiskControl.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.userRiskControl.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div v-if="userRiskControlLoading" class="flex items-center gap-2 text-gray-500">
+              <div class="h-4 w-4 animate-spin rounded-full border-b-2 border-primary-600"></div>
+              {{ t('common.loading') }}
+            </div>
+
+            <template v-else>
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">
+                        {{ t('admin.settings.userRiskControl.enabled') }}
+                      </label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.userRiskControl.enabledHint') }}
+                      </p>
+                    </div>
+                    <Toggle v-model="userRiskControlForm.enabled" />
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">
+                        {{ t('admin.settings.userRiskControl.warningEmailEnabled') }}
+                      </label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.userRiskControl.warningEmailEnabledHint') }}
+                      </p>
+                    </div>
+                    <Toggle v-model="userRiskControlForm.warning_email_enabled" />
+                  </div>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">
+                        {{ t('admin.settings.userRiskControl.requireTrustedProxy') }}
+                      </label>
+                      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ t('admin.settings.userRiskControl.requireTrustedProxyHint') }}
+                      </p>
+                    </div>
+                    <Toggle v-model="userRiskControlForm.require_trusted_proxy_for_auto_lock" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.mode') }}
+                  </label>
+                  <Select
+                    v-model="userRiskControlForm.mode"
+                    :options="userRiskControlModeOptions"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.warningThreshold') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.warning_threshold"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.lockThreshold') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.lock_threshold"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.badDays') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.auto_lock_after_consecutive_bad_days"
+                    type="number"
+                    min="1"
+                    max="30"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.overlapWindow') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.overlap_window_seconds"
+                    type="number"
+                    min="60"
+                    max="86400"
+                    step="60"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.maxDistinctIPs') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.max_distinct_public_ips_per_day"
+                    type="number"
+                    min="1"
+                    max="200"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.highRiskActiveHours') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.high_risk_active_hours_per_day"
+                    type="number"
+                    min="1"
+                    max="24"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.dailyPenaltyCap') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.daily_score_penalty_cap"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.dailyRecovery') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.daily_score_recovery"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.retentionDays') }}
+                  </label>
+                  <input
+                    v-model.number="userRiskControlForm.redis_evidence_retention_days"
+                    type="number"
+                    min="1"
+                    max="90"
+                    class="input"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.warningEmailSubject') }}
+                  </label>
+                  <input
+                    v-model="userRiskControlForm.warning_email_subject_template"
+                    type="text"
+                    class="input"
+                    :placeholder="t('admin.settings.userRiskControl.warningEmailSubjectPlaceholder')"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.userRiskControl.lockMessage') }}
+                  </label>
+                  <input
+                    v-model="userRiskControlForm.lock_message"
+                    type="text"
+                    class="input"
+                    :placeholder="t('admin.settings.userRiskControl.lockMessagePlaceholder')"
+                  />
+                </div>
+              </div>
+
+              <div class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700">
+                <button
+                  type="button"
+                  @click="saveUserRiskControlSettings"
+                  :disabled="userRiskControlSaving"
+                  class="btn btn-primary btn-sm"
+                >
+                  <svg
+                    v-if="userRiskControlSaving"
+                    class="mr-1 h-4 w-4 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  {{ userRiskControlSaving ? t('common.saving') : t('common.save') }}
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
         <!-- Default Settings -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -2845,7 +3089,8 @@ import { adminAPI } from '@/api'
 import type {
   SystemSettings,
   UpdateSettingsRequest,
-  DefaultSubscriptionSetting
+  DefaultSubscriptionSetting,
+  UserRiskControlConfig
 } from '@/api/admin/settings'
 import type { AdminGroup } from '@/types'
 import type { ProviderInstance } from '@/types/payment'
@@ -2964,6 +3209,26 @@ const betaPolicyForm = reactive({
     fallback_action?: 'pass' | 'filter' | 'block'
     fallback_error_message?: string
   }>
+})
+
+const userRiskControlLoading = ref(true)
+const userRiskControlSaving = ref(false)
+const userRiskControlForm = reactive<UserRiskControlConfig>({
+  enabled: false,
+  mode: 'observe_only',
+  warning_threshold: 3,
+  lock_threshold: 2,
+  auto_lock_after_consecutive_bad_days: 3,
+  overlap_window_seconds: 300,
+  max_distinct_public_ips_per_day: 4,
+  high_risk_active_hours_per_day: 16,
+  warning_email_enabled: true,
+  warning_email_subject_template: 'Account usage warning',
+  lock_message: '',
+  require_trusted_proxy_for_auto_lock: true,
+  daily_score_penalty_cap: 1,
+  daily_score_recovery: 0.5,
+  redis_evidence_retention_days: 7
 })
 
 const tablePageSizeMin = 5
@@ -3821,6 +4086,12 @@ const betaPolicyScopeOptions = computed(() => [
   { value: 'bedrock', label: t('admin.settings.betaPolicy.scopeBedrock') }
 ])
 
+const userRiskControlModeOptions = computed(() => [
+  { value: 'observe_only', label: t('admin.settings.userRiskControl.modeObserveOnly') },
+  { value: 'warn_only', label: t('admin.settings.userRiskControl.modeWarnOnly') },
+  { value: 'auto_lock', label: t('admin.settings.userRiskControl.modeAutoLock') }
+])
+
 // Beta Policy 方法
 const betaDisplayNames: Record<string, string> = {
   'fast-mode-2026-02-01': 'Fast Mode',
@@ -3907,6 +4178,35 @@ async function saveBetaPolicySettings() {
     appStore.showError(extractApiErrorMessage(error, t('admin.settings.betaPolicy.saveFailed')))
   } finally {
     betaPolicySaving.value = false
+  }
+}
+
+async function loadUserRiskControlSettings() {
+  userRiskControlLoading.value = true
+  try {
+    const settings = await adminAPI.settings.getUserRiskControlConfig()
+    Object.assign(userRiskControlForm, settings)
+  } catch (_error: unknown) {
+    // Silent fail - settings will use defaults
+  } finally {
+    userRiskControlLoading.value = false
+  }
+}
+
+async function saveUserRiskControlSettings() {
+  userRiskControlSaving.value = true
+  try {
+    const updated = await adminAPI.settings.updateUserRiskControlConfig({
+      ...userRiskControlForm
+    })
+    Object.assign(userRiskControlForm, updated)
+    appStore.showSuccess(t('admin.settings.userRiskControl.saved'))
+  } catch (error: unknown) {
+    appStore.showError(
+      extractApiErrorMessage(error, t('admin.settings.userRiskControl.saveFailed'))
+    )
+  } finally {
+    userRiskControlSaving.value = false
   }
 }
 
@@ -4095,6 +4395,7 @@ onMounted(() => {
   loadStreamTimeoutSettings()
   loadRectifierSettings()
   loadBetaPolicySettings()
+  loadUserRiskControlSettings()
   loadProviders()
 })
 </script>

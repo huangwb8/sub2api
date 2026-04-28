@@ -54,6 +54,33 @@ func GetTrustedClientIP(c *gin.Context) string {
 	return normalizeIP(c.ClientIP())
 }
 
+// NormalizeRiskEvidenceIP returns a trusted, stable IP token for risk-control evidence.
+// Public IPv4 addresses are returned as-is.
+// Public IPv6 addresses are normalized to their /64 prefix to reduce privacy-address churn.
+// Private, loopback, link-local, multicast, unspecified, and invalid IPs return an empty string.
+func NormalizeRiskEvidenceIP(raw string) string {
+	normalized := normalizeIP(raw)
+	addr := net.ParseIP(normalized)
+	if addr == nil {
+		return ""
+	}
+	if addr.IsPrivate() || addr.IsLoopback() || addr.IsLinkLocalUnicast() || addr.IsLinkLocalMulticast() || addr.IsMulticast() || addr.IsUnspecified() {
+		return ""
+	}
+	if v4 := addr.To4(); v4 != nil {
+		return v4.String()
+	}
+	v6 := addr.To16()
+	if v6 == nil {
+		return ""
+	}
+	masked := v6.Mask(net.CIDRMask(64, 128))
+	if masked == nil {
+		return ""
+	}
+	return masked.String() + "/64"
+}
+
 // IsPrivateOrLoopbackIP 检查 IP 是否为私网、回环或链路本地地址。
 func IsPrivateOrLoopbackIP(ip string) bool {
 	addr := net.ParseIP(normalizeIP(ip))

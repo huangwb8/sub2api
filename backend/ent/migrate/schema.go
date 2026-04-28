@@ -1246,6 +1246,106 @@ var (
 			},
 		},
 	}
+	// UserRiskEventsColumns holds the columns for the "user_risk_events" table.
+	UserRiskEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "event_type", Type: field.TypeString, Size: 64},
+		{Name: "severity", Type: field.TypeString, Size: 32, Default: "info"},
+		{Name: "score_delta", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "score_after", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "summary", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "window_start", Type: field.TypeTime, Nullable: true},
+		{Name: "window_end", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// UserRiskEventsTable holds the schema information for the "user_risk_events" table.
+	UserRiskEventsTable = &schema.Table{
+		Name:       "user_risk_events",
+		Columns:    UserRiskEventsColumns,
+		PrimaryKey: []*schema.Column{UserRiskEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_risk_events_users_risk_events",
+				Columns:    []*schema.Column{UserRiskEventsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userriskevent_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskEventsColumns[11], UserRiskEventsColumns[1]},
+			},
+			{
+				Name:    "userriskevent_event_type_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskEventsColumns[3], UserRiskEventsColumns[1]},
+			},
+			{
+				Name:    "userriskevent_severity_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskEventsColumns[4], UserRiskEventsColumns[1]},
+			},
+		},
+	}
+	// UserRiskProfilesColumns holds the columns for the "user_risk_profiles" table.
+	UserRiskProfilesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "score", Type: field.TypeFloat64, Default: 5, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "healthy"},
+		{Name: "consecutive_bad_days", Type: field.TypeInt, Default: 0},
+		{Name: "last_evaluated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_warned_at", Type: field.TypeTime, Nullable: true},
+		{Name: "grace_period_started_at", Type: field.TypeTime, Nullable: true},
+		{Name: "locked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "lock_reason", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "last_evaluation_summary", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "exempted", Type: field.TypeBool, Default: false},
+		{Name: "exempted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "exempted_by", Type: field.TypeInt64, Nullable: true},
+		{Name: "exemption_reason", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "unlocked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "unlocked_by", Type: field.TypeInt64, Nullable: true},
+		{Name: "unlock_reason", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "user_id", Type: field.TypeInt64, Unique: true},
+	}
+	// UserRiskProfilesTable holds the schema information for the "user_risk_profiles" table.
+	UserRiskProfilesTable = &schema.Table{
+		Name:       "user_risk_profiles",
+		Columns:    UserRiskProfilesColumns,
+		PrimaryKey: []*schema.Column{UserRiskProfilesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_risk_profiles_users_risk_profile",
+				Columns:    []*schema.Column{UserRiskProfilesColumns[19]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userriskprofile_status",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskProfilesColumns[4]},
+			},
+			{
+				Name:    "userriskprofile_exempted",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskProfilesColumns[12]},
+			},
+			{
+				Name:    "userriskprofile_locked_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserRiskProfilesColumns[9]},
+			},
+		},
+	}
 	// UserSubscriptionsColumns holds the columns for the "user_subscriptions" table.
 	UserSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1368,6 +1468,8 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserRiskEventsTable,
+		UserRiskProfilesTable,
 		UserSubscriptionsTable,
 	}
 )
@@ -1468,6 +1570,14 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserRiskEventsTable.ForeignKeys[0].RefTable = UsersTable
+	UserRiskEventsTable.Annotation = &entsql.Annotation{
+		Table: "user_risk_events",
+	}
+	UserRiskProfilesTable.ForeignKeys[0].RefTable = UsersTable
+	UserRiskProfilesTable.Annotation = &entsql.Annotation{
+		Table: "user_risk_profiles",
 	}
 	UserSubscriptionsTable.ForeignKeys[0].RefTable = GroupsTable
 	UserSubscriptionsTable.ForeignKeys[1].RefTable = UsersTable

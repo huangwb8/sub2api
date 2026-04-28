@@ -81,5 +81,11 @@ type UserAttributeDefinition func(*sql.Selector)
 // UserAttributeValue is the predicate function for userattributevalue builders.
 type UserAttributeValue func(*sql.Selector)
 
+// UserRiskEvent is the predicate function for userriskevent builders.
+type UserRiskEvent func(*sql.Selector)
+
+// UserRiskProfile is the predicate function for userriskprofile builders.
+type UserRiskProfile func(*sql.Selector)
+
 // UserSubscription is the predicate function for usersubscription builders.
 type UserSubscription func(*sql.Selector)

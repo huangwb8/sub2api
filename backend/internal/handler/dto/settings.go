@@ -246,6 +246,24 @@ type BetaPolicySettings struct {
 	Rules []BetaPolicyRule `json:"rules"`
 }
 
+type UserRiskControlConfig struct {
+	Enabled                         bool    `json:"enabled"`
+	Mode                            string  `json:"mode"`
+	WarningThreshold                float64 `json:"warning_threshold"`
+	LockThreshold                   float64 `json:"lock_threshold"`
+	AutoLockAfterConsecutiveBadDays int     `json:"auto_lock_after_consecutive_bad_days"`
+	OverlapWindowSeconds            int     `json:"overlap_window_seconds"`
+	MaxDistinctPublicIPsPerDay      int     `json:"max_distinct_public_ips_per_day"`
+	HighRiskActiveHoursPerDay       int     `json:"high_risk_active_hours_per_day"`
+	WarningEmailEnabled             bool    `json:"warning_email_enabled"`
+	WarningEmailSubjectTemplate     string  `json:"warning_email_subject_template"`
+	LockMessage                     string  `json:"lock_message"`
+	RequireTrustedProxyForAutoLock  bool    `json:"require_trusted_proxy_for_auto_lock"`
+	DailyScorePenaltyCap            float64 `json:"daily_score_penalty_cap"`
+	DailyScoreRecovery              float64 `json:"daily_score_recovery"`
+	RedisEvidenceRetentionDays      int     `json:"redis_evidence_retention_days"`
+}
+
 // ParseCustomMenuItems parses a JSON string into a slice of CustomMenuItem.
 // Returns empty slice on empty/invalid input.
 func ParseCustomMenuItems(raw string) []CustomMenuItem {

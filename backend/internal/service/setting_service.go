@@ -2400,6 +2400,39 @@ func (s *SettingService) SetBetaPolicySettings(ctx context.Context, settings *Be
 	return s.settingRepo.Set(ctx, SettingKeyBetaPolicySettings, string(data))
 }
 
+// GetUserRiskControlConfig 获取用户转售风控配置
+func (s *SettingService) GetUserRiskControlConfig(ctx context.Context) (*UserRiskControlConfig, error) {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyUserRiskControlConfig)
+	if err != nil {
+		if errors.Is(err, ErrSettingNotFound) {
+			return DefaultUserRiskControlConfig(), nil
+		}
+		return nil, err
+	}
+	if strings.TrimSpace(value) == "" {
+		return DefaultUserRiskControlConfig(), nil
+	}
+	var settings UserRiskControlConfig
+	if err := json.Unmarshal([]byte(value), &settings); err != nil {
+		slog.Warn("setting user_risk_control_config is invalid, fallback to default", "error", err)
+		return DefaultUserRiskControlConfig(), nil
+	}
+	return NormalizeUserRiskControlConfig(&settings), nil
+}
+
+// SetUserRiskControlConfig 设置用户转售风控配置
+func (s *SettingService) SetUserRiskControlConfig(ctx context.Context, settings *UserRiskControlConfig) error {
+	settings = NormalizeUserRiskControlConfig(settings)
+	if err := ValidateUserRiskControlConfig(settings); err != nil {
+		return err
+	}
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	return s.settingRepo.Set(ctx, SettingKeyUserRiskControlConfig, string(data))
+}
+
 // SetStreamTimeoutSettings 设置流超时处理配置
 func (s *SettingService) SetStreamTimeoutSettings(ctx context.Context, settings *StreamTimeoutSettings) error {
 	if settings == nil {

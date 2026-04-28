@@ -66,6 +66,67 @@ func UserFromServiceAdmin(u *service.User) *AdminUser {
 		User:       *base,
 		Notes:      u.Notes,
 		GroupRates: u.GroupRates,
+		RiskProfile: UserRiskProfileFromService(u.RiskProfile),
+	}
+}
+
+func UserRiskProfileFromService(profile *service.UserRiskProfile) *UserRiskProfile {
+	if profile == nil {
+		return nil
+	}
+	var snapshot *UserRiskSignalSnapshot
+	if profile.SignalSnapshot != nil {
+		snapshot = &UserRiskSignalSnapshot{
+			DateKey:                 profile.SignalSnapshot.DateKey,
+			DistinctPublicIPs:       profile.SignalSnapshot.DistinctPublicIPs,
+			DistinctUserAgents:      profile.SignalSnapshot.DistinctUserAgents,
+			DistinctAPIKeys:         profile.SignalSnapshot.DistinctAPIKeys,
+			OverlapEvents:           profile.SignalSnapshot.OverlapEvents,
+			RecentPublicIPs:         profile.SignalSnapshot.RecentPublicIPs,
+			RecentUserAgentFamilies: profile.SignalSnapshot.RecentUserAgentFamilies,
+		}
+	}
+	return &UserRiskProfile{
+		ID:                    profile.ID,
+		UserID:                profile.UserID,
+		Score:                 profile.Score,
+		Status:                profile.Status,
+		ConsecutiveBadDays:    profile.ConsecutiveBadDays,
+		LastEvaluatedAt:       profile.LastEvaluatedAt,
+		LastWarnedAt:          profile.LastWarnedAt,
+		GracePeriodStartedAt:  profile.GracePeriodStartedAt,
+		LockedAt:              profile.LockedAt,
+		LockReason:            profile.LockReason,
+		LastEvaluationSummary: profile.LastEvaluationSummary,
+		Exempted:              profile.Exempted,
+		ExemptedAt:            profile.ExemptedAt,
+		ExemptedBy:            profile.ExemptedBy,
+		ExemptionReason:       profile.ExemptionReason,
+		UnlockedAt:            profile.UnlockedAt,
+		UnlockedBy:            profile.UnlockedBy,
+		UnlockReason:          profile.UnlockReason,
+		CreatedAt:             profile.CreatedAt,
+		UpdatedAt:             profile.UpdatedAt,
+		SignalSnapshot:        snapshot,
+	}
+}
+
+func UserRiskEventFromService(event *service.UserRiskEvent) *UserRiskEvent {
+	if event == nil {
+		return nil
+	}
+	return &UserRiskEvent{
+		ID:         event.ID,
+		UserID:     event.UserID,
+		EventType:  event.EventType,
+		Severity:   event.Severity,
+		ScoreDelta: event.ScoreDelta,
+		ScoreAfter: event.ScoreAfter,
+		Summary:    event.Summary,
+		Metadata:   event.Metadata,
+		WindowStart: event.WindowStart,
+		WindowEnd:   event.WindowEnd,
+		CreatedAt:  event.CreatedAt,
 	}
 }
 

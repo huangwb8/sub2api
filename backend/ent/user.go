@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/ent/userriskprofile"
 )
 
 // User is the model entity for the User schema.
@@ -81,11 +82,15 @@ type UserEdges struct {
 	PromoCodeUsages []*PromoCodeUsage `json:"promo_code_usages,omitempty"`
 	// PaymentOrders holds the value of the payment_orders edge.
 	PaymentOrders []*PaymentOrder `json:"payment_orders,omitempty"`
+	// RiskProfile holds the value of the risk_profile edge.
+	RiskProfile *UserRiskProfile `json:"risk_profile,omitempty"`
+	// RiskEvents holds the value of the risk_events edge.
+	RiskEvents []*UserRiskEvent `json:"risk_events,omitempty"`
 	// UserAllowedGroups holds the value of the user_allowed_groups edge.
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [13]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -178,10 +183,30 @@ func (e UserEdges) PaymentOrdersOrErr() ([]*PaymentOrder, error) {
 	return nil, &NotLoadedError{edge: "payment_orders"}
 }
 
+// RiskProfileOrErr returns the RiskProfile value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) RiskProfileOrErr() (*UserRiskProfile, error) {
+	if e.RiskProfile != nil {
+		return e.RiskProfile, nil
+	} else if e.loadedTypes[10] {
+		return nil, &NotFoundError{label: userriskprofile.Label}
+	}
+	return nil, &NotLoadedError{edge: "risk_profile"}
+}
+
+// RiskEventsOrErr returns the RiskEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RiskEventsOrErr() ([]*UserRiskEvent, error) {
+	if e.loadedTypes[11] {
+		return e.RiskEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "risk_events"}
+}
+
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[12] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -396,6 +421,16 @@ func (_m *User) QueryPromoCodeUsages() *PromoCodeUsageQuery {
 // QueryPaymentOrders queries the "payment_orders" edge of the User entity.
 func (_m *User) QueryPaymentOrders() *PaymentOrderQuery {
 	return NewUserClient(_m.config).QueryPaymentOrders(_m)
+}
+
+// QueryRiskProfile queries the "risk_profile" edge of the User entity.
+func (_m *User) QueryRiskProfile() *UserRiskProfileQuery {
+	return NewUserClient(_m.config).QueryRiskProfile(_m)
+}
+
+// QueryRiskEvents queries the "risk_events" edge of the User entity.
+func (_m *User) QueryRiskEvents() *UserRiskEventQuery {
+	return NewUserClient(_m.config).QueryRiskEvents(_m)
 }
 
 // QueryUserAllowedGroups queries the "user_allowed_groups" edge of the User entity.

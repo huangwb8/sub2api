@@ -104,6 +104,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("attribute_values", UserAttributeValue.Type),
 		edge.To("promo_code_usages", PromoCodeUsage.Type),
 		edge.To("payment_orders", PaymentOrder.Type),
+		edge.To("risk_profile", UserRiskProfile.Type).
+			Unique(),
+		edge.To("risk_events", UserRiskEvent.Type),
 	}
 }
 

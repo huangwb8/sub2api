@@ -441,6 +441,7 @@ const (
 // adminServiceImpl implements AdminService
 type adminServiceImpl struct {
 	userRepo             UserRepository
+	userRiskRepo         UserRiskRepository
 	groupRepo            GroupRepository
 	accountRepo          AccountRepository
 	proxyRepo            ProxyRepository
@@ -469,6 +470,7 @@ type userRechargeBatchReader interface {
 // NewAdminService creates a new AdminService
 func NewAdminService(
 	userRepo UserRepository,
+	userRiskRepo UserRiskRepository,
 	groupRepo GroupRepository,
 	accountRepo AccountRepository,
 	proxyRepo ProxyRepository,
@@ -487,6 +489,7 @@ func NewAdminService(
 ) AdminService {
 	return &adminServiceImpl{
 		userRepo:             userRepo,
+		userRiskRepo:         userRiskRepo,
 		groupRepo:            groupRepo,
 		accountRepo:          accountRepo,
 		proxyRepo:            proxyRepo,
@@ -533,6 +536,19 @@ func (s *adminServiceImpl) ListUsers(ctx context.Context, page, pageSize int, fi
 			}
 		} else {
 			s.loadUserGroupRatesOneByOne(ctx, users)
+		}
+	}
+	if s.userRiskRepo != nil && len(users) > 0 {
+		userIDs := make([]int64, 0, len(users))
+		for i := range users {
+			userIDs = append(userIDs, users[i].ID)
+		}
+		if profiles, err := s.userRiskRepo.GetByUserIDs(ctx, userIDs); err == nil {
+			for i := range users {
+				if profile, ok := profiles[users[i].ID]; ok {
+					users[i].RiskProfile = profile
+				}
+			}
 		}
 	}
 	return users, result.Total, nil
@@ -598,6 +614,11 @@ func (s *adminServiceImpl) GetUser(ctx context.Context, id int64) (*User, error)
 			logger.LegacyPrintf("service.admin", "failed to load user group rates: user_id=%d err=%v", id, err)
 		} else {
 			user.GroupRates = rates
+		}
+	}
+	if s.userRiskRepo != nil {
+		if profile, err := s.userRiskRepo.GetByUserID(ctx, id); err == nil {
+			user.RiskProfile = profile
 		}
 	}
 	return user, nil

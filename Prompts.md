@@ -34,7 +34,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.2.4
+version=1.2.5
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -57,7 +57,7 @@ version=1.2.4
 - 吸收源项目的优势
 
 ```
-version2 = 
+version2 = b0a2252ed19c3720e6adafde6083e64fbac2efa9
 version1 = c92b88e34abd1b032aa5307d760b8bc0aad49b28
 我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
@@ -76,6 +76,10 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+---
+
+根据 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-28-upstream-c92b88-to-b0a225-optimization-plan.md 和 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-28-user-resale-risk-control-plan.md 优化程序。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---
 

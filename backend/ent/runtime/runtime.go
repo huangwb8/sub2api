@@ -31,6 +31,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userriskevent"
+	"github.com/Wei-Shaw/sub2api/ent/userriskprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
@@ -1459,6 +1461,92 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
+	userriskeventMixin := schema.UserRiskEvent{}.Mixin()
+	userriskeventMixinFields0 := userriskeventMixin[0].Fields()
+	_ = userriskeventMixinFields0
+	userriskeventFields := schema.UserRiskEvent{}.Fields()
+	_ = userriskeventFields
+	// userriskeventDescCreatedAt is the schema descriptor for created_at field.
+	userriskeventDescCreatedAt := userriskeventMixinFields0[0].Descriptor()
+	// userriskevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userriskevent.DefaultCreatedAt = userriskeventDescCreatedAt.Default.(func() time.Time)
+	// userriskeventDescUpdatedAt is the schema descriptor for updated_at field.
+	userriskeventDescUpdatedAt := userriskeventMixinFields0[1].Descriptor()
+	// userriskevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userriskevent.DefaultUpdatedAt = userriskeventDescUpdatedAt.Default.(func() time.Time)
+	// userriskevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userriskevent.UpdateDefaultUpdatedAt = userriskeventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userriskeventDescEventType is the schema descriptor for event_type field.
+	userriskeventDescEventType := userriskeventFields[1].Descriptor()
+	// userriskevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	userriskevent.EventTypeValidator = userriskeventDescEventType.Validators[0].(func(string) error)
+	// userriskeventDescSeverity is the schema descriptor for severity field.
+	userriskeventDescSeverity := userriskeventFields[2].Descriptor()
+	// userriskevent.DefaultSeverity holds the default value on creation for the severity field.
+	userriskevent.DefaultSeverity = userriskeventDescSeverity.Default.(string)
+	// userriskevent.SeverityValidator is a validator for the "severity" field. It is called by the builders before save.
+	userriskevent.SeverityValidator = userriskeventDescSeverity.Validators[0].(func(string) error)
+	// userriskeventDescScoreDelta is the schema descriptor for score_delta field.
+	userriskeventDescScoreDelta := userriskeventFields[3].Descriptor()
+	// userriskevent.DefaultScoreDelta holds the default value on creation for the score_delta field.
+	userriskevent.DefaultScoreDelta = userriskeventDescScoreDelta.Default.(float64)
+	// userriskeventDescScoreAfter is the schema descriptor for score_after field.
+	userriskeventDescScoreAfter := userriskeventFields[4].Descriptor()
+	// userriskevent.DefaultScoreAfter holds the default value on creation for the score_after field.
+	userriskevent.DefaultScoreAfter = userriskeventDescScoreAfter.Default.(float64)
+	// userriskeventDescSummary is the schema descriptor for summary field.
+	userriskeventDescSummary := userriskeventFields[5].Descriptor()
+	// userriskevent.DefaultSummary holds the default value on creation for the summary field.
+	userriskevent.DefaultSummary = userriskeventDescSummary.Default.(string)
+	userriskprofileMixin := schema.UserRiskProfile{}.Mixin()
+	userriskprofileMixinFields0 := userriskprofileMixin[0].Fields()
+	_ = userriskprofileMixinFields0
+	userriskprofileFields := schema.UserRiskProfile{}.Fields()
+	_ = userriskprofileFields
+	// userriskprofileDescCreatedAt is the schema descriptor for created_at field.
+	userriskprofileDescCreatedAt := userriskprofileMixinFields0[0].Descriptor()
+	// userriskprofile.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userriskprofile.DefaultCreatedAt = userriskprofileDescCreatedAt.Default.(func() time.Time)
+	// userriskprofileDescUpdatedAt is the schema descriptor for updated_at field.
+	userriskprofileDescUpdatedAt := userriskprofileMixinFields0[1].Descriptor()
+	// userriskprofile.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userriskprofile.DefaultUpdatedAt = userriskprofileDescUpdatedAt.Default.(func() time.Time)
+	// userriskprofile.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userriskprofile.UpdateDefaultUpdatedAt = userriskprofileDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userriskprofileDescScore is the schema descriptor for score field.
+	userriskprofileDescScore := userriskprofileFields[1].Descriptor()
+	// userriskprofile.DefaultScore holds the default value on creation for the score field.
+	userriskprofile.DefaultScore = userriskprofileDescScore.Default.(float64)
+	// userriskprofileDescStatus is the schema descriptor for status field.
+	userriskprofileDescStatus := userriskprofileFields[2].Descriptor()
+	// userriskprofile.DefaultStatus holds the default value on creation for the status field.
+	userriskprofile.DefaultStatus = userriskprofileDescStatus.Default.(string)
+	// userriskprofile.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	userriskprofile.StatusValidator = userriskprofileDescStatus.Validators[0].(func(string) error)
+	// userriskprofileDescConsecutiveBadDays is the schema descriptor for consecutive_bad_days field.
+	userriskprofileDescConsecutiveBadDays := userriskprofileFields[3].Descriptor()
+	// userriskprofile.DefaultConsecutiveBadDays holds the default value on creation for the consecutive_bad_days field.
+	userriskprofile.DefaultConsecutiveBadDays = userriskprofileDescConsecutiveBadDays.Default.(int)
+	// userriskprofileDescLockReason is the schema descriptor for lock_reason field.
+	userriskprofileDescLockReason := userriskprofileFields[8].Descriptor()
+	// userriskprofile.DefaultLockReason holds the default value on creation for the lock_reason field.
+	userriskprofile.DefaultLockReason = userriskprofileDescLockReason.Default.(string)
+	// userriskprofileDescLastEvaluationSummary is the schema descriptor for last_evaluation_summary field.
+	userriskprofileDescLastEvaluationSummary := userriskprofileFields[9].Descriptor()
+	// userriskprofile.DefaultLastEvaluationSummary holds the default value on creation for the last_evaluation_summary field.
+	userriskprofile.DefaultLastEvaluationSummary = userriskprofileDescLastEvaluationSummary.Default.(string)
+	// userriskprofileDescExempted is the schema descriptor for exempted field.
+	userriskprofileDescExempted := userriskprofileFields[10].Descriptor()
+	// userriskprofile.DefaultExempted holds the default value on creation for the exempted field.
+	userriskprofile.DefaultExempted = userriskprofileDescExempted.Default.(bool)
+	// userriskprofileDescExemptionReason is the schema descriptor for exemption_reason field.
+	userriskprofileDescExemptionReason := userriskprofileFields[13].Descriptor()
+	// userriskprofile.DefaultExemptionReason holds the default value on creation for the exemption_reason field.
+	userriskprofile.DefaultExemptionReason = userriskprofileDescExemptionReason.Default.(string)
+	// userriskprofileDescUnlockReason is the schema descriptor for unlock_reason field.
+	userriskprofileDescUnlockReason := userriskprofileFields[16].Descriptor()
+	// userriskprofile.DefaultUnlockReason holds the default value on creation for the unlock_reason field.
+	userriskprofile.DefaultUnlockReason = userriskprofileDescUnlockReason.Default.(string)
 	usersubscriptionMixin := schema.UserSubscription{}.Mixin()
 	usersubscriptionMixinHooks1 := usersubscriptionMixin[1].Hooks()
 	usersubscription.Hooks[0] = usersubscriptionMixinHooks1[0]

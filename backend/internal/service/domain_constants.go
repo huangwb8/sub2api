@@ -241,6 +241,13 @@ const (
 	SettingKeyBetaPolicySettings = "beta_policy_settings"
 
 	// =========================
+	// User Risk Control
+	// =========================
+
+	// SettingKeyUserRiskControlConfig stores JSON config for user resale risk control.
+	SettingKeyUserRiskControlConfig = "user_risk_control_config"
+
+	// =========================
 	// Claude Code Version Check
 	// =========================
 

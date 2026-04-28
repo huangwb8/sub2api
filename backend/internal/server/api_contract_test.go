@@ -1160,7 +1160,7 @@ func newContractDeps(t *testing.T) *contractDeps {
 	settingRepo := newStubSettingRepo()
 	settingService := service.NewSettingService(settingRepo, cfg)
 
-	adminService := service.NewAdminService(userRepo, groupRepo, &accountRepo, proxyRepo, apiKeyRepo, redeemRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	adminService := service.NewAdminService(userRepo, nil, groupRepo, &accountRepo, proxyRepo, apiKeyRepo, redeemRepo, nil, nil, nil, nil, nil, nil, nil, nil, userSubRepo, nil)
 	authHandler := handler.NewAuthHandler(cfg, nil, userService, settingService, nil, redeemService, nil)
 	apiKeyHandler := handler.NewAPIKeyHandler(apiKeyService)
 	usageHandler := handler.NewUsageHandler(usageService, apiKeyService)
@@ -2271,6 +2271,41 @@ func (r *stubUsageLogRepo) GetUserStatsAggregated(ctx context.Context, userID in
 		TotalActualCost:   totalActualCost,
 		AverageDurationMs: avgDuration,
 	}, nil
+}
+
+func (r *stubUsageLogRepo) ListUserIDsWithUsageBetween(ctx context.Context, startTime, endTime time.Time) ([]int64, error) {
+	userIDs := make([]int64, 0, len(r.userLogs))
+	for userID, logs := range r.userLogs {
+		for _, log := range logs {
+			if (log.CreatedAt.Equal(startTime) || log.CreatedAt.After(startTime)) && log.CreatedAt.Before(endTime) {
+				userIDs = append(userIDs, userID)
+				break
+			}
+		}
+	}
+	sort.Slice(userIDs, func(i, j int) bool { return userIDs[i] < userIDs[j] })
+	return userIDs, nil
+}
+
+func (r *stubUsageLogRepo) GetUserRiskUsageSummary(ctx context.Context, userID int64, startTime, endTime time.Time) (*service.UserRiskUsageSummary, error) {
+	logs := r.userLogs[userID]
+	summary := &service.UserRiskUsageSummary{UserID: userID}
+	activeHours := make(map[string]struct{})
+	apiKeys := make(map[int64]struct{})
+	for _, log := range logs {
+		if log.CreatedAt.Before(startTime) || !log.CreatedAt.Before(endTime) {
+			continue
+		}
+		summary.TotalRequests++
+		summary.TotalActualCost += log.ActualCost
+		activeHours[log.CreatedAt.UTC().Format("2006-01-02T15")] = struct{}{}
+		if log.APIKeyID > 0 {
+			apiKeys[log.APIKeyID] = struct{}{}
+		}
+	}
+	summary.ActiveHours = len(activeHours)
+	summary.DistinctAPIKeys = len(apiKeys)
+	return summary, nil
 }
 
 func (r *stubUsageLogRepo) GetAPIKeyStatsAggregated(ctx context.Context, apiKeyID int64, startTime, endTime time.Time) (*usagestats.UsageStats, error) {

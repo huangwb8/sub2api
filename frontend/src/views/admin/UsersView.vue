@@ -457,6 +457,18 @@
             </div>
           </template>
 
+          <template #cell-risk="{ row }">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+              :class="riskStatusPillClass(getRiskStatus(row.risk_profile))"
+              @click="openRiskDialog(row)"
+            >
+              <span>{{ getRiskStatusLabel(getRiskStatus(row.risk_profile)) }}</span>
+              <span class="font-mono">{{ formatRiskScore(row.risk_profile) }}</span>
+            </button>
+          </template>
+
           <template #cell-created_at="{ value }">
             <span class="text-sm text-gray-500 dark:text-dark-400">{{ formatDateTime(value) }}</span>
           </template>
@@ -587,6 +599,16 @@
 
               <!-- Delete (not for admin) -->
               <button
+                @click="openRiskDialog(user); closeActionMenu()"
+                class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+              >
+                <Icon name="shield" size="sm" class="text-gray-400" :stroke-width="2" />
+                {{ t('admin.users.riskCenter') }}
+              </button>
+
+              <div class="my-1 border-t border-gray-100 dark:border-dark-700"></div>
+
+              <button
                 v-if="user.role !== 'admin'"
                 @click="handleDelete(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -609,6 +631,251 @@
     <UserBalanceHistoryModal :show="showBalanceHistoryModal" :user="balanceHistoryUser" @close="closeBalanceHistoryModal" @deposit="handleDepositFromHistory" @withdraw="handleWithdrawFromHistory" />
     <GroupReplaceModal :show="showGroupReplaceModal" :user="groupReplaceUser" :old-group="groupReplaceOldGroup" :all-groups="allGroups" @close="closeGroupReplaceModal" @success="loadUsers" />
     <UserAttributesConfigModal :show="showAttributesModal" @close="handleAttributesModalClose" />
+    <BaseDialog
+      :show="showRiskDialog"
+      :title="riskDialogUser ? t('admin.users.riskDialogTitle', { email: riskDialogUser.email }) : t('admin.users.riskDialog')"
+      width="extra-wide"
+      @close="closeRiskDialog"
+    >
+      <div v-if="riskDialogLoading" class="flex items-center justify-center py-12 text-gray-500">
+        <div class="h-6 w-6 animate-spin rounded-full border-b-2 border-primary-600"></div>
+      </div>
+
+      <div v-else-if="riskProfile" class="space-y-6">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+            <p class="text-xs uppercase tracking-wide text-gray-400">{{ t('admin.users.riskScore') }}</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ formatRiskScore(riskProfile) }}
+            </p>
+          </div>
+          <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+            <p class="text-xs uppercase tracking-wide text-gray-400">{{ t('admin.users.riskState') }}</p>
+            <span
+              class="mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-medium"
+              :class="riskStatusPillClass(getRiskStatus(riskProfile))"
+            >
+              {{ getRiskStatusLabel(getRiskStatus(riskProfile)) }}
+            </span>
+          </div>
+          <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+            <p class="text-xs uppercase tracking-wide text-gray-400">{{ t('admin.users.riskBadDays') }}</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ riskProfile.consecutive_bad_days }}
+            </p>
+          </div>
+          <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+            <p class="text-xs uppercase tracking-wide text-gray-400">{{ t('admin.users.riskLastWarned') }}</p>
+            <p class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+              {{ formatOptionalDate(riskProfile.last_warned_at) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div class="space-y-4">
+            <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+              <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ t('admin.users.riskSummary') }}
+                </h4>
+                <button type="button" class="btn btn-secondary btn-sm" @click="refreshRiskDialog">
+                  {{ t('admin.users.riskRefresh') }}
+                </button>
+              </div>
+              <p class="mt-3 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-gray-300">
+                {{ riskProfile.last_evaluation_summary || t('admin.users.noRiskSummary') }}
+              </p>
+            </div>
+
+            <div
+              v-if="riskProfile.signal_snapshot"
+              class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700"
+            >
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.users.riskSignals') }}
+              </h4>
+              <div class="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.users.riskTrustedIPs') }}</p>
+                  <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ riskProfile.signal_snapshot.distinct_public_ips }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.users.riskUserAgents') }}</p>
+                  <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ riskProfile.signal_snapshot.distinct_user_agents }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.users.riskApiKeys') }}</p>
+                  <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ riskProfile.signal_snapshot.distinct_api_keys }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.users.riskOverlapEvents') }}</p>
+                  <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ riskProfile.signal_snapshot.overlap_events }}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                v-if="riskProfile.signal_snapshot.recent_public_ips?.length || riskProfile.signal_snapshot.recent_user_agent_families?.length"
+                class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2"
+              >
+                <div v-if="riskProfile.signal_snapshot.recent_public_ips?.length">
+                  <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {{ t('admin.users.riskRecentIPs') }}
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      v-for="item in riskProfile.signal_snapshot.recent_public_ips"
+                      :key="item"
+                      class="rounded-full bg-gray-100 px-2.5 py-1 font-mono text-xs text-gray-700 dark:bg-dark-800 dark:text-gray-300"
+                    >
+                      {{ item }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="riskProfile.signal_snapshot.recent_user_agent_families?.length">
+                  <p class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {{ t('admin.users.riskRecentUAs') }}
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      v-for="item in riskProfile.signal_snapshot.recent_user_agent_families"
+                      :key="item"
+                      class="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700 dark:bg-dark-800 dark:text-gray-300"
+                    >
+                      {{ item }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.users.riskEvents') }}
+              </h4>
+              <div v-if="riskEvents.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.users.noRiskEvents') }}
+              </div>
+              <div v-else class="mt-3 space-y-3">
+                <div
+                  v-for="event in riskEvents"
+                  :key="event.id"
+                  class="rounded-xl border border-gray-100 p-3 dark:border-dark-700"
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span
+                      class="rounded-full px-2.5 py-1 text-xs font-medium"
+                      :class="riskSeverityPillClass(event.severity)"
+                    >
+                      {{ getRiskSeverityLabel(event.severity) }}
+                    </span>
+                    <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                      {{ event.event_type }}
+                    </span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500">
+                      {{ formatOptionalDate(event.created_at) }}
+                    </span>
+                  </div>
+                  <p class="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                    {{ event.summary }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('admin.users.riskActions') }}
+              </h4>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.users.riskActionsHint') }}
+              </p>
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t('admin.users.riskActionReason') }}
+              </label>
+              <textarea
+                v-model="riskActionReason"
+                rows="4"
+                class="input"
+                :placeholder="t('admin.users.riskActionReasonPlaceholder')"
+              ></textarea>
+            </div>
+
+            <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-3 dark:border-dark-700">
+              <input
+                v-model="riskExemptedDraft"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ t('admin.users.riskExemptionToggle') }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.users.riskExemptionToggleHint') }}
+                </p>
+              </div>
+            </label>
+
+            <div class="grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                :disabled="riskActionLoading"
+                @click="runRiskAction('warn')"
+              >
+                {{ t('admin.users.riskSendWarning') }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                :disabled="riskActionLoading"
+                @click="runRiskAction('unlock')"
+              >
+                {{ t('admin.users.riskUnlock') }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                :disabled="riskActionLoading"
+                @click="runRiskAction('exemption')"
+              >
+                {{ riskExemptedDraft ? t('admin.users.riskExempt') : t('admin.users.riskRemoveExemption') }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                :disabled="riskActionLoading"
+                @click="runRiskAction('reset')"
+              >
+                {{ t('admin.users.riskResetScore') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <button class="btn btn-secondary" @click="closeRiskDialog">
+            {{ t('common.close') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
   </AppLayout>
 </template>
 
@@ -622,12 +889,13 @@ import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
-import type { AdminUser, AdminGroup, UserAttributeDefinition } from '@/types'
+import type { AdminUser, AdminGroup, UserAttributeDefinition, UserRiskEvent, UserRiskProfile } from '@/types'
 import type { BatchUserUsageStats } from '@/api/admin/dashboard'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
+import BaseDialog from '@/components/common/BaseDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -707,6 +975,7 @@ const allColumns = computed<Column[]>(() => [
   { key: 'usage', label: t('admin.users.columns.usage'), sortable: true },
   { key: 'concurrency', label: t('admin.users.columns.concurrency'), sortable: true },
   { key: 'status', label: t('admin.users.columns.status'), sortable: true },
+  { key: 'risk', label: t('admin.users.columns.risk'), sortable: false },
   { key: 'created_at', label: t('admin.users.columns.created'), sortable: true },
   { key: 'actions', label: t('admin.users.columns.actions'), sortable: false }
 ])
@@ -1113,6 +1382,59 @@ const balanceOperation = ref<'add' | 'subtract'>('add')
 // Balance History modal state
 const showBalanceHistoryModal = ref(false)
 const balanceHistoryUser = ref<AdminUser | null>(null)
+const showRiskDialog = ref(false)
+const riskDialogUser = ref<AdminUser | null>(null)
+const riskDialogLoading = ref(false)
+const riskActionLoading = ref(false)
+const riskProfile = ref<UserRiskProfile | null>(null)
+const riskEvents = ref<UserRiskEvent[]>([])
+const riskActionReason = ref('')
+const riskExemptedDraft = ref(false)
+
+const riskStatusKeyMap: Record<string, string> = {
+  healthy: 'healthy',
+  observed: 'observed',
+  warned: 'warned',
+  grace_period: 'gracePeriod',
+  locked: 'locked',
+  exempted: 'exempted'
+}
+
+const getRiskStatus = (profile?: UserRiskProfile | null) => profile?.status || 'healthy'
+const formatRiskScore = (profile?: UserRiskProfile | null) =>
+  Number(profile?.score ?? 5).toFixed(1)
+const formatOptionalDate = (value?: string | null) => (value ? formatDateTime(value) : '-')
+const getRiskStatusLabel = (status: string) =>
+  t(`admin.users.riskStatuses.${riskStatusKeyMap[status] || 'healthy'}`)
+const getRiskSeverityLabel = (severity: string) =>
+  t(`admin.users.riskSeverity.${severity === 'critical' ? 'critical' : severity === 'warning' ? 'warning' : 'info'}`)
+
+const riskStatusPillClass = (status: string) => {
+  switch (status) {
+    case 'locked':
+      return 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300'
+    case 'warned':
+    case 'grace_period':
+      return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300'
+    case 'observed':
+      return 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300'
+    case 'exempted':
+      return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300'
+    default:
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+  }
+}
+
+const riskSeverityPillClass = (severity: string) => {
+  switch (severity) {
+    case 'critical':
+      return 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+    case 'warning':
+      return 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+    default:
+      return 'bg-gray-100 text-gray-700 dark:bg-dark-800 dark:text-gray-300'
+  }
+}
 
 // 计算剩余天数
 const getDaysRemaining = (expiresAt: string): number => {
@@ -1377,6 +1699,101 @@ const handleBalanceHistory = (user: AdminUser) => {
 const closeBalanceHistoryModal = () => {
   showBalanceHistoryModal.value = false
   balanceHistoryUser.value = null
+}
+
+const syncRiskProfile = (profile: UserRiskProfile) => {
+  const target = users.value.find((item) => item.id === profile.user_id)
+  if (target) {
+    target.risk_profile = profile
+  }
+  if (riskDialogUser.value?.id === profile.user_id) {
+    riskDialogUser.value = {
+      ...riskDialogUser.value,
+      risk_profile: profile
+    }
+  }
+}
+
+const loadRiskDialog = async (userId: number) => {
+  riskDialogLoading.value = true
+  try {
+    const [profileResponse, eventsResponse] = await Promise.all([
+      adminAPI.users.getUserRiskProfile(userId),
+      adminAPI.users.getUserRiskEvents(userId)
+    ])
+    riskProfile.value = profileResponse
+    riskEvents.value = eventsResponse.items
+    riskExemptedDraft.value = profileResponse.exempted
+    syncRiskProfile(profileResponse)
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.riskFailedToLoad'))
+  } finally {
+    riskDialogLoading.value = false
+  }
+}
+
+const openRiskDialog = async (user: AdminUser) => {
+  riskDialogUser.value = user
+  showRiskDialog.value = true
+  riskProfile.value = user.risk_profile ?? null
+  riskEvents.value = []
+  riskActionReason.value = ''
+  riskExemptedDraft.value = user.risk_profile?.exempted ?? false
+  await loadRiskDialog(user.id)
+}
+
+const closeRiskDialog = () => {
+  showRiskDialog.value = false
+  riskDialogUser.value = null
+  riskProfile.value = null
+  riskEvents.value = []
+  riskActionReason.value = ''
+  riskExemptedDraft.value = false
+}
+
+const refreshRiskDialog = async () => {
+  if (!riskDialogUser.value) return
+  await loadRiskDialog(riskDialogUser.value.id)
+}
+
+const runRiskAction = async (action: 'warn' | 'unlock' | 'exemption' | 'reset') => {
+  if (!riskDialogUser.value) return
+  riskActionLoading.value = true
+  try {
+    let updated: UserRiskProfile
+    switch (action) {
+      case 'warn':
+        updated = await adminAPI.users.sendUserRiskWarning(riskDialogUser.value.id)
+        appStore.showSuccess(t('admin.users.riskWarningSent'))
+        break
+      case 'unlock':
+        updated = await adminAPI.users.unlockUserRisk(riskDialogUser.value.id, riskActionReason.value)
+        appStore.showSuccess(t('admin.users.riskUnlocked'))
+        break
+      case 'exemption':
+        updated = await adminAPI.users.updateUserRiskExemption(
+          riskDialogUser.value.id,
+          riskExemptedDraft.value,
+          riskActionReason.value
+        )
+        appStore.showSuccess(t('admin.users.riskExemptionUpdated'))
+        break
+      default:
+        updated = await adminAPI.users.resetUserRiskScore(riskDialogUser.value.id, riskActionReason.value)
+        appStore.showSuccess(t('admin.users.riskScoreReset'))
+        break
+    }
+
+    riskProfile.value = updated
+    riskExemptedDraft.value = updated.exempted
+    riskActionReason.value = ''
+    syncRiskProfile(updated)
+    await loadRiskDialog(riskDialogUser.value.id)
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.riskActionFailed'))
+  } finally {
+    riskActionLoading.value = false
+  }
 }
 
 // Handle deposit from balance history modal

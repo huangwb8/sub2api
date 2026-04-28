@@ -322,6 +322,12 @@ func ProvideOpsSystemLogSink(opsRepo OpsRepository) *OpsSystemLogSink {
 	return sink
 }
 
+func ProvideUserRiskEvaluatorService(riskService *UserRiskService) *UserRiskEvaluatorService {
+	svc := NewUserRiskEvaluatorService(riskService)
+	svc.Start()
+	return svc
+}
+
 func buildIdempotencyConfig(cfg *config.Config) IdempotencyConfig {
 	idempotencyCfg := DefaultIdempotencyConfig()
 	if cfg != nil {
@@ -551,6 +557,9 @@ var ProviderSet = wire.NewSet(
 	// Core services
 	NewAuthService,
 	NewUserService,
+	NewUserRiskSignalService,
+	NewUserRiskService,
+	ProvideUserRiskEvaluatorService,
 	NewAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
 	NewGroupService,

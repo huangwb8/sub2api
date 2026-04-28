@@ -21,12 +21,9 @@ func RegisterGatewayRoutes(
 	opsService *service.OpsService,
 	settingService *service.SettingService,
 	cfg *config.Config,
-	rpmCaches ...service.GatewayRPMCache,
+	extras ...any,
 ) {
-	var rpmCache service.GatewayRPMCache
-	if len(rpmCaches) > 0 {
-		rpmCache = rpmCaches[0]
-	}
+	riskService, signalService, rpmCache := extractGatewayRouteDeps(extras...)
 	bodyLimit := middleware.RequestBodyLimit(cfg.Gateway.MaxBodySize)
 	clientRequestID := middleware.ClientRequestID()
 	opsErrorLogger := handler.OpsErrorLoggerMiddleware(opsService)
@@ -101,7 +98,7 @@ func RegisterGatewayRoutes(
 	gemini.Use(clientRequestID)
 	gemini.Use(opsErrorLogger)
 	gemini.Use(endpointNorm)
-	gemini.Use(middleware.APIKeyAuthWithSubscriptionGoogle(apiKeyService, subscriptionService, cfg, rpmCache))
+	gemini.Use(middleware.APIKeyAuthWithSubscriptionGoogle(apiKeyService, subscriptionService, cfg, riskService, signalService, rpmCache))
 	gemini.Use(requireGroupGoogle)
 	{
 		gemini.GET("/models", h.Gateway.GeminiV1BetaListModels)
@@ -155,7 +152,7 @@ func RegisterGatewayRoutes(
 	antigravityV1Beta.Use(opsErrorLogger)
 	antigravityV1Beta.Use(endpointNorm)
 	antigravityV1Beta.Use(middleware.ForcePlatform(service.PlatformAntigravity))
-	antigravityV1Beta.Use(middleware.APIKeyAuthWithSubscriptionGoogle(apiKeyService, subscriptionService, cfg, rpmCache))
+	antigravityV1Beta.Use(middleware.APIKeyAuthWithSubscriptionGoogle(apiKeyService, subscriptionService, cfg, riskService, signalService, rpmCache))
 	antigravityV1Beta.Use(requireGroupGoogle)
 	{
 		antigravityV1Beta.GET("/models", h.Gateway.GeminiV1BetaListModels)
@@ -163,6 +160,31 @@ func RegisterGatewayRoutes(
 		antigravityV1Beta.POST("/models/*modelAction", h.Gateway.GeminiV1BetaModels)
 	}
 
+}
+
+func extractGatewayRouteDeps(extras ...any) (*service.UserRiskService, *service.UserRiskSignalService, service.GatewayRPMCache) {
+	var (
+		riskService   *service.UserRiskService
+		signalService *service.UserRiskSignalService
+		rpmCache      service.GatewayRPMCache
+	)
+	for _, extra := range extras {
+		switch value := extra.(type) {
+		case *service.UserRiskService:
+			if riskService == nil {
+				riskService = value
+			}
+		case *service.UserRiskSignalService:
+			if signalService == nil {
+				signalService = value
+			}
+		case service.GatewayRPMCache:
+			if rpmCache == nil {
+				rpmCache = value
+			}
+		}
+	}
+	return riskService, signalService, rpmCache
 }
 
 // getGroupPlatform extracts the group platform from the API Key stored in context.

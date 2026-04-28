@@ -40,6 +40,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userriskevent"
+	"github.com/Wei-Shaw/sub2api/ent/userriskprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 
 	stdsql "database/sql"
@@ -100,6 +102,10 @@ type Client struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserRiskEvent is the client for interacting with the UserRiskEvent builders.
+	UserRiskEvent *UserRiskEventClient
+	// UserRiskProfile is the client for interacting with the UserRiskProfile builders.
+	UserRiskProfile *UserRiskProfileClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
 }
@@ -138,6 +144,8 @@ func (c *Client) init() {
 	c.UserAllowedGroup = NewUserAllowedGroupClient(c.config)
 	c.UserAttributeDefinition = NewUserAttributeDefinitionClient(c.config)
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
+	c.UserRiskEvent = NewUserRiskEventClient(c.config)
+	c.UserRiskProfile = NewUserRiskProfileClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
 }
 
@@ -256,6 +264,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		UserAllowedGroup:        NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition: NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:      NewUserAttributeValueClient(cfg),
+		UserRiskEvent:           NewUserRiskEventClient(cfg),
+		UserRiskProfile:         NewUserRiskProfileClient(cfg),
 		UserSubscription:        NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -301,6 +311,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		UserAllowedGroup:        NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition: NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:      NewUserAttributeValueClient(cfg),
+		UserRiskEvent:           NewUserRiskEventClient(cfg),
+		UserRiskProfile:         NewUserRiskProfileClient(cfg),
 		UserSubscription:        NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -337,7 +349,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
 		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
 		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.UserRiskEvent, c.UserRiskProfile, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -353,7 +365,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
 		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
 		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.UserRiskEvent, c.UserRiskProfile, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -412,6 +424,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserAttributeDefinition.mutate(ctx, m)
 	case *UserAttributeValueMutation:
 		return c.UserAttributeValue.mutate(ctx, m)
+	case *UserRiskEventMutation:
+		return c.UserRiskEvent.mutate(ctx, m)
+	case *UserRiskProfileMutation:
+		return c.UserRiskProfile.mutate(ctx, m)
 	case *UserSubscriptionMutation:
 		return c.UserSubscription.mutate(ctx, m)
 	default:
@@ -3951,6 +3967,38 @@ func (c *UserClient) QueryPaymentOrders(_m *User) *PaymentOrderQuery {
 	return query
 }
 
+// QueryRiskProfile queries the risk_profile edge of a User.
+func (c *UserClient) QueryRiskProfile(_m *User) *UserRiskProfileQuery {
+	query := (&UserRiskProfileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userriskprofile.Table, userriskprofile.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.RiskProfileTable, user.RiskProfileColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRiskEvents queries the risk_events edge of a User.
+func (c *UserClient) QueryRiskEvents(_m *User) *UserRiskEventQuery {
+	query := (&UserRiskEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userriskevent.Table, userriskevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RiskEventsTable, user.RiskEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups queries the user_allowed_groups edge of a User.
 func (c *UserClient) QueryUserAllowedGroups(_m *User) *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: c.config}).Query()
@@ -4426,6 +4474,304 @@ func (c *UserAttributeValueClient) mutate(ctx context.Context, m *UserAttributeV
 	}
 }
 
+// UserRiskEventClient is a client for the UserRiskEvent schema.
+type UserRiskEventClient struct {
+	config
+}
+
+// NewUserRiskEventClient returns a client for the UserRiskEvent from the given config.
+func NewUserRiskEventClient(c config) *UserRiskEventClient {
+	return &UserRiskEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userriskevent.Hooks(f(g(h())))`.
+func (c *UserRiskEventClient) Use(hooks ...Hook) {
+	c.hooks.UserRiskEvent = append(c.hooks.UserRiskEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userriskevent.Intercept(f(g(h())))`.
+func (c *UserRiskEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserRiskEvent = append(c.inters.UserRiskEvent, interceptors...)
+}
+
+// Create returns a builder for creating a UserRiskEvent entity.
+func (c *UserRiskEventClient) Create() *UserRiskEventCreate {
+	mutation := newUserRiskEventMutation(c.config, OpCreate)
+	return &UserRiskEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserRiskEvent entities.
+func (c *UserRiskEventClient) CreateBulk(builders ...*UserRiskEventCreate) *UserRiskEventCreateBulk {
+	return &UserRiskEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserRiskEventClient) MapCreateBulk(slice any, setFunc func(*UserRiskEventCreate, int)) *UserRiskEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserRiskEventCreateBulk{err: fmt.Errorf("calling to UserRiskEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserRiskEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserRiskEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserRiskEvent.
+func (c *UserRiskEventClient) Update() *UserRiskEventUpdate {
+	mutation := newUserRiskEventMutation(c.config, OpUpdate)
+	return &UserRiskEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserRiskEventClient) UpdateOne(_m *UserRiskEvent) *UserRiskEventUpdateOne {
+	mutation := newUserRiskEventMutation(c.config, OpUpdateOne, withUserRiskEvent(_m))
+	return &UserRiskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserRiskEventClient) UpdateOneID(id int64) *UserRiskEventUpdateOne {
+	mutation := newUserRiskEventMutation(c.config, OpUpdateOne, withUserRiskEventID(id))
+	return &UserRiskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserRiskEvent.
+func (c *UserRiskEventClient) Delete() *UserRiskEventDelete {
+	mutation := newUserRiskEventMutation(c.config, OpDelete)
+	return &UserRiskEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserRiskEventClient) DeleteOne(_m *UserRiskEvent) *UserRiskEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserRiskEventClient) DeleteOneID(id int64) *UserRiskEventDeleteOne {
+	builder := c.Delete().Where(userriskevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserRiskEventDeleteOne{builder}
+}
+
+// Query returns a query builder for UserRiskEvent.
+func (c *UserRiskEventClient) Query() *UserRiskEventQuery {
+	return &UserRiskEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserRiskEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserRiskEvent entity by its id.
+func (c *UserRiskEventClient) Get(ctx context.Context, id int64) (*UserRiskEvent, error) {
+	return c.Query().Where(userriskevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserRiskEventClient) GetX(ctx context.Context, id int64) *UserRiskEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a UserRiskEvent.
+func (c *UserRiskEventClient) QueryUser(_m *UserRiskEvent) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userriskevent.Table, userriskevent.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, userriskevent.UserTable, userriskevent.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserRiskEventClient) Hooks() []Hook {
+	return c.hooks.UserRiskEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserRiskEventClient) Interceptors() []Interceptor {
+	return c.inters.UserRiskEvent
+}
+
+func (c *UserRiskEventClient) mutate(ctx context.Context, m *UserRiskEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserRiskEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserRiskEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserRiskEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserRiskEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserRiskEvent mutation op: %q", m.Op())
+	}
+}
+
+// UserRiskProfileClient is a client for the UserRiskProfile schema.
+type UserRiskProfileClient struct {
+	config
+}
+
+// NewUserRiskProfileClient returns a client for the UserRiskProfile from the given config.
+func NewUserRiskProfileClient(c config) *UserRiskProfileClient {
+	return &UserRiskProfileClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userriskprofile.Hooks(f(g(h())))`.
+func (c *UserRiskProfileClient) Use(hooks ...Hook) {
+	c.hooks.UserRiskProfile = append(c.hooks.UserRiskProfile, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userriskprofile.Intercept(f(g(h())))`.
+func (c *UserRiskProfileClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserRiskProfile = append(c.inters.UserRiskProfile, interceptors...)
+}
+
+// Create returns a builder for creating a UserRiskProfile entity.
+func (c *UserRiskProfileClient) Create() *UserRiskProfileCreate {
+	mutation := newUserRiskProfileMutation(c.config, OpCreate)
+	return &UserRiskProfileCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserRiskProfile entities.
+func (c *UserRiskProfileClient) CreateBulk(builders ...*UserRiskProfileCreate) *UserRiskProfileCreateBulk {
+	return &UserRiskProfileCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserRiskProfileClient) MapCreateBulk(slice any, setFunc func(*UserRiskProfileCreate, int)) *UserRiskProfileCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserRiskProfileCreateBulk{err: fmt.Errorf("calling to UserRiskProfileClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserRiskProfileCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserRiskProfileCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserRiskProfile.
+func (c *UserRiskProfileClient) Update() *UserRiskProfileUpdate {
+	mutation := newUserRiskProfileMutation(c.config, OpUpdate)
+	return &UserRiskProfileUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserRiskProfileClient) UpdateOne(_m *UserRiskProfile) *UserRiskProfileUpdateOne {
+	mutation := newUserRiskProfileMutation(c.config, OpUpdateOne, withUserRiskProfile(_m))
+	return &UserRiskProfileUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserRiskProfileClient) UpdateOneID(id int64) *UserRiskProfileUpdateOne {
+	mutation := newUserRiskProfileMutation(c.config, OpUpdateOne, withUserRiskProfileID(id))
+	return &UserRiskProfileUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserRiskProfile.
+func (c *UserRiskProfileClient) Delete() *UserRiskProfileDelete {
+	mutation := newUserRiskProfileMutation(c.config, OpDelete)
+	return &UserRiskProfileDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserRiskProfileClient) DeleteOne(_m *UserRiskProfile) *UserRiskProfileDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserRiskProfileClient) DeleteOneID(id int64) *UserRiskProfileDeleteOne {
+	builder := c.Delete().Where(userriskprofile.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserRiskProfileDeleteOne{builder}
+}
+
+// Query returns a query builder for UserRiskProfile.
+func (c *UserRiskProfileClient) Query() *UserRiskProfileQuery {
+	return &UserRiskProfileQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserRiskProfile},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserRiskProfile entity by its id.
+func (c *UserRiskProfileClient) Get(ctx context.Context, id int64) (*UserRiskProfile, error) {
+	return c.Query().Where(userriskprofile.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserRiskProfileClient) GetX(ctx context.Context, id int64) *UserRiskProfile {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a UserRiskProfile.
+func (c *UserRiskProfileClient) QueryUser(_m *UserRiskProfile) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userriskprofile.Table, userriskprofile.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, userriskprofile.UserTable, userriskprofile.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserRiskProfileClient) Hooks() []Hook {
+	return c.hooks.UserRiskProfile
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserRiskProfileClient) Interceptors() []Interceptor {
+	return c.inters.UserRiskProfile
+}
+
+func (c *UserRiskProfileClient) mutate(ctx context.Context, m *UserRiskProfileMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserRiskProfileCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserRiskProfileUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserRiskProfileUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserRiskProfileDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserRiskProfile mutation op: %q", m.Op())
+	}
+}
+
 // UserSubscriptionClient is a client for the UserSubscription schema.
 type UserSubscriptionClient struct {
 	config
@@ -4633,7 +4979,7 @@ type (
 		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
 		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserSubscription []ent.Hook
+		UserAttributeValue, UserRiskEvent, UserRiskProfile, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead,
@@ -4641,7 +4987,8 @@ type (
 		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
 		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserSubscription []ent.Interceptor
+		UserAttributeValue, UserRiskEvent, UserRiskProfile,
+		UserSubscription []ent.Interceptor
 	}
 )
 

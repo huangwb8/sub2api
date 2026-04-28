@@ -542,6 +542,24 @@ export interface BetaPolicySettings {
   rules: BetaPolicyRule[]
 }
 
+export interface UserRiskControlConfig {
+  enabled: boolean
+  mode: 'observe_only' | 'warn_only' | 'auto_lock' | string
+  warning_threshold: number
+  lock_threshold: number
+  auto_lock_after_consecutive_bad_days: number
+  overlap_window_seconds: number
+  max_distinct_public_ips_per_day: number
+  high_risk_active_hours_per_day: number
+  warning_email_enabled: boolean
+  warning_email_subject_template: string
+  lock_message: string
+  require_trusted_proxy_for_auto_lock: boolean
+  daily_score_penalty_cap: number
+  daily_score_recovery: number
+  redis_evidence_retention_days: number
+}
+
 export interface WebSearchProviderConfig {
   type: string
   api_key?: string
@@ -590,6 +608,21 @@ export async function updateBetaPolicySettings(
 ): Promise<BetaPolicySettings> {
   const { data } = await apiClient.put<BetaPolicySettings>(
     '/admin/settings/beta-policy',
+    settings
+  )
+  return data
+}
+
+export async function getUserRiskControlConfig(): Promise<UserRiskControlConfig> {
+  const { data } = await apiClient.get<UserRiskControlConfig>('/admin/settings/user-risk-control')
+  return data
+}
+
+export async function updateUserRiskControlConfig(
+  settings: UserRiskControlConfig
+): Promise<UserRiskControlConfig> {
+  const { data } = await apiClient.put<UserRiskControlConfig>(
+    '/admin/settings/user-risk-control',
     settings
   )
   return data
@@ -650,6 +683,8 @@ export const settingsAPI = {
   updateRectifierSettings,
   getBetaPolicySettings,
   updateBetaPolicySettings,
+  getUserRiskControlConfig,
+  updateUserRiskControlConfig,
   getWebSearchEmulationConfig,
   updateWebSearchEmulationConfig,
   resetWebSearchUsage,

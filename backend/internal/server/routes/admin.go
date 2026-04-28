@@ -238,6 +238,12 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		users.PUT("/:id", h.Admin.User.Update)
 		users.DELETE("/:id", h.Admin.User.Delete)
 		users.POST("/:id/balance", h.Admin.User.UpdateBalance)
+		users.GET("/:id/risk", h.Admin.User.GetRisk)
+		users.GET("/:id/risk/events", h.Admin.User.ListRiskEvents)
+		users.POST("/:id/risk/warn", h.Admin.User.SendRiskWarning)
+		users.POST("/:id/risk/unlock", h.Admin.User.UnlockRisk)
+		users.PUT("/:id/risk/exemption", h.Admin.User.UpdateRiskExemption)
+		users.POST("/:id/risk/reset", h.Admin.User.ResetRiskScore)
 		users.GET("/:id/api-keys", h.Admin.User.GetUserAPIKeys)
 		users.GET("/:id/usage", h.Admin.User.GetUserUsage)
 		users.GET("/:id/balance-history", h.Admin.User.GetBalanceHistory)
@@ -433,6 +439,9 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		// Beta 策略配置
 		adminSettings.GET("/beta-policy", h.Admin.Setting.GetBetaPolicySettings)
 		adminSettings.PUT("/beta-policy", h.Admin.Setting.UpdateBetaPolicySettings)
+		// 用户转售风控配置
+		adminSettings.GET("/user-risk-control", h.Admin.Setting.GetUserRiskControlConfig)
+		adminSettings.PUT("/user-risk-control", h.Admin.Setting.UpdateUserRiskControlConfig)
 		// Anthropic API Key WebSearch 模拟
 		adminSettings.GET("/web-search-emulation", h.Admin.Setting.GetWebSearchEmulationConfig)
 		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)

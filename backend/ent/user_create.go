@@ -20,6 +20,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userriskevent"
+	"github.com/Wei-Shaw/sub2api/ent/userriskprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 )
 
@@ -415,6 +417,40 @@ func (_c *UserCreate) AddPaymentOrders(v ...*PaymentOrder) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddPaymentOrderIDs(ids...)
+}
+
+// SetRiskProfileID sets the "risk_profile" edge to the UserRiskProfile entity by ID.
+func (_c *UserCreate) SetRiskProfileID(id int64) *UserCreate {
+	_c.mutation.SetRiskProfileID(id)
+	return _c
+}
+
+// SetNillableRiskProfileID sets the "risk_profile" edge to the UserRiskProfile entity by ID if the given value is not nil.
+func (_c *UserCreate) SetNillableRiskProfileID(id *int64) *UserCreate {
+	if id != nil {
+		_c = _c.SetRiskProfileID(*id)
+	}
+	return _c
+}
+
+// SetRiskProfile sets the "risk_profile" edge to the UserRiskProfile entity.
+func (_c *UserCreate) SetRiskProfile(v *UserRiskProfile) *UserCreate {
+	return _c.SetRiskProfileID(v.ID)
+}
+
+// AddRiskEventIDs adds the "risk_events" edge to the UserRiskEvent entity by IDs.
+func (_c *UserCreate) AddRiskEventIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddRiskEventIDs(ids...)
+	return _c
+}
+
+// AddRiskEvents adds the "risk_events" edges to the UserRiskEvent entity.
+func (_c *UserCreate) AddRiskEvents(v ...*UserRiskEvent) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRiskEventIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -846,6 +882,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(paymentorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RiskProfileIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.RiskProfileTable,
+			Columns: []string{user.RiskProfileColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userriskprofile.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RiskEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RiskEventsTable,
+			Columns: []string{user.RiskEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userriskevent.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

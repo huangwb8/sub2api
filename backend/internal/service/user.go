@@ -37,6 +37,7 @@ type User struct {
 
 	APIKeys       []APIKey
 	Subscriptions []UserSubscription
+	RiskProfile   *UserRiskProfile
 }
 
 func (u *User) IsAdmin() bool {
@@ -45,6 +46,10 @@ func (u *User) IsAdmin() bool {
 
 func (u *User) IsActive() bool {
 	return u.Status == StatusActive
+}
+
+func (u *User) IsRiskLocked() bool {
+	return u != nil && u.RiskProfile != nil && u.RiskProfile.IsLocked()
 }
 
 // CanBindGroup checks whether a user can bind to a given group.

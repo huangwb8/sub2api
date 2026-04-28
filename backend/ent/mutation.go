@@ -38,6 +38,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/userriskevent"
+	"github.com/Wei-Shaw/sub2api/ent/userriskprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
@@ -76,6 +78,8 @@ const (
 	TypeUserAllowedGroup        = "UserAllowedGroup"
 	TypeUserAttributeDefinition = "UserAttributeDefinition"
 	TypeUserAttributeValue      = "UserAttributeValue"
+	TypeUserRiskEvent           = "UserRiskEvent"
+	TypeUserRiskProfile         = "UserRiskProfile"
 	TypeUserSubscription        = "UserSubscription"
 )
 
@@ -30625,6 +30629,11 @@ type UserMutation struct {
 	payment_orders                map[int64]struct{}
 	removedpayment_orders         map[int64]struct{}
 	clearedpayment_orders         bool
+	risk_profile                  *int64
+	clearedrisk_profile           bool
+	risk_events                   map[int64]struct{}
+	removedrisk_events            map[int64]struct{}
+	clearedrisk_events            bool
 	done                          bool
 	oldValue                      func(context.Context) (*User, error)
 	predicates                    []predicate.User
@@ -32029,6 +32038,99 @@ func (m *UserMutation) ResetPaymentOrders() {
 	m.removedpayment_orders = nil
 }
 
+// SetRiskProfileID sets the "risk_profile" edge to the UserRiskProfile entity by id.
+func (m *UserMutation) SetRiskProfileID(id int64) {
+	m.risk_profile = &id
+}
+
+// ClearRiskProfile clears the "risk_profile" edge to the UserRiskProfile entity.
+func (m *UserMutation) ClearRiskProfile() {
+	m.clearedrisk_profile = true
+}
+
+// RiskProfileCleared reports if the "risk_profile" edge to the UserRiskProfile entity was cleared.
+func (m *UserMutation) RiskProfileCleared() bool {
+	return m.clearedrisk_profile
+}
+
+// RiskProfileID returns the "risk_profile" edge ID in the mutation.
+func (m *UserMutation) RiskProfileID() (id int64, exists bool) {
+	if m.risk_profile != nil {
+		return *m.risk_profile, true
+	}
+	return
+}
+
+// RiskProfileIDs returns the "risk_profile" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RiskProfileID instead. It exists only for internal usage by the builders.
+func (m *UserMutation) RiskProfileIDs() (ids []int64) {
+	if id := m.risk_profile; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRiskProfile resets all changes to the "risk_profile" edge.
+func (m *UserMutation) ResetRiskProfile() {
+	m.risk_profile = nil
+	m.clearedrisk_profile = false
+}
+
+// AddRiskEventIDs adds the "risk_events" edge to the UserRiskEvent entity by ids.
+func (m *UserMutation) AddRiskEventIDs(ids ...int64) {
+	if m.risk_events == nil {
+		m.risk_events = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.risk_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRiskEvents clears the "risk_events" edge to the UserRiskEvent entity.
+func (m *UserMutation) ClearRiskEvents() {
+	m.clearedrisk_events = true
+}
+
+// RiskEventsCleared reports if the "risk_events" edge to the UserRiskEvent entity was cleared.
+func (m *UserMutation) RiskEventsCleared() bool {
+	return m.clearedrisk_events
+}
+
+// RemoveRiskEventIDs removes the "risk_events" edge to the UserRiskEvent entity by IDs.
+func (m *UserMutation) RemoveRiskEventIDs(ids ...int64) {
+	if m.removedrisk_events == nil {
+		m.removedrisk_events = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.risk_events, ids[i])
+		m.removedrisk_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRiskEvents returns the removed IDs of the "risk_events" edge to the UserRiskEvent entity.
+func (m *UserMutation) RemovedRiskEventsIDs() (ids []int64) {
+	for id := range m.removedrisk_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RiskEventsIDs returns the "risk_events" edge IDs in the mutation.
+func (m *UserMutation) RiskEventsIDs() (ids []int64) {
+	for id := range m.risk_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRiskEvents resets all changes to the "risk_events" edge.
+func (m *UserMutation) ResetRiskEvents() {
+	m.risk_events = nil
+	m.clearedrisk_events = false
+	m.removedrisk_events = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -32517,7 +32619,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -32547,6 +32649,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.payment_orders != nil {
 		edges = append(edges, user.EdgePaymentOrders)
+	}
+	if m.risk_profile != nil {
+		edges = append(edges, user.EdgeRiskProfile)
+	}
+	if m.risk_events != nil {
+		edges = append(edges, user.EdgeRiskEvents)
 	}
 	return edges
 }
@@ -32615,13 +32723,23 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRiskProfile:
+		if id := m.risk_profile; id != nil {
+			return []ent.Value{*id}
+		}
+	case user.EdgeRiskEvents:
+		ids := make([]ent.Value, 0, len(m.risk_events))
+		for id := range m.risk_events {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -32651,6 +32769,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedpayment_orders != nil {
 		edges = append(edges, user.EdgePaymentOrders)
+	}
+	if m.removedrisk_events != nil {
+		edges = append(edges, user.EdgeRiskEvents)
 	}
 	return edges
 }
@@ -32719,13 +32840,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRiskEvents:
+		ids := make([]ent.Value, 0, len(m.removedrisk_events))
+		for id := range m.removedrisk_events {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 12)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -32756,6 +32883,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedpayment_orders {
 		edges = append(edges, user.EdgePaymentOrders)
 	}
+	if m.clearedrisk_profile {
+		edges = append(edges, user.EdgeRiskProfile)
+	}
+	if m.clearedrisk_events {
+		edges = append(edges, user.EdgeRiskEvents)
+	}
 	return edges
 }
 
@@ -32783,6 +32916,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedpromo_code_usages
 	case user.EdgePaymentOrders:
 		return m.clearedpayment_orders
+	case user.EdgeRiskProfile:
+		return m.clearedrisk_profile
+	case user.EdgeRiskEvents:
+		return m.clearedrisk_events
 	}
 	return false
 }
@@ -32791,6 +32928,9 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *UserMutation) ClearEdge(name string) error {
 	switch name {
+	case user.EdgeRiskProfile:
+		m.ClearRiskProfile()
+		return nil
 	}
 	return fmt.Errorf("unknown User unique edge %s", name)
 }
@@ -32828,6 +32968,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgePaymentOrders:
 		m.ResetPaymentOrders()
+		return nil
+	case user.EdgeRiskProfile:
+		m.ResetRiskProfile()
+		return nil
+	case user.EdgeRiskEvents:
+		m.ResetRiskEvents()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
@@ -35138,6 +35284,2699 @@ func (m *UserAttributeValueMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown UserAttributeValue edge %s", name)
+}
+
+// UserRiskEventMutation represents an operation that mutates the UserRiskEvent nodes in the graph.
+type UserRiskEventMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int64
+	created_at     *time.Time
+	updated_at     *time.Time
+	event_type     *string
+	severity       *string
+	score_delta    *float64
+	addscore_delta *float64
+	score_after    *float64
+	addscore_after *float64
+	summary        *string
+	metadata       *map[string]interface{}
+	window_start   *time.Time
+	window_end     *time.Time
+	clearedFields  map[string]struct{}
+	user           *int64
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*UserRiskEvent, error)
+	predicates     []predicate.UserRiskEvent
+}
+
+var _ ent.Mutation = (*UserRiskEventMutation)(nil)
+
+// userriskeventOption allows management of the mutation configuration using functional options.
+type userriskeventOption func(*UserRiskEventMutation)
+
+// newUserRiskEventMutation creates new mutation for the UserRiskEvent entity.
+func newUserRiskEventMutation(c config, op Op, opts ...userriskeventOption) *UserRiskEventMutation {
+	m := &UserRiskEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserRiskEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserRiskEventID sets the ID field of the mutation.
+func withUserRiskEventID(id int64) userriskeventOption {
+	return func(m *UserRiskEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserRiskEvent
+		)
+		m.oldValue = func(ctx context.Context) (*UserRiskEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserRiskEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserRiskEvent sets the old UserRiskEvent of the mutation.
+func withUserRiskEvent(node *UserRiskEvent) userriskeventOption {
+	return func(m *UserRiskEventMutation) {
+		m.oldValue = func(context.Context) (*UserRiskEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserRiskEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserRiskEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserRiskEventMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserRiskEventMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserRiskEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserRiskEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserRiskEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserRiskEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserRiskEventMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserRiskEventMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserRiskEventMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserRiskEventMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserRiskEventMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserRiskEventMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetEventType sets the "event_type" field.
+func (m *UserRiskEventMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *UserRiskEventMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *UserRiskEventMutation) ResetEventType() {
+	m.event_type = nil
+}
+
+// SetSeverity sets the "severity" field.
+func (m *UserRiskEventMutation) SetSeverity(s string) {
+	m.severity = &s
+}
+
+// Severity returns the value of the "severity" field in the mutation.
+func (m *UserRiskEventMutation) Severity() (r string, exists bool) {
+	v := m.severity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeverity returns the old "severity" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldSeverity(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeverity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeverity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeverity: %w", err)
+	}
+	return oldValue.Severity, nil
+}
+
+// ResetSeverity resets all changes to the "severity" field.
+func (m *UserRiskEventMutation) ResetSeverity() {
+	m.severity = nil
+}
+
+// SetScoreDelta sets the "score_delta" field.
+func (m *UserRiskEventMutation) SetScoreDelta(f float64) {
+	m.score_delta = &f
+	m.addscore_delta = nil
+}
+
+// ScoreDelta returns the value of the "score_delta" field in the mutation.
+func (m *UserRiskEventMutation) ScoreDelta() (r float64, exists bool) {
+	v := m.score_delta
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScoreDelta returns the old "score_delta" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldScoreDelta(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScoreDelta is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScoreDelta requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScoreDelta: %w", err)
+	}
+	return oldValue.ScoreDelta, nil
+}
+
+// AddScoreDelta adds f to the "score_delta" field.
+func (m *UserRiskEventMutation) AddScoreDelta(f float64) {
+	if m.addscore_delta != nil {
+		*m.addscore_delta += f
+	} else {
+		m.addscore_delta = &f
+	}
+}
+
+// AddedScoreDelta returns the value that was added to the "score_delta" field in this mutation.
+func (m *UserRiskEventMutation) AddedScoreDelta() (r float64, exists bool) {
+	v := m.addscore_delta
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetScoreDelta resets all changes to the "score_delta" field.
+func (m *UserRiskEventMutation) ResetScoreDelta() {
+	m.score_delta = nil
+	m.addscore_delta = nil
+}
+
+// SetScoreAfter sets the "score_after" field.
+func (m *UserRiskEventMutation) SetScoreAfter(f float64) {
+	m.score_after = &f
+	m.addscore_after = nil
+}
+
+// ScoreAfter returns the value of the "score_after" field in the mutation.
+func (m *UserRiskEventMutation) ScoreAfter() (r float64, exists bool) {
+	v := m.score_after
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScoreAfter returns the old "score_after" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldScoreAfter(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScoreAfter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScoreAfter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScoreAfter: %w", err)
+	}
+	return oldValue.ScoreAfter, nil
+}
+
+// AddScoreAfter adds f to the "score_after" field.
+func (m *UserRiskEventMutation) AddScoreAfter(f float64) {
+	if m.addscore_after != nil {
+		*m.addscore_after += f
+	} else {
+		m.addscore_after = &f
+	}
+}
+
+// AddedScoreAfter returns the value that was added to the "score_after" field in this mutation.
+func (m *UserRiskEventMutation) AddedScoreAfter() (r float64, exists bool) {
+	v := m.addscore_after
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetScoreAfter resets all changes to the "score_after" field.
+func (m *UserRiskEventMutation) ResetScoreAfter() {
+	m.score_after = nil
+	m.addscore_after = nil
+}
+
+// SetSummary sets the "summary" field.
+func (m *UserRiskEventMutation) SetSummary(s string) {
+	m.summary = &s
+}
+
+// Summary returns the value of the "summary" field in the mutation.
+func (m *UserRiskEventMutation) Summary() (r string, exists bool) {
+	v := m.summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSummary returns the old "summary" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSummary: %w", err)
+	}
+	return oldValue.Summary, nil
+}
+
+// ResetSummary resets all changes to the "summary" field.
+func (m *UserRiskEventMutation) ResetSummary() {
+	m.summary = nil
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *UserRiskEventMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *UserRiskEventMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *UserRiskEventMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[userriskevent.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *UserRiskEventMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[userriskevent.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *UserRiskEventMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, userriskevent.FieldMetadata)
+}
+
+// SetWindowStart sets the "window_start" field.
+func (m *UserRiskEventMutation) SetWindowStart(t time.Time) {
+	m.window_start = &t
+}
+
+// WindowStart returns the value of the "window_start" field in the mutation.
+func (m *UserRiskEventMutation) WindowStart() (r time.Time, exists bool) {
+	v := m.window_start
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWindowStart returns the old "window_start" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldWindowStart(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWindowStart is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWindowStart requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWindowStart: %w", err)
+	}
+	return oldValue.WindowStart, nil
+}
+
+// ClearWindowStart clears the value of the "window_start" field.
+func (m *UserRiskEventMutation) ClearWindowStart() {
+	m.window_start = nil
+	m.clearedFields[userriskevent.FieldWindowStart] = struct{}{}
+}
+
+// WindowStartCleared returns if the "window_start" field was cleared in this mutation.
+func (m *UserRiskEventMutation) WindowStartCleared() bool {
+	_, ok := m.clearedFields[userriskevent.FieldWindowStart]
+	return ok
+}
+
+// ResetWindowStart resets all changes to the "window_start" field.
+func (m *UserRiskEventMutation) ResetWindowStart() {
+	m.window_start = nil
+	delete(m.clearedFields, userriskevent.FieldWindowStart)
+}
+
+// SetWindowEnd sets the "window_end" field.
+func (m *UserRiskEventMutation) SetWindowEnd(t time.Time) {
+	m.window_end = &t
+}
+
+// WindowEnd returns the value of the "window_end" field in the mutation.
+func (m *UserRiskEventMutation) WindowEnd() (r time.Time, exists bool) {
+	v := m.window_end
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWindowEnd returns the old "window_end" field's value of the UserRiskEvent entity.
+// If the UserRiskEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskEventMutation) OldWindowEnd(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWindowEnd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWindowEnd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWindowEnd: %w", err)
+	}
+	return oldValue.WindowEnd, nil
+}
+
+// ClearWindowEnd clears the value of the "window_end" field.
+func (m *UserRiskEventMutation) ClearWindowEnd() {
+	m.window_end = nil
+	m.clearedFields[userriskevent.FieldWindowEnd] = struct{}{}
+}
+
+// WindowEndCleared returns if the "window_end" field was cleared in this mutation.
+func (m *UserRiskEventMutation) WindowEndCleared() bool {
+	_, ok := m.clearedFields[userriskevent.FieldWindowEnd]
+	return ok
+}
+
+// ResetWindowEnd resets all changes to the "window_end" field.
+func (m *UserRiskEventMutation) ResetWindowEnd() {
+	m.window_end = nil
+	delete(m.clearedFields, userriskevent.FieldWindowEnd)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserRiskEventMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[userriskevent.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserRiskEventMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserRiskEventMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserRiskEventMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserRiskEventMutation builder.
+func (m *UserRiskEventMutation) Where(ps ...predicate.UserRiskEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserRiskEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserRiskEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserRiskEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserRiskEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserRiskEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserRiskEvent).
+func (m *UserRiskEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserRiskEventMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, userriskevent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userriskevent.FieldUpdatedAt)
+	}
+	if m.user != nil {
+		fields = append(fields, userriskevent.FieldUserID)
+	}
+	if m.event_type != nil {
+		fields = append(fields, userriskevent.FieldEventType)
+	}
+	if m.severity != nil {
+		fields = append(fields, userriskevent.FieldSeverity)
+	}
+	if m.score_delta != nil {
+		fields = append(fields, userriskevent.FieldScoreDelta)
+	}
+	if m.score_after != nil {
+		fields = append(fields, userriskevent.FieldScoreAfter)
+	}
+	if m.summary != nil {
+		fields = append(fields, userriskevent.FieldSummary)
+	}
+	if m.metadata != nil {
+		fields = append(fields, userriskevent.FieldMetadata)
+	}
+	if m.window_start != nil {
+		fields = append(fields, userriskevent.FieldWindowStart)
+	}
+	if m.window_end != nil {
+		fields = append(fields, userriskevent.FieldWindowEnd)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserRiskEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userriskevent.FieldCreatedAt:
+		return m.CreatedAt()
+	case userriskevent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userriskevent.FieldUserID:
+		return m.UserID()
+	case userriskevent.FieldEventType:
+		return m.EventType()
+	case userriskevent.FieldSeverity:
+		return m.Severity()
+	case userriskevent.FieldScoreDelta:
+		return m.ScoreDelta()
+	case userriskevent.FieldScoreAfter:
+		return m.ScoreAfter()
+	case userriskevent.FieldSummary:
+		return m.Summary()
+	case userriskevent.FieldMetadata:
+		return m.Metadata()
+	case userriskevent.FieldWindowStart:
+		return m.WindowStart()
+	case userriskevent.FieldWindowEnd:
+		return m.WindowEnd()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserRiskEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userriskevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userriskevent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userriskevent.FieldUserID:
+		return m.OldUserID(ctx)
+	case userriskevent.FieldEventType:
+		return m.OldEventType(ctx)
+	case userriskevent.FieldSeverity:
+		return m.OldSeverity(ctx)
+	case userriskevent.FieldScoreDelta:
+		return m.OldScoreDelta(ctx)
+	case userriskevent.FieldScoreAfter:
+		return m.OldScoreAfter(ctx)
+	case userriskevent.FieldSummary:
+		return m.OldSummary(ctx)
+	case userriskevent.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case userriskevent.FieldWindowStart:
+		return m.OldWindowStart(ctx)
+	case userriskevent.FieldWindowEnd:
+		return m.OldWindowEnd(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserRiskEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserRiskEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userriskevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userriskevent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userriskevent.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case userriskevent.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case userriskevent.FieldSeverity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeverity(v)
+		return nil
+	case userriskevent.FieldScoreDelta:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScoreDelta(v)
+		return nil
+	case userriskevent.FieldScoreAfter:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScoreAfter(v)
+		return nil
+	case userriskevent.FieldSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSummary(v)
+		return nil
+	case userriskevent.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case userriskevent.FieldWindowStart:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWindowStart(v)
+		return nil
+	case userriskevent.FieldWindowEnd:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWindowEnd(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserRiskEventMutation) AddedFields() []string {
+	var fields []string
+	if m.addscore_delta != nil {
+		fields = append(fields, userriskevent.FieldScoreDelta)
+	}
+	if m.addscore_after != nil {
+		fields = append(fields, userriskevent.FieldScoreAfter)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserRiskEventMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case userriskevent.FieldScoreDelta:
+		return m.AddedScoreDelta()
+	case userriskevent.FieldScoreAfter:
+		return m.AddedScoreAfter()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserRiskEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case userriskevent.FieldScoreDelta:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddScoreDelta(v)
+		return nil
+	case userriskevent.FieldScoreAfter:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddScoreAfter(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserRiskEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(userriskevent.FieldMetadata) {
+		fields = append(fields, userriskevent.FieldMetadata)
+	}
+	if m.FieldCleared(userriskevent.FieldWindowStart) {
+		fields = append(fields, userriskevent.FieldWindowStart)
+	}
+	if m.FieldCleared(userriskevent.FieldWindowEnd) {
+		fields = append(fields, userriskevent.FieldWindowEnd)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserRiskEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserRiskEventMutation) ClearField(name string) error {
+	switch name {
+	case userriskevent.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	case userriskevent.FieldWindowStart:
+		m.ClearWindowStart()
+		return nil
+	case userriskevent.FieldWindowEnd:
+		m.ClearWindowEnd()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserRiskEventMutation) ResetField(name string) error {
+	switch name {
+	case userriskevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userriskevent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userriskevent.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case userriskevent.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case userriskevent.FieldSeverity:
+		m.ResetSeverity()
+		return nil
+	case userriskevent.FieldScoreDelta:
+		m.ResetScoreDelta()
+		return nil
+	case userriskevent.FieldScoreAfter:
+		m.ResetScoreAfter()
+		return nil
+	case userriskevent.FieldSummary:
+		m.ResetSummary()
+		return nil
+	case userriskevent.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case userriskevent.FieldWindowStart:
+		m.ResetWindowStart()
+		return nil
+	case userriskevent.FieldWindowEnd:
+		m.ResetWindowEnd()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserRiskEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, userriskevent.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserRiskEventMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case userriskevent.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserRiskEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserRiskEventMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserRiskEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, userriskevent.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserRiskEventMutation) EdgeCleared(name string) bool {
+	switch name {
+	case userriskevent.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserRiskEventMutation) ClearEdge(name string) error {
+	switch name {
+	case userriskevent.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserRiskEventMutation) ResetEdge(name string) error {
+	switch name {
+	case userriskevent.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskEvent edge %s", name)
+}
+
+// UserRiskProfileMutation represents an operation that mutates the UserRiskProfile nodes in the graph.
+type UserRiskProfileMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *int64
+	created_at              *time.Time
+	updated_at              *time.Time
+	score                   *float64
+	addscore                *float64
+	status                  *string
+	consecutive_bad_days    *int
+	addconsecutive_bad_days *int
+	last_evaluated_at       *time.Time
+	last_warned_at          *time.Time
+	grace_period_started_at *time.Time
+	locked_at               *time.Time
+	lock_reason             *string
+	last_evaluation_summary *string
+	exempted                *bool
+	exempted_at             *time.Time
+	exempted_by             *int64
+	addexempted_by          *int64
+	exemption_reason        *string
+	unlocked_at             *time.Time
+	unlocked_by             *int64
+	addunlocked_by          *int64
+	unlock_reason           *string
+	clearedFields           map[string]struct{}
+	user                    *int64
+	cleareduser             bool
+	done                    bool
+	oldValue                func(context.Context) (*UserRiskProfile, error)
+	predicates              []predicate.UserRiskProfile
+}
+
+var _ ent.Mutation = (*UserRiskProfileMutation)(nil)
+
+// userriskprofileOption allows management of the mutation configuration using functional options.
+type userriskprofileOption func(*UserRiskProfileMutation)
+
+// newUserRiskProfileMutation creates new mutation for the UserRiskProfile entity.
+func newUserRiskProfileMutation(c config, op Op, opts ...userriskprofileOption) *UserRiskProfileMutation {
+	m := &UserRiskProfileMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserRiskProfile,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserRiskProfileID sets the ID field of the mutation.
+func withUserRiskProfileID(id int64) userriskprofileOption {
+	return func(m *UserRiskProfileMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserRiskProfile
+		)
+		m.oldValue = func(ctx context.Context) (*UserRiskProfile, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserRiskProfile.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserRiskProfile sets the old UserRiskProfile of the mutation.
+func withUserRiskProfile(node *UserRiskProfile) userriskprofileOption {
+	return func(m *UserRiskProfileMutation) {
+		m.oldValue = func(context.Context) (*UserRiskProfile, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserRiskProfileMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserRiskProfileMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserRiskProfileMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserRiskProfileMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserRiskProfile.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserRiskProfileMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserRiskProfileMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserRiskProfileMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserRiskProfileMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserRiskProfileMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserRiskProfileMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserRiskProfileMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserRiskProfileMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserRiskProfileMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetScore sets the "score" field.
+func (m *UserRiskProfileMutation) SetScore(f float64) {
+	m.score = &f
+	m.addscore = nil
+}
+
+// Score returns the value of the "score" field in the mutation.
+func (m *UserRiskProfileMutation) Score() (r float64, exists bool) {
+	v := m.score
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScore returns the old "score" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldScore(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScore is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScore requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScore: %w", err)
+	}
+	return oldValue.Score, nil
+}
+
+// AddScore adds f to the "score" field.
+func (m *UserRiskProfileMutation) AddScore(f float64) {
+	if m.addscore != nil {
+		*m.addscore += f
+	} else {
+		m.addscore = &f
+	}
+}
+
+// AddedScore returns the value that was added to the "score" field in this mutation.
+func (m *UserRiskProfileMutation) AddedScore() (r float64, exists bool) {
+	v := m.addscore
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetScore resets all changes to the "score" field.
+func (m *UserRiskProfileMutation) ResetScore() {
+	m.score = nil
+	m.addscore = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *UserRiskProfileMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *UserRiskProfileMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *UserRiskProfileMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetConsecutiveBadDays sets the "consecutive_bad_days" field.
+func (m *UserRiskProfileMutation) SetConsecutiveBadDays(i int) {
+	m.consecutive_bad_days = &i
+	m.addconsecutive_bad_days = nil
+}
+
+// ConsecutiveBadDays returns the value of the "consecutive_bad_days" field in the mutation.
+func (m *UserRiskProfileMutation) ConsecutiveBadDays() (r int, exists bool) {
+	v := m.consecutive_bad_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsecutiveBadDays returns the old "consecutive_bad_days" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldConsecutiveBadDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsecutiveBadDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsecutiveBadDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsecutiveBadDays: %w", err)
+	}
+	return oldValue.ConsecutiveBadDays, nil
+}
+
+// AddConsecutiveBadDays adds i to the "consecutive_bad_days" field.
+func (m *UserRiskProfileMutation) AddConsecutiveBadDays(i int) {
+	if m.addconsecutive_bad_days != nil {
+		*m.addconsecutive_bad_days += i
+	} else {
+		m.addconsecutive_bad_days = &i
+	}
+}
+
+// AddedConsecutiveBadDays returns the value that was added to the "consecutive_bad_days" field in this mutation.
+func (m *UserRiskProfileMutation) AddedConsecutiveBadDays() (r int, exists bool) {
+	v := m.addconsecutive_bad_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConsecutiveBadDays resets all changes to the "consecutive_bad_days" field.
+func (m *UserRiskProfileMutation) ResetConsecutiveBadDays() {
+	m.consecutive_bad_days = nil
+	m.addconsecutive_bad_days = nil
+}
+
+// SetLastEvaluatedAt sets the "last_evaluated_at" field.
+func (m *UserRiskProfileMutation) SetLastEvaluatedAt(t time.Time) {
+	m.last_evaluated_at = &t
+}
+
+// LastEvaluatedAt returns the value of the "last_evaluated_at" field in the mutation.
+func (m *UserRiskProfileMutation) LastEvaluatedAt() (r time.Time, exists bool) {
+	v := m.last_evaluated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastEvaluatedAt returns the old "last_evaluated_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldLastEvaluatedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastEvaluatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastEvaluatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastEvaluatedAt: %w", err)
+	}
+	return oldValue.LastEvaluatedAt, nil
+}
+
+// ClearLastEvaluatedAt clears the value of the "last_evaluated_at" field.
+func (m *UserRiskProfileMutation) ClearLastEvaluatedAt() {
+	m.last_evaluated_at = nil
+	m.clearedFields[userriskprofile.FieldLastEvaluatedAt] = struct{}{}
+}
+
+// LastEvaluatedAtCleared returns if the "last_evaluated_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) LastEvaluatedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldLastEvaluatedAt]
+	return ok
+}
+
+// ResetLastEvaluatedAt resets all changes to the "last_evaluated_at" field.
+func (m *UserRiskProfileMutation) ResetLastEvaluatedAt() {
+	m.last_evaluated_at = nil
+	delete(m.clearedFields, userriskprofile.FieldLastEvaluatedAt)
+}
+
+// SetLastWarnedAt sets the "last_warned_at" field.
+func (m *UserRiskProfileMutation) SetLastWarnedAt(t time.Time) {
+	m.last_warned_at = &t
+}
+
+// LastWarnedAt returns the value of the "last_warned_at" field in the mutation.
+func (m *UserRiskProfileMutation) LastWarnedAt() (r time.Time, exists bool) {
+	v := m.last_warned_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastWarnedAt returns the old "last_warned_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldLastWarnedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastWarnedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastWarnedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastWarnedAt: %w", err)
+	}
+	return oldValue.LastWarnedAt, nil
+}
+
+// ClearLastWarnedAt clears the value of the "last_warned_at" field.
+func (m *UserRiskProfileMutation) ClearLastWarnedAt() {
+	m.last_warned_at = nil
+	m.clearedFields[userriskprofile.FieldLastWarnedAt] = struct{}{}
+}
+
+// LastWarnedAtCleared returns if the "last_warned_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) LastWarnedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldLastWarnedAt]
+	return ok
+}
+
+// ResetLastWarnedAt resets all changes to the "last_warned_at" field.
+func (m *UserRiskProfileMutation) ResetLastWarnedAt() {
+	m.last_warned_at = nil
+	delete(m.clearedFields, userriskprofile.FieldLastWarnedAt)
+}
+
+// SetGracePeriodStartedAt sets the "grace_period_started_at" field.
+func (m *UserRiskProfileMutation) SetGracePeriodStartedAt(t time.Time) {
+	m.grace_period_started_at = &t
+}
+
+// GracePeriodStartedAt returns the value of the "grace_period_started_at" field in the mutation.
+func (m *UserRiskProfileMutation) GracePeriodStartedAt() (r time.Time, exists bool) {
+	v := m.grace_period_started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGracePeriodStartedAt returns the old "grace_period_started_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldGracePeriodStartedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGracePeriodStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGracePeriodStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGracePeriodStartedAt: %w", err)
+	}
+	return oldValue.GracePeriodStartedAt, nil
+}
+
+// ClearGracePeriodStartedAt clears the value of the "grace_period_started_at" field.
+func (m *UserRiskProfileMutation) ClearGracePeriodStartedAt() {
+	m.grace_period_started_at = nil
+	m.clearedFields[userriskprofile.FieldGracePeriodStartedAt] = struct{}{}
+}
+
+// GracePeriodStartedAtCleared returns if the "grace_period_started_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) GracePeriodStartedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldGracePeriodStartedAt]
+	return ok
+}
+
+// ResetGracePeriodStartedAt resets all changes to the "grace_period_started_at" field.
+func (m *UserRiskProfileMutation) ResetGracePeriodStartedAt() {
+	m.grace_period_started_at = nil
+	delete(m.clearedFields, userriskprofile.FieldGracePeriodStartedAt)
+}
+
+// SetLockedAt sets the "locked_at" field.
+func (m *UserRiskProfileMutation) SetLockedAt(t time.Time) {
+	m.locked_at = &t
+}
+
+// LockedAt returns the value of the "locked_at" field in the mutation.
+func (m *UserRiskProfileMutation) LockedAt() (r time.Time, exists bool) {
+	v := m.locked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLockedAt returns the old "locked_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldLockedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLockedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLockedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLockedAt: %w", err)
+	}
+	return oldValue.LockedAt, nil
+}
+
+// ClearLockedAt clears the value of the "locked_at" field.
+func (m *UserRiskProfileMutation) ClearLockedAt() {
+	m.locked_at = nil
+	m.clearedFields[userriskprofile.FieldLockedAt] = struct{}{}
+}
+
+// LockedAtCleared returns if the "locked_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) LockedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldLockedAt]
+	return ok
+}
+
+// ResetLockedAt resets all changes to the "locked_at" field.
+func (m *UserRiskProfileMutation) ResetLockedAt() {
+	m.locked_at = nil
+	delete(m.clearedFields, userriskprofile.FieldLockedAt)
+}
+
+// SetLockReason sets the "lock_reason" field.
+func (m *UserRiskProfileMutation) SetLockReason(s string) {
+	m.lock_reason = &s
+}
+
+// LockReason returns the value of the "lock_reason" field in the mutation.
+func (m *UserRiskProfileMutation) LockReason() (r string, exists bool) {
+	v := m.lock_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLockReason returns the old "lock_reason" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldLockReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLockReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLockReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLockReason: %w", err)
+	}
+	return oldValue.LockReason, nil
+}
+
+// ResetLockReason resets all changes to the "lock_reason" field.
+func (m *UserRiskProfileMutation) ResetLockReason() {
+	m.lock_reason = nil
+}
+
+// SetLastEvaluationSummary sets the "last_evaluation_summary" field.
+func (m *UserRiskProfileMutation) SetLastEvaluationSummary(s string) {
+	m.last_evaluation_summary = &s
+}
+
+// LastEvaluationSummary returns the value of the "last_evaluation_summary" field in the mutation.
+func (m *UserRiskProfileMutation) LastEvaluationSummary() (r string, exists bool) {
+	v := m.last_evaluation_summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastEvaluationSummary returns the old "last_evaluation_summary" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldLastEvaluationSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastEvaluationSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastEvaluationSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastEvaluationSummary: %w", err)
+	}
+	return oldValue.LastEvaluationSummary, nil
+}
+
+// ResetLastEvaluationSummary resets all changes to the "last_evaluation_summary" field.
+func (m *UserRiskProfileMutation) ResetLastEvaluationSummary() {
+	m.last_evaluation_summary = nil
+}
+
+// SetExempted sets the "exempted" field.
+func (m *UserRiskProfileMutation) SetExempted(b bool) {
+	m.exempted = &b
+}
+
+// Exempted returns the value of the "exempted" field in the mutation.
+func (m *UserRiskProfileMutation) Exempted() (r bool, exists bool) {
+	v := m.exempted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExempted returns the old "exempted" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldExempted(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExempted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExempted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExempted: %w", err)
+	}
+	return oldValue.Exempted, nil
+}
+
+// ResetExempted resets all changes to the "exempted" field.
+func (m *UserRiskProfileMutation) ResetExempted() {
+	m.exempted = nil
+}
+
+// SetExemptedAt sets the "exempted_at" field.
+func (m *UserRiskProfileMutation) SetExemptedAt(t time.Time) {
+	m.exempted_at = &t
+}
+
+// ExemptedAt returns the value of the "exempted_at" field in the mutation.
+func (m *UserRiskProfileMutation) ExemptedAt() (r time.Time, exists bool) {
+	v := m.exempted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExemptedAt returns the old "exempted_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldExemptedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExemptedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExemptedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExemptedAt: %w", err)
+	}
+	return oldValue.ExemptedAt, nil
+}
+
+// ClearExemptedAt clears the value of the "exempted_at" field.
+func (m *UserRiskProfileMutation) ClearExemptedAt() {
+	m.exempted_at = nil
+	m.clearedFields[userriskprofile.FieldExemptedAt] = struct{}{}
+}
+
+// ExemptedAtCleared returns if the "exempted_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) ExemptedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldExemptedAt]
+	return ok
+}
+
+// ResetExemptedAt resets all changes to the "exempted_at" field.
+func (m *UserRiskProfileMutation) ResetExemptedAt() {
+	m.exempted_at = nil
+	delete(m.clearedFields, userriskprofile.FieldExemptedAt)
+}
+
+// SetExemptedBy sets the "exempted_by" field.
+func (m *UserRiskProfileMutation) SetExemptedBy(i int64) {
+	m.exempted_by = &i
+	m.addexempted_by = nil
+}
+
+// ExemptedBy returns the value of the "exempted_by" field in the mutation.
+func (m *UserRiskProfileMutation) ExemptedBy() (r int64, exists bool) {
+	v := m.exempted_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExemptedBy returns the old "exempted_by" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldExemptedBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExemptedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExemptedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExemptedBy: %w", err)
+	}
+	return oldValue.ExemptedBy, nil
+}
+
+// AddExemptedBy adds i to the "exempted_by" field.
+func (m *UserRiskProfileMutation) AddExemptedBy(i int64) {
+	if m.addexempted_by != nil {
+		*m.addexempted_by += i
+	} else {
+		m.addexempted_by = &i
+	}
+}
+
+// AddedExemptedBy returns the value that was added to the "exempted_by" field in this mutation.
+func (m *UserRiskProfileMutation) AddedExemptedBy() (r int64, exists bool) {
+	v := m.addexempted_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearExemptedBy clears the value of the "exempted_by" field.
+func (m *UserRiskProfileMutation) ClearExemptedBy() {
+	m.exempted_by = nil
+	m.addexempted_by = nil
+	m.clearedFields[userriskprofile.FieldExemptedBy] = struct{}{}
+}
+
+// ExemptedByCleared returns if the "exempted_by" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) ExemptedByCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldExemptedBy]
+	return ok
+}
+
+// ResetExemptedBy resets all changes to the "exempted_by" field.
+func (m *UserRiskProfileMutation) ResetExemptedBy() {
+	m.exempted_by = nil
+	m.addexempted_by = nil
+	delete(m.clearedFields, userriskprofile.FieldExemptedBy)
+}
+
+// SetExemptionReason sets the "exemption_reason" field.
+func (m *UserRiskProfileMutation) SetExemptionReason(s string) {
+	m.exemption_reason = &s
+}
+
+// ExemptionReason returns the value of the "exemption_reason" field in the mutation.
+func (m *UserRiskProfileMutation) ExemptionReason() (r string, exists bool) {
+	v := m.exemption_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExemptionReason returns the old "exemption_reason" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldExemptionReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExemptionReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExemptionReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExemptionReason: %w", err)
+	}
+	return oldValue.ExemptionReason, nil
+}
+
+// ResetExemptionReason resets all changes to the "exemption_reason" field.
+func (m *UserRiskProfileMutation) ResetExemptionReason() {
+	m.exemption_reason = nil
+}
+
+// SetUnlockedAt sets the "unlocked_at" field.
+func (m *UserRiskProfileMutation) SetUnlockedAt(t time.Time) {
+	m.unlocked_at = &t
+}
+
+// UnlockedAt returns the value of the "unlocked_at" field in the mutation.
+func (m *UserRiskProfileMutation) UnlockedAt() (r time.Time, exists bool) {
+	v := m.unlocked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnlockedAt returns the old "unlocked_at" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldUnlockedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnlockedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnlockedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnlockedAt: %w", err)
+	}
+	return oldValue.UnlockedAt, nil
+}
+
+// ClearUnlockedAt clears the value of the "unlocked_at" field.
+func (m *UserRiskProfileMutation) ClearUnlockedAt() {
+	m.unlocked_at = nil
+	m.clearedFields[userriskprofile.FieldUnlockedAt] = struct{}{}
+}
+
+// UnlockedAtCleared returns if the "unlocked_at" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) UnlockedAtCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldUnlockedAt]
+	return ok
+}
+
+// ResetUnlockedAt resets all changes to the "unlocked_at" field.
+func (m *UserRiskProfileMutation) ResetUnlockedAt() {
+	m.unlocked_at = nil
+	delete(m.clearedFields, userriskprofile.FieldUnlockedAt)
+}
+
+// SetUnlockedBy sets the "unlocked_by" field.
+func (m *UserRiskProfileMutation) SetUnlockedBy(i int64) {
+	m.unlocked_by = &i
+	m.addunlocked_by = nil
+}
+
+// UnlockedBy returns the value of the "unlocked_by" field in the mutation.
+func (m *UserRiskProfileMutation) UnlockedBy() (r int64, exists bool) {
+	v := m.unlocked_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnlockedBy returns the old "unlocked_by" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldUnlockedBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnlockedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnlockedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnlockedBy: %w", err)
+	}
+	return oldValue.UnlockedBy, nil
+}
+
+// AddUnlockedBy adds i to the "unlocked_by" field.
+func (m *UserRiskProfileMutation) AddUnlockedBy(i int64) {
+	if m.addunlocked_by != nil {
+		*m.addunlocked_by += i
+	} else {
+		m.addunlocked_by = &i
+	}
+}
+
+// AddedUnlockedBy returns the value that was added to the "unlocked_by" field in this mutation.
+func (m *UserRiskProfileMutation) AddedUnlockedBy() (r int64, exists bool) {
+	v := m.addunlocked_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUnlockedBy clears the value of the "unlocked_by" field.
+func (m *UserRiskProfileMutation) ClearUnlockedBy() {
+	m.unlocked_by = nil
+	m.addunlocked_by = nil
+	m.clearedFields[userriskprofile.FieldUnlockedBy] = struct{}{}
+}
+
+// UnlockedByCleared returns if the "unlocked_by" field was cleared in this mutation.
+func (m *UserRiskProfileMutation) UnlockedByCleared() bool {
+	_, ok := m.clearedFields[userriskprofile.FieldUnlockedBy]
+	return ok
+}
+
+// ResetUnlockedBy resets all changes to the "unlocked_by" field.
+func (m *UserRiskProfileMutation) ResetUnlockedBy() {
+	m.unlocked_by = nil
+	m.addunlocked_by = nil
+	delete(m.clearedFields, userriskprofile.FieldUnlockedBy)
+}
+
+// SetUnlockReason sets the "unlock_reason" field.
+func (m *UserRiskProfileMutation) SetUnlockReason(s string) {
+	m.unlock_reason = &s
+}
+
+// UnlockReason returns the value of the "unlock_reason" field in the mutation.
+func (m *UserRiskProfileMutation) UnlockReason() (r string, exists bool) {
+	v := m.unlock_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnlockReason returns the old "unlock_reason" field's value of the UserRiskProfile entity.
+// If the UserRiskProfile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserRiskProfileMutation) OldUnlockReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnlockReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnlockReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnlockReason: %w", err)
+	}
+	return oldValue.UnlockReason, nil
+}
+
+// ResetUnlockReason resets all changes to the "unlock_reason" field.
+func (m *UserRiskProfileMutation) ResetUnlockReason() {
+	m.unlock_reason = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserRiskProfileMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[userriskprofile.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserRiskProfileMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserRiskProfileMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserRiskProfileMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserRiskProfileMutation builder.
+func (m *UserRiskProfileMutation) Where(ps ...predicate.UserRiskProfile) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserRiskProfileMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserRiskProfileMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserRiskProfile, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserRiskProfileMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserRiskProfileMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserRiskProfile).
+func (m *UserRiskProfileMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserRiskProfileMutation) Fields() []string {
+	fields := make([]string, 0, 19)
+	if m.created_at != nil {
+		fields = append(fields, userriskprofile.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userriskprofile.FieldUpdatedAt)
+	}
+	if m.user != nil {
+		fields = append(fields, userriskprofile.FieldUserID)
+	}
+	if m.score != nil {
+		fields = append(fields, userriskprofile.FieldScore)
+	}
+	if m.status != nil {
+		fields = append(fields, userriskprofile.FieldStatus)
+	}
+	if m.consecutive_bad_days != nil {
+		fields = append(fields, userriskprofile.FieldConsecutiveBadDays)
+	}
+	if m.last_evaluated_at != nil {
+		fields = append(fields, userriskprofile.FieldLastEvaluatedAt)
+	}
+	if m.last_warned_at != nil {
+		fields = append(fields, userriskprofile.FieldLastWarnedAt)
+	}
+	if m.grace_period_started_at != nil {
+		fields = append(fields, userriskprofile.FieldGracePeriodStartedAt)
+	}
+	if m.locked_at != nil {
+		fields = append(fields, userriskprofile.FieldLockedAt)
+	}
+	if m.lock_reason != nil {
+		fields = append(fields, userriskprofile.FieldLockReason)
+	}
+	if m.last_evaluation_summary != nil {
+		fields = append(fields, userriskprofile.FieldLastEvaluationSummary)
+	}
+	if m.exempted != nil {
+		fields = append(fields, userriskprofile.FieldExempted)
+	}
+	if m.exempted_at != nil {
+		fields = append(fields, userriskprofile.FieldExemptedAt)
+	}
+	if m.exempted_by != nil {
+		fields = append(fields, userriskprofile.FieldExemptedBy)
+	}
+	if m.exemption_reason != nil {
+		fields = append(fields, userriskprofile.FieldExemptionReason)
+	}
+	if m.unlocked_at != nil {
+		fields = append(fields, userriskprofile.FieldUnlockedAt)
+	}
+	if m.unlocked_by != nil {
+		fields = append(fields, userriskprofile.FieldUnlockedBy)
+	}
+	if m.unlock_reason != nil {
+		fields = append(fields, userriskprofile.FieldUnlockReason)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserRiskProfileMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userriskprofile.FieldCreatedAt:
+		return m.CreatedAt()
+	case userriskprofile.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userriskprofile.FieldUserID:
+		return m.UserID()
+	case userriskprofile.FieldScore:
+		return m.Score()
+	case userriskprofile.FieldStatus:
+		return m.Status()
+	case userriskprofile.FieldConsecutiveBadDays:
+		return m.ConsecutiveBadDays()
+	case userriskprofile.FieldLastEvaluatedAt:
+		return m.LastEvaluatedAt()
+	case userriskprofile.FieldLastWarnedAt:
+		return m.LastWarnedAt()
+	case userriskprofile.FieldGracePeriodStartedAt:
+		return m.GracePeriodStartedAt()
+	case userriskprofile.FieldLockedAt:
+		return m.LockedAt()
+	case userriskprofile.FieldLockReason:
+		return m.LockReason()
+	case userriskprofile.FieldLastEvaluationSummary:
+		return m.LastEvaluationSummary()
+	case userriskprofile.FieldExempted:
+		return m.Exempted()
+	case userriskprofile.FieldExemptedAt:
+		return m.ExemptedAt()
+	case userriskprofile.FieldExemptedBy:
+		return m.ExemptedBy()
+	case userriskprofile.FieldExemptionReason:
+		return m.ExemptionReason()
+	case userriskprofile.FieldUnlockedAt:
+		return m.UnlockedAt()
+	case userriskprofile.FieldUnlockedBy:
+		return m.UnlockedBy()
+	case userriskprofile.FieldUnlockReason:
+		return m.UnlockReason()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserRiskProfileMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userriskprofile.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userriskprofile.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userriskprofile.FieldUserID:
+		return m.OldUserID(ctx)
+	case userriskprofile.FieldScore:
+		return m.OldScore(ctx)
+	case userriskprofile.FieldStatus:
+		return m.OldStatus(ctx)
+	case userriskprofile.FieldConsecutiveBadDays:
+		return m.OldConsecutiveBadDays(ctx)
+	case userriskprofile.FieldLastEvaluatedAt:
+		return m.OldLastEvaluatedAt(ctx)
+	case userriskprofile.FieldLastWarnedAt:
+		return m.OldLastWarnedAt(ctx)
+	case userriskprofile.FieldGracePeriodStartedAt:
+		return m.OldGracePeriodStartedAt(ctx)
+	case userriskprofile.FieldLockedAt:
+		return m.OldLockedAt(ctx)
+	case userriskprofile.FieldLockReason:
+		return m.OldLockReason(ctx)
+	case userriskprofile.FieldLastEvaluationSummary:
+		return m.OldLastEvaluationSummary(ctx)
+	case userriskprofile.FieldExempted:
+		return m.OldExempted(ctx)
+	case userriskprofile.FieldExemptedAt:
+		return m.OldExemptedAt(ctx)
+	case userriskprofile.FieldExemptedBy:
+		return m.OldExemptedBy(ctx)
+	case userriskprofile.FieldExemptionReason:
+		return m.OldExemptionReason(ctx)
+	case userriskprofile.FieldUnlockedAt:
+		return m.OldUnlockedAt(ctx)
+	case userriskprofile.FieldUnlockedBy:
+		return m.OldUnlockedBy(ctx)
+	case userriskprofile.FieldUnlockReason:
+		return m.OldUnlockReason(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserRiskProfile field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserRiskProfileMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userriskprofile.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userriskprofile.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userriskprofile.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case userriskprofile.FieldScore:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScore(v)
+		return nil
+	case userriskprofile.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case userriskprofile.FieldConsecutiveBadDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsecutiveBadDays(v)
+		return nil
+	case userriskprofile.FieldLastEvaluatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastEvaluatedAt(v)
+		return nil
+	case userriskprofile.FieldLastWarnedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastWarnedAt(v)
+		return nil
+	case userriskprofile.FieldGracePeriodStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGracePeriodStartedAt(v)
+		return nil
+	case userriskprofile.FieldLockedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLockedAt(v)
+		return nil
+	case userriskprofile.FieldLockReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLockReason(v)
+		return nil
+	case userriskprofile.FieldLastEvaluationSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastEvaluationSummary(v)
+		return nil
+	case userriskprofile.FieldExempted:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExempted(v)
+		return nil
+	case userriskprofile.FieldExemptedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExemptedAt(v)
+		return nil
+	case userriskprofile.FieldExemptedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExemptedBy(v)
+		return nil
+	case userriskprofile.FieldExemptionReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExemptionReason(v)
+		return nil
+	case userriskprofile.FieldUnlockedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnlockedAt(v)
+		return nil
+	case userriskprofile.FieldUnlockedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnlockedBy(v)
+		return nil
+	case userriskprofile.FieldUnlockReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnlockReason(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserRiskProfileMutation) AddedFields() []string {
+	var fields []string
+	if m.addscore != nil {
+		fields = append(fields, userriskprofile.FieldScore)
+	}
+	if m.addconsecutive_bad_days != nil {
+		fields = append(fields, userriskprofile.FieldConsecutiveBadDays)
+	}
+	if m.addexempted_by != nil {
+		fields = append(fields, userriskprofile.FieldExemptedBy)
+	}
+	if m.addunlocked_by != nil {
+		fields = append(fields, userriskprofile.FieldUnlockedBy)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserRiskProfileMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case userriskprofile.FieldScore:
+		return m.AddedScore()
+	case userriskprofile.FieldConsecutiveBadDays:
+		return m.AddedConsecutiveBadDays()
+	case userriskprofile.FieldExemptedBy:
+		return m.AddedExemptedBy()
+	case userriskprofile.FieldUnlockedBy:
+		return m.AddedUnlockedBy()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserRiskProfileMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case userriskprofile.FieldScore:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddScore(v)
+		return nil
+	case userriskprofile.FieldConsecutiveBadDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConsecutiveBadDays(v)
+		return nil
+	case userriskprofile.FieldExemptedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExemptedBy(v)
+		return nil
+	case userriskprofile.FieldUnlockedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUnlockedBy(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserRiskProfileMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(userriskprofile.FieldLastEvaluatedAt) {
+		fields = append(fields, userriskprofile.FieldLastEvaluatedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldLastWarnedAt) {
+		fields = append(fields, userriskprofile.FieldLastWarnedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldGracePeriodStartedAt) {
+		fields = append(fields, userriskprofile.FieldGracePeriodStartedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldLockedAt) {
+		fields = append(fields, userriskprofile.FieldLockedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldExemptedAt) {
+		fields = append(fields, userriskprofile.FieldExemptedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldExemptedBy) {
+		fields = append(fields, userriskprofile.FieldExemptedBy)
+	}
+	if m.FieldCleared(userriskprofile.FieldUnlockedAt) {
+		fields = append(fields, userriskprofile.FieldUnlockedAt)
+	}
+	if m.FieldCleared(userriskprofile.FieldUnlockedBy) {
+		fields = append(fields, userriskprofile.FieldUnlockedBy)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserRiskProfileMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserRiskProfileMutation) ClearField(name string) error {
+	switch name {
+	case userriskprofile.FieldLastEvaluatedAt:
+		m.ClearLastEvaluatedAt()
+		return nil
+	case userriskprofile.FieldLastWarnedAt:
+		m.ClearLastWarnedAt()
+		return nil
+	case userriskprofile.FieldGracePeriodStartedAt:
+		m.ClearGracePeriodStartedAt()
+		return nil
+	case userriskprofile.FieldLockedAt:
+		m.ClearLockedAt()
+		return nil
+	case userriskprofile.FieldExemptedAt:
+		m.ClearExemptedAt()
+		return nil
+	case userriskprofile.FieldExemptedBy:
+		m.ClearExemptedBy()
+		return nil
+	case userriskprofile.FieldUnlockedAt:
+		m.ClearUnlockedAt()
+		return nil
+	case userriskprofile.FieldUnlockedBy:
+		m.ClearUnlockedBy()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserRiskProfileMutation) ResetField(name string) error {
+	switch name {
+	case userriskprofile.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userriskprofile.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userriskprofile.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case userriskprofile.FieldScore:
+		m.ResetScore()
+		return nil
+	case userriskprofile.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case userriskprofile.FieldConsecutiveBadDays:
+		m.ResetConsecutiveBadDays()
+		return nil
+	case userriskprofile.FieldLastEvaluatedAt:
+		m.ResetLastEvaluatedAt()
+		return nil
+	case userriskprofile.FieldLastWarnedAt:
+		m.ResetLastWarnedAt()
+		return nil
+	case userriskprofile.FieldGracePeriodStartedAt:
+		m.ResetGracePeriodStartedAt()
+		return nil
+	case userriskprofile.FieldLockedAt:
+		m.ResetLockedAt()
+		return nil
+	case userriskprofile.FieldLockReason:
+		m.ResetLockReason()
+		return nil
+	case userriskprofile.FieldLastEvaluationSummary:
+		m.ResetLastEvaluationSummary()
+		return nil
+	case userriskprofile.FieldExempted:
+		m.ResetExempted()
+		return nil
+	case userriskprofile.FieldExemptedAt:
+		m.ResetExemptedAt()
+		return nil
+	case userriskprofile.FieldExemptedBy:
+		m.ResetExemptedBy()
+		return nil
+	case userriskprofile.FieldExemptionReason:
+		m.ResetExemptionReason()
+		return nil
+	case userriskprofile.FieldUnlockedAt:
+		m.ResetUnlockedAt()
+		return nil
+	case userriskprofile.FieldUnlockedBy:
+		m.ResetUnlockedBy()
+		return nil
+	case userriskprofile.FieldUnlockReason:
+		m.ResetUnlockReason()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserRiskProfileMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, userriskprofile.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserRiskProfileMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case userriskprofile.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserRiskProfileMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserRiskProfileMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserRiskProfileMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, userriskprofile.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserRiskProfileMutation) EdgeCleared(name string) bool {
+	switch name {
+	case userriskprofile.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserRiskProfileMutation) ClearEdge(name string) error {
+	switch name {
+	case userriskprofile.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserRiskProfileMutation) ResetEdge(name string) error {
+	switch name {
+	case userriskprofile.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserRiskProfile edge %s", name)
 }
 
 // UserSubscriptionMutation represents an operation that mutates the UserSubscription nodes in the graph.

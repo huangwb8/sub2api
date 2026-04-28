@@ -2028,6 +2028,61 @@ func (h *SettingHandler) UpdateBetaPolicySettings(c *gin.Context) {
 	response.Success(c, dto.BetaPolicySettings{Rules: outRules})
 }
 
+func (h *SettingHandler) GetUserRiskControlConfig(c *gin.Context) {
+	settings, err := h.settingService.GetUserRiskControlConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskControlConfig{
+		Enabled:                         settings.Enabled,
+		Mode:                            settings.Mode,
+		WarningThreshold:                settings.WarningThreshold,
+		LockThreshold:                   settings.LockThreshold,
+		AutoLockAfterConsecutiveBadDays: settings.AutoLockAfterConsecutiveBadDays,
+		OverlapWindowSeconds:            settings.OverlapWindowSeconds,
+		MaxDistinctPublicIPsPerDay:      settings.MaxDistinctPublicIPsPerDay,
+		HighRiskActiveHoursPerDay:       settings.HighRiskActiveHoursPerDay,
+		WarningEmailEnabled:             settings.WarningEmailEnabled,
+		WarningEmailSubjectTemplate:     settings.WarningEmailSubjectTemplate,
+		LockMessage:                     settings.LockMessage,
+		RequireTrustedProxyForAutoLock:  settings.RequireTrustedProxyForAutoLock,
+		DailyScorePenaltyCap:            settings.DailyScorePenaltyCap,
+		DailyScoreRecovery:              settings.DailyScoreRecovery,
+		RedisEvidenceRetentionDays:      settings.RedisEvidenceRetentionDays,
+	})
+}
+
+func (h *SettingHandler) UpdateUserRiskControlConfig(c *gin.Context) {
+	var req dto.UserRiskControlConfig
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	settings := &service.UserRiskControlConfig{
+		Enabled:                         req.Enabled,
+		Mode:                            req.Mode,
+		WarningThreshold:                req.WarningThreshold,
+		LockThreshold:                   req.LockThreshold,
+		AutoLockAfterConsecutiveBadDays: req.AutoLockAfterConsecutiveBadDays,
+		OverlapWindowSeconds:            req.OverlapWindowSeconds,
+		MaxDistinctPublicIPsPerDay:      req.MaxDistinctPublicIPsPerDay,
+		HighRiskActiveHoursPerDay:       req.HighRiskActiveHoursPerDay,
+		WarningEmailEnabled:             req.WarningEmailEnabled,
+		WarningEmailSubjectTemplate:     req.WarningEmailSubjectTemplate,
+		LockMessage:                     req.LockMessage,
+		RequireTrustedProxyForAutoLock:  req.RequireTrustedProxyForAutoLock,
+		DailyScorePenaltyCap:            req.DailyScorePenaltyCap,
+		DailyScoreRecovery:              req.DailyScoreRecovery,
+		RedisEvidenceRetentionDays:      req.RedisEvidenceRetentionDays,
+	}
+	if err := h.settingService.SetUserRiskControlConfig(c.Request.Context(), settings); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	h.GetUserRiskControlConfig(c)
+}
+
 // UpdateStreamTimeoutSettingsRequest 更新流超时配置请求
 type UpdateStreamTimeoutSettingsRequest struct {
 	Enabled                bool   `json:"enabled"`

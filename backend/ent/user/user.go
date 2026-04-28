@@ -71,6 +71,10 @@ const (
 	EdgePromoCodeUsages = "promo_code_usages"
 	// EdgePaymentOrders holds the string denoting the payment_orders edge name in mutations.
 	EdgePaymentOrders = "payment_orders"
+	// EdgeRiskProfile holds the string denoting the risk_profile edge name in mutations.
+	EdgeRiskProfile = "risk_profile"
+	// EdgeRiskEvents holds the string denoting the risk_events edge name in mutations.
+	EdgeRiskEvents = "risk_events"
 	// EdgeUserAllowedGroups holds the string denoting the user_allowed_groups edge name in mutations.
 	EdgeUserAllowedGroups = "user_allowed_groups"
 	// Table holds the table name of the user in the database.
@@ -143,6 +147,20 @@ const (
 	PaymentOrdersInverseTable = "payment_orders"
 	// PaymentOrdersColumn is the table column denoting the payment_orders relation/edge.
 	PaymentOrdersColumn = "user_id"
+	// RiskProfileTable is the table that holds the risk_profile relation/edge.
+	RiskProfileTable = "user_risk_profiles"
+	// RiskProfileInverseTable is the table name for the UserRiskProfile entity.
+	// It exists in this package in order to avoid circular dependency with the "userriskprofile" package.
+	RiskProfileInverseTable = "user_risk_profiles"
+	// RiskProfileColumn is the table column denoting the risk_profile relation/edge.
+	RiskProfileColumn = "user_id"
+	// RiskEventsTable is the table that holds the risk_events relation/edge.
+	RiskEventsTable = "user_risk_events"
+	// RiskEventsInverseTable is the table name for the UserRiskEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "userriskevent" package.
+	RiskEventsInverseTable = "user_risk_events"
+	// RiskEventsColumn is the table column denoting the risk_events relation/edge.
+	RiskEventsColumn = "user_id"
 	// UserAllowedGroupsTable is the table that holds the user_allowed_groups relation/edge.
 	UserAllowedGroupsTable = "user_allowed_groups"
 	// UserAllowedGroupsInverseTable is the table name for the UserAllowedGroup entity.
@@ -479,6 +497,27 @@ func ByPaymentOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByRiskProfileField orders the results by risk_profile field.
+func ByRiskProfileField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRiskProfileStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRiskEventsCount orders the results by risk_events count.
+func ByRiskEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRiskEventsStep(), opts...)
+	}
+}
+
+// ByRiskEvents orders the results by risk_events terms.
+func ByRiskEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRiskEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserAllowedGroupsCount orders the results by user_allowed_groups count.
 func ByUserAllowedGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -560,6 +599,20 @@ func newPaymentOrdersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PaymentOrdersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PaymentOrdersTable, PaymentOrdersColumn),
+	)
+}
+func newRiskProfileStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RiskProfileInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, RiskProfileTable, RiskProfileColumn),
+	)
+}
+func newRiskEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RiskEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RiskEventsTable, RiskEventsColumn),
 	)
 }
 func newUserAllowedGroupsStep() *sqlgraph.Step {

@@ -309,6 +309,30 @@ func (f UserAttributeValueFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserAttributeValueMutation", m)
 }
 
+// The UserRiskEventFunc type is an adapter to allow the use of ordinary
+// function as UserRiskEvent mutator.
+type UserRiskEventFunc func(context.Context, *ent.UserRiskEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserRiskEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserRiskEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserRiskEventMutation", m)
+}
+
+// The UserRiskProfileFunc type is an adapter to allow the use of ordinary
+// function as UserRiskProfile mutator.
+type UserRiskProfileFunc func(context.Context, *ent.UserRiskProfileMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserRiskProfileFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserRiskProfileMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserRiskProfileMutation", m)
+}
+
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary
 // function as UserSubscription mutator.
 type UserSubscriptionFunc func(context.Context, *ent.UserSubscriptionMutation) (ent.Value, error)

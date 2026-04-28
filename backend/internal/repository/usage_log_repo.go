@@ -240,6 +240,59 @@ func newUsageLogRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *usage
 	return repo
 }
 
+func (r *usageLogRepository) ListUserIDsWithUsageBetween(ctx context.Context, startTime, endTime time.Time) ([]int64, error) {
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT DISTINCT user_id
+		FROM usage_logs
+		WHERE user_id > 0
+		  AND created_at >= $1
+		  AND created_at < $2
+		ORDER BY user_id ASC
+	`, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userIDs := make([]int64, 0, 64)
+	for rows.Next() {
+		var userID int64
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return userIDs, nil
+}
+
+func (r *usageLogRepository) GetUserRiskUsageSummary(ctx context.Context, userID int64, startTime, endTime time.Time) (*service.UserRiskUsageSummary, error) {
+	if userID <= 0 {
+		return &service.UserRiskUsageSummary{UserID: userID}, nil
+	}
+	query := `
+		SELECT
+			COUNT(DISTINCT api_key_id) AS distinct_api_keys,
+			COUNT(DISTINCT DATE_TRUNC('hour', created_at)) AS active_hours,
+			COALESCE(SUM(actual_cost), 0) AS total_actual_cost,
+			COUNT(*) AS total_requests
+		FROM usage_logs
+		WHERE user_id = $1
+		  AND created_at >= $2
+		  AND created_at < $3
+	`
+	summary := &service.UserRiskUsageSummary{UserID: userID}
+	if err := scanSingleRow(ctx, r.sql, query, []any{userID, startTime, endTime}, &summary.DistinctAPIKeys, &summary.ActiveHours, &summary.TotalActualCost, &summary.TotalRequests); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return summary, nil
+		}
+		return nil, err
+	}
+	return summary, nil
+}
+
 // getPerformanceStats 获取 RPM 和 TPM（近5分钟平均值，可选按用户过滤）
 func (r *usageLogRepository) getPerformanceStats(ctx context.Context, userID int64) (rpm, tpm int64, err error) {
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)

@@ -50,6 +50,55 @@ export interface AdminUser extends User {
   group_rates?: Record<number, number>
   // 当前并发数（仅管理员列表接口返回）
   current_concurrency?: number
+  risk_profile?: UserRiskProfile | null
+}
+
+export interface UserRiskSignalSnapshot {
+  date_key: string
+  distinct_public_ips: number
+  distinct_user_agents: number
+  distinct_api_keys: number
+  overlap_events: number
+  recent_public_ips?: string[]
+  recent_user_agent_families?: string[]
+}
+
+export interface UserRiskProfile {
+  id: number
+  user_id: number
+  score: number
+  status: 'healthy' | 'observed' | 'warned' | 'grace_period' | 'locked' | 'exempted' | string
+  consecutive_bad_days: number
+  last_evaluated_at?: string | null
+  last_warned_at?: string | null
+  grace_period_started_at?: string | null
+  locked_at?: string | null
+  lock_reason?: string
+  last_evaluation_summary?: string
+  exempted: boolean
+  exempted_at?: string | null
+  exempted_by?: number | null
+  exemption_reason?: string
+  unlocked_at?: string | null
+  unlocked_by?: number | null
+  unlock_reason?: string
+  created_at: string
+  updated_at: string
+  signal_snapshot?: UserRiskSignalSnapshot | null
+}
+
+export interface UserRiskEvent {
+  id: number
+  user_id: number
+  event_type: string
+  severity: string
+  score_delta: number
+  score_after: number
+  summary: string
+  metadata?: Record<string, any>
+  window_start?: string | null
+  window_end?: string | null
+  created_at: string
 }
 
 export interface LoginRequest {

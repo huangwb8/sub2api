@@ -78,6 +78,14 @@ func ProvideSettingHandler(settingService *service.SettingService, buildInfo Bui
 	return NewSettingHandler(settingService, buildInfo.Version)
 }
 
+func ProvideAdminUserHandler(
+	adminService service.AdminService,
+	concurrencyService *service.ConcurrencyService,
+	riskService *service.UserRiskService,
+) *admin.UserHandler {
+	return admin.NewUserHandler(adminService, concurrencyService, riskService)
+}
+
 // ProvideHandlers creates the Handlers struct
 func ProvideHandlers(
 	authHandler *AuthHandler,
@@ -134,7 +142,7 @@ var ProviderSet = wire.NewSet(
 
 	// Admin handlers
 	admin.ProvideDashboardHandler,
-	admin.NewUserHandler,
+	ProvideAdminUserHandler,
 	admin.NewGroupHandler,
 	admin.NewAccountHandler,
 	admin.NewAnnouncementHandler,

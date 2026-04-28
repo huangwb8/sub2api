@@ -4,18 +4,23 @@ import (
 	"errors"
 	"strings"
 
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 // NewJWTAuthMiddleware 创建 JWT 认证中间件
-func NewJWTAuthMiddleware(authService *service.AuthService, userService *service.UserService) JWTAuthMiddleware {
-	return JWTAuthMiddleware(jwtAuth(authService, userService))
+func NewJWTAuthMiddleware(authService *service.AuthService, userService *service.UserService, riskServices ...*service.UserRiskService) JWTAuthMiddleware {
+	var riskService *service.UserRiskService
+	if len(riskServices) > 0 {
+		riskService = riskServices[0]
+	}
+	return JWTAuthMiddleware(jwtAuth(authService, userService, riskService))
 }
 
 // jwtAuth JWT认证中间件实现
-func jwtAuth(authService *service.AuthService, userService *service.UserService) gin.HandlerFunc {
+func jwtAuth(authService *service.AuthService, userService *service.UserService, riskService *service.UserRiskService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从Authorization header中提取token
 		authHeader := c.GetHeader("Authorization")
@@ -53,6 +58,13 @@ func jwtAuth(authService *service.AuthService, userService *service.UserService)
 		if err != nil {
 			AbortWithError(c, 401, "USER_NOT_FOUND", "User not found")
 			return
+		}
+
+		if riskService != nil {
+			if _, err := riskService.CheckAccess(c.Request.Context(), user.ID); err != nil {
+				AbortWithError(c, 403, "USER_RISK_LOCKED", infraerrors.Message(err))
+				return
+			}
 		}
 
 		// 检查用户状态

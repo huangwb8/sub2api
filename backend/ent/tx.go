@@ -64,6 +64,10 @@ type Tx struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserRiskEvent is the client for interacting with the UserRiskEvent builders.
+	UserRiskEvent *UserRiskEventClient
+	// UserRiskProfile is the client for interacting with the UserRiskProfile builders.
+	UserRiskProfile *UserRiskProfileClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
 
@@ -222,6 +226,8 @@ func (tx *Tx) init() {
 	tx.UserAllowedGroup = NewUserAllowedGroupClient(tx.config)
 	tx.UserAttributeDefinition = NewUserAttributeDefinitionClient(tx.config)
 	tx.UserAttributeValue = NewUserAttributeValueClient(tx.config)
+	tx.UserRiskEvent = NewUserRiskEventClient(tx.config)
+	tx.UserRiskProfile = NewUserRiskProfileClient(tx.config)
 	tx.UserSubscription = NewUserSubscriptionClient(tx.config)
 }
 

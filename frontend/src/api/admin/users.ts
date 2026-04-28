@@ -4,7 +4,14 @@
  */
 
 import { apiClient } from '../client'
-import type { AdminUser, UpdateUserRequest, PaginatedResponse, ApiKey } from '@/types'
+import type {
+  AdminUser,
+  UpdateUserRequest,
+  PaginatedResponse,
+  ApiKey,
+  UserRiskProfile,
+  UserRiskEvent
+} from '@/types'
 
 /**
  * List all users with pagination
@@ -229,6 +236,47 @@ export async function getUserBalanceHistory(
   return data
 }
 
+export async function getUserRiskProfile(id: number): Promise<UserRiskProfile> {
+  const { data } = await apiClient.get<UserRiskProfile>(`/admin/users/${id}/risk`)
+  return data
+}
+
+export async function getUserRiskEvents(id: number): Promise<{ items: UserRiskEvent[] }> {
+  const { data } = await apiClient.get<{ items: UserRiskEvent[] }>(`/admin/users/${id}/risk/events`)
+  return data
+}
+
+export async function sendUserRiskWarning(id: number): Promise<UserRiskProfile> {
+  const { data } = await apiClient.post<UserRiskProfile>(`/admin/users/${id}/risk/warn`)
+  return data
+}
+
+export async function unlockUserRisk(id: number, reason?: string): Promise<UserRiskProfile> {
+  const { data } = await apiClient.post<UserRiskProfile>(`/admin/users/${id}/risk/unlock`, {
+    reason: reason || ''
+  })
+  return data
+}
+
+export async function updateUserRiskExemption(
+  id: number,
+  exempted: boolean,
+  reason?: string
+): Promise<UserRiskProfile> {
+  const { data } = await apiClient.put<UserRiskProfile>(`/admin/users/${id}/risk/exemption`, {
+    exempted,
+    reason: reason || ''
+  })
+  return data
+}
+
+export async function resetUserRiskScore(id: number, reason?: string): Promise<UserRiskProfile> {
+  const { data } = await apiClient.post<UserRiskProfile>(`/admin/users/${id}/risk/reset`, {
+    reason: reason || ''
+  })
+  return data
+}
+
 /**
  * Replace user's exclusive group
  * @param userId - User ID
@@ -260,6 +308,12 @@ export const usersAPI = {
   getUserApiKeys,
   getUserUsageStats,
   getUserBalanceHistory,
+  getUserRiskProfile,
+  getUserRiskEvents,
+  sendUserRiskWarning,
+  unlockUserRisk,
+  updateUserRiskExemption,
+  resetUserRiskScore,
   replaceGroup
 }
 

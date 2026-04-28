@@ -7,6 +7,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	servermiddleware "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,13 +23,19 @@ type UserWithConcurrency struct {
 type UserHandler struct {
 	adminService       service.AdminService
 	concurrencyService *service.ConcurrencyService
+	riskService        *service.UserRiskService
 }
 
 // NewUserHandler creates a new admin user handler
-func NewUserHandler(adminService service.AdminService, concurrencyService *service.ConcurrencyService) *UserHandler {
+func NewUserHandler(adminService service.AdminService, concurrencyService *service.ConcurrencyService, riskServices ...*service.UserRiskService) *UserHandler {
+	var riskService *service.UserRiskService
+	if len(riskServices) > 0 {
+		riskService = riskServices[0]
+	}
 	return &UserHandler{
 		adminService:       adminService,
 		concurrencyService: concurrencyService,
+		riskService:        riskService,
 	}
 }
 
@@ -64,6 +71,15 @@ type UpdateBalanceRequest struct {
 	Balance   float64 `json:"balance" binding:"required,gt=0"`
 	Operation string  `json:"operation" binding:"required,oneof=set add subtract"`
 	Notes     string  `json:"notes"`
+}
+
+type UpdateUserRiskExemptionRequest struct {
+	Exempted bool   `json:"exempted"`
+	Reason   string `json:"reason"`
+}
+
+type UpdateUserRiskActionRequest struct {
+	Reason string `json:"reason"`
 }
 
 // List handles listing all users with pagination
@@ -172,6 +188,40 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	response.Success(c, dto.UserFromServiceAdmin(user))
 }
 
+func (h *UserHandler) GetRisk(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	profile, err := h.riskService.GetUserRiskDetails(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskProfileFromService(profile))
+}
+
+func (h *UserHandler) ListRiskEvents(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	events, err := h.riskService.ListEventsByUserID(c.Request.Context(), userID, 50)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	out := make([]dto.UserRiskEvent, 0, len(events))
+	for i := range events {
+		if item := dto.UserRiskEventFromService(&events[i]); item != nil {
+			out = append(out, *item)
+		}
+	}
+	response.Success(c, gin.H{"items": out})
+}
+
 // Create handles creating a new user
 // POST /api/v1/admin/users
 func (h *UserHandler) Create(c *gin.Context) {
@@ -249,6 +299,83 @@ func (h *UserHandler) Delete(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"message": "User deleted successfully"})
+}
+
+func (h *UserHandler) SendRiskWarning(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	profile, err := h.riskService.SendWarning(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskProfileFromService(profile))
+}
+
+func (h *UserHandler) UnlockRisk(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	var req UpdateUserRiskActionRequest
+	_ = c.ShouldBindJSON(&req)
+	actorID := int64(0)
+	if subject, ok := servermiddleware.GetAuthSubjectFromContext(c); ok {
+		actorID = subject.UserID
+	}
+	profile, err := h.riskService.UnlockUser(c.Request.Context(), userID, actorID, req.Reason)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskProfileFromService(profile))
+}
+
+func (h *UserHandler) UpdateRiskExemption(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	var req UpdateUserRiskExemptionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	actorID := int64(0)
+	if subject, ok := servermiddleware.GetAuthSubjectFromContext(c); ok {
+		actorID = subject.UserID
+	}
+	profile, err := h.riskService.SetExemption(c.Request.Context(), userID, actorID, req.Exempted, req.Reason)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskProfileFromService(profile))
+}
+
+func (h *UserHandler) ResetRiskScore(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	var req UpdateUserRiskActionRequest
+	_ = c.ShouldBindJSON(&req)
+	actorID := int64(0)
+	if subject, ok := servermiddleware.GetAuthSubjectFromContext(c); ok {
+		actorID = subject.UserID
+	}
+	profile, err := h.riskService.ResetScore(c.Request.Context(), userID, actorID, req.Reason)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserRiskProfileFromService(profile))
 }
 
 // UpdateBalance handles updating user balance
