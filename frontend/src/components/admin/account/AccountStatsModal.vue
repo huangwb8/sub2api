@@ -6,7 +6,6 @@
     @close="handleClose"
   >
     <div class="space-y-6">
-      <!-- Account Info Header -->
       <div
         v-if="account"
         class="flex items-center justify-between rounded-xl border border-primary-200 bg-gradient-to-r from-primary-50 to-primary-100 p-3 dark:border-primary-700/50 dark:from-primary-900/20 dark:to-primary-800/20"
@@ -36,15 +35,12 @@
         </span>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
+      <div v-if="summaryLoading && !summaryStats" class="flex items-center justify-center py-12">
         <LoadingSpinner />
       </div>
 
-      <template v-else-if="stats">
-        <!-- Row 1: Main Stats Cards -->
+      <template v-else-if="summaryStats">
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <!-- 30-Day Total Cost -->
           <div
             class="card border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 dark:border-emerald-800/30 dark:from-emerald-900/10 dark:to-dark-700"
           >
@@ -57,20 +53,19 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              ${{ formatCost(stats.summary.total_cost) }}
+              ${{ formatCost(summaryStats.total_cost) }}
             </p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.stats.accumulatedCost') }}
               <span class="text-gray-400 dark:text-gray-500">
-                ({{ t('usage.userBilled') }}: ${{ formatCost(stats.summary.total_user_cost) }} ·
+                ({{ t('usage.userBilled') }}: ${{ formatCost(summaryStats.total_user_cost) }} ·
                 {{ t('admin.accounts.stats.standardCost') }}: ${{
-                  formatCost(stats.summary.total_standard_cost)
+                  formatCost(summaryStats.total_standard_cost)
                 }})
               </span>
             </p>
           </div>
 
-          <!-- 30-Day Total Requests -->
           <div
             class="card border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 dark:border-blue-800/30 dark:from-blue-900/10 dark:to-dark-700"
           >
@@ -83,14 +78,13 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatNumber(stats.summary.total_requests) }}
+              {{ formatNumber(summaryStats.total_requests) }}
             </p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.stats.totalCalls') }}
             </p>
           </div>
 
-          <!-- Daily Average Cost -->
           <div
             class="card border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 dark:border-amber-800/30 dark:from-amber-900/10 dark:to-dark-700"
           >
@@ -107,21 +101,20 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              ${{ formatCost(stats.summary.avg_daily_cost) }}
+              ${{ formatCost(summaryStats.avg_daily_cost) }}
             </p>
-             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {{
                 t('admin.accounts.stats.basedOnActualDays', {
-                  days: stats.summary.actual_days_used
+                  days: summaryStats.actual_days_used
                 })
               }}
               <span class="text-gray-400 dark:text-gray-500">
-                ({{ t('usage.userBilled') }}: ${{ formatCost(stats.summary.avg_daily_user_cost) }})
+                ({{ t('usage.userBilled') }}: ${{ formatCost(summaryStats.avg_daily_user_cost) }})
               </span>
             </p>
           </div>
 
-          <!-- Daily Average Requests -->
           <div
             class="card border-purple-200 bg-gradient-to-br from-purple-50 to-white p-4 dark:border-purple-800/30 dark:from-purple-900/10 dark:to-dark-700"
           >
@@ -146,7 +139,7 @@
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {{ formatNumber(Math.round(stats.summary.avg_daily_requests)) }}
+              {{ formatNumber(Math.round(summaryStats.avg_daily_requests)) }}
             </p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.accounts.stats.avgDailyUsage') }}
@@ -154,9 +147,7 @@
           </div>
         </div>
 
-        <!-- Row 2: Today, Highest Cost, Highest Requests -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <!-- Today Overview -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-cyan-100 p-1.5 dark:bg-cyan-900/30">
@@ -170,13 +161,13 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.today?.cost || 0) }}</span
+                  >${{ formatCost(summaryStats.today?.cost || 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.userBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.today?.user_cost || 0) }}</span
+                  >${{ formatCost(summaryStats.today?.user_cost || 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -184,7 +175,7 @@
                   t('admin.accounts.stats.requests')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatNumber(stats.summary.today?.requests || 0)
+                  formatNumber(summaryStats.today?.requests || 0)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -192,13 +183,12 @@
                   t('admin.accounts.stats.tokens')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatTokens(stats.summary.today?.tokens || 0)
+                  formatTokens(summaryStats.today?.tokens || 0)
                 }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Highest Cost Day -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-orange-100 p-1.5 dark:bg-orange-900/30">
@@ -214,19 +204,19 @@
                   t('admin.accounts.stats.date')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  stats.summary.highest_cost_day?.label || '-'
+                  summaryStats.highest_cost_day?.label || '-'
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-orange-600 dark:text-orange-400"
-                  >${{ formatCost(stats.summary.highest_cost_day?.cost || 0) }}</span
+                  >${{ formatCost(summaryStats.highest_cost_day?.cost || 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.userBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.highest_cost_day?.user_cost || 0) }}</span
+                  >${{ formatCost(summaryStats.highest_cost_day?.user_cost || 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
@@ -234,13 +224,12 @@
                   t('admin.accounts.stats.requests')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatNumber(stats.summary.highest_cost_day?.requests || 0)
+                  formatNumber(summaryStats.highest_cost_day?.requests || 0)
                 }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Highest Request Day -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-indigo-100 p-1.5 dark:bg-indigo-900/30">
@@ -260,7 +249,7 @@
                   t('admin.accounts.stats.date')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  stats.summary.highest_request_day?.label || '-'
+                  summaryStats.highest_request_day?.label || '-'
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -268,28 +257,26 @@
                   t('admin.accounts.stats.requests')
                 }}</span>
                 <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{
-                  formatNumber(stats.summary.highest_request_day?.requests || 0)
+                  formatNumber(summaryStats.highest_request_day?.requests || 0)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.accountBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.highest_request_day?.cost || 0) }}</span
+                  >${{ formatCost(summaryStats.highest_request_day?.cost || 0) }}</span
                 >
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.userBilled') }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.highest_request_day?.user_cost || 0) }}</span
+                  >${{ formatCost(summaryStats.highest_request_day?.user_cost || 0) }}</span
                 >
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Row 3: Token Stats -->
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <!-- Accumulated Tokens -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-teal-100 p-1.5 dark:bg-teal-900/30">
@@ -305,7 +292,7 @@
                   t('admin.accounts.stats.totalTokens')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatTokens(stats.summary.total_tokens)
+                  formatTokens(summaryStats.total_tokens)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -313,13 +300,12 @@
                   t('admin.accounts.stats.dailyAvgTokens')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatTokens(Math.round(stats.summary.avg_daily_tokens))
+                  formatTokens(Math.round(summaryStats.avg_daily_tokens))
                 }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Performance -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-rose-100 p-1.5 dark:bg-rose-900/30">
@@ -335,7 +321,7 @@
                   t('admin.accounts.stats.avgResponseTime')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatDuration(stats.summary.avg_duration_ms)
+                  formatDuration(summaryStats.avg_duration_ms)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -343,13 +329,12 @@
                   t('admin.accounts.stats.daysActive')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >{{ stats.summary.actual_days_used }} / {{ stats.summary.days }}</span
+                  >{{ summaryStats.actual_days_used }} / {{ summaryStats.days }}</span
                 >
               </div>
             </div>
           </div>
 
-          <!-- Recent Activity -->
           <div class="card p-4">
             <div class="mb-3 flex items-center gap-2">
               <div class="rounded-lg bg-lime-100 p-1.5 dark:bg-lime-900/30">
@@ -369,7 +354,7 @@
                   t('admin.accounts.stats.todayRequests')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatNumber(stats.summary.today?.requests || 0)
+                  formatNumber(summaryStats.today?.requests || 0)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -377,7 +362,7 @@
                   t('admin.accounts.stats.todayTokens')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{
-                  formatTokens(stats.summary.today?.tokens || 0)
+                  formatTokens(summaryStats.today?.tokens || 0)
                 }}</span>
               </div>
               <div class="flex items-center justify-between">
@@ -385,20 +370,22 @@
                   t('admin.accounts.stats.todayCost')
                 }}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                  >${{ formatCost(stats.summary.today?.cost || 0) }}</span
+                  >${{ formatCost(summaryStats.today?.cost || 0) }}</span
                 >
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Usage Trend Chart -->
         <div class="card p-4">
           <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
             {{ t('admin.accounts.stats.usageTrend') }}
           </h3>
           <div class="h-64">
-            <Line v-if="trendChartData" :data="trendChartData" :options="lineChartOptions" />
+            <div v-if="detailsLoading && detailHistory.length === 0" class="flex h-full items-center justify-center">
+              <LoadingSpinner />
+            </div>
+            <Line v-else-if="trendChartData" :data="trendChartData" :options="lineChartOptions" />
             <div
               v-else
               class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400"
@@ -408,25 +395,26 @@
           </div>
         </div>
 
-        <!-- Model Distribution -->
-        <ModelDistributionChart :model-stats="stats.models" :loading="false" />
+        <ModelDistributionChart
+          :model-stats="modelStats"
+          :loading="detailsLoading && modelStats.length === 0"
+        />
 
         <EndpointDistributionChart
-          :endpoint-stats="stats.endpoints || []"
-          :loading="false"
+          :endpoint-stats="endpointStats"
+          :loading="detailsLoading && endpointStats.length === 0"
           :title="t('usage.inboundEndpoint')"
         />
 
         <EndpointDistributionChart
-          :endpoint-stats="stats.upstream_endpoints || []"
-          :loading="false"
+          :endpoint-stats="upstreamEndpointStats"
+          :loading="detailsLoading && upstreamEndpointStats.length === 0"
           :title="t('usage.upstreamEndpoint')"
         />
       </template>
 
-      <!-- No Data State -->
       <div
-        v-else-if="!loading"
+        v-else-if="!summaryLoading"
         class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
       >
         <Icon name="chartBar" size="xl" class="mb-4 h-12 w-12" />
@@ -448,7 +436,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
@@ -468,7 +456,14 @@ import ModelDistributionChart from '@/components/charts/ModelDistributionChart.v
 import EndpointDistributionChart from '@/components/charts/EndpointDistributionChart.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { adminAPI } from '@/api/admin'
-import type { Account, AccountUsageStatsResponse } from '@/types'
+import type {
+  Account,
+  AccountUsageHistory,
+  AccountUsageStatsPartialResponse,
+  AccountUsageSummary,
+  EndpointStat,
+  ModelStat,
+} from '@/types'
 
 ChartJS.register(
   CategoryScale,
@@ -481,6 +476,17 @@ ChartJS.register(
   Filler
 )
 
+const ACCOUNT_STATS_DAYS = 30
+const ACCOUNT_STATS_CACHE_TTL_MS = 60_000
+
+type CacheEntry = {
+  expiresAt: number
+  data: AccountUsageStatsPartialResponse
+}
+
+const accountStatsCache = new Map<string, CacheEntry>()
+const accountStatsInflight = new Map<string, Promise<AccountUsageStatsPartialResponse>>()
+
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -492,30 +498,34 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const loading = ref(false)
-const stats = ref<AccountUsageStatsResponse | null>(null)
+const summaryStats = ref<AccountUsageSummary | null>(null)
+const detailStats = ref<AccountUsageStatsPartialResponse | null>(null)
+const summaryLoading = ref(false)
+const detailsLoading = ref(false)
 
-// Dark mode detection
-const isDarkMode = computed(() => {
-  return document.documentElement.classList.contains('dark')
-})
+let currentLoadToken = 0
 
-// Chart colors
+const isDarkMode = computed(() => document.documentElement.classList.contains('dark'))
+
 const chartColors = computed(() => ({
   text: isDarkMode.value ? '#e5e7eb' : '#374151',
   grid: isDarkMode.value ? '#374151' : '#e5e7eb'
 }))
 
-// Line chart data
+const detailHistory = computed<AccountUsageHistory[]>(() => detailStats.value?.history ?? [])
+const modelStats = computed<ModelStat[]>(() => detailStats.value?.models ?? [])
+const endpointStats = computed<EndpointStat[]>(() => detailStats.value?.endpoints ?? [])
+const upstreamEndpointStats = computed<EndpointStat[]>(() => detailStats.value?.upstream_endpoints ?? [])
+
 const trendChartData = computed(() => {
-  if (!stats.value?.history?.length) return null
+  if (!detailHistory.value.length) return null
 
   return {
-    labels: stats.value.history.map((h) => h.label),
+    labels: detailHistory.value.map((h) => h.label),
     datasets: [
       {
         label: t('usage.accountBilled') + ' (USD)',
-        data: stats.value.history.map((h) => h.actual_cost),
+        data: detailHistory.value.map((h) => h.actual_cost),
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
@@ -524,7 +534,7 @@ const trendChartData = computed(() => {
       },
       {
         label: t('usage.userBilled') + ' (USD)',
-        data: stats.value.history.map((h) => h.user_cost),
+        data: detailHistory.value.map((h) => h.user_cost),
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.08)',
         fill: false,
@@ -534,7 +544,7 @@ const trendChartData = computed(() => {
       },
       {
         label: t('admin.accounts.stats.requests'),
-        data: stats.value.history.map((h) => h.requests),
+        data: detailHistory.value.map((h) => h.requests),
         borderColor: '#f97316',
         backgroundColor: 'rgba(249, 115, 22, 0.1)',
         fill: false,
@@ -545,7 +555,6 @@ const trendChartData = computed(() => {
   }
 })
 
-// Line chart options with dual Y-axis
 const lineChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
@@ -642,37 +651,140 @@ const lineChartOptions = computed(() => ({
   }
 }))
 
-// Load stats when modal opens
 watch(
-  () => props.show,
-  async (newVal) => {
-    if (newVal && props.account) {
-      await loadStats()
-    } else {
-      stats.value = null
+  () => [props.show, props.account?.id] as const,
+  ([show, accountID]) => {
+    currentLoadToken += 1
+    const loadToken = currentLoadToken
+
+    if (!show || !accountID) {
+      resetLocalState()
+      return
     }
-  }
+
+    void loadStats(accountID, loadToken)
+  },
+  { immediate: true }
 )
 
-const loadStats = async () => {
-  if (!props.account) return
+async function loadStats(accountID: number, loadToken: number) {
+  resetLocalState()
 
-  loading.value = true
-  try {
-    stats.value = await adminAPI.accounts.getStats(props.account.id, 30)
-  } catch (error) {
-    console.error('Failed to load account stats:', error)
-    stats.value = null
-  } finally {
-    loading.value = false
+  const summaryKey = buildCacheKey(accountID, ACCOUNT_STATS_DAYS, 'summary')
+  const cachedSummary = readCache(summaryKey)
+  if (cachedSummary?.summary) {
+    summaryStats.value = cachedSummary.summary
+  } else {
+    summaryLoading.value = true
+    try {
+      const payload = await loadCachedPayload(summaryKey, () =>
+        adminAPI.accounts.getStatsSummary(accountID, ACCOUNT_STATS_DAYS)
+      )
+      if (loadToken !== currentLoadToken) return
+      summaryStats.value = payload.summary ?? null
+    } catch (error) {
+      if (loadToken !== currentLoadToken) return
+      console.error('Failed to load account stats summary:', error)
+      summaryStats.value = null
+      return
+    } finally {
+      if (loadToken === currentLoadToken) {
+        summaryLoading.value = false
+      }
+    }
   }
+
+  if (!summaryStats.value) {
+    return
+  }
+
+  const detailsKey = buildCacheKey(accountID, ACCOUNT_STATS_DAYS, 'details')
+  const cachedDetails = readCache(detailsKey)
+  if (cachedDetails) {
+    detailStats.value = cachedDetails
+    return
+  }
+
+  detailsLoading.value = true
+  try {
+    const payload = await loadCachedPayload(detailsKey, () =>
+      adminAPI.accounts.getStatsDetails(accountID, ACCOUNT_STATS_DAYS)
+    )
+    if (loadToken !== currentLoadToken) return
+    detailStats.value = payload
+  } catch (error) {
+    if (loadToken !== currentLoadToken) return
+    console.error('Failed to load account stats details:', error)
+    detailStats.value = {
+      history: [],
+      models: [],
+      endpoints: [],
+      upstream_endpoints: [],
+    }
+  } finally {
+    if (loadToken === currentLoadToken) {
+      detailsLoading.value = false
+    }
+  }
+}
+
+function resetLocalState() {
+  summaryStats.value = null
+  detailStats.value = null
+  summaryLoading.value = false
+  detailsLoading.value = false
+}
+
+function buildCacheKey(accountID: number, days: number, segment: 'summary' | 'details'): string {
+  return `${accountID}:${days}:${segment}`
+}
+
+function readCache(key: string): AccountUsageStatsPartialResponse | null {
+  const entry = accountStatsCache.get(key)
+  if (!entry) {
+    return null
+  }
+  if (entry.expiresAt <= Date.now()) {
+    accountStatsCache.delete(key)
+    return null
+  }
+  return entry.data
+}
+
+async function loadCachedPayload(
+  key: string,
+  loader: () => Promise<AccountUsageStatsPartialResponse>
+): Promise<AccountUsageStatsPartialResponse> {
+  const cached = readCache(key)
+  if (cached) {
+    return cached
+  }
+
+  const inflight = accountStatsInflight.get(key)
+  if (inflight) {
+    return inflight
+  }
+
+  const promise = loader()
+    .then((payload) => {
+      accountStatsCache.set(key, {
+        data: payload,
+        expiresAt: Date.now() + ACCOUNT_STATS_CACHE_TTL_MS
+      })
+      return payload
+    })
+    .finally(() => {
+      accountStatsInflight.delete(key)
+    })
+
+  accountStatsInflight.set(key, promise)
+  return promise
 }
 
 const handleClose = () => {
   emit('close')
 }
 
-// Format helpers
 const formatCost = (value: number): string => {
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'

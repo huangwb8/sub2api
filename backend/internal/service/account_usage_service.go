@@ -70,6 +70,8 @@ type UsageLogRepository interface {
 
 	// Account stats
 	GetAccountUsageStats(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.AccountUsageStatsResponse, error)
+	GetAccountUsageSummary(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.AccountUsageSummary, error)
+	GetAccountUsageStatsDetails(ctx context.Context, accountID int64, startTime, endTime time.Time, include usagestats.AccountUsageStatsInclude) (*usagestats.AccountUsageStatsDetailsResponse, error)
 
 	// Aggregated stats (optimized)
 	GetUserStatsAggregated(ctx context.Context, userID int64, startTime, endTime time.Time) (*usagestats.UsageStats, error)
@@ -1121,6 +1123,22 @@ func (s *AccountUsageService) GetAccountUsageStats(ctx context.Context, accountI
 		return nil, fmt.Errorf("get account usage stats failed: %w", err)
 	}
 	return stats, nil
+}
+
+func (s *AccountUsageService) GetAccountUsageSummary(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.AccountUsageSummary, error) {
+	summary, err := s.usageLogRepo.GetAccountUsageSummary(ctx, accountID, startTime, endTime)
+	if err != nil {
+		return nil, fmt.Errorf("get account usage summary failed: %w", err)
+	}
+	return summary, nil
+}
+
+func (s *AccountUsageService) GetAccountUsageStatsDetails(ctx context.Context, accountID int64, startTime, endTime time.Time, include usagestats.AccountUsageStatsInclude) (*usagestats.AccountUsageStatsDetailsResponse, error) {
+	details, err := s.usageLogRepo.GetAccountUsageStatsDetails(ctx, accountID, startTime, endTime, include)
+	if err != nil {
+		return nil, fmt.Errorf("get account usage stats details failed: %w", err)
+	}
+	return details, nil
 }
 
 // fetchOAuthUsageRaw 从 Anthropic API 获取原始响应（不构建 UsageInfo）

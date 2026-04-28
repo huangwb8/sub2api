@@ -13,6 +13,7 @@ import type {
   WindowStats,
   ClaudeModel,
   AccountUsageStatsResponse,
+  AccountUsageStatsPartialResponse,
   TempUnschedulableStatus,
   AdminDataPayload,
   AdminDataImportResult,
@@ -211,6 +212,20 @@ export async function refreshCredentials(id: number): Promise<Account> {
 export async function getStats(id: number, days: number = 30): Promise<AccountUsageStatsResponse> {
   const { data } = await apiClient.get<AccountUsageStatsResponse>(`/admin/accounts/${id}/stats`, {
     params: { days }
+  })
+  return data
+}
+
+export async function getStatsSummary(id: number, days: number = 30): Promise<AccountUsageStatsPartialResponse> {
+  const { data } = await apiClient.get<AccountUsageStatsPartialResponse>(`/admin/accounts/${id}/stats`, {
+    params: { days, include: 'summary' }
+  })
+  return data
+}
+
+export async function getStatsDetails(id: number, days: number = 30): Promise<AccountUsageStatsPartialResponse> {
+  const { data } = await apiClient.get<AccountUsageStatsPartialResponse>(`/admin/accounts/${id}/stats`, {
+    params: { days, include: 'history,models,endpoints,upstream_endpoints' }
   })
   return data
 }
@@ -639,6 +654,8 @@ export const accountsAPI = {
   testAccount,
   refreshCredentials,
   getStats,
+  getStatsSummary,
+  getStatsDetails,
   clearError,
   getUsage,
   getTodayStats,

@@ -1634,6 +1634,14 @@ export interface AccountUsageStatsResponse {
   upstream_endpoints: EndpointStat[]
 }
 
+export interface AccountUsageStatsPartialResponse {
+  summary?: AccountUsageSummary
+  history?: AccountUsageHistory[]
+  models?: ModelStat[]
+  endpoints?: EndpointStat[]
+  upstream_endpoints?: EndpointStat[]
+}
+
 // ==================== User Attribute Types ====================
 
 export type UserAttributeType = 'text' | 'textarea' | 'number' | 'email' | 'url' | 'date' | 'select' | 'multi_select'

@@ -22,9 +22,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -967,13 +969,132 @@ func (h *AccountHandler) GetStats(c *gin.Context) {
 	endTime := timezone.StartOfDay(now.AddDate(0, 0, 1))
 	startTime := timezone.StartOfDay(now.AddDate(0, 0, -days+1))
 
-	stats, err := h.accountUsageService.GetAccountUsageStats(c.Request.Context(), accountID, startTime, endTime)
+	include, includeKey, err := parseAccountStatsIncludeQuery(c.Query("include"))
+	if err != nil {
+		response.BadRequest(c, "Invalid include parameter: "+err.Error())
+		return
+	}
+
+	metrics := &usagestats.AccountUsageStatsQueryMetrics{}
+	ctx := usagestats.WithAccountUsageStatsMetrics(c.Request.Context(), metrics)
+	cacheKey := buildAccountStatsCacheKey(accountID, startTime, endTime, includeKey)
+
+	entry, hit, err := accountStatsCache.GetOrLoad(cacheKey, func() (any, error) {
+		switch include {
+		case usagestats.AccountUsageStatsIncludeSummary:
+			summary, summaryErr := h.accountUsageService.GetAccountUsageSummary(ctx, accountID, startTime, endTime)
+			if summaryErr != nil {
+				return nil, summaryErr
+			}
+			return &usagestats.AccountUsageStatsPartialResponse{Summary: summary}, nil
+		case usagestats.AccountUsageStatsIncludeAll:
+			return h.accountUsageService.GetAccountUsageStats(ctx, accountID, startTime, endTime)
+		default:
+			partial := &usagestats.AccountUsageStatsPartialResponse{}
+			if include.Has(usagestats.AccountUsageStatsIncludeSummary) {
+				summary, summaryErr := h.accountUsageService.GetAccountUsageSummary(ctx, accountID, startTime, endTime)
+				if summaryErr != nil {
+					return nil, summaryErr
+				}
+				partial.Summary = summary
+			}
+
+			detailsInclude := include &^ usagestats.AccountUsageStatsIncludeSummary
+			if detailsInclude != usagestats.AccountUsageStatsIncludeNone {
+				details, detailsErr := h.accountUsageService.GetAccountUsageStatsDetails(ctx, accountID, startTime, endTime, detailsInclude)
+				if detailsErr != nil {
+					return nil, detailsErr
+				}
+				partial.History = details.History
+				partial.Models = details.Models
+				partial.Endpoints = details.Endpoints
+				partial.UpstreamEndpoints = details.UpstreamEndpoints
+			}
+
+			return partial, nil
+		}
+	})
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
-	response.Success(c, stats)
+	if entry.ETag != "" {
+		c.Header("ETag", entry.ETag)
+		c.Header("Vary", "If-None-Match")
+		if ifNoneMatchMatched(c.GetHeader("If-None-Match"), entry.ETag) {
+			c.Status(http.StatusNotModified)
+			return
+		}
+	}
+	c.Header("X-Snapshot-Cache", cacheStatusValue(hit))
+
+	modelsCount, endpointsCount, upstreamEndpointsCount := accountStatsPayloadCounts(entry.Payload)
+	metricsSnapshot := metrics.Snapshot()
+	logger.LegacyPrintf(
+		"handler.admin.account",
+		"[AccountStats] account_id=%d days=%d include=%s cache=%s history_query_ms=%d avg_duration_query_ms=%d model_stats_query_ms=%d endpoint_stats_query_ms=%d upstream_endpoint_stats_query_ms=%d response_payload_bytes=%d models_count=%d endpoints_count=%d upstream_endpoints_count=%d",
+		accountID,
+		days,
+		includeKey,
+		cacheStatusValue(hit),
+		metricsSnapshot.HistoryQueryMs,
+		metricsSnapshot.AvgDurationQueryMs,
+		metricsSnapshot.ModelStatsQueryMs,
+		metricsSnapshot.EndpointStatsQueryMs,
+		metricsSnapshot.UpstreamEndpointQueryMs,
+		accountStatsPayloadBytes(entry.Payload),
+		modelsCount,
+		endpointsCount,
+		upstreamEndpointsCount,
+	)
+
+	response.Success(c, entry.Payload)
+}
+
+func parseAccountStatsIncludeQuery(raw string) (usagestats.AccountUsageStatsInclude, string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return usagestats.AccountUsageStatsIncludeAll, "summary,history,models,endpoints,upstream_endpoints", nil
+	}
+
+	var include usagestats.AccountUsageStatsInclude
+	seen := make(map[string]struct{})
+	parts := strings.Split(value, ",")
+	for _, part := range parts {
+		token := strings.TrimSpace(part)
+		if token == "" {
+			continue
+		}
+		switch token {
+		case "summary":
+			include |= usagestats.AccountUsageStatsIncludeSummary
+		case "history":
+			include |= usagestats.AccountUsageStatsIncludeHistory
+		case "models":
+			include |= usagestats.AccountUsageStatsIncludeModels
+		case "endpoints":
+			include |= usagestats.AccountUsageStatsIncludeEndpoints
+		case "upstream_endpoints":
+			include |= usagestats.AccountUsageStatsIncludeUpstreamEndpoints
+		default:
+			return usagestats.AccountUsageStatsIncludeNone, "", fmt.Errorf("unsupported segment %q", token)
+		}
+		seen[token] = struct{}{}
+	}
+
+	if include == usagestats.AccountUsageStatsIncludeNone {
+		return usagestats.AccountUsageStatsIncludeNone, "", fmt.Errorf("no valid segments")
+	}
+
+	ordered := make([]string, 0, 5)
+	for _, token := range []string{"summary", "history", "models", "endpoints", "upstream_endpoints"} {
+		if _, ok := seen[token]; ok {
+			ordered = append(ordered, token)
+		}
+	}
+
+	return include, strings.Join(ordered, ","), nil
 }
 
 // ClearError handles clearing account error

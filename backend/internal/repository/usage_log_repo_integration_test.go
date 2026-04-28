@@ -40,6 +40,14 @@ func TestUsageLogRepoSuite(t *testing.T) {
 	suite.Run(t, new(UsageLogRepoSuite))
 }
 
+func intPtr(v int) *int {
+	return &v
+}
+
+func stringPtr(v string) *string {
+	return &v
+}
+
 // truncateToDayUTC 截断到 UTC 日期边界（测试辅助函数）
 func truncateToDayUTC(t time.Time) time.Time {
 	t = t.UTC()
@@ -1553,6 +1561,121 @@ func (s *UsageLogRepoSuite) TestGetAccountUsageStats_EmptyRange() {
 
 	s.Require().Len(resp.History, 0)
 	s.Require().Equal(int64(0), resp.Summary.TotalRequests)
+}
+
+func (s *UsageLogRepoSuite) TestGetAccountUsageSummary() {
+	user := mustCreateUser(s.T(), s.client, &service.User{Email: "accsummary@test.com"})
+	apiKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user.ID, Key: "sk-accsummary", Name: "k"})
+	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-summary"})
+
+	base := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
+
+	_, err := s.repo.Create(s.ctx, &service.UsageLog{
+		UserID:       user.ID,
+		APIKeyID:     apiKey.ID,
+		AccountID:    account.ID,
+		Model:        "claude-3-opus",
+		InputTokens:  100,
+		OutputTokens: 200,
+		TotalCost:    0.5,
+		ActualCost:   0.4,
+		DurationMs:   intPtr(1000),
+		CreatedAt:    base.Add(12 * time.Hour),
+	})
+	s.Require().NoError(err)
+
+	_, err = s.repo.Create(s.ctx, &service.UsageLog{
+		UserID:       user.ID,
+		APIKeyID:     apiKey.ID,
+		AccountID:    account.ID,
+		Model:        "claude-3-sonnet",
+		InputTokens:  50,
+		OutputTokens: 150,
+		TotalCost:    0.2,
+		ActualCost:   0.15,
+		DurationMs:   intPtr(2000),
+		CreatedAt:    base.Add(36 * time.Hour),
+	})
+	s.Require().NoError(err)
+
+	startTime := base
+	endTime := base.Add(72 * time.Hour)
+
+	summary, err := s.repo.GetAccountUsageSummary(s.ctx, account.ID, startTime, endTime)
+	s.Require().NoError(err)
+	s.Require().NotNil(summary)
+	s.Require().Equal(4, summary.Days)
+	s.Require().Equal(2, summary.ActualDaysUsed)
+	s.Require().Equal(int64(2), summary.TotalRequests)
+	s.Require().Equal(int64(500), summary.TotalTokens)
+	s.Require().InDelta(0.55, summary.TotalUserCost, 0.0001)
+	s.Require().InDelta(0.7, summary.TotalStandardCost, 0.0001)
+	s.Require().InDelta(1500, summary.AvgDurationMs, 0.0001)
+	s.Require().NotNil(summary.HighestCostDay)
+	s.Require().Equal("01/15", summary.HighestCostDay.Label)
+	s.Require().NotNil(summary.HighestRequestDay)
+	s.Require().Equal("01/15", summary.HighestRequestDay.Label)
+}
+
+func (s *UsageLogRepoSuite) TestGetAccountUsageStatsDetails_AggregatesOthers() {
+	user := mustCreateUser(s.T(), s.client, &service.User{Email: "accdetails@test.com"})
+	apiKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user.ID, Key: "sk-accdetails", Name: "k"})
+	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-details"})
+
+	base := time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)
+
+	for i := 0; i < 12; i++ {
+		modelName := fmt.Sprintf("model-%02d", i+1)
+		inboundEndpoint := fmt.Sprintf("/v1/chat/%02d", i+1)
+		upstreamEndpoint := fmt.Sprintf("https://upstream-%02d.example.com", i+1)
+
+		_, err := s.repo.Create(s.ctx, &service.UsageLog{
+			UserID:           user.ID,
+			APIKeyID:         apiKey.ID,
+			AccountID:        account.ID,
+			Model:            modelName,
+			InputTokens:      10 + i,
+			OutputTokens:     20 + i,
+			TotalCost:        float64(12-i) * 0.1,
+			ActualCost:       float64(12-i) * 0.08,
+			InboundEndpoint:  stringPtr(inboundEndpoint),
+			UpstreamEndpoint: stringPtr(upstreamEndpoint),
+			CreatedAt:        base.Add(time.Duration(i) * time.Hour),
+		})
+		s.Require().NoError(err)
+	}
+
+	startTime := base
+	endTime := base.Add(48 * time.Hour)
+
+	details, err := s.repo.GetAccountUsageStatsDetails(
+		s.ctx,
+		account.ID,
+		startTime,
+		endTime,
+		usagestats.AccountUsageStatsIncludeHistory|
+			usagestats.AccountUsageStatsIncludeModels|
+			usagestats.AccountUsageStatsIncludeEndpoints|
+			usagestats.AccountUsageStatsIncludeUpstreamEndpoints,
+	)
+	s.Require().NoError(err)
+	s.Require().NotNil(details)
+	s.Require().Len(details.History, 1)
+	s.Require().Len(details.Models, 11)
+	s.Require().Len(details.Endpoints, 11)
+	s.Require().Len(details.UpstreamEndpoints, 11)
+
+	lastModel := details.Models[len(details.Models)-1]
+	s.Require().Equal("Others", lastModel.Model)
+	s.Require().Equal(int64(2), lastModel.Requests)
+
+	lastEndpoint := details.Endpoints[len(details.Endpoints)-1]
+	s.Require().Equal("Others", lastEndpoint.Endpoint)
+	s.Require().Equal(int64(2), lastEndpoint.Requests)
+
+	lastUpstream := details.UpstreamEndpoints[len(details.UpstreamEndpoints)-1]
+	s.Require().Equal("Others", lastUpstream.Endpoint)
+	s.Require().Equal(int64(2), lastUpstream.Requests)
 }
 
 // --- GetUserUsageTrend ---

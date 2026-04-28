@@ -27,6 +27,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
 	gocache "github.com/patrickmn/go-cache"
+	"golang.org/x/sync/errgroup"
 )
 
 const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, charged_amount_cny, estimated_cost_cny, fx_rate_usd_cny, fx_rate_source, fx_fetched_at, fx_safety_margin, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, created_at"
@@ -3683,6 +3684,11 @@ type AccountUsageSummary = usagestats.AccountUsageSummary
 // AccountUsageStatsResponse represents the full usage statistics response for an account
 type AccountUsageStatsResponse = usagestats.AccountUsageStatsResponse
 
+const (
+	accountUsageStatsDistributionTopN = 10
+	accountUsageStatsOthersLabel      = "Others"
+)
+
 // EndpointStat represents endpoint usage statistics row.
 type EndpointStat = usagestats.EndpointStat
 
@@ -3834,8 +3840,186 @@ func (r *usageLogRepository) GetUpstreamEndpointStatsWithFilters(ctx context.Con
 	return r.getEndpointStatsByColumnWithFilters(ctx, "upstream_endpoint", startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType)
 }
 
+func (r *usageLogRepository) GetAccountUsageSummary(ctx context.Context, accountID int64, startTime, endTime time.Time) (*AccountUsageSummary, error) {
+	_, summary, err := r.getAccountHistoryAndSummary(ctx, accountID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	return &summary, nil
+}
+
+func (r *usageLogRepository) GetAccountUsageStatsDetails(ctx context.Context, accountID int64, startTime, endTime time.Time, include usagestats.AccountUsageStatsInclude) (*usagestats.AccountUsageStatsDetailsResponse, error) {
+	if include == usagestats.AccountUsageStatsIncludeNone {
+		return &usagestats.AccountUsageStatsDetailsResponse{}, nil
+	}
+
+	include &^= usagestats.AccountUsageStatsIncludeSummary
+
+	if !r.canRunConcurrentAccountStatsQueries() {
+		return r.getAccountUsageStatsDetailsSequential(ctx, accountID, startTime, endTime, include)
+	}
+
+	var (
+		history           []AccountUsageHistory
+		models            []ModelStat
+		endpoints         []EndpointStat
+		upstreamEndpoints []EndpointStat
+	)
+
+	g, gctx := errgroup.WithContext(ctx)
+
+	if include.Has(usagestats.AccountUsageStatsIncludeHistory) {
+		g.Go(func() error {
+			var err error
+			history, _, err = r.getAccountHistoryAndSummary(gctx, accountID, startTime, endTime)
+			return err
+		})
+	}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeModels) {
+		g.Go(func() error {
+			queryStart := time.Now()
+			stats, statsErr := r.GetModelStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, nil, nil, nil)
+			recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+				metrics.RecordModelStatsQuery(time.Since(queryStart))
+			})
+			if statsErr != nil {
+				logger.LegacyPrintf("repository.usage_log", "GetModelStatsWithFilters failed in GetAccountUsageStatsDetails: %v", statsErr)
+				models = []ModelStat{}
+				return nil
+			}
+			models = aggregateTopModelStats(stats, accountUsageStatsDistributionTopN)
+			return nil
+		})
+	}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeEndpoints) {
+		g.Go(func() error {
+			queryStart := time.Now()
+			stats, statsErr := r.GetEndpointStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+			recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+				metrics.RecordEndpointStatsQuery(time.Since(queryStart))
+			})
+			if statsErr != nil {
+				logger.LegacyPrintf("repository.usage_log", "GetEndpointStatsWithFilters failed in GetAccountUsageStatsDetails: %v", statsErr)
+				endpoints = []EndpointStat{}
+				return nil
+			}
+			endpoints = aggregateTopEndpointStats(stats, accountUsageStatsDistributionTopN)
+			return nil
+		})
+	}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeUpstreamEndpoints) {
+		g.Go(func() error {
+			queryStart := time.Now()
+			stats, statsErr := r.GetUpstreamEndpointStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+			recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+				metrics.RecordUpstreamEndpointQuery(time.Since(queryStart))
+			})
+			if statsErr != nil {
+				logger.LegacyPrintf("repository.usage_log", "GetUpstreamEndpointStatsWithFilters failed in GetAccountUsageStatsDetails: %v", statsErr)
+				upstreamEndpoints = []EndpointStat{}
+				return nil
+			}
+			upstreamEndpoints = aggregateTopEndpointStats(stats, accountUsageStatsDistributionTopN)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return &usagestats.AccountUsageStatsDetailsResponse{
+		History:           history,
+		Models:            models,
+		Endpoints:         endpoints,
+		UpstreamEndpoints: upstreamEndpoints,
+	}, nil
+}
+
 // GetAccountUsageStats returns comprehensive usage statistics for an account over a time range
-func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID int64, startTime, endTime time.Time) (resp *AccountUsageStatsResponse, err error) {
+func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID int64, startTime, endTime time.Time) (*AccountUsageStatsResponse, error) {
+	if !r.canRunConcurrentAccountStatsQueries() {
+		return r.getAccountUsageStatsSequential(ctx, accountID, startTime, endTime)
+	}
+
+	var (
+		history           []AccountUsageHistory
+		summary           AccountUsageSummary
+		models            []ModelStat
+		endpoints         []EndpointStat
+		upstreamEndpoints []EndpointStat
+	)
+
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		history, summary, err = r.getAccountHistoryAndSummary(gctx, accountID, startTime, endTime)
+		return err
+	})
+
+	g.Go(func() error {
+		queryStart := time.Now()
+		stats, statsErr := r.GetModelStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, nil, nil, nil)
+		recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordModelStatsQuery(time.Since(queryStart))
+		})
+		if statsErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetModelStatsWithFilters failed in GetAccountUsageStats: %v", statsErr)
+			models = []ModelStat{}
+			return nil
+		}
+		models = aggregateTopModelStats(stats, accountUsageStatsDistributionTopN)
+		return nil
+	})
+
+	g.Go(func() error {
+		queryStart := time.Now()
+		stats, statsErr := r.GetEndpointStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+		recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordEndpointStatsQuery(time.Since(queryStart))
+		})
+		if statsErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetEndpointStatsWithFilters failed in GetAccountUsageStats: %v", statsErr)
+			endpoints = []EndpointStat{}
+			return nil
+		}
+		endpoints = aggregateTopEndpointStats(stats, accountUsageStatsDistributionTopN)
+		return nil
+	})
+
+	g.Go(func() error {
+		queryStart := time.Now()
+		stats, statsErr := r.GetUpstreamEndpointStatsWithFilters(gctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+		recordAccountUsageStatsMetrics(gctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordUpstreamEndpointQuery(time.Since(queryStart))
+		})
+		if statsErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetUpstreamEndpointStatsWithFilters failed in GetAccountUsageStats: %v", statsErr)
+			upstreamEndpoints = []EndpointStat{}
+			return nil
+		}
+		upstreamEndpoints = aggregateTopEndpointStats(stats, accountUsageStatsDistributionTopN)
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return &AccountUsageStatsResponse{
+		History:           history,
+		Summary:           summary,
+		Models:            models,
+		Endpoints:         endpoints,
+		UpstreamEndpoints: upstreamEndpoints,
+	}, nil
+}
+
+func (r *usageLogRepository) getAccountHistoryAndSummary(ctx context.Context, accountID int64, startTime, endTime time.Time) (history []AccountUsageHistory, summary AccountUsageSummary, err error) {
 	daysCount := int(endTime.Sub(startTime).Hours()/24) + 1
 	if daysCount <= 0 {
 		daysCount = 30
@@ -3855,20 +4039,24 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 		ORDER BY date ASC
 	`
 
+	queryStart := time.Now()
 	rows, err := r.sql.QueryContext(ctx, query, accountID, startTime, endTime)
 	if err != nil {
-		return nil, err
+		return nil, AccountUsageSummary{}, err
 	}
+	recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+		metrics.RecordHistoryQuery(time.Since(queryStart))
+	})
 	defer func() {
 		// 保持主错误优先；仅在无错误时回传 Close 失败。
 		// 同时清空返回值，避免误用不完整结果。
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = closeErr
-			resp = nil
+			history = nil
 		}
 	}()
 
-	history := make([]AccountUsageHistory, 0)
+	history = make([]AccountUsageHistory, 0)
 	for rows.Next() {
 		var date string
 		var requests int64
@@ -3877,7 +4065,7 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 		var actualCost float64
 		var userCost float64
 		if err = rows.Scan(&date, &requests, &tokens, &cost, &actualCost, &userCost); err != nil {
-			return nil, err
+			return nil, AccountUsageSummary{}, err
 		}
 		t, _ := time.Parse("2006-01-02", date)
 		history = append(history, AccountUsageHistory{
@@ -3891,7 +4079,7 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 		})
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, AccountUsageSummary{}, err
 	}
 
 	var totalAccountCost, totalUserCost, totalStandardCost float64
@@ -3921,11 +4109,15 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 
 	avgQuery := "SELECT COALESCE(AVG(duration_ms), 0) as avg_duration_ms FROM usage_logs WHERE account_id = $1 AND created_at >= $2 AND created_at < $3"
 	var avgDuration float64
+	avgQueryStart := time.Now()
 	if err := scanSingleRow(ctx, r.sql, avgQuery, []any{accountID, startTime, endTime}, &avgDuration); err != nil {
-		return nil, err
+		return nil, AccountUsageSummary{}, err
 	}
+	recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+		metrics.RecordAvgDurationQuery(time.Since(avgQueryStart))
+	})
 
-	summary := AccountUsageSummary{
+	summary = AccountUsageSummary{
 		Days:              daysCount,
 		ActualDaysUsed:    actualDaysUsed,
 		TotalCost:         totalAccountCost,
@@ -3991,30 +4183,165 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 			UserCost: highestRequestDay.UserCost,
 		}
 	}
+	return history, summary, nil
+}
 
-	models, err := r.GetModelStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, nil, nil, nil)
-	if err != nil {
-		models = []ModelStat{}
+func recordAccountUsageStatsMetrics(ctx context.Context, fn func(metrics *usagestats.AccountUsageStatsQueryMetrics)) {
+	if fn == nil {
+		return
 	}
+	metrics := usagestats.AccountUsageStatsMetricsFromContext(ctx)
+	if metrics == nil {
+		return
+	}
+	fn(metrics)
+}
+
+func aggregateTopModelStats(stats []ModelStat, topN int) []ModelStat {
+	if len(stats) <= topN || topN <= 0 {
+		return stats
+	}
+
+	result := append([]ModelStat{}, stats[:topN]...)
+	others := ModelStat{Model: accountUsageStatsOthersLabel}
+	for _, stat := range stats[topN:] {
+		others.Requests += stat.Requests
+		others.InputTokens += stat.InputTokens
+		others.OutputTokens += stat.OutputTokens
+		others.CacheCreationTokens += stat.CacheCreationTokens
+		others.CacheReadTokens += stat.CacheReadTokens
+		others.TotalTokens += stat.TotalTokens
+		others.Cost += stat.Cost
+		others.ActualCost += stat.ActualCost
+	}
+	return append(result, others)
+}
+
+func aggregateTopEndpointStats(stats []EndpointStat, topN int) []EndpointStat {
+	if len(stats) <= topN || topN <= 0 {
+		return stats
+	}
+
+	result := append([]EndpointStat{}, stats[:topN]...)
+	others := EndpointStat{Endpoint: accountUsageStatsOthersLabel}
+	for _, stat := range stats[topN:] {
+		others.Requests += stat.Requests
+		others.TotalTokens += stat.TotalTokens
+		others.Cost += stat.Cost
+		others.ActualCost += stat.ActualCost
+	}
+	return append(result, others)
+}
+
+func (r *usageLogRepository) canRunConcurrentAccountStatsQueries() bool {
+	return r.db != nil
+}
+
+func (r *usageLogRepository) getAccountUsageStatsSequential(ctx context.Context, accountID int64, startTime, endTime time.Time) (*AccountUsageStatsResponse, error) {
+	history, summary, err := r.getAccountHistoryAndSummary(ctx, accountID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	queryStart := time.Now()
+	models, modelErr := r.GetModelStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, nil, nil, nil)
+	recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+		metrics.RecordModelStatsQuery(time.Since(queryStart))
+	})
+	if modelErr != nil {
+		logger.LegacyPrintf("repository.usage_log", "GetModelStatsWithFilters failed in GetAccountUsageStats: %v", modelErr)
+		models = []ModelStat{}
+	} else {
+		models = aggregateTopModelStats(models, accountUsageStatsDistributionTopN)
+	}
+
+	queryStart = time.Now()
 	endpoints, endpointErr := r.GetEndpointStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+	recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+		metrics.RecordEndpointStatsQuery(time.Since(queryStart))
+	})
 	if endpointErr != nil {
 		logger.LegacyPrintf("repository.usage_log", "GetEndpointStatsWithFilters failed in GetAccountUsageStats: %v", endpointErr)
 		endpoints = []EndpointStat{}
+	} else {
+		endpoints = aggregateTopEndpointStats(endpoints, accountUsageStatsDistributionTopN)
 	}
+
+	queryStart = time.Now()
 	upstreamEndpoints, upstreamEndpointErr := r.GetUpstreamEndpointStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+	recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+		metrics.RecordUpstreamEndpointQuery(time.Since(queryStart))
+	})
 	if upstreamEndpointErr != nil {
 		logger.LegacyPrintf("repository.usage_log", "GetUpstreamEndpointStatsWithFilters failed in GetAccountUsageStats: %v", upstreamEndpointErr)
 		upstreamEndpoints = []EndpointStat{}
+	} else {
+		upstreamEndpoints = aggregateTopEndpointStats(upstreamEndpoints, accountUsageStatsDistributionTopN)
 	}
 
-	resp = &AccountUsageStatsResponse{
+	return &AccountUsageStatsResponse{
 		History:           history,
 		Summary:           summary,
 		Models:            models,
 		Endpoints:         endpoints,
 		UpstreamEndpoints: upstreamEndpoints,
+	}, nil
+}
+
+func (r *usageLogRepository) getAccountUsageStatsDetailsSequential(ctx context.Context, accountID int64, startTime, endTime time.Time, include usagestats.AccountUsageStatsInclude) (*usagestats.AccountUsageStatsDetailsResponse, error) {
+	details := &usagestats.AccountUsageStatsDetailsResponse{}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeHistory) {
+		history, _, err := r.getAccountHistoryAndSummary(ctx, accountID, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		details.History = history
 	}
-	return resp, nil
+
+	if include.Has(usagestats.AccountUsageStatsIncludeModels) {
+		queryStart := time.Now()
+		models, modelErr := r.GetModelStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, nil, nil, nil)
+		recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordModelStatsQuery(time.Since(queryStart))
+		})
+		if modelErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetModelStatsWithFilters failed in GetAccountUsageStatsDetails: %v", modelErr)
+			details.Models = []ModelStat{}
+		} else {
+			details.Models = aggregateTopModelStats(models, accountUsageStatsDistributionTopN)
+		}
+	}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeEndpoints) {
+		queryStart := time.Now()
+		endpoints, endpointErr := r.GetEndpointStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+		recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordEndpointStatsQuery(time.Since(queryStart))
+		})
+		if endpointErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetEndpointStatsWithFilters failed in GetAccountUsageStatsDetails: %v", endpointErr)
+			details.Endpoints = []EndpointStat{}
+		} else {
+			details.Endpoints = aggregateTopEndpointStats(endpoints, accountUsageStatsDistributionTopN)
+		}
+	}
+
+	if include.Has(usagestats.AccountUsageStatsIncludeUpstreamEndpoints) {
+		queryStart := time.Now()
+		upstreamEndpoints, upstreamEndpointErr := r.GetUpstreamEndpointStatsWithFilters(ctx, startTime, endTime, 0, 0, accountID, 0, "", nil, nil, nil)
+		recordAccountUsageStatsMetrics(ctx, func(metrics *usagestats.AccountUsageStatsQueryMetrics) {
+			metrics.RecordUpstreamEndpointQuery(time.Since(queryStart))
+		})
+		if upstreamEndpointErr != nil {
+			logger.LegacyPrintf("repository.usage_log", "GetUpstreamEndpointStatsWithFilters failed in GetAccountUsageStatsDetails: %v", upstreamEndpointErr)
+			details.UpstreamEndpoints = []EndpointStat{}
+		} else {
+			details.UpstreamEndpoints = aggregateTopEndpointStats(upstreamEndpoints, accountUsageStatsDistributionTopN)
+		}
+	}
+
+	return details, nil
 }
 
 func (r *usageLogRepository) listUsageLogsWithPagination(ctx context.Context, whereClause string, args []any, params pagination.PaginationParams) ([]service.UsageLog, *pagination.PaginationResult, error) {

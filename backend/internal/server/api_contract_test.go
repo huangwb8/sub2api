@@ -2358,6 +2358,14 @@ func (r *stubUsageLogRepo) GetAccountUsageStats(ctx context.Context, accountID i
 	return nil, errors.New("not implemented")
 }
 
+func (r *stubUsageLogRepo) GetAccountUsageSummary(ctx context.Context, accountID int64, startTime, endTime time.Time) (*usagestats.AccountUsageSummary, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (r *stubUsageLogRepo) GetAccountUsageStatsDetails(ctx context.Context, accountID int64, startTime, endTime time.Time, include usagestats.AccountUsageStatsInclude) (*usagestats.AccountUsageStatsDetailsResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (r *stubUsageLogRepo) GetStatsWithFilters(ctx context.Context, filters usagestats.UsageLogFilters) (*usagestats.UsageStats, error) {
 	return nil, errors.New("not implemented")
 }
