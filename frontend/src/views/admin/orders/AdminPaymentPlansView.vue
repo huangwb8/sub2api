@@ -17,7 +17,27 @@
             {{ t('payment.admin.planManagementHint') }}
           </p>
         </div>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          :aria-expanded="isPlanPanelExpanded"
+          @click="togglePlanPanel"
+        >
+          <Icon
+            :name="isPlanPanelExpanded ? 'chevronDown' : 'chevronRight'"
+            size="sm"
+            class="mr-2"
+          />
+          {{ isPlanPanelExpanded ? t('nav.collapse') : t('nav.expand') }}
+        </button>
       </div>
+      <div
+        v-if="isEmbedded && !isPlanPanelExpanded"
+        class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-dark-900/60 dark:text-gray-300"
+      >
+        {{ t('payment.admin.planManagementHint') }}
+      </div>
+      <template v-else>
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
         <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
@@ -85,6 +105,7 @@
           </div>
         </template>
       </DataTable>
+      </template>
     </div>
 
     <!-- Plan Edit Dialog -->
@@ -203,6 +224,7 @@ const props = withDefaults(defineProps<{ embedded?: boolean }>(), {
   embedded: false
 })
 const isEmbedded = computed(() => props.embedded)
+const isPlanPanelExpanded = ref(!props.embedded)
 
 // ==================== Groups ====================
 
@@ -247,6 +269,7 @@ const selectedGroupInfo = computed(() => {
 
 const plansLoading = ref(false)
 const plans = ref<SubscriptionPlan[]>([])
+const hasLoadedPlans = ref(false)
 const showPlanDialog = ref(false)
 const showDeletePlanDialog = ref(false)
 const planSaving = ref(false)
@@ -292,9 +315,17 @@ async function loadPlans() {
   try {
     const loadedPlans = await adminPaymentAPI.getPlans()
     plans.value = sortSubscriptionPlans((loadedPlans || []).map(plan => normalizeSubscriptionPlan(plan)))
+    hasLoadedPlans.value = true
   }
   catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { plansLoading.value = false }
+}
+
+function togglePlanPanel() {
+  isPlanPanelExpanded.value = !isPlanPanelExpanded.value
+  if (isPlanPanelExpanded.value && !hasLoadedPlans.value && !plansLoading.value) {
+    void loadPlans()
+  }
 }
 
 function upsertPlan(plan: SubscriptionPlan) {
@@ -432,6 +463,8 @@ async function handleDeletePlan() {
 
 onMounted(() => {
   loadGroups()
-  loadPlans()
+  if (!isEmbedded.value || isPlanPanelExpanded.value) {
+    void loadPlans()
+  }
 })
 </script>

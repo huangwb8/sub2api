@@ -703,8 +703,8 @@ const allColumns = computed<Column[]>(() => [
   { key: 'groups', label: t('admin.users.columns.groups'), sortable: false },
   { key: 'subscriptions', label: t('admin.users.columns.subscriptions'), sortable: false },
   { key: 'balance', label: t('admin.users.columns.balance'), sortable: true },
-  { key: 'total_recharged', label: t('admin.users.columns.totalRecharged'), sortable: false },
-  { key: 'usage', label: t('admin.users.columns.usage'), sortable: false },
+  { key: 'total_recharged', label: t('admin.users.columns.totalRecharged'), sortable: true },
+  { key: 'usage', label: t('admin.users.columns.usage'), sortable: true },
   { key: 'concurrency', label: t('admin.users.columns.concurrency'), sortable: true },
   { key: 'status', label: t('admin.users.columns.status'), sortable: true },
   { key: 'created_at', label: t('admin.users.columns.created'), sortable: true },
@@ -794,7 +794,7 @@ const searchQuery = ref('')
 const USER_SORT_STORAGE_KEY = 'admin-users-table-sort'
 const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' } => {
   const fallback = { sort_by: 'created_at', sort_order: 'desc' as 'asc' | 'desc' }
-  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'concurrency', 'status', 'created_at'])
+  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'total_recharged', 'usage', 'concurrency', 'status', 'created_at'])
   try {
     const raw = localStorage.getItem(USER_SORT_STORAGE_KEY)
     if (!raw) return fallback

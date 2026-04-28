@@ -305,6 +305,29 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 	sortBy := strings.ToLower(strings.TrimSpace(params.SortBy))
 	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
 
+	switch sortBy {
+	case "total_recharged":
+		return []func(*entsql.Selector){userAggregateOrder(
+			sortOrder,
+			func(idColumn string) string {
+				return fmt.Sprintf(
+					"COALESCE((SELECT SUM(rc.value) FROM redeem_codes AS rc WHERE rc.used_by = %s AND rc.value > 0 AND rc.type IN ('balance', 'admin_balance')), 0)",
+					idColumn,
+				)
+			},
+		)}
+	case "usage":
+		return []func(*entsql.Selector){userAggregateOrder(
+			sortOrder,
+			func(idColumn string) string {
+				return fmt.Sprintf(
+					"COALESCE((SELECT SUM(ul.actual_cost) FROM usage_logs AS ul WHERE ul.user_id = %s), 0)",
+					idColumn,
+				)
+			},
+		)}
+	}
+
 	var field string
 	defaultField := true
 	switch sortBy {
@@ -343,6 +366,23 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 		return []func(*entsql.Selector){dbent.Desc(dbuser.FieldID)}
 	}
 	return []func(*entsql.Selector){dbent.Desc(field), dbent.Desc(dbuser.FieldID)}
+}
+
+func userAggregateOrder(
+	sortOrder string,
+	exprBuilder func(idColumn string) string,
+) func(*entsql.Selector) {
+	return func(selector *entsql.Selector) {
+		idColumn := selector.C(dbuser.FieldID)
+		direction := "DESC"
+		if sortOrder == pagination.SortOrderAsc {
+			direction = "ASC"
+		}
+		selector.OrderExpr(
+			entsql.Raw(fmt.Sprintf("%s %s", exprBuilder(idColumn), direction)),
+			entsql.Raw(fmt.Sprintf("%s %s", idColumn, direction)),
+		)
+	}
 }
 
 // filterUsersByAttributes returns user IDs that match ALL the given attribute filters

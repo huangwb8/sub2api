@@ -184,7 +184,7 @@
           :data="proxies"
           :loading="loading"
           :server-side-sort="true"
-          default-sort-key="id"
+          default-sort-key="account_count"
           default-sort-order="desc"
           @sort="handleSort"
         >
@@ -1048,7 +1048,7 @@ const pagination = reactive({
   pages: 0
 })
 const sortState = reactive({
-  sort_by: 'id',
+  sort_by: 'account_count',
   sort_order: 'desc' as 'asc' | 'desc'
 })
 
