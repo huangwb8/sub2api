@@ -202,6 +202,20 @@ func (s *UserRepoSuite) TestListWithFilters_SearchByUsername() {
 	s.Require().Equal("JohnDoe", users[0].Username)
 }
 
+func (s *UserRepoSuite) TestListWithFilters_SearchSupportsMultipleTerms() {
+	s.mustCreateUser(&service.User{Email: "abdkdkdidddy@example.com", Username: "Alpha Proxy"})
+	s.mustCreateUser(&service.User{Email: "only-ab@example.com", Username: "Alpha"})
+
+	users, _, err := s.repo.ListWithFilters(
+		s.ctx,
+		pagination.PaginationParams{Page: 1, PageSize: 10},
+		service.UserListFilters{Search: "ab dy"},
+	)
+	s.Require().NoError(err)
+	s.Require().Len(users, 1)
+	s.Require().Equal("abdkdkdidddy@example.com", users[0].Email)
+}
+
 func (s *UserRepoSuite) TestListWithFilters_LoadsActiveSubscriptions() {
 	user := s.mustCreateUser(&service.User{Email: "sub@test.com", Status: service.StatusActive})
 	groupActive := s.mustCreateGroup("g-sub-active")

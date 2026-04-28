@@ -134,6 +134,16 @@ func (s *ProxyRepoSuite) TestListWithFilters_Search() {
 	s.Require().Contains(proxies[0].Name, "production")
 }
 
+func (s *ProxyRepoSuite) TestListWithFilters_SearchSupportsMultipleTerms() {
+	s.mustCreateProxy(&service.Proxy{Name: "abdkdkdidddy", Protocol: "http", Host: "10.0.0.1", Port: 8080, Status: service.StatusActive})
+	s.mustCreateProxy(&service.Proxy{Name: "only-ab-match", Protocol: "http", Host: "10.0.0.2", Port: 8081, Status: service.StatusActive})
+
+	proxies, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "ab dy")
+	s.Require().NoError(err)
+	s.Require().Len(proxies, 1)
+	s.Require().Equal("abdkdkdidddy", proxies[0].Name)
+}
+
 // --- ListActive ---
 
 func (s *ProxyRepoSuite) TestListActive() {

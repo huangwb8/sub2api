@@ -228,6 +228,22 @@ func (s *APIKeyRepoSuite) TestListByUserID() {
 	s.Require().Equal(int64(2), page.Total)
 }
 
+func (s *APIKeyRepoSuite) TestListByUserID_SearchSupportsMultipleTerms() {
+	user := s.mustCreateUser("listbyuser-multi@test.com")
+	s.mustCreateApiKey(user.ID, "sk-abdy-1", "abdkdkdidddy", nil)
+	s.mustCreateApiKey(user.ID, "sk-ab-2", "only-ab-match", nil)
+
+	keys, _, err := s.repo.ListByUserID(
+		s.ctx,
+		user.ID,
+		pagination.PaginationParams{Page: 1, PageSize: 10},
+		service.APIKeyListFilters{Search: "ab dy"},
+	)
+	s.Require().NoError(err)
+	s.Require().Len(keys, 1)
+	s.Require().Equal("abdkdkdidddy", keys[0].Name)
+}
+
 func (s *APIKeyRepoSuite) TestListByUserID_Pagination() {
 	user := s.mustCreateUser("paging@test.com")
 	for i := 0; i < 5; i++ {
@@ -305,6 +321,17 @@ func (s *APIKeyRepoSuite) TestSearchAPIKeys() {
 	s.Require().NoError(err, "SearchAPIKeys")
 	s.Require().Len(found, 1)
 	s.Require().Contains(found[0].Name, "Production")
+}
+
+func (s *APIKeyRepoSuite) TestSearchAPIKeys_SupportsMultipleTerms() {
+	user := s.mustCreateUser("search-multi@test.com")
+	s.mustCreateApiKey(user.ID, "sk-search-multi-1", "abdkdkdidddy", nil)
+	s.mustCreateApiKey(user.ID, "sk-search-multi-2", "only-ab-match", nil)
+
+	found, err := s.repo.SearchAPIKeys(s.ctx, user.ID, "ab dy", 10)
+	s.Require().NoError(err)
+	s.Require().Len(found, 1)
+	s.Require().Equal("abdkdkdidddy", found[0].Name)
 }
 
 func (s *APIKeyRepoSuite) TestSearchAPIKeys_NoKeyword() {

@@ -131,8 +131,8 @@ func (r *promoCodeRepository) ListWithFilters(ctx context.Context, params pagina
 	if status != "" {
 		q = q.Where(promocode.StatusEQ(status))
 	}
-	if search != "" {
-		q = q.Where(promocode.CodeContainsFold(search))
+	for _, term := range splitSearchTerms(search) {
+		q = q.Where(promocode.CodeContainsFold(term))
 	}
 
 	total, err := q.Clone().Count(ctx)

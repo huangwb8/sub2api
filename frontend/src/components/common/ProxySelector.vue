@@ -166,6 +166,7 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import Icon from '@/components/icons/Icon.vue'
 import type { Proxy } from '@/types'
+import { matchesSearchTerms } from '@/utils/searchMatcher'
 
 const { t } = useI18n()
 
@@ -227,11 +228,12 @@ const filteredProxies = computed(() => {
   if (!searchQuery.value) {
     return props.proxies
   }
-  const query = searchQuery.value.toLowerCase()
   return props.proxies.filter((proxy) => {
-    const name = proxy.name.toLowerCase()
-    const host = proxy.host.toLowerCase()
-    return name.includes(query) || host.includes(query)
+    return matchesSearchTerms(searchQuery.value, [
+      formatProxyName(proxy),
+      proxy.name,
+      proxy.host
+    ])
   })
 })
 

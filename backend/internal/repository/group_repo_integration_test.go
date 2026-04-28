@@ -335,6 +335,23 @@ func (s *GroupRepoSuite) TestListWithFilters_Search() {
 		s.Require().False(containsID(groups, other.ID), "expected other group to be filtered out")
 	})
 
+	s.Run("search_should_match_multiple_terms", func() {
+		repo, ctx := newRepo()
+
+		target := newGroup("abdkdkdidddy")
+		target.Description = "flexible proxy group"
+		target = mustCreate(repo, ctx, target)
+
+		other := newGroup("only-ab-match")
+		other.Description = "flexible group"
+		other = mustCreate(repo, ctx, other)
+
+		groups, _, err := repo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 50}, "", "", "ab dy", nil)
+		s.Require().NoError(err)
+		s.Require().True(containsID(groups, target.ID), "expected target group to match all search terms")
+		s.Require().False(containsID(groups, other.ID), "expected other group to be filtered out")
+	})
+
 	s.Run("search_nonexistent_should_return_empty", func() {
 		repo, ctx := newRepo()
 

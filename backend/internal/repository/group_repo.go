@@ -254,10 +254,10 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 	if status != "" {
 		q = q.Where(group.StatusEQ(status))
 	}
-	if search != "" {
+	for _, term := range splitSearchTerms(search) {
 		q = q.Where(group.Or(
-			group.NameContainsFold(search),
-			group.DescriptionContainsFold(search),
+			group.NameContainsFold(term),
+			group.DescriptionContainsFold(term),
 		))
 	}
 	if isExclusive != nil {

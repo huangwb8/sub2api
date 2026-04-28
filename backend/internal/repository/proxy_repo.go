@@ -130,8 +130,11 @@ func (r *proxyRepository) ListWithFilters(ctx context.Context, params pagination
 	if status != "" {
 		q = q.Where(proxy.StatusEQ(status))
 	}
-	if search != "" {
-		q = q.Where(proxy.NameContainsFold(search))
+	for _, term := range splitSearchTerms(search) {
+		q = q.Where(proxy.Or(
+			proxy.NameContainsFold(term),
+			proxy.HostContainsFold(term),
+		))
 	}
 
 	total, err := q.Count(ctx)
@@ -168,8 +171,11 @@ func (r *proxyRepository) ListWithFiltersAndAccountCount(ctx context.Context, pa
 	if status != "" {
 		q = q.Where(proxy.StatusEQ(status))
 	}
-	if search != "" {
-		q = q.Where(proxy.NameContainsFold(search))
+	for _, term := range splitSearchTerms(search) {
+		q = q.Where(proxy.Or(
+			proxy.NameContainsFold(term),
+			proxy.HostContainsFold(term),
+		))
 	}
 
 	total, err := q.Count(ctx)

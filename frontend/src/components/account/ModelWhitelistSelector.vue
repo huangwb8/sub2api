@@ -126,6 +126,7 @@ import { useAppStore } from '@/stores/app'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { allModels, getModelsByPlatform } from '@/composables/useModelWhitelist'
+import { matchesSearchTerms } from '@/utils/searchMatcher'
 
 const { t } = useI18n()
 
@@ -178,10 +179,9 @@ const availableOptions = computed(() => {
 })
 
 const filteredModels = computed(() => {
-  const query = searchQuery.value.toLowerCase().trim()
-  if (!query) return availableOptions.value
+  if (!searchQuery.value.trim()) return availableOptions.value
   return availableOptions.value.filter(
-    m => m.value.toLowerCase().includes(query) || m.label.toLowerCase().includes(query)
+    m => matchesSearchTerms(searchQuery.value, [m.value, m.label])
   )
 })
 

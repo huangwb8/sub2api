@@ -71,4 +71,36 @@ describe('ProxySelector', () => {
     expect(wrapper.find('.select-value').text()).toContain('Decodo-JP-帐号2')
     expect(wrapper.find('.select-value').text()).not.toContain('Decodo-JP-帐号2（')
   })
+
+  it('supports multi-term hit search across proxy fields', async () => {
+    const wrapper = mount(ProxySelector, {
+      props: {
+        modelValue: null,
+        proxies: [
+          buildProxy({
+            id: 1,
+            name: 'abdkdkdidddy',
+            host: '10.0.0.1'
+          }),
+          buildProxy({
+            id: 2,
+            name: 'only-ab-match',
+            host: '10.0.0.2'
+          })
+        ]
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.find('button.select-trigger').trigger('click')
+    await wrapper.find('input.select-search-input').setValue('ab dy')
+
+    const optionsText = wrapper.find('.select-options').text()
+    expect(optionsText).toContain('abdkdkdidddy')
+    expect(optionsText).not.toContain('only-ab-match')
+  })
 })

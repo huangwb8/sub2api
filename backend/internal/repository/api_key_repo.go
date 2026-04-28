@@ -303,10 +303,10 @@ func (r *apiKeyRepository) ListByUserID(ctx context.Context, userID int64, param
 	q := r.activeQuery().Where(apikey.UserIDEQ(userID))
 
 	// Apply filters
-	if filters.Search != "" {
+	for _, term := range splitSearchTerms(filters.Search) {
 		q = q.Where(apikey.Or(
-			apikey.NameContainsFold(filters.Search),
-			apikey.KeyContainsFold(filters.Search),
+			apikey.NameContainsFold(term),
+			apikey.KeyContainsFold(term),
 		))
 	}
 	if filters.Status != "" {
@@ -432,8 +432,8 @@ func (r *apiKeyRepository) SearchAPIKeys(ctx context.Context, userID int64, keyw
 		q = q.Where(apikey.UserIDEQ(userID))
 	}
 
-	if keyword != "" {
-		q = q.Where(apikey.NameContainsFold(keyword))
+	for _, term := range splitSearchTerms(keyword) {
+		q = q.Where(apikey.NameContainsFold(term))
 	}
 
 	keys, err := q.Limit(limit).Order(dbent.Desc(apikey.FieldID)).All(ctx)

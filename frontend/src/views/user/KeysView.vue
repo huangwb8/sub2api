@@ -1072,6 +1072,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime, formatUsageCost, getCurrencySymbol } from '@/utils/format'
+import { matchesSearchTerms } from '@/utils/searchMatcher'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1254,11 +1255,9 @@ const groupOptions = computed(() =>
 // Group dropdown search
 const groupSearchQuery = ref('')
 const filteredGroupOptions = computed(() => {
-  const query = groupSearchQuery.value.trim().toLowerCase()
-  if (!query) return groupOptions.value
+  if (!groupSearchQuery.value.trim()) return groupOptions.value
   return groupOptions.value.filter((opt) => {
-    return opt.label.toLowerCase().includes(query) ||
-      (opt.description && opt.description.toLowerCase().includes(query))
+    return matchesSearchTerms(groupSearchQuery.value, [opt.label, opt.description || ''])
   })
 })
 

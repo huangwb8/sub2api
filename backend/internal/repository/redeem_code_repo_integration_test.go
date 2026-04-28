@@ -176,6 +176,16 @@ func (s *RedeemCodeRepoSuite) TestListWithFilters_Search() {
 	s.Require().Contains(codes[0].Code, "ALPHA")
 }
 
+func (s *RedeemCodeRepoSuite) TestListWithFilters_SearchSupportsMultipleTerms() {
+	s.Require().NoError(s.repo.Create(s.ctx, &service.RedeemCode{Code: "ABDKDKDIDDDY-CODE", Type: service.RedeemTypeBalance, Value: 0, Status: service.StatusUnused}))
+	s.Require().NoError(s.repo.Create(s.ctx, &service.RedeemCode{Code: "ONLY-AB-CODE", Type: service.RedeemTypeBalance, Value: 0, Status: service.StatusUnused}))
+
+	codes, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "ab dy")
+	s.Require().NoError(err)
+	s.Require().Len(codes, 1)
+	s.Require().Contains(codes[0].Code, "ABDKDKDIDDDY")
+}
+
 func (s *RedeemCodeRepoSuite) TestListWithFilters_GroupPreload() {
 	group := s.createGroup(uniqueTestValue(s.T(), "g-preload"))
 	_, err := s.client.RedeemCode.Create().

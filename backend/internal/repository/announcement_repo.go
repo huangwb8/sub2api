@@ -117,11 +117,11 @@ func (r *announcementRepository) List(
 	if filters.Status != "" {
 		q = q.Where(announcement.StatusEQ(filters.Status))
 	}
-	if filters.Search != "" {
+	for _, term := range splitSearchTerms(filters.Search) {
 		q = q.Where(
 			announcement.Or(
-				announcement.TitleContainsFold(filters.Search),
-				announcement.ContentContainsFold(filters.Search),
+				announcement.TitleContainsFold(term),
+				announcement.ContentContainsFold(term),
 			),
 		)
 	}

@@ -163,9 +163,9 @@ func (r *channelRepository) List(ctx context.Context, params pagination.Paginati
 		args = append(args, status)
 		argIdx++
 	}
-	if search != "" {
+	for _, term := range splitSearchTerms(search) {
 		where = append(where, fmt.Sprintf("(c.name ILIKE $%d OR c.description ILIKE $%d)", argIdx, argIdx))
-		args = append(args, "%"+escapeLike(search)+"%")
+		args = append(args, "%"+escapeLike(term)+"%")
 		argIdx++
 	}
 

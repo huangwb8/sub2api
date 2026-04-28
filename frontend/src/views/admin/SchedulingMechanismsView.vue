@@ -237,6 +237,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
 import Select from '@/components/common/Select.vue'
 import { useAppStore } from '@/stores/app'
+import { matchesSearchTerms } from '@/utils/searchMatcher'
 
 type EditableRule = TempUnschedulableRule & { keywordsText: string }
 
@@ -307,14 +308,15 @@ const accountTypeOptions = computed(() => [
 ])
 
 const filteredMechanisms = computed(() => {
-  const keyword = searchQuery.value.trim().toLowerCase()
   return settings.mechanisms
     .filter((item) => (showHidden.value ? true : !item.hidden))
     .filter((item) => {
-      if (!keyword) return true
-      return [item.name, item.description, item.platform, item.account_type]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword))
+      return matchesSearchTerms(searchQuery.value, [
+        item.name,
+        item.description,
+        item.platform,
+        item.account_type
+      ])
     })
     .slice()
     .sort((left, right) => {

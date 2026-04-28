@@ -204,13 +204,13 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	if filters.Role != "" {
 		q = q.Where(dbuser.RoleEQ(filters.Role))
 	}
-	if filters.Search != "" {
+	for _, term := range splitSearchTerms(filters.Search) {
 		q = q.Where(
 			dbuser.Or(
-				dbuser.EmailContainsFold(filters.Search),
-				dbuser.UsernameContainsFold(filters.Search),
-				dbuser.NotesContainsFold(filters.Search),
-				dbuser.HasAPIKeysWith(apikey.KeyContainsFold(filters.Search)),
+				dbuser.EmailContainsFold(term),
+				dbuser.UsernameContainsFold(term),
+				dbuser.NotesContainsFold(term),
+				dbuser.HasAPIKeysWith(apikey.KeyContainsFold(term)),
 			),
 		)
 	}

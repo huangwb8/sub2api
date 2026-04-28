@@ -556,8 +556,8 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 			q = q.Where(dbaccount.StatusEQ(status))
 		}
 	}
-	if search != "" {
-		q = q.Where(dbaccount.NameContainsFold(search))
+	for _, term := range splitSearchTerms(search) {
+		q = q.Where(dbaccount.NameContainsFold(term))
 	}
 	if groupID == service.AccountListGroupUngrouped {
 		q = q.Where(dbaccount.Not(dbaccount.HasAccountGroups()))

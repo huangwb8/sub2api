@@ -390,6 +390,18 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			},
 		},
 		{
+			name: "filter_by_multi_term_search",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{Name: "abdkdkdidddy"})
+				mustCreateAccount(s.T(), client, &service.Account{Name: "only-ab-match"})
+			},
+			search:    "ab dy",
+			wantCount: 1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal("abdkdkdidddy", accounts[0].Name)
+			},
+		},
+		{
 			name: "filter_by_ungrouped",
 			setup: func(client *dbent.Client) {
 				group := mustCreateGroup(s.T(), client, &service.Group{Name: "g-ungrouped"})

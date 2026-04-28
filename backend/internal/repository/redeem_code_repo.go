@@ -109,11 +109,11 @@ func (r *redeemCodeRepository) ListWithFilters(ctx context.Context, params pagin
 	if status != "" {
 		q = q.Where(redeemcode.StatusEQ(status))
 	}
-	if search != "" {
+	for _, term := range splitSearchTerms(search) {
 		q = q.Where(
 			redeemcode.Or(
-				redeemcode.CodeContainsFold(search),
-				redeemcode.HasUserWith(user.EmailContainsFold(search)),
+				redeemcode.CodeContainsFold(term),
+				redeemcode.HasUserWith(user.EmailContainsFold(term)),
 			),
 		)
 	}

@@ -109,6 +109,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
+import { matchesSearchTerms } from '@/utils/searchMatcher'
 
 const { t } = useI18n()
 
@@ -237,13 +238,11 @@ const selectedLabel = computed(() => {
 const filteredOptions = computed(() => {
   let opts = props.options as any[]
   if (props.searchable && searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
     opts = opts.filter((opt) => {
-      // Match label
-      if (getOptionLabel(opt).toLowerCase().includes(query)) return true
-      // Also match description if present
-      if (opt.description && String(opt.description).toLowerCase().includes(query)) return true
-      return false
+      return matchesSearchTerms(searchQuery.value, [
+        getOptionLabel(opt),
+        opt.description ? String(opt.description) : ''
+      ])
     })
     // In creatable mode, always prepend a fuzzy search option
     if (props.creatable && searchQuery.value.trim()) {
