@@ -3463,7 +3463,7 @@ export default {
       portInvalid: 'Port must be between 1-65535',
       failoverEyebrow: 'Auto Failover',
       failoverTitle: 'Automatic proxy probing and account migration',
-      failoverDescription: 'Continuously test proxy health and move affected OpenAI OAuth accounts to healthier proxies when a proxy keeps failing within the tolerated window.',
+      failoverDescription: 'Continuously test proxy health and move affected OpenAI OAuth accounts only to healthier proxies in the same geographic location when a proxy keeps failing within the tolerated window.',
       goSchedulingMechanisms: 'Open Scheduling',
       saveFailoverSettings: 'Save Failover Settings',
       failoverSettingsSaved: 'Proxy failover settings saved',
@@ -3478,7 +3478,7 @@ export default {
         tempUnschedMinutes: 'Fallback temp unsched (min)',
         maxAccountsPerProxy: 'Max accounts per proxy',
         maxMigrationsPerCycle: 'Max migrations per cycle',
-        preferSameCountry: 'Prefer same-country proxies',
+        preferSameCountry: 'Only same-location migration',
         onlyOpenAIOAuth: 'Only OpenAI OAuth'
       },
       deleteConfirm:
@@ -3539,7 +3539,7 @@ export default {
         cooldownMinutes: 'Proxy cooldown (min)',
         maxAccountsPerProxy: 'Max accounts per proxy',
         maxMigrationsPerCycle: 'Max migrations per cycle',
-        preferSameCountry: 'Prefer same-country proxies',
+        preferSameCountry: 'Only same-location migration',
         onlyOpenAIOAuth: 'Only auto-handle OpenAI OAuth accounts',
         tempUnschedMinutes: 'Temp unsched duration when no target proxy exists (min)'
       },

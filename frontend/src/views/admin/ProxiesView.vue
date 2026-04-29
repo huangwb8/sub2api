@@ -80,7 +80,7 @@
                 <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.preferSameCountry') }}
                 </span>
-                <input v-model="proxyFailoverSettings.prefer_same_country" type="checkbox" class="toggle" />
+                <input :checked="true" type="checkbox" class="toggle" disabled />
               </label>
               <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
                 <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
@@ -1225,6 +1225,7 @@ const loadProxyFailoverSettings = async () => {
 const saveProxyFailoverSettings = async () => {
   savingFailoverSettings.value = true
   try {
+    proxyFailoverSettings.prefer_same_country = true
     const updated = await adminAPI.settings.updateProxyFailoverSettings({ ...proxyFailoverSettings })
     Object.assign(proxyFailoverSettings, updated)
     appStore.showSuccess(t('admin.proxies.failoverSettingsSaved'))

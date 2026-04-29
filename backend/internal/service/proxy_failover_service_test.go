@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -267,9 +268,16 @@ func (s *proxyFailoverProxyRepoStub) ListAccountSummariesByProxyID(ctx context.C
 	return s.accountIDsByProxy[proxyID], nil
 }
 
-type proxyFailoverProberStub struct{}
+type proxyFailoverProberStub struct {
+	exits map[string]*ProxyExitInfo
+}
 
 func (s *proxyFailoverProberStub) ProbeProxy(ctx context.Context, proxyURL string) (*ProxyExitInfo, int64, error) {
+	for marker, info := range s.exits {
+		if strings.Contains(proxyURL, marker) {
+			return info, 120, nil
+		}
+	}
 	return &ProxyExitInfo{
 		IP:          "203.0.113.10",
 		Country:     "Japan",
@@ -331,4 +339,70 @@ func TestProxyFailoverService_IsolateProxyTempUnschedulesOnlyFailedAccounts(t *t
 	require.NotNil(t, accountRepo.accounts[1].TempUnschedulableUntil)
 	require.Nil(t, accountRepo.accounts[2].TempUnschedulableUntil)
 	require.Nil(t, accountRepo.accounts[3].TempUnschedulableUntil)
+}
+
+func TestProxyFailoverService_IsolateProxyRejectsDifferentGeoTarget(t *testing.T) {
+	t.Parallel()
+
+	sourceProxyID := int64(11)
+	targetProxyID := int64(22)
+
+	accountRepo := &proxyFailoverAccountRepoStub{
+		accounts: map[int64]*Account{
+			1: {ID: 1, Name: "acct-1", Platform: PlatformOpenAI, Type: AccountTypeOAuth, ProxyID: &sourceProxyID, Status: StatusActive, Schedulable: true},
+			2: {ID: 2, Name: "acct-2", Platform: PlatformOpenAI, Type: AccountTypeOAuth, ProxyID: &sourceProxyID, Status: StatusActive, Schedulable: true},
+		},
+		updateErrByID: map[int64]error{},
+	}
+
+	proxyRepo := &proxyFailoverProxyRepoStub{
+		proxies: map[int64]*Proxy{
+			sourceProxyID: {ID: sourceProxyID, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive},
+		},
+		activeWithAccount: []ProxyWithAccountCount{
+			{Proxy: Proxy{ID: sourceProxyID, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive}, AccountCount: 2},
+			{Proxy: Proxy{ID: targetProxyID, Name: "target", Protocol: "http", Host: "target.example.com", Port: 8080, Status: StatusActive}, AccountCount: 0},
+		},
+		accountIDsByProxy: map[int64][]ProxyAccountSummary{
+			sourceProxyID: {
+				{ID: 1},
+				{ID: 2},
+			},
+		},
+	}
+
+	svc := NewProxyFailoverService(nil, accountRepo, proxyRepo, &proxyFailoverProberStub{
+		exits: map[string]*ProxyExitInfo{
+			"source.example.com": {
+				IP:          "203.0.113.11",
+				Country:     "Japan",
+				CountryCode: "JP",
+				Region:      "Tokyo",
+				City:        "Tokyo",
+			},
+			"target.example.com": {
+				IP:          "203.0.113.22",
+				Country:     "Japan",
+				CountryCode: "JP",
+				Region:      "Osaka",
+				City:        "Osaka",
+			},
+		},
+	}, nil, nil, nil)
+
+	svc.isolateProxy(context.Background(), sourceProxyID, ProxyFailoverSettings{
+		Enabled:               true,
+		OnlyOpenAIOAuth:       true,
+		MaxAccountsPerProxy:   10,
+		MaxMigrationsPerCycle: 10,
+		TempUnschedMinutes:    10,
+		CooldownMinutes:       15,
+	}, "upstream_http_502")
+
+	require.Empty(t, accountRepo.updatedAccountIDs)
+	require.Equal(t, []int64{1, 2}, accountRepo.tempUnschedIDs)
+	require.Equal(t, sourceProxyID, *accountRepo.accounts[1].ProxyID)
+	require.Equal(t, sourceProxyID, *accountRepo.accounts[2].ProxyID)
+	require.NotNil(t, accountRepo.accounts[1].TempUnschedulableUntil)
+	require.NotNil(t, accountRepo.accounts[2].TempUnschedulableUntil)
 }

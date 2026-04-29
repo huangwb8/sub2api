@@ -3593,7 +3593,7 @@ export default {
       portInvalid: '端口必须在 1-65535 之间',
       failoverEyebrow: '自动容错',
       failoverTitle: '代理自动测试与账号迁移',
-      failoverDescription: '持续检测代理连通性；当代理在可接受窗口内连续失败时，自动把受影响的 OpenAI OAuth 账号迁移到更健康的代理。',
+      failoverDescription: '持续检测代理连通性；当代理在可接受窗口内连续失败时，仅在同一地理位置内把受影响的 OpenAI OAuth 账号迁移到更健康的代理。',
       goSchedulingMechanisms: '前往调度机制',
       saveFailoverSettings: '保存自动容错设置',
       failoverSettingsSaved: '巡检设置已保存',
@@ -3608,7 +3608,7 @@ export default {
         tempUnschedMinutes: '无可迁移代理时冷却（分钟）',
         maxAccountsPerProxy: '每代理最大承载账号数',
         maxMigrationsPerCycle: '每轮最大迁移账号数',
-        preferSameCountry: '优先同国家代理',
+        preferSameCountry: '仅同地理位置迁移',
         onlyOpenAIOAuth: '仅处理 OpenAI OAuth'
       },
       deleteConfirm: "确定要删除代理 '{name}' 吗？使用此代理的账号将被移除代理设置。"
@@ -3668,7 +3668,7 @@ export default {
         cooldownMinutes: '代理冷却（分钟）',
         maxAccountsPerProxy: '每代理最大承载账号数',
         maxMigrationsPerCycle: '每轮最大迁移账号数',
-        preferSameCountry: '优先迁移到同国家代理',
+        preferSameCountry: '仅同地理位置迁移',
         onlyOpenAIOAuth: '仅自动处理 OpenAI OAuth 账号',
         tempUnschedMinutes: '无可迁移代理时的临时不可调度时长（分钟）'
       },

@@ -180,6 +180,7 @@ func generatedTempUnschedulableRuleID(rule TempUnschedulableRule, index int) str
 }
 
 func normalizeProxyFailoverSettings(settings ProxyFailoverSettings) ProxyFailoverSettings {
+	settings.PreferSameCountry = true
 	if settings.ProbeIntervalMinutes < 1 {
 		settings.ProbeIntervalMinutes = defaultProxyFailoverProbeIntervalMin
 	}

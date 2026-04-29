@@ -79,6 +79,12 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 
 ---
 
+住宅ip自动切换优化：
+
+- 住宅ip仅允许在同一地理位置间切换； 不支持在不同地理位置间切换
+
+---
+
 根据 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-28-upstream-c92b88-to-b0a225-optimization-plan.md 和 /Volumes/2T01/Github/sub2api/docs/plans/2026-04-28-user-resale-risk-control-plan.md 优化程序。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---

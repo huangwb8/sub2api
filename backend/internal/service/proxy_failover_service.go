@@ -32,6 +32,12 @@ type proxyFailoverCandidate struct {
 	sameRegion bool
 }
 
+type proxyGeoLocation struct {
+	country string
+	region  string
+	city    string
+}
+
 type ProxyFailoverService struct {
 	settingService    *SettingService
 	accountRepo       AccountRepository
@@ -376,14 +382,17 @@ func (s *ProxyFailoverService) isolateProxy(ctx context.Context, proxyID int64, 
 		return
 	}
 
-	sourceCountry := s.lookupProxyCountry(ctx, proxyID)
-	targets, err := s.listHealthyTargetProxies(ctx, proxyID, sourceCountry, settings)
+	sourceGeo, sourceGeoOK := s.lookupProxyGeoLocation(ctx, proxy)
+	targets, err := s.listHealthyTargetProxies(ctx, proxyID, sourceGeo, settings)
 	if err != nil {
 		slog.Warn("proxy_failover.list_targets_failed", "proxy_id", proxyID, "error", err)
 		s.tempUnscheduleAccounts(ctx, eligible, proxyID, reason, settings.TempUnschedMinutes)
 		return
 	}
 	if len(targets) == 0 {
+		if !sourceGeoOK {
+			slog.Warn("proxy_failover.source_geo_unknown", "proxy_id", proxyID, "reason", reason)
+		}
 		s.tempUnscheduleAccounts(ctx, eligible, proxyID, reason, settings.TempUnschedMinutes)
 		return
 	}
@@ -433,29 +442,61 @@ func (s *ProxyFailoverService) listProxyAccountIDs(ctx context.Context, proxyID 
 	return ids, nil
 }
 
-func (s *ProxyFailoverService) lookupProxyCountry(ctx context.Context, proxyID int64) string {
-	if s == nil || s.proxyLatencyCache == nil {
-		return ""
+func (s *ProxyFailoverService) lookupProxyGeoLocation(ctx context.Context, proxy *Proxy) (proxyGeoLocation, bool) {
+	if s == nil || proxy == nil || proxy.ID <= 0 {
+		return proxyGeoLocation{}, false
 	}
-	latencies, err := s.proxyLatencyCache.GetProxyLatencies(ctx, []int64{proxyID})
+	if s.proxyLatencyCache != nil {
+		latencies, err := s.proxyLatencyCache.GetProxyLatencies(ctx, []int64{proxy.ID})
+		if err == nil {
+			if latency := latencies[proxy.ID]; latency != nil {
+				geo := proxyGeoFromLatency(latency)
+				if geo.hasCountry() {
+					return geo, true
+				}
+			}
+		}
+	}
+	if s.proxyProber == nil {
+		return proxyGeoLocation{}, false
+	}
+	exitInfo, latencyMs, err := s.proxyProber.ProbeProxy(ctx, proxy.URL())
 	if err != nil {
-		return ""
+		s.storeProbeLatency(ctx, proxy.ID, &ProxyLatencyInfo{
+			Success:   false,
+			Message:   err.Error(),
+			UpdatedAt: time.Now(),
+		})
+		return proxyGeoLocation{}, false
 	}
-	if latency := latencies[proxyID]; latency != nil {
-		return strings.TrimSpace(latency.CountryCode)
-	}
-	return ""
+	latency := latencyMs
+	s.storeProbeLatency(ctx, proxy.ID, &ProxyLatencyInfo{
+		Success:     true,
+		LatencyMs:   &latency,
+		Message:     "Proxy is accessible",
+		IPAddress:   exitInfo.IP,
+		Country:     exitInfo.Country,
+		CountryCode: exitInfo.CountryCode,
+		Region:      exitInfo.Region,
+		City:        exitInfo.City,
+		UpdatedAt:   time.Now(),
+	})
+	geo := proxyGeoFromExitInfo(exitInfo)
+	return geo, geo.hasCountry()
 }
 
 func (s *ProxyFailoverService) listHealthyTargetProxies(
 	ctx context.Context,
 	sourceProxyID int64,
-	sourceCountry string,
+	sourceGeo proxyGeoLocation,
 	settings ProxyFailoverSettings,
 ) ([]ProxyWithAccountCount, error) {
 	proxies, err := s.proxyRepo.ListActiveWithAccountCount(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if !sourceGeo.hasCountry() {
+		return nil, nil
 	}
 
 	candidates := make([]proxyFailoverCandidate, 0, len(proxies))
@@ -473,12 +514,16 @@ func (s *ProxyFailoverService) listHealthyTargetProxies(
 		if !healthy {
 			continue
 		}
+		targetGeo := proxyGeoFromProxy(updatedProxy)
+		if !sameProxyGeoLocation(sourceGeo, targetGeo) {
+			continue
+		}
 		candidate := proxyFailoverCandidate{
 			proxy:     updatedProxy,
 			score:     0,
 			latencyMs: int64(^uint64(0) >> 1),
 		}
-		if settings.PreferSameCountry && sourceCountry != "" && strings.EqualFold(updatedProxy.CountryCode, sourceCountry) {
+		if settings.PreferSameCountry {
 			candidate.sameRegion = true
 			candidate.score -= 1000
 		}
@@ -507,6 +552,56 @@ func (s *ProxyFailoverService) listHealthyTargetProxies(
 	}
 
 	return result, nil
+}
+
+func proxyGeoFromLatency(info *ProxyLatencyInfo) proxyGeoLocation {
+	if info == nil {
+		return proxyGeoLocation{}
+	}
+	return normalizeProxyGeoLocation(info.CountryCode, info.Country, info.Region, info.City)
+}
+
+func proxyGeoFromExitInfo(info *ProxyExitInfo) proxyGeoLocation {
+	if info == nil {
+		return proxyGeoLocation{}
+	}
+	return normalizeProxyGeoLocation(info.CountryCode, info.Country, info.Region, info.City)
+}
+
+func proxyGeoFromProxy(proxy ProxyWithAccountCount) proxyGeoLocation {
+	return normalizeProxyGeoLocation(proxy.CountryCode, proxy.Country, proxy.Region, proxy.City)
+}
+
+func normalizeProxyGeoLocation(countryCode, country, region, city string) proxyGeoLocation {
+	countryKey := strings.TrimSpace(countryCode)
+	if countryKey == "" {
+		countryKey = strings.TrimSpace(country)
+	}
+	return proxyGeoLocation{
+		country: strings.ToUpper(countryKey),
+		region:  strings.ToLower(strings.TrimSpace(region)),
+		city:    strings.ToLower(strings.TrimSpace(city)),
+	}
+}
+
+func (g proxyGeoLocation) hasCountry() bool {
+	return g.country != ""
+}
+
+func sameProxyGeoLocation(source, target proxyGeoLocation) bool {
+	if !source.hasCountry() || !target.hasCountry() {
+		return false
+	}
+	if !strings.EqualFold(source.country, target.country) {
+		return false
+	}
+	if source.region != "" && target.region != "" && !strings.EqualFold(source.region, target.region) {
+		return false
+	}
+	if source.city != "" && target.city != "" && !strings.EqualFold(source.city, target.city) {
+		return false
+	}
+	return true
 }
 
 func (s *ProxyFailoverService) ensureProxyHealthyForTarget(ctx context.Context, proxy ProxyWithAccountCount) (bool, ProxyWithAccountCount) {
