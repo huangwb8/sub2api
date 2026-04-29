@@ -13,9 +13,6 @@
           <h2 class="text-base font-semibold text-gray-900 dark:text-white">
             {{ t('nav.paymentPlans') }}
           </h2>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('payment.admin.planManagementHint') }}
-          </p>
         </div>
         <button
           type="button"
