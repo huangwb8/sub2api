@@ -116,7 +116,6 @@
           :placeholder="t('admin.users.attributes.keyHint')"
           :disabled="!!editingAttribute"
         />
-        <p class="input-hint">{{ t('admin.users.attributes.keyHint') }}</p>
       </div>
 
       <!-- Name -->
