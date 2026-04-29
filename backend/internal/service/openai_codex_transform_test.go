@@ -217,6 +217,23 @@ func TestApplyCodexOAuthTransform_NormalizeCodexTools_PreservesResponsesFunction
 	require.Equal(t, "bash", first["name"])
 }
 
+func TestApplyCodexOAuthTransform_LegacyFunctionCallUsesFlatToolChoice(t *testing.T) {
+	reqBody := map[string]any{
+		"model":         "gpt-5.1",
+		"input":         []any{map[string]any{"role": "user", "content": "hi"}},
+		"function_call": map[string]any{"name": "bash"},
+	}
+
+	applyCodexOAuthTransform(reqBody, false, false)
+
+	toolChoice, ok := reqBody["tool_choice"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "function", toolChoice["type"])
+	require.Equal(t, "bash", toolChoice["name"])
+	require.NotContains(t, toolChoice, "function")
+	require.NotContains(t, reqBody, "function_call")
+}
+
 func TestApplyCodexOAuthTransform_EmptyInput(t *testing.T) {
 	// 空 input 应保持为空且不触发异常。
 

@@ -141,7 +141,17 @@
         </div>
       </template>
       <template #table>
-        <AccountBulkActionsBar :selected-ids="selIds" @delete="handleBulkDelete" @reset-status="handleBulkResetStatus" @refresh-token="handleBulkRefreshToken" @edit="showBulkEdit = true" @clear="clearSelection" @select-page="selectPage" @toggle-schedulable="handleBulkToggleSchedulable" />
+        <AccountBulkActionsBar
+          :selected-ids="selIds"
+          @delete="handleBulkDelete"
+          @reset-status="handleBulkResetStatus"
+          @refresh-token="handleBulkRefreshToken"
+          @edit-selected="openBulkEditSelected"
+          @edit-filtered="openBulkEditFiltered"
+          @clear="clearSelection"
+          @select-page="selectPage"
+          @toggle-schedulable="handleBulkToggleSchedulable"
+        />
         <div ref="accountTableRef" class="flex min-h-0 flex-1 flex-col overflow-hidden">
         <DataTable
           :columns="cols"
@@ -300,7 +310,17 @@
     <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
-    <BulkEditAccountModal :show="showBulkEdit" :account-ids="selIds" :selected-platforms="selPlatforms" :selected-types="selTypes" :proxies="proxies" :groups="groups" @close="showBulkEdit = false" @updated="handleBulkUpdated" />
+    <BulkEditAccountModal
+      :show="showBulkEdit"
+      :account-ids="selIds"
+      :selected-platforms="selPlatforms"
+      :selected-types="selTypes"
+      :target="bulkEditTarget ?? undefined"
+      :proxies="proxies"
+      :groups="groups"
+      @close="handleBulkEditClosed"
+      @updated="handleBulkUpdated"
+    />
     <TempUnschedStatusModal :show="showTempUnsched" :account="tempUnschedAcc" @close="showTempUnsched = false" @reset="handleTempUnschedReset" />
     <ConfirmDialog :show="showDeleteDialog" :title="t('admin.accounts.deleteAccount')" :message="t('admin.accounts.deleteConfirm', { name: deletingAcc?.name })" :confirm-text="t('common.delete')" :cancel-text="t('common.cancel')" :danger="true" @confirm="confirmDelete" @cancel="showDeleteDialog = false" />
     <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="showExportDataDialog = false">
@@ -361,6 +381,27 @@ const authStore = useAuthStore()
 const proxies = ref<AccountProxy[]>([])
 const groups = ref<AdminGroup[]>([])
 const accountTableRef = ref<HTMLElement | null>(null)
+type AccountBulkEditTarget =
+  | {
+      mode: 'selected'
+      accountIds: number[]
+      selectedPlatforms: AccountPlatform[]
+      selectedTypes: AccountType[]
+    }
+  | {
+      mode: 'filtered'
+      filters: {
+        platform?: string
+        type?: string
+        status?: string
+        group?: string
+        search?: string
+        privacy_mode?: string
+      }
+      previewCount: number
+      selectedPlatforms: AccountPlatform[]
+      selectedTypes: AccountType[]
+    }
 const selPlatforms = computed<AccountPlatform[]>(() => {
   const platforms = new Set(
     accounts.value
@@ -384,6 +425,7 @@ const showImportData = ref(false)
 const showExportDataDialog = ref(false)
 const includeProxyOnExport = ref(true)
 const showBulkEdit = ref(false)
+const bulkEditTarget = ref<AccountBulkEditTarget | null>(null)
 const showTempUnsched = ref(false)
 const showDeleteDialog = ref(false)
 const showReAuth = ref(false)
@@ -1169,7 +1211,51 @@ const handleBulkToggleSchedulable = async (schedulable: boolean) => {
     appStore.showError(t('common.error'))
   }
 }
-const handleBulkUpdated = () => { showBulkEdit.value = false; clearSelection(); reload() }
+const collectSelectionMetadata = (rows: Account[]) => {
+  const selectedPlatforms = Array.from(new Set(rows.map(account => account.platform)))
+  const selectedTypes = Array.from(new Set(rows.map(account => account.type)))
+  return { selectedPlatforms, selectedTypes }
+}
+
+const openBulkEditSelected = () => {
+  bulkEditTarget.value = {
+    mode: 'selected',
+    accountIds: [...selIds.value],
+    selectedPlatforms: [...selPlatforms.value],
+    selectedTypes: [...selTypes.value]
+  }
+  showBulkEdit.value = true
+}
+
+const openBulkEditFiltered = async () => {
+  try {
+    const filters = buildAccountQueryFilters()
+    const preview = await adminAPI.accounts.list(1, 100, filters)
+    const { selectedPlatforms, selectedTypes } = collectSelectionMetadata(preview.items)
+    bulkEditTarget.value = {
+      mode: 'filtered',
+      filters,
+      previewCount: preview.total,
+      selectedPlatforms,
+      selectedTypes
+    }
+    showBulkEdit.value = true
+  } catch (error) {
+    console.error('Failed to preview filtered accounts:', error)
+    appStore.showError(t('admin.accounts.failedToLoad'))
+  }
+}
+
+const handleBulkEditClosed = () => {
+  showBulkEdit.value = false
+  bulkEditTarget.value = null
+}
+
+const handleBulkUpdated = () => {
+  handleBulkEditClosed()
+  clearSelection()
+  reload()
+}
 const handleDataImported = () => { showImportData.value = false; reload() }
 const ACCOUNT_UNGROUPED_GROUP_QUERY_VALUE = 'ungrouped'
 const ACCOUNT_PRIVACY_MODE_UNSET_QUERY_VALUE = '__unset__'

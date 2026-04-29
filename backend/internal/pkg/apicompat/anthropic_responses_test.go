@@ -932,9 +932,28 @@ func TestAnthropicToResponses_ToolChoiceSpecific(t *testing.T) {
 	var tc map[string]any
 	require.NoError(t, json.Unmarshal(resp.ToolChoice, &tc))
 	assert.Equal(t, "function", tc["type"])
-	fn, ok := tc["function"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "get_weather", fn["name"])
+	assert.Equal(t, "get_weather", tc["name"])
+	assert.NotContains(t, tc, "function")
+}
+
+func TestResponsesToAnthropic_ToolChoiceFlatAndLegacyFunction(t *testing.T) {
+	for _, raw := range []json.RawMessage{
+		json.RawMessage(`{"type":"function","name":"get_weather"}`),
+		json.RawMessage(`{"type":"function","function":{"name":"get_weather"}}`),
+	} {
+		req := &ResponsesRequest{
+			Model:      "gpt-5.2",
+			Input:      json.RawMessage(`[{"role":"user","content":"Hi"}]`),
+			ToolChoice: raw,
+		}
+
+		anthropicReq, err := ResponsesToAnthropicRequest(req)
+		require.NoError(t, err)
+
+		var tc map[string]string
+		require.NoError(t, json.Unmarshal(anthropicReq.ToolChoice, &tc))
+		assert.Equal(t, map[string]string{"type": "tool", "name": "get_weather"}, tc)
+	}
 }
 
 // ---------------------------------------------------------------------------

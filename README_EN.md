@@ -45,6 +45,7 @@ Sub2API is an AI API gateway platform designed for subscription-backed resource 
 - Unified multi-upstream account access with OAuth and API key credentials
 - User API key issuance with group, quota, rate limit, and concurrency isolation
 - Token-level billing, usage tracking, cost accounting, and reporting
+- OpenAI-compatible endpoints include Responses, Chat Completions, and Images API for generation/editing
 - Smart scheduling with sticky sessions, account rotation, failover, and model mapping
 - Built-in payments with EasyPay, official Alipay, official WeChat Pay, and Stripe
 - Self-service top-up, subscription purchase, renewal, upgrade-with-difference payment, order lookup, and payment status pages

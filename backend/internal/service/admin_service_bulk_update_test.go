@@ -7,6 +7,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,6 +26,19 @@ type accountRepoStubForBulkUpdate struct {
 	getByIDCalled    []int64
 	listByGroupData  map[int64][]Account
 	listByGroupErr   map[int64]error
+	listWithFilters  []Account
+	listFilters      []bulkUpdateListFiltersCall
+}
+
+type bulkUpdateListFiltersCall struct {
+	page        int
+	pageSize    int
+	platform    string
+	accountType string
+	status      string
+	search      string
+	groupID     int64
+	privacyMode string
 }
 
 func (s *accountRepoStubForBulkUpdate) BulkUpdate(_ context.Context, ids []int64, _ AccountBulkUpdate) (int64, error) {
@@ -73,6 +87,28 @@ func (s *accountRepoStubForBulkUpdate) ListByGroup(_ context.Context, groupID in
 	return nil, nil
 }
 
+func (s *accountRepoStubForBulkUpdate) ListWithFilters(_ context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]Account, *pagination.PaginationResult, error) {
+	s.listFilters = append(s.listFilters, bulkUpdateListFiltersCall{
+		page:        params.Page,
+		pageSize:    params.PageSize,
+		platform:    platform,
+		accountType: accountType,
+		status:      status,
+		search:      search,
+		groupID:     groupID,
+		privacyMode: privacyMode,
+	})
+	start := (params.Page - 1) * params.PageSize
+	if start >= len(s.listWithFilters) {
+		return nil, &pagination.PaginationResult{Total: int64(len(s.listWithFilters))}, nil
+	}
+	end := start + params.PageSize
+	if end > len(s.listWithFilters) {
+		end = len(s.listWithFilters)
+	}
+	return s.listWithFilters[start:end], &pagination.PaginationResult{Total: int64(len(s.listWithFilters))}, nil
+}
+
 // TestAdminService_BulkUpdateAccounts_AllSuccessIDs 验证批量更新成功时返回 success_ids/failed_ids。
 func TestAdminService_BulkUpdateAccounts_AllSuccessIDs(t *testing.T) {
 	repo := &accountRepoStubForBulkUpdate{}
@@ -91,6 +127,39 @@ func TestAdminService_BulkUpdateAccounts_AllSuccessIDs(t *testing.T) {
 	require.ElementsMatch(t, []int64{1, 2, 3}, result.SuccessIDs)
 	require.Empty(t, result.FailedIDs)
 	require.Len(t, result.Results, 3)
+}
+
+func TestAdminService_BulkUpdateAccounts_ResolvesFilterTargets(t *testing.T) {
+	repo := &accountRepoStubForBulkUpdate{
+		listWithFilters: []Account{
+			{ID: 10, Platform: PlatformOpenAI, Type: AccountTypeAPIKey},
+			{ID: 11, Platform: PlatformOpenAI, Type: AccountTypeAPIKey},
+		},
+	}
+	svc := &adminServiceImpl{accountRepo: repo}
+
+	schedulable := true
+	input := &BulkUpdateAccountsInput{
+		Filters: &BulkUpdateAccountFilters{
+			Platform:    PlatformOpenAI,
+			Type:        string(AccountTypeAPIKey),
+			Status:      StatusActive,
+			Group:       "ungrouped",
+			Search:      "codex premium",
+			PrivacyMode: "disabled",
+		},
+		Schedulable: &schedulable,
+	}
+
+	result, err := svc.BulkUpdateAccounts(context.Background(), input)
+	require.NoError(t, err)
+	require.Equal(t, 2, result.Success)
+	require.ElementsMatch(t, []int64{10, 11}, result.SuccessIDs)
+	require.ElementsMatch(t, []int64{10, 11}, repo.bulkUpdateIDs)
+	require.Len(t, repo.listFilters, 1)
+	require.Equal(t, AccountListGroupUngrouped, repo.listFilters[0].groupID)
+	require.Equal(t, "codex premium", repo.listFilters[0].search)
+	require.Equal(t, "disabled", repo.listFilters[0].privacyMode)
 }
 
 // TestAdminService_BulkUpdateAccounts_PartialFailureIDs 验证部分失败时 success_ids/failed_ids 正确。

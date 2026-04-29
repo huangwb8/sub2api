@@ -90,6 +90,21 @@ func RegisterGatewayRoutes(
 			}
 			h.Gateway.ChatCompletions(c)
 		})
+		// OpenAI Images API: only OpenAI platform groups can route to image endpoints.
+		gateway.POST("/images/generations", func(c *gin.Context) {
+			if getGroupPlatform(c) == service.PlatformOpenAI {
+				h.OpenAIGateway.ImageGenerations(c)
+				return
+			}
+			writeOpenAIImagesNotFound(c, "Image generation is only supported for OpenAI platform groups")
+		})
+		gateway.POST("/images/edits", func(c *gin.Context) {
+			if getGroupPlatform(c) == service.PlatformOpenAI {
+				h.OpenAIGateway.ImageEdits(c)
+				return
+			}
+			writeOpenAIImagesNotFound(c, "Image editing is only supported for OpenAI platform groups")
+		})
 	}
 
 	// Gemini 原生 API 兼容层（Gemini SDK/CLI 直连）
@@ -125,6 +140,20 @@ func RegisterGatewayRoutes(
 			return
 		}
 		h.Gateway.ChatCompletions(c)
+	})
+	r.POST("/images/generations", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, func(c *gin.Context) {
+		if getGroupPlatform(c) == service.PlatformOpenAI {
+			h.OpenAIGateway.ImageGenerations(c)
+			return
+		}
+		writeOpenAIImagesNotFound(c, "Image generation is only supported for OpenAI platform groups")
+	})
+	r.POST("/images/edits", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, func(c *gin.Context) {
+		if getGroupPlatform(c) == service.PlatformOpenAI {
+			h.OpenAIGateway.ImageEdits(c)
+			return
+		}
+		writeOpenAIImagesNotFound(c, "Image editing is only supported for OpenAI platform groups")
 	})
 
 	// Antigravity 模型列表
@@ -194,4 +223,13 @@ func getGroupPlatform(c *gin.Context) string {
 		return ""
 	}
 	return apiKey.Group.Platform
+}
+
+func writeOpenAIImagesNotFound(c *gin.Context, message string) {
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": gin.H{
+			"type":    "not_found_error",
+			"message": message,
+		},
+	})
 }

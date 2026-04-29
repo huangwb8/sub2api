@@ -507,3 +507,32 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_Unbind_NoAllowedGroupUpdate(t *te
 	require.False(t, userRepo.addGroupCalled)
 	require.False(t, got.AutoGrantedGroupAccess)
 }
+
+func TestAdminService_AdminResetAPIKeyRateLimitUsage(t *testing.T) {
+	now := time.Now().UTC()
+	existing := &APIKey{
+		ID:            1,
+		UserID:        42,
+		Key:           "sk-test",
+		Usage5h:       1.2,
+		Usage1d:       3.4,
+		Usage7d:       5.6,
+		Window5hStart: &now,
+		Window1dStart: &now,
+		Window7dStart: &now,
+	}
+	apiKeyRepo := &apiKeyRepoStubForGroupUpdate{key: existing}
+	cache := &authCacheInvalidatorStub{}
+	svc := &adminServiceImpl{apiKeyRepo: apiKeyRepo, authCacheInvalidator: cache}
+
+	got, err := svc.AdminResetAPIKeyRateLimitUsage(context.Background(), 1)
+	require.NoError(t, err)
+	require.Zero(t, got.Usage5h)
+	require.Zero(t, got.Usage1d)
+	require.Zero(t, got.Usage7d)
+	require.Nil(t, got.Window5hStart)
+	require.Nil(t, got.Window1dStart)
+	require.Nil(t, got.Window7dStart)
+	require.NotNil(t, apiKeyRepo.updated)
+	require.Equal(t, []string{"sk-test"}, cache.keys)
+}

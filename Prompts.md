@@ -34,7 +34,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.2.5
+version=1.2.6
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
@@ -57,8 +57,8 @@ version=1.2.5
 - 吸收源项目的优势
 
 ```
-version2 = b0a2252ed19c3720e6adafde6083e64fbac2efa9
-version1 = c92b88e34abd1b032aa5307d760b8bc0aad49b28
+version2 = 55a7fa1e07443212681b7ac4b0df56237d7558d5
+version1 = b0a2252ed19c3720e6adafde6083e64fbac2efa9
 我们关心 (version1， version2] 之间的commit。 请问：
 - https://github.com/Wei-Shaw/sub2api 项目的 {version2} 和 {version1} 之间有哪些变化？
 - 这些变化对目前我的个人sub2api项目有没有启发？你觉得那些优化我有必要吸收吗？如果有，先不要改本项目的源代码； 而是在 ./docs/plans 里写一个优化计划。
@@ -76,6 +76,15 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+---
+
+基于 docs/plans/2026-04-29-openai-images-api-support-plan.md 优化； 不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
+PlanMarkdown = docs/plans/2026-04-29-upstream-b0a225-to-55a7fa-optimization-plan.md
+根据{PlanMarkdown}将上游项目的新特性的优点吸收在本项目里；这个过程应该是在你彻底了解新特性的源代码以及本项目的源代码的前提下进行。本项目有不少我独有的开发功能，你千万不要干扰； 如果上游项目的新特性与我的个性化功能有冲突，以保我的个性化功能为首要前提。上述过程比较复杂， 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

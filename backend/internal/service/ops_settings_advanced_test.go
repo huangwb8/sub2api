@@ -56,6 +56,26 @@ func TestUpdateOpsAdvancedSettings_PersistsOpenAITokenStatsVisibility(t *testing
 	}
 }
 
+func TestUpdateOpsAdvancedSettings_AllowsZeroRetentionDays(t *testing.T) {
+	repo := newRuntimeSettingRepoStub()
+	svc := &OpsService{settingRepo: repo}
+
+	cfg := defaultOpsAdvancedSettings()
+	cfg.DataRetention.ErrorLogRetentionDays = 0
+	cfg.DataRetention.MinuteMetricsRetentionDays = 0
+	cfg.DataRetention.HourlyMetricsRetentionDays = 0
+
+	updated, err := svc.UpdateOpsAdvancedSettings(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("UpdateOpsAdvancedSettings() error = %v", err)
+	}
+	if updated.DataRetention.ErrorLogRetentionDays != 0 ||
+		updated.DataRetention.MinuteMetricsRetentionDays != 0 ||
+		updated.DataRetention.HourlyMetricsRetentionDays != 0 {
+		t.Fatalf("zero retention days should be preserved, got %+v", updated.DataRetention)
+	}
+}
+
 func TestGetOpsAdvancedSettings_BackfillsNewDisplayFlagsFromDefaults(t *testing.T) {
 	repo := newRuntimeSettingRepoStub()
 	svc := &OpsService{settingRepo: repo}

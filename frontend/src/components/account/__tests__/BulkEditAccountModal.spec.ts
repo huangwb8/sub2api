@@ -174,6 +174,44 @@ describe('BulkEditAccountModal', () => {
     })
   })
 
+  it('按筛选结果批量编辑时提交 filters 而不是 account_ids', async () => {
+    const wrapper = mountModal({
+      accountIds: [],
+      selectedPlatforms: [],
+      selectedTypes: [],
+      target: {
+        mode: 'filtered',
+        filters: {
+          platform: 'openai',
+          type: 'oauth',
+          status: 'active',
+          search: 'codex premium'
+        },
+        previewCount: 12,
+        selectedPlatforms: ['openai'],
+        selectedTypes: ['oauth']
+      }
+    })
+
+    await wrapper.get('#bulk-edit-openai-passthrough-enabled').setValue(true)
+    await wrapper.get('#bulk-edit-openai-passthrough-toggle').trigger('click')
+    await wrapper.get('#bulk-edit-account-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledTimes(1)
+    expect(adminAPI.accounts.bulkUpdate).toHaveBeenCalledWith({
+      filters: {
+        platform: 'openai',
+        type: 'oauth',
+        status: 'active',
+        search: 'codex premium'
+      },
+      extra: {
+        openai_passthrough: true
+      }
+    })
+  })
+
   it('OpenAI OAuth 批量编辑应提供并可提交 ctx_pool WS mode', async () => {
     const wrapper = mountModal({
       selectedPlatforms: ['openai'],

@@ -178,6 +178,16 @@ func (c opsCleanupDeletedCounts) String() string {
 	)
 }
 
+func opsCleanupPlan(now time.Time, days int) (cutoff time.Time, truncate, ok bool) {
+	if days < 0 {
+		return time.Time{}, false, false
+	}
+	if days == 0 {
+		return time.Time{}, true, true
+	}
+	return now.AddDate(0, 0, -days), false, true
+}
+
 func (s *OpsCleanupService) runCleanupOnce(ctx context.Context) (opsCleanupDeletedCounts, error) {
 	out := opsCleanupDeletedCounts{}
 	if s == nil || s.db == nil || s.cfg == nil {
@@ -188,34 +198,40 @@ func (s *OpsCleanupService) runCleanupOnce(ctx context.Context) (opsCleanupDelet
 
 	now := time.Now().UTC()
 
+	runOne := func(truncate bool, cutoff time.Time, table, timeCol string, castDate bool) (int64, error) {
+		if truncate {
+			return truncateOpsTable(ctx, s.db, table)
+		}
+		return deleteOldRowsByID(ctx, s.db, table, timeCol, cutoff, batchSize, castDate)
+	}
+
 	// Error-like tables: error logs / retry attempts / alert events.
-	if days := s.cfg.Ops.Cleanup.ErrorLogRetentionDays; days > 0 {
-		cutoff := now.AddDate(0, 0, -days)
-		n, err := deleteOldRowsByID(ctx, s.db, "ops_error_logs", "created_at", cutoff, batchSize, false)
+	if cutoff, truncate, ok := opsCleanupPlan(now, s.cfg.Ops.Cleanup.ErrorLogRetentionDays); ok {
+		n, err := runOne(truncate, cutoff, "ops_error_logs", "created_at", false)
 		if err != nil {
 			return out, err
 		}
 		out.errorLogs = n
 
-		n, err = deleteOldRowsByID(ctx, s.db, "ops_retry_attempts", "created_at", cutoff, batchSize, false)
+		n, err = runOne(truncate, cutoff, "ops_retry_attempts", "created_at", false)
 		if err != nil {
 			return out, err
 		}
 		out.retryAttempts = n
 
-		n, err = deleteOldRowsByID(ctx, s.db, "ops_alert_events", "created_at", cutoff, batchSize, false)
+		n, err = runOne(truncate, cutoff, "ops_alert_events", "created_at", false)
 		if err != nil {
 			return out, err
 		}
 		out.alertEvents = n
 
-		n, err = deleteOldRowsByID(ctx, s.db, "ops_system_logs", "created_at", cutoff, batchSize, false)
+		n, err = runOne(truncate, cutoff, "ops_system_logs", "created_at", false)
 		if err != nil {
 			return out, err
 		}
 		out.systemLogs = n
 
-		n, err = deleteOldRowsByID(ctx, s.db, "ops_system_log_cleanup_audits", "created_at", cutoff, batchSize, false)
+		n, err = runOne(truncate, cutoff, "ops_system_log_cleanup_audits", "created_at", false)
 		if err != nil {
 			return out, err
 		}
@@ -223,9 +239,8 @@ func (s *OpsCleanupService) runCleanupOnce(ctx context.Context) (opsCleanupDelet
 	}
 
 	// Minute-level metrics snapshots.
-	if days := s.cfg.Ops.Cleanup.MinuteMetricsRetentionDays; days > 0 {
-		cutoff := now.AddDate(0, 0, -days)
-		n, err := deleteOldRowsByID(ctx, s.db, "ops_system_metrics", "created_at", cutoff, batchSize, false)
+	if cutoff, truncate, ok := opsCleanupPlan(now, s.cfg.Ops.Cleanup.MinuteMetricsRetentionDays); ok {
+		n, err := runOne(truncate, cutoff, "ops_system_metrics", "created_at", false)
 		if err != nil {
 			return out, err
 		}
@@ -233,15 +248,14 @@ func (s *OpsCleanupService) runCleanupOnce(ctx context.Context) (opsCleanupDelet
 	}
 
 	// Pre-aggregation tables (hourly/daily).
-	if days := s.cfg.Ops.Cleanup.HourlyMetricsRetentionDays; days > 0 {
-		cutoff := now.AddDate(0, 0, -days)
-		n, err := deleteOldRowsByID(ctx, s.db, "ops_metrics_hourly", "bucket_start", cutoff, batchSize, false)
+	if cutoff, truncate, ok := opsCleanupPlan(now, s.cfg.Ops.Cleanup.HourlyMetricsRetentionDays); ok {
+		n, err := runOne(truncate, cutoff, "ops_metrics_hourly", "bucket_start", false)
 		if err != nil {
 			return out, err
 		}
 		out.hourlyPreagg = n
 
-		n, err = deleteOldRowsByID(ctx, s.db, "ops_metrics_daily", "bucket_date", cutoff, batchSize, true)
+		n, err = runOne(truncate, cutoff, "ops_metrics_daily", "bucket_date", true)
 		if err != nil {
 			return out, err
 		}
@@ -288,7 +302,7 @@ WHERE id IN (SELECT id FROM batch)
 		res, err := db.ExecContext(ctx, q, cutoff, batchSize)
 		if err != nil {
 			// If ops tables aren't present yet (partial deployments), treat as no-op.
-			if strings.Contains(strings.ToLower(err.Error()), "does not exist") && strings.Contains(strings.ToLower(err.Error()), "relation") {
+			if isMissingRelationError(err) {
 				return total, nil
 			}
 			return total, err
@@ -303,6 +317,37 @@ WHERE id IN (SELECT id FROM batch)
 		}
 	}
 	return total, nil
+}
+
+func truncateOpsTable(ctx context.Context, db *sql.DB, table string) (int64, error) {
+	if db == nil {
+		return 0, nil
+	}
+	var count int64
+	if err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count); err != nil {
+		if isMissingRelationError(err) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("count %s: %w", table, err)
+	}
+	if count == 0 {
+		return 0, nil
+	}
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("TRUNCATE TABLE %s", table)); err != nil {
+		if isMissingRelationError(err) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("truncate %s: %w", table, err)
+	}
+	return count, nil
+}
+
+func isMissingRelationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "does not exist") && strings.Contains(s, "relation")
 }
 
 func (s *OpsCleanupService) tryAcquireLeaderLock(ctx context.Context) (func(), bool) {

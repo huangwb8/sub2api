@@ -7,9 +7,16 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 OpenAI Images API 网关支持：OpenAI 平台分组现在可通过 `/v1/images/generations`、`/v1/images/edits` 及无 `/v1` 别名转发图片生成/编辑请求，并抽取 Images usage 用于 token 级计费记录。
 - 新增了用户转售风控最小可用闭环：后端引入 `user_risk_profiles` / `user_risk_events` 数据模型、风控配置读写、可信 IP/UA/API Key 证据采集、每日评估器、锁定拦截、管理员风险接口，以及前端系统设置与用户管理中的风险控制入口。
+- 新增了 `docs/plans/2026-04-29-upstream-b0a225-to-55a7fa-optimization-plan.md`：基于上游 `b0a2252e..55a7fa1e` 的提交区间，沉淀当前 fork 对 Vertex Service Account、OpenAI/Codex 兼容、流式 failover、批量账号编辑、API Key 限速重置、Ops 清理策略与 license 同步状态的选择性吸收计划。
+- 新增了 OpenAI Images API 网关支持：注册 `/v1/images/generations`、`/v1/images/edits` 及无 `/v1` 别名，支持 OpenAI API Key 账号转发图片生成/编辑请求、记录图片输入/输出 token 用量，并补充 `gpt-image-2` 定价资源与多语言 README 能力说明。
+- 新增了管理员侧 API Key 限速用量重置能力：`PUT /api/v1/admin/api-keys/:id` 支持 `reset_rate_limit_usage=true`，会清空 5h/1d/7d 限速窗口并同步失效认证缓存与 Redis 限速缓存。
+- 新增了账号按当前筛选结果批量编辑能力：账号管理页批量编辑支持“编辑已选择”和“编辑当前筛选”，后端 `bulk-update` 可按现有列表筛选语义解析目标账号 ID，保留混合渠道风险确认流程。
 
 ### Changed（变更）
+- 吸收了上游 OpenAI/Codex 兼容修复：Anthropic/Chat Completions 转 Responses 的 `tool_choice` 改为 flat function 格式，并保留 legacy nested function 反向兼容；Codex compact/OAuth 请求清理不支持字段时会保留 compact 所需的 tools、reasoning 与 text 等字段。
+- 调整了 Ops 数据清理保留天数语义：保留天数 `0` 现在表示每次清理时清空对应 ops 历史表，负数才回退默认或判定非法；前端设置文案与校验同步改为 `0-365`。
 - 优化了住宅 IP 自动切换策略：代理自动迁移现在只会选择同一地理位置内的健康目标代理，无法确认源代理地理位置或仅存在跨位置目标时会改为临时不可调度，避免住宅 IP 在不同地理位置之间自动切换。
 - 优化了管理员前端常用管理页的默认交互：订阅管理中的“订阅套餐”面板改为默认收起且可手动展开，IP 管理列表默认按账号数降序展示，用户管理列表同步开放按“总充值”和累计“用量”排序，便于更快定位高价值或高消耗用户。
 - 优化了管理员“账号管理”里的用量统计弹窗链路：`/api/v1/admin/accounts/:id/stats` 现在支持 `include=` 分层返回、账号统计结果短 TTL 快照缓存、查询分段耗时日志与模型/端点 Top N 聚合；前端弹窗改为先加载摘要、再补趋势/分布图，并对同账号短时间重复打开命中内存缓存，显著降低首屏等待体感且不改变既有功能入口。
@@ -18,6 +25,7 @@
 - 增强了管理员设置与用户管理的风控可视化：系统设置页新增“用户转售风控”卡片，用户管理列表新增风险列、风险详情弹窗和手动警告/解锁/豁免/重置操作，方便管理员闭环排查和处置。
 
 ### Fixed（修复）
+- 修复了 Anthropic 网关流式读取错误可能直接暴露内部网络地址的问题：未向客户端输出前的 EOF/连接错误会包装为可 failover 的 `UpstreamFailoverError`，已开始输出后只发送标准 SSE error event，客户端可见错误统一脱敏。
 - 修复了用户转售风控分支未收尾导致的编译与注入中断问题：补齐 Ent/Wire 生成、恢复中间件/Handler 构造函数兼容性、打通 Gemini/Google 风格 API 认证链路中的风险校验，并新增可信 IP 归一化与风控阈值/自动锁定判定单测。
 
 - 修复了账号管理编辑界面代理搜索必须整段连续匹配的问题：现在输入类似 `ab dy` 也能命中 `abdkdkdidddy`，同时不会放宽到与原来无关的字段范围，降低误命中风险。
