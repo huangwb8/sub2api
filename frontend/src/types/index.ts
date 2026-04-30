@@ -1346,6 +1346,37 @@ export interface DashboardOversellEstimate {
   residential_ip_fx_rate_usd_cny: number
   residential_ip_fx_rate_source: string
   residential_ip_traffic_basis: string
+  residential_ip_estimates: ResidentialIpEstimateView[]
+  residential_ip_reconciliation?: ResidentialIpReconciliationView | null
+}
+
+export interface ResidentialIpEstimateView {
+  scope: 'pricing' | 'site'
+  includes_admin: boolean
+  includes_failed_requests: boolean
+  includes_probe_traffic: boolean
+  actual_days: number
+  involved_users: number
+  estimated_total_traffic_gb: number
+  estimated_monthly_traffic_gb: number
+  estimated_monthly_cost_usd: number
+  estimated_monthly_cost_cny: number
+  residential_ip_price_usd_per_gb_month: number
+  effective_bytes_per_token: number
+  calibration_source: string
+  traffic_basis: string
+  observed_traffic_bytes: number
+  estimated_traffic_bytes: number
+}
+
+export interface ResidentialIpReconciliationView {
+  window_start: string
+  window_end: string
+  supplier_traffic_gb: number
+  estimated_traffic_gb: number
+  relative_error_rate: number
+  suggested_calibration: number
+  calibration_source: string
 }
 
 export interface DashboardOversellCalculationResult {

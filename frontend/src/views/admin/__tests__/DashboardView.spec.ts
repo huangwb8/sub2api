@@ -140,10 +140,24 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.result.priceGapHint': '与达标单价差额 {gap}',
     'admin.dashboard.oversell.result.residentialIpTraffic': '预计需 {traffic} GB/月',
     'admin.dashboard.oversell.result.residentialIpCostHint': '按近 {days} 天人均流量折算 · 约 {traffic} GB · {users} 人 · 汇率 {fx}',
+    'admin.dashboard.oversell.result.residentialIpScopeHint': '当前结果口径：{scope} · 包含管理员：{includesAdmin}',
+    'admin.dashboard.oversell.result.residentialIpCalibrationHint': '校准系数 {bytes} Bytes/token · 来源 {source}',
     'admin.dashboard.oversell.result.revenueHint': '月收入 ¥{value}',
     'admin.dashboard.oversell.result.costHint': '保守月成本 ¥{value}',
     'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
     'admin.dashboard.oversell.result.users': '{count} 人',
+    'admin.dashboard.oversell.residentialIpScopeTitle': '住宅 IP 双口径说明',
+    'admin.dashboard.oversell.residentialIpScopeDescription': '说明',
+    'admin.dashboard.oversell.reconciliationSummary': '对账：估算 {estimated} / 账单 {supplier} / 误差 {error}',
+    'admin.dashboard.oversell.scopePricing': '套餐定价口径',
+    'admin.dashboard.oversell.scopeSite': '站点真实成本口径',
+    'admin.dashboard.oversell.scopePricingDescription': '定价口径说明',
+    'admin.dashboard.oversell.scopeSiteDescription': '站点口径说明',
+    'admin.dashboard.oversell.scopeTraffic': '窗口总流量',
+    'admin.dashboard.oversell.scopeMonthlyCost': '折算月成本',
+    'admin.dashboard.oversell.scopeUsers': '涉及用户',
+    'admin.dashboard.oversell.scopeAdmin': '包含管理员',
+    'admin.dashboard.oversell.scopeTrafficBasisHint': '流量基础：{basis} · 校准来源：{calibration}',
     'admin.dashboard.oversell.table.title': '套餐价格换算',
     'admin.dashboard.oversell.table.plan': '套餐',
     'admin.dashboard.oversell.table.basis': '权益规模 / 测算依据',
@@ -156,7 +170,9 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.table.currentMonthlyEquivalent': '当前月费等价',
     'admin.dashboard.oversell.table.currentPrice': '当前单价',
     'admin.dashboard.oversell.table.recommendedPrice': '达标售价',
-    'admin.dashboard.oversell.table.delta': '调价幅度'
+    'admin.dashboard.oversell.table.delta': '调价幅度',
+    'common.yes': '是',
+    'common.no': '否'
   }
 
   const interpolate = (template: string, params?: Record<string, unknown>) =>
@@ -303,8 +319,55 @@ describe('admin DashboardView', () => {
         residential_ip_monthly_cost_cny: 777.6,
         residential_ip_price_usd_per_gb_month: 12,
         residential_ip_fx_rate_usd_cny: 7.2,
-        residential_ip_fx_rate_source: 'fallback_floor',
-        residential_ip_traffic_basis: 'recent_residential_proxy_usage'
+        residential_ip_fx_rate_source: 'supplier_reconciliation',
+        residential_ip_traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+        residential_ip_estimates: [
+          {
+            scope: 'pricing',
+            includes_admin: false,
+            includes_failed_requests: false,
+            includes_probe_traffic: false,
+            actual_days: 6,
+            involved_users: 12,
+            estimated_total_traffic_gb: 1.8,
+            estimated_monthly_traffic_gb: 9,
+            estimated_monthly_cost_usd: 108,
+            estimated_monthly_cost_cny: 777.6,
+            residential_ip_price_usd_per_gb_month: 12,
+            effective_bytes_per_token: 7.096031857,
+            calibration_source: 'supplier_reconciliation',
+            traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+            observed_traffic_bytes: 0,
+            estimated_traffic_bytes: 0
+          },
+          {
+            scope: 'site',
+            includes_admin: true,
+            includes_failed_requests: false,
+            includes_probe_traffic: false,
+            actual_days: 6,
+            involved_users: 16,
+            estimated_total_traffic_gb: 2.2,
+            estimated_monthly_traffic_gb: 11,
+            estimated_monthly_cost_usd: 132,
+            estimated_monthly_cost_cny: 950.4,
+            residential_ip_price_usd_per_gb_month: 12,
+            effective_bytes_per_token: 7.096031857,
+            calibration_source: 'supplier_reconciliation',
+            traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+            observed_traffic_bytes: 0,
+            estimated_traffic_bytes: 0
+          }
+        ],
+        residential_ip_reconciliation: {
+          window_start: '2026-04-26T00:00:00Z',
+          window_end: '2026-04-30T23:59:59Z',
+          supplier_traffic_gb: 9.08,
+          estimated_traffic_gb: 5.118354,
+          relative_error_rate: -0.436304,
+          suggested_calibration: 7.096031857,
+          calibration_source: 'supplier_reconciliation'
+        }
       },
       result: {
         feasible: true,
@@ -563,8 +626,55 @@ describe('admin DashboardView', () => {
         residential_ip_monthly_cost_cny: 777.6,
         residential_ip_price_usd_per_gb_month: 12,
         residential_ip_fx_rate_usd_cny: 7.2,
-        residential_ip_fx_rate_source: 'fallback_floor',
-        residential_ip_traffic_basis: 'recent_residential_proxy_usage'
+        residential_ip_fx_rate_source: 'supplier_reconciliation',
+        residential_ip_traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+        residential_ip_estimates: [
+          {
+            scope: 'pricing',
+            includes_admin: false,
+            includes_failed_requests: false,
+            includes_probe_traffic: false,
+            actual_days: 6,
+            involved_users: 12,
+            estimated_total_traffic_gb: 1.8,
+            estimated_monthly_traffic_gb: 9,
+            estimated_monthly_cost_usd: 108,
+            estimated_monthly_cost_cny: 777.6,
+            residential_ip_price_usd_per_gb_month: 12,
+            effective_bytes_per_token: 7.096031857,
+            calibration_source: 'supplier_reconciliation',
+            traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+            observed_traffic_bytes: 0,
+            estimated_traffic_bytes: 0
+          },
+          {
+            scope: 'site',
+            includes_admin: true,
+            includes_failed_requests: false,
+            includes_probe_traffic: false,
+            actual_days: 6,
+            involved_users: 16,
+            estimated_total_traffic_gb: 2.2,
+            estimated_monthly_traffic_gb: 11,
+            estimated_monthly_cost_usd: 132,
+            estimated_monthly_cost_cny: 950.4,
+            residential_ip_price_usd_per_gb_month: 12,
+            effective_bytes_per_token: 7.096031857,
+            calibration_source: 'supplier_reconciliation',
+            traffic_basis: 'usage_log_observed_proxy_bytes_with_legacy_token_fallback',
+            observed_traffic_bytes: 0,
+            estimated_traffic_bytes: 0
+          }
+        ],
+        residential_ip_reconciliation: {
+          window_start: '2026-04-26T00:00:00Z',
+          window_end: '2026-04-30T23:59:59Z',
+          supplier_traffic_gb: 9.08,
+          estimated_traffic_gb: 5.118354,
+          relative_error_rate: -0.436304,
+          suggested_calibration: 7.096031857,
+          calibration_source: 'supplier_reconciliation'
+        }
       },
       result: {
         feasible: true,
