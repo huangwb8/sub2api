@@ -3669,6 +3669,11 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 	resultWithUsage := func() *openaiStreamingResult {
 		return &openaiStreamingResult{usage: usage, firstTokenMs: firstTokenMs}
 	}
+	markProxySuccess := func() {
+		if s.rateLimitService != nil {
+			s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+		}
+	}
 	finalizeStream := func() (*openaiStreamingResult, error) {
 		if !clientDisconnected {
 			if err := flushBuffered(); err != nil {
@@ -3679,6 +3684,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 		if !sawTerminalEvent {
 			return resultWithUsage(), fmt.Errorf("stream usage incomplete: missing terminal event")
 		}
+		markProxySuccess()
 		return resultWithUsage(), nil
 	}
 	handleScanErr := func(scanErr error) (*openaiStreamingResult, error, bool) {
@@ -3687,6 +3693,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 		}
 		if sawTerminalEvent {
 			logger.LegacyPrintf("service.openai_gateway", "Upstream scan ended after terminal event: %v", scanErr)
+			markProxySuccess()
 			return resultWithUsage(), nil, true
 		}
 		// 客户端断开/取消请求时，上游读取往往会返回 context canceled。
@@ -4012,6 +4019,9 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 	}
 
 	c.Data(resp.StatusCode, contentType, body)
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return usage, nil
 }

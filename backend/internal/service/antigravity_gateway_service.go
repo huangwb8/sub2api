@@ -1759,6 +1759,9 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 		usage = streamRes.usage
 		firstTokenMs = streamRes.firstTokenMs
 	}
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return &ForwardResult{
 		RequestID:        requestID,
@@ -2452,6 +2455,9 @@ handleSuccess:
 	if isImageGenerationModel(mappedModel) {
 		// Gemini 图片生成 API 每次请求只生成一张图片（API 限制）
 		imageCount = 1
+	}
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
 	}
 
 	return &ForwardResult{
@@ -4328,6 +4334,9 @@ func (s *AntigravityGatewayService) ForwardUpstream(ctx context.Context, c *gin.
 	// 构建计费结果
 	duration := time.Since(startTime)
 	logger.LegacyPrintf("service.antigravity_gateway", "%s status=success duration_ms=%d", prefix, duration.Milliseconds())
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return &ForwardResult{
 		Model:            originalModel,

@@ -4911,6 +4911,11 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 	if intervalTicker != nil {
 		intervalCh = intervalTicker.C
 	}
+	markProxySuccess := func() {
+		if s.rateLimitService != nil {
+			s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+		}
+	}
 
 	for {
 		select {
@@ -4923,10 +4928,12 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 				if !sawTerminalEvent {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, fmt.Errorf("stream usage incomplete: missing terminal event")
 				}
+				markProxySuccess()
 				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
 			}
 			if ev.err != nil {
 				if sawTerminalEvent {
+					markProxySuccess()
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
 				}
 				if clientDisconnected {
@@ -5132,6 +5139,9 @@ func (s *GatewayService) handleNonStreamingResponseAnthropicAPIKeyPassthrough(
 		contentType = "application/json"
 	}
 	c.Data(resp.StatusCode, contentType, body)
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 	return usage, nil
 }
 
@@ -6751,6 +6761,11 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 	needModelReplace := originalModel != mappedModel
 	clientDisconnected := false // 客户端断开标志，断开后继续读取上游以获取完整usage
 	sawTerminalEvent := false
+	markProxySuccess := func() {
+		if s.rateLimitService != nil {
+			s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+		}
+	}
 
 	pendingEventLines := make([]string, 0, 4)
 
@@ -6887,10 +6902,12 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 				if !sawTerminalEvent {
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, fmt.Errorf("stream usage incomplete: missing terminal event")
 				}
+				markProxySuccess()
 				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
 			}
 			if ev.err != nil {
 				if sawTerminalEvent {
+					markProxySuccess()
 					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
 				}
 				// 检测 context 取消（客户端断开会导致 context 取消，进而影响上游读取）
@@ -7300,6 +7317,9 @@ func (s *GatewayService) handleNonStreamingResponse(ctx context.Context, resp *h
 
 	// 写入响应
 	c.Data(resp.StatusCode, contentType, body)
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return &response.Usage, nil
 }

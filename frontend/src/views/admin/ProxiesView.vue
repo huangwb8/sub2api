@@ -60,6 +60,24 @@
               </label>
               <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
                 <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.halfOpenProbeAccounts') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.half_open_probe_accounts" type="number" min="1" max="10" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
+              </label>
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.cooldownBackoffFactor') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.cooldown_backoff_factor" type="number" min="1" max="4" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
+              </label>
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
+                  {{ t('admin.proxies.failoverFields.maxCooldownMinutes') }}
+                </span>
+                <input v-model.number="proxyFailoverSettings.max_cooldown_minutes" type="number" min="1" max="240" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
+              </label>
+              <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.tempUnschedMinutes') }}
                 </span>
                 <input v-model.number="proxyFailoverSettings.temp_unsched_minutes" type="number" min="1" max="240" class="input h-8 w-20 shrink-0 px-2 py-1 text-right text-sm" />
@@ -1103,10 +1121,13 @@ const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
   failure_threshold: 3,
   failure_window_minutes: 10,
   cooldown_minutes: 15,
+  half_open_probe_accounts: 2,
+  cooldown_backoff_factor: 2,
+  max_cooldown_minutes: 120,
   max_accounts_per_proxy: 6,
   max_migrations_per_cycle: 12,
   prefer_same_country: true,
-  only_openai_oauth: true,
+  only_openai_oauth: false,
   temp_unsched_minutes: 10
 })
 

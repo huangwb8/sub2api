@@ -275,6 +275,9 @@ export interface ProxyFailoverSettings {
   failure_threshold: number
   failure_window_minutes: number
   cooldown_minutes: number
+  half_open_probe_accounts: number
+  cooldown_backoff_factor: number
+  max_cooldown_minutes: number
   max_accounts_per_proxy: number
   max_migrations_per_cycle: number
   prefer_same_country: boolean

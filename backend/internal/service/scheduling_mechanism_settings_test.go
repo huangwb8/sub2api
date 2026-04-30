@@ -51,6 +51,9 @@ func TestSetSchedulingMechanismSettings_NormalizesPayload(t *testing.T) {
 			FailureThreshold:      99,
 			FailureWindowMinutes:  0,
 			CooldownMinutes:       999,
+			HalfOpenProbeAccounts: 0,
+			CooldownBackoffFactor: 9,
+			MaxCooldownMinutes:    999,
 			MaxAccountsPerProxy:   0,
 			MaxMigrationsPerCycle: 999,
 			PreferSameCountry:     false,
@@ -75,6 +78,9 @@ func TestSetSchedulingMechanismSettings_NormalizesPayload(t *testing.T) {
 	require.Equal(t, 10, settings.ProxyFailover.FailureThreshold)
 	require.Equal(t, defaultProxyFailoverFailureWindowMin, settings.ProxyFailover.FailureWindowMinutes)
 	require.Equal(t, 240, settings.ProxyFailover.CooldownMinutes)
+	require.Equal(t, defaultProxyFailoverHalfOpenAccounts, settings.ProxyFailover.HalfOpenProbeAccounts)
+	require.Equal(t, 4, settings.ProxyFailover.CooldownBackoffFactor)
+	require.Equal(t, 240, settings.ProxyFailover.MaxCooldownMinutes)
 	require.Equal(t, defaultProxyFailoverMaxPerProxy, settings.ProxyFailover.MaxAccountsPerProxy)
 	require.Equal(t, 200, settings.ProxyFailover.MaxMigrationsPerCycle)
 	require.True(t, settings.ProxyFailover.PreferSameCountry)

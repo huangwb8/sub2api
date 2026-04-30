@@ -250,6 +250,9 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 			s.updateCodexUsageSnapshot(ctx, account.ID, snapshot)
 		}
 	}
+	if handleErr == nil && result != nil && s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return result, handleErr
 }

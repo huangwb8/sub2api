@@ -1042,6 +1042,9 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 	if isImageGenerationModel(originalModel) {
 		imageCount = 1
 	}
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return &ForwardResult{
 		RequestID:     requestID,
@@ -1544,6 +1547,9 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 	imageSize := s.extractImageSize(body)
 	if isImageGenerationModel(originalModel) {
 		imageCount = 1
+	}
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
 	}
 
 	return &ForwardResult{

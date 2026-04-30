@@ -51,7 +51,34 @@ func (s *proxyFailoverAccountRepoStub) GetByCRSAccountID(ctx context.Context, cr
 }
 
 func (s *proxyFailoverAccountRepoStub) FindByExtraField(ctx context.Context, key string, value any) ([]Account, error) {
-	panic("unexpected FindByExtraField call")
+	result := make([]Account, 0)
+	for _, account := range s.accounts {
+		if account == nil || account.Extra == nil {
+			continue
+		}
+		current, ok := account.Extra[key]
+		if !ok {
+			continue
+		}
+		switch want := value.(type) {
+		case int64:
+			switch got := current.(type) {
+			case int64:
+				if got == want {
+					result = append(result, *account)
+				}
+			case int:
+				if int64(got) == want {
+					result = append(result, *account)
+				}
+			}
+		default:
+			if current == value {
+				result = append(result, *account)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *proxyFailoverAccountRepoStub) ListCRSAccountIDs(ctx context.Context) (map[string]int64, error) {
@@ -172,6 +199,10 @@ func (s *proxyFailoverAccountRepoStub) SetTempUnschedulable(ctx context.Context,
 }
 
 func (s *proxyFailoverAccountRepoStub) ClearTempUnschedulable(ctx context.Context, id int64) error {
+	if account, ok := s.accounts[id]; ok && account != nil {
+		account.TempUnschedulableUntil = nil
+		account.TempUnschedulableReason = ""
+	}
 	return nil
 }
 
@@ -192,7 +223,17 @@ func (s *proxyFailoverAccountRepoStub) UpdateSessionWindow(ctx context.Context, 
 }
 
 func (s *proxyFailoverAccountRepoStub) UpdateExtra(ctx context.Context, id int64, updates map[string]any) error {
-	panic("unexpected UpdateExtra call")
+	account := s.accounts[id]
+	if account == nil {
+		return ErrAccountNotFound
+	}
+	if account.Extra == nil {
+		account.Extra = make(map[string]any)
+	}
+	for key, value := range updates {
+		account.Extra[key] = value
+	}
+	return nil
 }
 
 func (s *proxyFailoverAccountRepoStub) BulkUpdate(ctx context.Context, ids []int64, updates AccountBulkUpdate) (int64, error) {
@@ -341,7 +382,7 @@ func TestProxyFailoverService_IsolateProxyTempUnschedulesOnlyFailedAccounts(t *t
 	require.Nil(t, accountRepo.accounts[3].TempUnschedulableUntil)
 }
 
-func TestProxyFailoverService_IsolateProxyRejectsDifferentGeoTarget(t *testing.T) {
+func TestProxyFailoverService_IsolateProxyFallsBackToDifferentGeoTarget(t *testing.T) {
 	t.Parallel()
 
 	sourceProxyID := int64(11)
@@ -399,10 +440,138 @@ func TestProxyFailoverService_IsolateProxyRejectsDifferentGeoTarget(t *testing.T
 		CooldownMinutes:       15,
 	}, "upstream_http_502")
 
-	require.Empty(t, accountRepo.updatedAccountIDs)
-	require.Equal(t, []int64{1, 2}, accountRepo.tempUnschedIDs)
+	require.Equal(t, []int64{1, 2}, accountRepo.updatedAccountIDs)
+	require.Empty(t, accountRepo.tempUnschedIDs)
+	require.Equal(t, targetProxyID, *accountRepo.accounts[1].ProxyID)
+	require.Equal(t, targetProxyID, *accountRepo.accounts[2].ProxyID)
+	require.Nil(t, accountRepo.accounts[1].TempUnschedulableUntil)
+	require.Nil(t, accountRepo.accounts[2].TempUnschedulableUntil)
+}
+
+func TestProxyFailoverService_ListHealthyTargetProxies_AllowsFallbackWithoutSourceGeo(t *testing.T) {
+	t.Parallel()
+
+	sourceProxyID := int64(11)
+	targetProxyID := int64(22)
+
+	svc := NewProxyFailoverService(nil, nil, &proxyFailoverProxyRepoStub{
+		activeWithAccount: []ProxyWithAccountCount{
+			{Proxy: Proxy{ID: sourceProxyID, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive}, AccountCount: 2},
+			{Proxy: Proxy{ID: targetProxyID, Name: "target", Protocol: "http", Host: "target.example.com", Port: 8080, Status: StatusActive}, AccountCount: 1},
+		},
+	}, &proxyFailoverProberStub{
+		exits: map[string]*ProxyExitInfo{
+			"target.example.com": {
+				IP:          "203.0.113.22",
+				Country:     "Singapore",
+				CountryCode: "SG",
+				Region:      "Singapore",
+				City:        "Singapore",
+			},
+		},
+	}, nil, nil, nil)
+
+	targets, err := svc.listHealthyTargetProxies(context.Background(), sourceProxyID, proxyGeoLocation{}, ProxyFailoverSettings{
+		MaxAccountsPerProxy: 10,
+		PreferSameCountry:   true,
+	})
+	require.NoError(t, err)
+	require.Len(t, targets, 1)
+	require.Equal(t, targetProxyID, targets[0].ID)
+}
+
+func TestProxyFailoverService_RecordUpstreamFailure_ProtectsAllPlatformsByDefault(t *testing.T) {
+	t.Parallel()
+
+	sourceProxyID := int64(11)
+	svc := NewProxyFailoverService(nil, nil, nil, nil, nil, nil, nil)
+	account := &Account{
+		ID:       101,
+		Platform: PlatformAnthropic,
+		Type:     AccountTypeAPIKey,
+		ProxyID:  &sourceProxyID,
+	}
+
+	svc.RecordUpstreamFailure(context.Background(), account, 502, "bad gateway")
+
+	state := svc.ensureState(sourceProxyID)
+	require.Equal(t, 1, state.failCount)
+	require.Equal(t, proxyHealthClosed, state.healthState)
+}
+
+func TestProxyFailoverService_RecordUpstreamSuccess_ClosesHalfOpenProxy(t *testing.T) {
+	t.Parallel()
+
+	sourceProxyID := int64(11)
+	svc := NewProxyFailoverService(nil, nil, nil, nil, nil, nil, nil)
+	state := svc.ensureState(sourceProxyID)
+	state.healthState = proxyHealthHalfOpen
+	state.failCount = 4
+	state.cooldownCount = 3
+	state.unhealthyUntil = time.Now().Add(5 * time.Minute)
+	state.lastMessage = "old"
+	state.lastStatusCode = 502
+
+	svc.RecordUpstreamSuccess(context.Background(), &Account{ID: 1, ProxyID: &sourceProxyID})
+
+	require.Equal(t, proxyHealthClosed, state.healthState)
+	require.Zero(t, state.failCount)
+	require.Zero(t, state.cooldownCount)
+	require.True(t, state.unhealthyUntil.IsZero())
+	require.Empty(t, state.lastMessage)
+	require.Zero(t, state.lastStatusCode)
+}
+
+func TestProxyFailoverService_MigrateAccountsForHalfOpenProbe_RestoresTempUnschedAccounts(t *testing.T) {
+	t.Parallel()
+
+	sourceProxyID := int64(11)
+	targetProxyID := int64(22)
+	until := time.Now().Add(10 * time.Minute)
+	accountRepo := &proxyFailoverAccountRepoStub{
+		accounts: map[int64]*Account{
+			1: {
+				ID:                      1,
+				Name:                    "acct-1",
+				Platform:                PlatformOpenAI,
+				Type:                    AccountTypeOAuth,
+				ProxyID:                 &targetProxyID,
+				Status:                  StatusActive,
+				Schedulable:             true,
+				TempUnschedulableUntil:  &until,
+				TempUnschedulableReason: "waiting",
+				Extra: map[string]any{
+					"proxy_failover_original_proxy_id": sourceProxyID,
+				},
+			},
+		},
+		updateErrByID: map[int64]error{},
+	}
+
+	svc := NewProxyFailoverService(nil, accountRepo, nil, nil, nil, nil, nil)
+	proxy := &ProxyWithAccountCount{
+		Proxy: Proxy{ID: sourceProxyID, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive},
+	}
+
+	svc.migrateAccountsForHalfOpenProbe(context.Background(), proxy, ProxyFailoverSettings{
+		HalfOpenProbeAccounts: 1,
+	})
+
 	require.Equal(t, sourceProxyID, *accountRepo.accounts[1].ProxyID)
-	require.Equal(t, sourceProxyID, *accountRepo.accounts[2].ProxyID)
-	require.NotNil(t, accountRepo.accounts[1].TempUnschedulableUntil)
-	require.NotNil(t, accountRepo.accounts[2].TempUnschedulableUntil)
+	require.Nil(t, accountRepo.accounts[1].TempUnschedulableUntil)
+	require.Empty(t, accountRepo.accounts[1].TempUnschedulableReason)
+}
+
+func TestComputeProxyCooldown_UsesBackoffAndMax(t *testing.T) {
+	t.Parallel()
+
+	settings := ProxyFailoverSettings{
+		CooldownMinutes:       15,
+		CooldownBackoffFactor: 2,
+		MaxCooldownMinutes:    40,
+	}
+
+	require.Equal(t, 15*time.Minute, computeProxyCooldown(settings, 0))
+	require.Equal(t, 30*time.Minute, computeProxyCooldown(settings, 1))
+	require.Equal(t, 40*time.Minute, computeProxyCooldown(settings, 2))
 }

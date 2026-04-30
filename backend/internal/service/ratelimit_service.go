@@ -1620,6 +1620,13 @@ func (s *RateLimitService) recordProxyUpstreamFailure(ctx context.Context, accou
 	s.proxyFailoverService.RecordUpstreamFailure(ctx, account, statusCode, message)
 }
 
+func (s *RateLimitService) recordProxyUpstreamSuccess(ctx context.Context, account *Account) {
+	if s == nil || s.proxyFailoverService == nil || account == nil {
+		return
+	}
+	s.proxyFailoverService.RecordUpstreamSuccess(ctx, account)
+}
+
 func wasTempUnschedByStatusCode(reason string, statusCode int) bool {
 	if statusCode <= 0 {
 		return false

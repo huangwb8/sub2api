@@ -15,6 +15,9 @@ const (
 	defaultProxyFailoverFailureThreshold = 3
 	defaultProxyFailoverFailureWindowMin = 10
 	defaultProxyFailoverCooldownMin      = 15
+	defaultProxyFailoverHalfOpenAccounts = 2
+	defaultProxyFailoverBackoffFactor    = 2
+	defaultProxyFailoverMaxCooldownMin   = 120
 	defaultProxyFailoverMaxPerProxy      = 6
 	defaultProxyFailoverMaxMigrateBatch  = 12
 	defaultProxyFailoverTempUnschedMin   = 10
@@ -40,6 +43,9 @@ type ProxyFailoverSettings struct {
 	FailureThreshold      int  `json:"failure_threshold"`
 	FailureWindowMinutes  int  `json:"failure_window_minutes"`
 	CooldownMinutes       int  `json:"cooldown_minutes"`
+	HalfOpenProbeAccounts int  `json:"half_open_probe_accounts"`
+	CooldownBackoffFactor int  `json:"cooldown_backoff_factor"`
+	MaxCooldownMinutes    int  `json:"max_cooldown_minutes"`
 	MaxAccountsPerProxy   int  `json:"max_accounts_per_proxy"`
 	MaxMigrationsPerCycle int  `json:"max_migrations_per_cycle"`
 	PreferSameCountry     bool `json:"prefer_same_country"`
@@ -60,10 +66,13 @@ func DefaultProxyFailoverSettings() ProxyFailoverSettings {
 		FailureThreshold:      defaultProxyFailoverFailureThreshold,
 		FailureWindowMinutes:  defaultProxyFailoverFailureWindowMin,
 		CooldownMinutes:       defaultProxyFailoverCooldownMin,
+		HalfOpenProbeAccounts: defaultProxyFailoverHalfOpenAccounts,
+		CooldownBackoffFactor: defaultProxyFailoverBackoffFactor,
+		MaxCooldownMinutes:    defaultProxyFailoverMaxCooldownMin,
 		MaxAccountsPerProxy:   defaultProxyFailoverMaxPerProxy,
 		MaxMigrationsPerCycle: defaultProxyFailoverMaxMigrateBatch,
 		PreferSameCountry:     true,
-		OnlyOpenAIOAuth:       true,
+		OnlyOpenAIOAuth:       false,
 		TempUnschedMinutes:    defaultProxyFailoverTempUnschedMin,
 	}
 }
@@ -204,6 +213,24 @@ func normalizeProxyFailoverSettings(settings ProxyFailoverSettings) ProxyFailove
 	}
 	if settings.CooldownMinutes > 240 {
 		settings.CooldownMinutes = 240
+	}
+	if settings.HalfOpenProbeAccounts < 1 {
+		settings.HalfOpenProbeAccounts = defaultProxyFailoverHalfOpenAccounts
+	}
+	if settings.HalfOpenProbeAccounts > 10 {
+		settings.HalfOpenProbeAccounts = 10
+	}
+	if settings.CooldownBackoffFactor < 1 {
+		settings.CooldownBackoffFactor = defaultProxyFailoverBackoffFactor
+	}
+	if settings.CooldownBackoffFactor > 4 {
+		settings.CooldownBackoffFactor = 4
+	}
+	if settings.MaxCooldownMinutes < 1 {
+		settings.MaxCooldownMinutes = defaultProxyFailoverMaxCooldownMin
+	}
+	if settings.MaxCooldownMinutes > 240 {
+		settings.MaxCooldownMinutes = 240
 	}
 	if settings.MaxAccountsPerProxy < 1 {
 		settings.MaxAccountsPerProxy = defaultProxyFailoverMaxPerProxy

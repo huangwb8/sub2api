@@ -391,11 +391,17 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesRequest(
 		if result != nil {
 			result.ProxyRequestBytes = int64(len(requestBody))
 		}
+		if err == nil && result != nil && s.rateLimitService != nil {
+			s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+		}
 		return result, err
 	}
 	result, err := s.handleImagesBufferedResponse(resp, c, requestBody, originalModel, billingModel, upstreamModel, startTime)
 	if result != nil {
 		result.ProxyRequestBytes = int64(len(requestBody))
+	}
+	if err == nil && result != nil && s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
 	}
 	return result, err
 }

@@ -262,10 +262,13 @@ const settings = reactive<SchedulingMechanismSettings>({
     failure_threshold: 3,
     failure_window_minutes: 10,
     cooldown_minutes: 15,
+    half_open_probe_accounts: 2,
+    cooldown_backoff_factor: 2,
+    max_cooldown_minutes: 120,
     max_accounts_per_proxy: 6,
     max_migrations_per_cycle: 12,
     prefer_same_country: true,
-    only_openai_oauth: true,
+    only_openai_oauth: false,
     temp_unsched_minutes: 10
   }
 })

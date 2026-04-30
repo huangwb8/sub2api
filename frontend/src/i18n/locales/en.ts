@@ -3481,7 +3481,7 @@ export default {
       portInvalid: 'Port must be between 1-65535',
       failoverEyebrow: 'Auto Failover',
       failoverTitle: 'Automatic proxy probing and account migration',
-      failoverDescription: 'Continuously test proxy health and move affected OpenAI OAuth accounts only to healthier proxies in the same geographic location when a proxy keeps failing within the tolerated window.',
+      failoverDescription: 'Continuously test proxy health, prefer same-region healthy proxies during failover, and restore traffic gradually through half-open probing after recovery.',
       goSchedulingMechanisms: 'Open Scheduling',
       saveFailoverSettings: 'Save Failover Settings',
       failoverSettingsSaved: 'Proxy failover settings saved',
@@ -3493,11 +3493,14 @@ export default {
         failureThreshold: 'Failure threshold',
         failureWindowMinutes: 'Failure window (min)',
         cooldownMinutes: 'Cooldown (min)',
+        halfOpenProbeAccounts: 'Half-open probe accounts',
+        cooldownBackoffFactor: 'Cooldown backoff factor',
+        maxCooldownMinutes: 'Max cooldown (min)',
         tempUnschedMinutes: 'Fallback temp unsched (min)',
         maxAccountsPerProxy: 'Max accounts per proxy',
         maxMigrationsPerCycle: 'Max migrations per cycle',
         preferSameCountry: 'Only same-location migration',
-        onlyOpenAIOAuth: 'Only OpenAI OAuth'
+        onlyOpenAIOAuth: 'Only OpenAI OAuth (disable to protect all platforms)'
       },
       deleteConfirm:
         "Are you sure you want to delete '{name}'? Accounts using this proxy will have their proxy removed."
@@ -3555,10 +3558,13 @@ export default {
         failureThreshold: 'Repeated failure threshold',
         failureWindowMinutes: 'Failure window (min)',
         cooldownMinutes: 'Proxy cooldown (min)',
+        halfOpenProbeAccounts: 'Half-open probe accounts',
+        cooldownBackoffFactor: 'Cooldown backoff factor',
+        maxCooldownMinutes: 'Max cooldown (min)',
         maxAccountsPerProxy: 'Max accounts per proxy',
         maxMigrationsPerCycle: 'Max migrations per cycle',
         preferSameCountry: 'Only same-location migration',
-        onlyOpenAIOAuth: 'Only auto-handle OpenAI OAuth accounts',
+        onlyOpenAIOAuth: 'Only OpenAI OAuth (disable to protect all platforms)',
         tempUnschedMinutes: 'Temp unsched duration when no target proxy exists (min)'
       },
       form: {

@@ -180,6 +180,9 @@ func (s *GatewayService) ForwardAsResponses(
 	if result != nil {
 		result.ProxyRequestBytes = int64(len(anthropicBody))
 	}
+	if handleErr == nil && result != nil && s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
 
 	return result, handleErr
 }

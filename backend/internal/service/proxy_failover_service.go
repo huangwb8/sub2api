@@ -12,6 +12,14 @@ import (
 
 const proxyFailoverLoopTick = time.Minute
 
+type proxyHealthState int
+
+const (
+	proxyHealthClosed proxyHealthState = iota
+	proxyHealthOpen
+	proxyHealthHalfOpen
+)
+
 type proxyFailureState struct {
 	failCount        int
 	windowStartedAt  time.Time
@@ -22,6 +30,8 @@ type proxyFailureState struct {
 	lastProbeFailed  bool
 	distinctAccounts map[int64]time.Time
 	unhealthyUntil   time.Time
+	healthState      proxyHealthState
+	cooldownCount    int
 	migrationRunning bool
 }
 
@@ -173,7 +183,7 @@ func (s *ProxyFailoverService) RecordUpstreamFailure(ctx context.Context, accoun
 	if err != nil || !settings.ProxyFailover.Enabled {
 		return
 	}
-	if settings.ProxyFailover.OnlyOpenAIOAuth && !(account.Platform == PlatformOpenAI && account.Type == AccountTypeOAuth) {
+	if !isProxyFailoverProtectedAccount(account, settings.ProxyFailover) {
 		return
 	}
 	if !shouldCountProxyUpstreamFailure(statusCode) {
@@ -185,6 +195,33 @@ func (s *ProxyFailoverService) RecordUpstreamFailure(ctx context.Context, accoun
 	if shouldIsolate {
 		go s.isolateProxy(context.Background(), proxyID, settings.ProxyFailover, fmt.Sprintf("upstream_http_%d", statusCode))
 	}
+}
+
+func (s *ProxyFailoverService) RecordUpstreamSuccess(ctx context.Context, account *Account) {
+	if s == nil || account == nil || account.ProxyID == nil || *account.ProxyID <= 0 {
+		return
+	}
+
+	now := time.Now()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	state := s.ensureState(*account.ProxyID)
+	state.lastSuccessAt = now
+	state.lastProbeFailed = false
+	if state.healthState != proxyHealthHalfOpen {
+		return
+	}
+
+	state.healthState = proxyHealthClosed
+	state.failCount = 0
+	state.windowStartedAt = time.Time{}
+	state.lastMessage = ""
+	state.lastStatusCode = 0
+	state.distinctAccounts = make(map[int64]time.Time)
+	state.unhealthyUntil = time.Time{}
+	state.cooldownCount = 0
+	state.migrationRunning = false
 }
 
 func shouldCountProxyUpstreamFailure(statusCode int) bool {
@@ -214,7 +251,6 @@ func (s *ProxyFailoverService) runSingleProxyProbe(ctx context.Context, proxy *P
 		return
 	}
 
-	s.markProxyHealthy(proxy.ID)
 	latency := latencyMs
 	s.storeProbeLatency(ctx, proxy.ID, &ProxyLatencyInfo{
 		Success:     true,
@@ -227,6 +263,24 @@ func (s *ProxyFailoverService) runSingleProxyProbe(ctx context.Context, proxy *P
 		City:        exitInfo.City,
 		UpdatedAt:   time.Now(),
 	})
+
+	shouldHalfOpen := false
+	s.mu.Lock()
+	state := s.ensureState(proxy.ID)
+	state.lastSuccessAt = time.Now()
+	state.lastProbeFailed = false
+	if state.healthState == proxyHealthOpen && !time.Now().Before(state.unhealthyUntil) {
+		state.healthState = proxyHealthHalfOpen
+		shouldHalfOpen = true
+	}
+	s.mu.Unlock()
+
+	if shouldHalfOpen {
+		go s.migrateAccountsForHalfOpenProbe(context.Background(), proxy, settings)
+		return
+	}
+
+	s.markProxyHealthy(proxy.ID)
 }
 
 func (s *ProxyFailoverService) currentSettings(ctx context.Context) (*SchedulingMechanismSettings, error) {
@@ -275,6 +329,15 @@ func (s *ProxyFailoverService) recordFailure(
 	defer s.mu.Unlock()
 
 	state := s.ensureState(proxyID)
+	if state.healthState == proxyHealthHalfOpen {
+		state.lastFailureAt = now
+		state.lastMessage = strings.TrimSpace(message)
+		state.lastStatusCode = statusCode
+		state.lastProbeFailed = fromProbe
+		state.healthState = proxyHealthOpen
+		state.migrationRunning = true
+		return true
+	}
 	if state.windowStartedAt.IsZero() || now.Sub(state.windowStartedAt) > window {
 		state.failCount = 0
 		state.windowStartedAt = now
@@ -289,7 +352,10 @@ func (s *ProxyFailoverService) recordFailure(
 	if accountID > 0 {
 		state.distinctAccounts[accountID] = now
 	}
-	if state.migrationRunning || now.Before(state.unhealthyUntil) {
+	if state.migrationRunning {
+		return false
+	}
+	if state.healthState == proxyHealthOpen && now.Before(state.unhealthyUntil) {
 		return false
 	}
 	if state.failCount < settings.FailureThreshold {
@@ -306,14 +372,17 @@ func (s *ProxyFailoverService) markProxyHealthy(proxyID int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	state := s.ensureState(proxyID)
-	state.failCount = 0
-	state.windowStartedAt = time.Time{}
 	state.lastSuccessAt = time.Now()
 	state.lastProbeFailed = false
-	state.distinctAccounts = make(map[int64]time.Time)
-	if time.Now().After(state.unhealthyUntil) {
-		state.unhealthyUntil = time.Time{}
+	if state.healthState != proxyHealthClosed {
+		return
 	}
+	state.failCount = 0
+	state.windowStartedAt = time.Time{}
+	state.lastMessage = ""
+	state.lastStatusCode = 0
+	state.distinctAccounts = make(map[int64]time.Time)
+	state.unhealthyUntil = time.Time{}
 }
 
 func (s *ProxyFailoverService) storeProbeLatency(ctx context.Context, proxyID int64, update *ProxyLatencyInfo) {
@@ -343,7 +412,10 @@ func (s *ProxyFailoverService) isolateProxy(ctx context.Context, proxyID int64, 
 		s.mu.Lock()
 		if state := s.ensureState(proxyID); state != nil {
 			state.migrationRunning = false
-			state.unhealthyUntil = time.Now().Add(time.Duration(settings.CooldownMinutes) * time.Minute)
+			state.healthState = proxyHealthOpen
+			cooldown := computeProxyCooldown(settings, state.cooldownCount)
+			state.unhealthyUntil = time.Now().Add(cooldown)
+			state.cooldownCount++
 		}
 		s.mu.Unlock()
 	}()
@@ -370,7 +442,7 @@ func (s *ProxyFailoverService) isolateProxy(ctx context.Context, proxyID int64, 
 		if account == nil {
 			continue
 		}
-		if settings.OnlyOpenAIOAuth && !(account.Platform == PlatformOpenAI && account.Type == AccountTypeOAuth) {
+		if !isProxyFailoverProtectedAccount(account, settings) {
 			continue
 		}
 		if !account.IsActive() {
@@ -495,11 +567,10 @@ func (s *ProxyFailoverService) listHealthyTargetProxies(
 	if err != nil {
 		return nil, err
 	}
-	if !sourceGeo.hasCountry() {
-		return nil, nil
-	}
 
-	candidates := make([]proxyFailoverCandidate, 0, len(proxies))
+	sourceHasGeo := sourceGeo.hasCountry()
+	geoMatched := make([]proxyFailoverCandidate, 0, len(proxies))
+	fallback := make([]proxyFailoverCandidate, 0, len(proxies))
 	for _, proxy := range proxies {
 		if proxy.ID <= 0 || proxy.ID == sourceProxyID || !proxy.IsActive() {
 			continue
@@ -514,44 +585,86 @@ func (s *ProxyFailoverService) listHealthyTargetProxies(
 		if !healthy {
 			continue
 		}
-		targetGeo := proxyGeoFromProxy(updatedProxy)
-		if !sameProxyGeoLocation(sourceGeo, targetGeo) {
-			continue
-		}
 		candidate := proxyFailoverCandidate{
 			proxy:     updatedProxy,
 			score:     0,
 			latencyMs: int64(^uint64(0) >> 1),
 		}
-		if settings.PreferSameCountry {
-			candidate.sameRegion = true
-			candidate.score -= 1000
-		}
 		if updatedProxy.LatencyMs != nil {
 			candidate.latencyMs = *updatedProxy.LatencyMs
 		}
-		candidates = append(candidates, candidate)
+		targetGeo := proxyGeoFromProxy(updatedProxy)
+		if sourceHasGeo && sameProxyGeoLocation(sourceGeo, targetGeo) {
+			if settings.PreferSameCountry {
+				candidate.sameRegion = true
+				candidate.score -= 1000
+			}
+			geoMatched = append(geoMatched, candidate)
+			continue
+		}
+		fallback = append(fallback, candidate)
 	}
 
-	sort.SliceStable(candidates, func(i, j int) bool {
-		if candidates[i].score != candidates[j].score {
-			return candidates[i].score < candidates[j].score
-		}
-		if candidates[i].proxy.AccountCount != candidates[j].proxy.AccountCount {
-			return candidates[i].proxy.AccountCount < candidates[j].proxy.AccountCount
-		}
-		if candidates[i].latencyMs != candidates[j].latencyMs {
-			return candidates[i].latencyMs < candidates[j].latencyMs
-		}
-		return candidates[i].proxy.ID < candidates[j].proxy.ID
-	})
+	sortCandidates := func(candidates []proxyFailoverCandidate) {
+		sort.SliceStable(candidates, func(i, j int) bool {
+			if candidates[i].score != candidates[j].score {
+				return candidates[i].score < candidates[j].score
+			}
+			if candidates[i].proxy.AccountCount != candidates[j].proxy.AccountCount {
+				return candidates[i].proxy.AccountCount < candidates[j].proxy.AccountCount
+			}
+			if candidates[i].latencyMs != candidates[j].latencyMs {
+				return candidates[i].latencyMs < candidates[j].latencyMs
+			}
+			return candidates[i].proxy.ID < candidates[j].proxy.ID
+		})
+	}
+	sortCandidates(geoMatched)
+	sortCandidates(fallback)
 
-	result := make([]ProxyWithAccountCount, 0, len(candidates))
-	for _, candidate := range candidates {
+	ordered := make([]proxyFailoverCandidate, 0, len(geoMatched)+len(fallback))
+	ordered = append(ordered, geoMatched...)
+	ordered = append(ordered, fallback...)
+
+	result := make([]ProxyWithAccountCount, 0, len(ordered))
+	for _, candidate := range ordered {
 		result = append(result, candidate.proxy)
 	}
 
 	return result, nil
+}
+
+func isProxyFailoverProtectedAccount(account *Account, settings ProxyFailoverSettings) bool {
+	if account == nil {
+		return false
+	}
+	if !settings.OnlyOpenAIOAuth {
+		return true
+	}
+	return account.Platform == PlatformOpenAI && account.Type == AccountTypeOAuth
+}
+
+func computeProxyCooldown(settings ProxyFailoverSettings, cooldownCount int) time.Duration {
+	cooldown := time.Duration(settings.CooldownMinutes) * time.Minute
+	if cooldown <= 0 {
+		return 0
+	}
+	factor := settings.CooldownBackoffFactor
+	if factor < 1 {
+		factor = 1
+	}
+	for i := 0; i < cooldownCount; i++ {
+		cooldown *= time.Duration(factor)
+		maxCooldown := time.Duration(settings.MaxCooldownMinutes) * time.Minute
+		if maxCooldown > 0 && cooldown >= maxCooldown {
+			return maxCooldown
+		}
+	}
+	maxCooldown := time.Duration(settings.MaxCooldownMinutes) * time.Minute
+	if maxCooldown > 0 && cooldown > maxCooldown {
+		return maxCooldown
+	}
+	return cooldown
 }
 
 func proxyGeoFromLatency(info *ProxyLatencyInfo) proxyGeoLocation {
@@ -662,7 +775,12 @@ func (s *ProxyFailoverService) isProxyCoolingDown(proxyID int64) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	state := s.ensureState(proxyID)
-	return time.Now().Before(state.unhealthyUntil)
+	switch state.healthState {
+	case proxyHealthOpen, proxyHealthHalfOpen:
+		return true
+	default:
+		return time.Now().Before(state.unhealthyUntil)
+	}
 }
 
 func selectProxyFailoverTarget(
@@ -696,11 +814,7 @@ func (s *ProxyFailoverService) migrateAccountToProxy(
 	if account.Extra == nil {
 		account.Extra = make(map[string]any)
 	}
-	account.Extra["proxy_failover_original_proxy_id"] = sourceProxy.ID
-	account.Extra["proxy_failover_last_source_proxy_id"] = sourceProxy.ID
-	account.Extra["proxy_failover_last_target_proxy_id"] = targetProxy.ID
-	account.Extra["proxy_failover_last_reason"] = reason
-	account.Extra["proxy_failover_last_migrated_at"] = time.Now().UTC().Format(time.RFC3339)
+	mergeProxyFailoverExtra(account.Extra, sourceProxy.ID, &targetProxy.ID, reason)
 	if err := s.accountRepo.Update(ctx, account); err != nil {
 		return err
 	}
@@ -722,6 +836,73 @@ func (s *ProxyFailoverService) migrateAccountToProxy(
 	return nil
 }
 
+func mergeProxyFailoverExtra(extra map[string]any, sourceProxyID int64, targetProxyID *int64, reason string) {
+	if extra == nil {
+		return
+	}
+	extra["proxy_failover_original_proxy_id"] = sourceProxyID
+	extra["proxy_failover_last_source_proxy_id"] = sourceProxyID
+	if targetProxyID != nil && *targetProxyID > 0 {
+		extra["proxy_failover_last_target_proxy_id"] = *targetProxyID
+	}
+	extra["proxy_failover_last_reason"] = reason
+	extra["proxy_failover_last_migrated_at"] = time.Now().UTC().Format(time.RFC3339)
+}
+
+func (s *ProxyFailoverService) migrateAccountsForHalfOpenProbe(
+	ctx context.Context,
+	proxy *ProxyWithAccountCount,
+	settings ProxyFailoverSettings,
+) {
+	if s == nil || proxy == nil || proxy.ID <= 0 || s.accountRepo == nil {
+		return
+	}
+
+	accounts, err := s.accountRepo.FindByExtraField(ctx, "proxy_failover_original_proxy_id", proxy.ID)
+	if err != nil {
+		slog.Warn("proxy_failover.list_half_open_accounts_failed", "proxy_id", proxy.ID, "error", err)
+		return
+	}
+
+	now := time.Now()
+	restored := 0
+	sourceProxyID := proxy.ID
+	for i := range accounts {
+		if settings.HalfOpenProbeAccounts > 0 && restored >= settings.HalfOpenProbeAccounts {
+			break
+		}
+		account := &accounts[i]
+		if !account.IsActive() {
+			continue
+		}
+		if account.TempUnschedulableUntil == nil || !account.TempUnschedulableUntil.After(now) {
+			continue
+		}
+		account.ProxyID = &sourceProxyID
+		account.Proxy = &proxy.Proxy
+		if account.Extra == nil {
+			account.Extra = make(map[string]any)
+		}
+		mergeProxyFailoverExtra(account.Extra, sourceProxyID, &sourceProxyID, "half_open_probe_restore")
+		if err := s.accountRepo.Update(ctx, account); err != nil {
+			slog.Warn("proxy_failover.restore_probe_account_failed", "proxy_id", proxy.ID, "account_id", account.ID, "error", err)
+			continue
+		}
+		if err := s.accountRepo.ClearTempUnschedulable(ctx, account.ID); err != nil {
+			slog.Warn("proxy_failover.clear_temp_unsched_failed", "proxy_id", proxy.ID, "account_id", account.ID, "error", err)
+		}
+		if s.tempUnschedCache != nil {
+			_ = s.tempUnschedCache.DeleteTempUnsched(ctx, account.ID)
+		}
+		account.TempUnschedulableUntil = nil
+		account.TempUnschedulableReason = ""
+		if s.schedulerSnapshot != nil {
+			_ = s.schedulerSnapshot.UpdateAccountInCache(ctx, account)
+		}
+		restored++
+	}
+}
+
 func (s *ProxyFailoverService) tempUnscheduleAccounts(
 	ctx context.Context,
 	accounts []*Account,
@@ -738,6 +919,13 @@ func (s *ProxyFailoverService) tempUnscheduleAccounts(
 			continue
 		}
 		msg := fmt.Sprintf("proxy %d unhealthy (%s), waiting for healthy failover proxy", sourceProxyID, reason)
+		if account.Extra == nil {
+			account.Extra = make(map[string]any)
+		}
+		mergeProxyFailoverExtra(account.Extra, sourceProxyID, nil, reason)
+		if err := s.accountRepo.UpdateExtra(ctx, account.ID, account.Extra); err != nil {
+			slog.Warn("proxy_failover.update_temp_unsched_extra_failed", "account_id", account.ID, "proxy_id", sourceProxyID, "error", err)
+		}
 		if err := s.accountRepo.SetTempUnschedulable(ctx, account.ID, until, msg); err != nil {
 			slog.Warn("proxy_failover.set_temp_unsched_failed", "account_id", account.ID, "proxy_id", sourceProxyID, "error", err)
 			continue
