@@ -34,7 +34,7 @@
 
 ```
 github项目： huangwb8/sub2api
-version=1.2.6
+version=1.2.7
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
 ```
 
