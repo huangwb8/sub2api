@@ -150,6 +150,11 @@ func (a *Account) IsSchedulable() bool {
 	if a.RateLimitResetAt != nil && now.Before(*a.RateLimitResetAt) {
 		return false
 	}
+	if a.IsOpenAI() {
+		if resetAt := codexRateLimitResetAtFromExtra(a.Extra, now); resetAt != nil && now.Before(*resetAt) {
+			return false
+		}
+	}
 	if a.TempUnschedulableUntil != nil && now.Before(*a.TempUnschedulableUntil) {
 		return false
 	}

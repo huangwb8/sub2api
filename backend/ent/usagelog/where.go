@@ -120,6 +120,36 @@ func SubscriptionID(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldSubscriptionID, v))
 }
 
+// ProxyID applies equality check predicate on the "proxy_id" field. It's identical to ProxyIDEQ.
+func ProxyID(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyID, v))
+}
+
+// UsedResidentialProxy applies equality check predicate on the "used_residential_proxy" field. It's identical to UsedResidentialProxyEQ.
+func UsedResidentialProxy(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUsedResidentialProxy, v))
+}
+
+// ProxyTrafficInputBytes applies equality check predicate on the "proxy_traffic_input_bytes" field. It's identical to ProxyTrafficInputBytesEQ.
+func ProxyTrafficInputBytes(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficOutputBytes applies equality check predicate on the "proxy_traffic_output_bytes" field. It's identical to ProxyTrafficOutputBytesEQ.
+func ProxyTrafficOutputBytes(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOverheadBytes applies equality check predicate on the "proxy_traffic_overhead_bytes" field. It's identical to ProxyTrafficOverheadBytesEQ.
+func ProxyTrafficOverheadBytes(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficEstimateSource applies equality check predicate on the "proxy_traffic_estimate_source" field. It's identical to ProxyTrafficEstimateSourceEQ.
+func ProxyTrafficEstimateSource(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficEstimateSource, v))
+}
+
 // InputTokens applies equality check predicate on the "input_tokens" field. It's identical to InputTokensEQ.
 func InputTokens(v int) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldInputTokens, v))
@@ -943,6 +973,301 @@ func SubscriptionIDIsNil() predicate.UsageLog {
 // SubscriptionIDNotNil applies the NotNil predicate on the "subscription_id" field.
 func SubscriptionIDNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldSubscriptionID))
+}
+
+// ProxyIDEQ applies the EQ predicate on the "proxy_id" field.
+func ProxyIDEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyID, v))
+}
+
+// ProxyIDNEQ applies the NEQ predicate on the "proxy_id" field.
+func ProxyIDNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldProxyID, v))
+}
+
+// ProxyIDIn applies the In predicate on the "proxy_id" field.
+func ProxyIDIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldProxyID, vs...))
+}
+
+// ProxyIDNotIn applies the NotIn predicate on the "proxy_id" field.
+func ProxyIDNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldProxyID, vs...))
+}
+
+// ProxyIDGT applies the GT predicate on the "proxy_id" field.
+func ProxyIDGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldProxyID, v))
+}
+
+// ProxyIDGTE applies the GTE predicate on the "proxy_id" field.
+func ProxyIDGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldProxyID, v))
+}
+
+// ProxyIDLT applies the LT predicate on the "proxy_id" field.
+func ProxyIDLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldProxyID, v))
+}
+
+// ProxyIDLTE applies the LTE predicate on the "proxy_id" field.
+func ProxyIDLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldProxyID, v))
+}
+
+// ProxyIDIsNil applies the IsNil predicate on the "proxy_id" field.
+func ProxyIDIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldProxyID))
+}
+
+// ProxyIDNotNil applies the NotNil predicate on the "proxy_id" field.
+func ProxyIDNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldProxyID))
+}
+
+// UsedResidentialProxyEQ applies the EQ predicate on the "used_residential_proxy" field.
+func UsedResidentialProxyEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUsedResidentialProxy, v))
+}
+
+// UsedResidentialProxyNEQ applies the NEQ predicate on the "used_residential_proxy" field.
+func UsedResidentialProxyNEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUsedResidentialProxy, v))
+}
+
+// UsedResidentialProxyIsNil applies the IsNil predicate on the "used_residential_proxy" field.
+func UsedResidentialProxyIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUsedResidentialProxy))
+}
+
+// UsedResidentialProxyNotNil applies the NotNil predicate on the "used_residential_proxy" field.
+func UsedResidentialProxyNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUsedResidentialProxy))
+}
+
+// ProxyTrafficInputBytesEQ applies the EQ predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesNEQ applies the NEQ predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesIn applies the In predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldProxyTrafficInputBytes, vs...))
+}
+
+// ProxyTrafficInputBytesNotIn applies the NotIn predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldProxyTrafficInputBytes, vs...))
+}
+
+// ProxyTrafficInputBytesGT applies the GT predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesGTE applies the GTE predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesLT applies the LT predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesLTE applies the LTE predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldProxyTrafficInputBytes, v))
+}
+
+// ProxyTrafficInputBytesIsNil applies the IsNil predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldProxyTrafficInputBytes))
+}
+
+// ProxyTrafficInputBytesNotNil applies the NotNil predicate on the "proxy_traffic_input_bytes" field.
+func ProxyTrafficInputBytesNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldProxyTrafficInputBytes))
+}
+
+// ProxyTrafficOutputBytesEQ applies the EQ predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesNEQ applies the NEQ predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesIn applies the In predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldProxyTrafficOutputBytes, vs...))
+}
+
+// ProxyTrafficOutputBytesNotIn applies the NotIn predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldProxyTrafficOutputBytes, vs...))
+}
+
+// ProxyTrafficOutputBytesGT applies the GT predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesGTE applies the GTE predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesLT applies the LT predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesLTE applies the LTE predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldProxyTrafficOutputBytes, v))
+}
+
+// ProxyTrafficOutputBytesIsNil applies the IsNil predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldProxyTrafficOutputBytes))
+}
+
+// ProxyTrafficOutputBytesNotNil applies the NotNil predicate on the "proxy_traffic_output_bytes" field.
+func ProxyTrafficOutputBytesNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldProxyTrafficOutputBytes))
+}
+
+// ProxyTrafficOverheadBytesEQ applies the EQ predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesNEQ applies the NEQ predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesIn applies the In predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldProxyTrafficOverheadBytes, vs...))
+}
+
+// ProxyTrafficOverheadBytesNotIn applies the NotIn predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldProxyTrafficOverheadBytes, vs...))
+}
+
+// ProxyTrafficOverheadBytesGT applies the GT predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesGTE applies the GTE predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesLT applies the LT predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesLTE applies the LTE predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldProxyTrafficOverheadBytes, v))
+}
+
+// ProxyTrafficOverheadBytesIsNil applies the IsNil predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldProxyTrafficOverheadBytes))
+}
+
+// ProxyTrafficOverheadBytesNotNil applies the NotNil predicate on the "proxy_traffic_overhead_bytes" field.
+func ProxyTrafficOverheadBytesNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldProxyTrafficOverheadBytes))
+}
+
+// ProxyTrafficEstimateSourceEQ applies the EQ predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceNEQ applies the NEQ predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceIn applies the In predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldProxyTrafficEstimateSource, vs...))
+}
+
+// ProxyTrafficEstimateSourceNotIn applies the NotIn predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldProxyTrafficEstimateSource, vs...))
+}
+
+// ProxyTrafficEstimateSourceGT applies the GT predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceGTE applies the GTE predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceLT applies the LT predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceLTE applies the LTE predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceContains applies the Contains predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceHasPrefix applies the HasPrefix predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceHasSuffix applies the HasSuffix predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceIsNil applies the IsNil predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldProxyTrafficEstimateSource))
+}
+
+// ProxyTrafficEstimateSourceNotNil applies the NotNil predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldProxyTrafficEstimateSource))
+}
+
+// ProxyTrafficEstimateSourceEqualFold applies the EqualFold predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldProxyTrafficEstimateSource, v))
+}
+
+// ProxyTrafficEstimateSourceContainsFold applies the ContainsFold predicate on the "proxy_traffic_estimate_source" field.
+func ProxyTrafficEstimateSourceContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldProxyTrafficEstimateSource, v))
 }
 
 // InputTokensEQ applies the EQ predicate on the "input_tokens" field.

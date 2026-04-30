@@ -183,6 +183,9 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	} else {
 		result, handleErr = s.handleCCBufferedFromAnthropic(resp, c, originalModel, mappedModel, reasoningEffort, startTime)
 	}
+	if result != nil {
+		result.ProxyRequestBytes = int64(len(anthropicBody))
+	}
 
 	return result, handleErr
 }
@@ -307,6 +310,7 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 	// Chain: Anthropic → Responses → Chat Completions
 	responsesResp := apicompat.AnthropicToResponsesResponse(finalResp)
 	ccResp := apicompat.ResponsesToChatCompletions(responsesResp, originalModel)
+	responseBytes, _ := json.Marshal(ccResp)
 
 	if s.responseHeaderFilter != nil {
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
@@ -314,13 +318,14 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 	c.JSON(http.StatusOK, ccResp)
 
 	return &ForwardResult{
-		RequestID:       requestID,
-		Usage:           usage,
-		Model:           originalModel,
-		UpstreamModel:   mappedModel,
-		ReasoningEffort: reasoningEffort,
-		Stream:          false,
-		Duration:        time.Since(startTime),
+		RequestID:          requestID,
+		Usage:              usage,
+		Model:              originalModel,
+		UpstreamModel:      mappedModel,
+		ReasoningEffort:    reasoningEffort,
+		Stream:             false,
+		Duration:           time.Since(startTime),
+		ProxyResponseBytes: int64(len(responseBytes)),
 	}, nil
 }
 

@@ -18,7 +18,6 @@ const (
 	dashboardOversellDefaultProfitMode         = "net_margin"
 	dashboardOversellDaysPerMonth              = 30.0
 	dashboardOversellResidentialIPLookbackDays = 14
-	dashboardOversellEstimatedBytesPerToken    = 4.0
 	dashboardOversellFallbackUSDCNYRate        = 7.2
 	dashboardOversellMaxUsersSearch            = 500
 )
@@ -34,24 +33,26 @@ type DashboardOversellCalculatorRequest struct {
 }
 
 type DashboardOversellEstimate struct {
-	LightUserThresholdUnits         float64 `json:"light_user_threshold_units"`
-	EstimatedLightUserRatio         float64 `json:"estimated_light_user_ratio"`
-	SampledSubscriptionCount        int     `json:"sampled_subscription_count"`
-	LightUserCount                  int     `json:"light_user_count"`
-	EstimatedFromLiveData           bool    `json:"estimated_from_live_data"`
-	FallbackApplied                 bool    `json:"fallback_applied"`
-	Basis                           string  `json:"basis"`
-	CurrentCheapestMonthlyPrice     float64 `json:"current_cheapest_monthly_price_cny"`
-	CurrentCheapestPlanName         string  `json:"current_cheapest_plan_name"`
-	ResidentialIPActualDays         int     `json:"residential_ip_actual_days"`
-	ResidentialIPInvolvedUsers      int     `json:"residential_ip_involved_users"`
-	ResidentialIPTotalTrafficGB     float64 `json:"residential_ip_total_traffic_gb"`
-	ResidentialIPMonthlyCostUSD     float64 `json:"residential_ip_monthly_cost_usd"`
-	ResidentialIPMonthlyCostCNY     float64 `json:"residential_ip_monthly_cost_cny"`
-	ResidentialIPPriceUSDPerGBMonth float64 `json:"residential_ip_price_usd_per_gb_month"`
-	ResidentialIPFXRateUSDCNY       float64 `json:"residential_ip_fx_rate_usd_cny"`
-	ResidentialIPFXRateSource       string  `json:"residential_ip_fx_rate_source"`
-	ResidentialIPTrafficBasis       string  `json:"residential_ip_traffic_basis"`
+	LightUserThresholdUnits         float64                            `json:"light_user_threshold_units"`
+	EstimatedLightUserRatio         float64                            `json:"estimated_light_user_ratio"`
+	SampledSubscriptionCount        int                                `json:"sampled_subscription_count"`
+	LightUserCount                  int                                `json:"light_user_count"`
+	EstimatedFromLiveData           bool                               `json:"estimated_from_live_data"`
+	FallbackApplied                 bool                               `json:"fallback_applied"`
+	Basis                           string                             `json:"basis"`
+	CurrentCheapestMonthlyPrice     float64                            `json:"current_cheapest_monthly_price_cny"`
+	CurrentCheapestPlanName         string                             `json:"current_cheapest_plan_name"`
+	ResidentialIPActualDays         int                                `json:"residential_ip_actual_days"`
+	ResidentialIPInvolvedUsers      int                                `json:"residential_ip_involved_users"`
+	ResidentialIPTotalTrafficGB     float64                            `json:"residential_ip_total_traffic_gb"`
+	ResidentialIPMonthlyCostUSD     float64                            `json:"residential_ip_monthly_cost_usd"`
+	ResidentialIPMonthlyCostCNY     float64                            `json:"residential_ip_monthly_cost_cny"`
+	ResidentialIPPriceUSDPerGBMonth float64                            `json:"residential_ip_price_usd_per_gb_month"`
+	ResidentialIPFXRateUSDCNY       float64                            `json:"residential_ip_fx_rate_usd_cny"`
+	ResidentialIPFXRateSource       string                             `json:"residential_ip_fx_rate_source"`
+	ResidentialIPTrafficBasis       string                             `json:"residential_ip_traffic_basis"`
+	ResidentialIPEstimates          []ResidentialIPEstimate            `json:"residential_ip_estimates"`
+	ResidentialIPReconciliation     *ResidentialIPReconciliationResult `json:"residential_ip_reconciliation,omitempty"`
 }
 
 type DashboardOversellCalculationResult struct {
@@ -322,19 +323,13 @@ FROM subscription_ratios
 		}
 	}
 
-	residentialIPStats, err := s.loadDashboardOversellResidentialIPUsage(ctx, residentialIPPriceUSDPerGBMonth)
+	residentialIPEstimates, reconciliation, fxSnapshot, err := s.estimateResidentialIPScopes(ctx, residentialIPPriceUSDPerGBMonth)
 	if err != nil {
 		return estimate, err
 	}
-	estimate.ResidentialIPActualDays = residentialIPStats.actualDays
-	estimate.ResidentialIPInvolvedUsers = residentialIPStats.involvedUsers
-	estimate.ResidentialIPTotalTrafficGB = residentialIPStats.totalTrafficGB
-	estimate.ResidentialIPMonthlyCostUSD = residentialIPStats.monthlyCostUSD
-	estimate.ResidentialIPMonthlyCostCNY = residentialIPStats.monthlyCostCNY
-	estimate.ResidentialIPPriceUSDPerGBMonth = residentialIPStats.priceUSDPerGBMonth
-	estimate.ResidentialIPFXRateUSDCNY = residentialIPStats.fxRateUSDCNY
-	estimate.ResidentialIPFXRateSource = residentialIPStats.fxRateSource
-	estimate.ResidentialIPTrafficBasis = residentialIPStats.trafficBasis
+	estimate.ResidentialIPEstimates = residentialIPEstimates
+	estimate.ResidentialIPReconciliation = reconciliation
+	applyLegacyResidentialIPEstimate(&estimate, residentialIPEstimateByScope(residentialIPEstimates, ResidentialIPScopePricing), fxSnapshot)
 
 	return estimate, nil
 }
@@ -530,106 +525,46 @@ func dashboardOversellRequiredMonthlyPrice(
 	return basePrice + req.TargetProfitTotalCNY/float64(users)
 }
 
-type dashboardOversellResidentialIPUsageStats struct {
-	actualDays         int
-	involvedUsers      int
-	totalTrafficGB     float64
-	monthlyCostUSD     float64
-	monthlyCostCNY     float64
-	priceUSDPerGBMonth float64
-	fxRateUSDCNY       float64
-	fxRateSource       string
-	trafficBasis       string
-}
-
-func (s *DashboardRecommendationService) loadDashboardOversellResidentialIPUsage(
-	ctx context.Context,
-	residentialIPPriceUSDPerGBMonth float64,
-) (dashboardOversellResidentialIPUsageStats, error) {
-	stats := dashboardOversellResidentialIPUsageStats{
-		priceUSDPerGBMonth: maxFloat64(residentialIPPriceUSDPerGBMonth, 0),
-		fxRateUSDCNY:       dashboardOversellFallbackUSDCNYRate,
-		fxRateSource:       "fallback_floor",
-		trafficBasis:       "最近 14 天经代理账号的成功请求 token 体量按约 4 Bytes/token 折算双向流量",
-	}
-	if s == nil || s.db == nil {
-		return stats, nil
-	}
-
-	now := time.Now().UTC()
-	windowEnd := now
-	windowStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).
-		AddDate(0, 0, -(dashboardOversellResidentialIPLookbackDays - 1))
-
-	query := `
-SELECT
-	MIN(ul.created_at) AS earliest_usage_at,
-	COUNT(DISTINCT ul.user_id) AS involved_users,
-	COALESCE(SUM(
-		COALESCE(ul.input_tokens, 0) +
-		COALESCE(ul.output_tokens, 0) +
-		COALESCE(ul.cache_creation_tokens, 0) +
-		COALESCE(ul.cache_read_tokens, 0)
-	), 0) AS total_tokens
-FROM usage_logs ul
-JOIN users u ON u.id = ul.user_id
-JOIN accounts a ON a.id = ul.account_id
-WHERE ul.created_at >= $1
-  AND ul.created_at < $2
-  AND COALESCE(u.role, '') <> 'admin'
-  AND a.deleted_at IS NULL
-  AND a.proxy_id IS NOT NULL
-`
-
-	var earliestUsageAt sql.NullTime
-	var involvedUsers int
-	var totalTokens int64
-	if err := s.db.QueryRowContext(ctx, query, windowStart, windowEnd).Scan(&earliestUsageAt, &involvedUsers, &totalTokens); err != nil {
-		return stats, fmt.Errorf("query dashboard oversell residential ip usage: %w", err)
-	}
-
-	if involvedUsers <= 0 || totalTokens <= 0 || !earliestUsageAt.Valid {
-		return stats, nil
-	}
-
-	startDay := time.Date(
-		earliestUsageAt.Time.UTC().Year(),
-		earliestUsageAt.Time.UTC().Month(),
-		earliestUsageAt.Time.UTC().Day(),
-		0, 0, 0, 0,
-		time.UTC,
-	)
-	if startDay.Before(windowStart) {
-		startDay = windowStart
-	}
-	endDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	actualDays := int(endDay.Sub(startDay).Hours()/24) + 1
-	if actualDays < 1 {
-		actualDays = 1
-	}
-	if actualDays > dashboardOversellResidentialIPLookbackDays {
-		actualDays = dashboardOversellResidentialIPLookbackDays
-	}
-
-	stats.actualDays = actualDays
-	stats.involvedUsers = involvedUsers
-	stats.totalTrafficGB = float64(totalTokens) * dashboardOversellEstimatedBytesPerToken / (1024 * 1024 * 1024)
-
-	if s.exchangeRateService != nil {
-		if resolved, err := s.exchangeRateService.ResolveUSDCNYRate(ctx); err == nil && resolved != nil && resolved.EffectiveRate > 0 {
-			stats.fxRateUSDCNY = resolved.EffectiveRate
-			if strings.TrimSpace(resolved.Source) != "" {
-				stats.fxRateSource = resolved.Source
-			}
+func residentialIPEstimateByScope(
+	estimates []ResidentialIPEstimate,
+	scope ResidentialIPScope,
+) *ResidentialIPEstimate {
+	for idx := range estimates {
+		if estimates[idx].Scope == scope {
+			return &estimates[idx]
 		}
 	}
+	return nil
+}
 
-	if stats.priceUSDPerGBMonth > 0 && stats.actualDays > 0 && stats.totalTrafficGB > 0 {
-		stats.monthlyCostUSD = stats.totalTrafficGB / float64(stats.actualDays) * stats.priceUSDPerGBMonth * dashboardOversellDaysPerMonth
-		stats.monthlyCostCNY = stats.monthlyCostUSD * stats.fxRateUSDCNY
+func applyLegacyResidentialIPEstimate(
+	estimate *DashboardOversellEstimate,
+	residentialIP *ResidentialIPEstimate,
+	fxSnapshot residentialIPFXSnapshot,
+) {
+	if estimate == nil || residentialIP == nil {
+		return
 	}
-
-	return stats, nil
+	estimate.ResidentialIPActualDays = residentialIP.ActualDays
+	estimate.ResidentialIPInvolvedUsers = residentialIP.InvolvedUsers
+	estimate.ResidentialIPTotalTrafficGB = residentialIP.EstimatedTotalTrafficGB
+	estimate.ResidentialIPMonthlyCostUSD = residentialIP.EstimatedMonthlyCostUSD
+	estimate.ResidentialIPMonthlyCostCNY = residentialIP.EstimatedMonthlyCostCNY
+	estimate.ResidentialIPPriceUSDPerGBMonth = residentialIP.ResidentialIPPriceUSDPerGBMonth
+	estimate.ResidentialIPFXRateUSDCNY = fxSnapshot.rate
+	if estimate.ResidentialIPFXRateUSDCNY <= 0 {
+		estimate.ResidentialIPFXRateUSDCNY = func() float64 {
+			if residentialIP.EstimatedMonthlyCostUSD <= 0 {
+				return dashboardOversellFallbackUSDCNYRate
+			}
+			return residentialIP.EstimatedMonthlyCostCNY / residentialIP.EstimatedMonthlyCostUSD
+		}()
+	}
+	estimate.ResidentialIPFXRateSource = fxSnapshot.source
+	if estimate.ResidentialIPFXRateSource == "" {
+		estimate.ResidentialIPFXRateSource = "fallback_floor"
+	}
+	estimate.ResidentialIPTrafficBasis = residentialIP.TrafficBasis
 }
 
 func dashboardOversellResidentialIPMonthlyCostCNY(

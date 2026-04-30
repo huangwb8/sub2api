@@ -241,6 +241,38 @@ func TestOpenAIGatewayServiceRecordUsage_UsesUserSpecificGroupRate(t *testing.T)
 	require.Equal(t, 1, userRepo.deductCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_PersistsResidentialProxyAttribution(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	proxyID := int64(88)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:          "req_proxy",
+			Model:              "gpt-4.1",
+			Usage:              OpenAIUsage{InputTokens: 120, OutputTokens: 80},
+			ProxyRequestBytes:  512,
+			ProxyResponseBytes: 2048,
+			Duration:           time.Second,
+		},
+		APIKey:    &APIKey{ID: 1, GroupID: ptr(int64(10)), Group: &Group{ID: 10, RateMultiplier: 1}},
+		User:      &User{ID: 1},
+		Account:   &Account{ID: 2, ProxyID: &proxyID},
+		UserAgent: "codex",
+		IPAddress: "127.0.0.1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.ProxyID)
+	require.Equal(t, proxyID, *usageRepo.lastLog.ProxyID)
+	require.NotNil(t, usageRepo.lastLog.UsedResidentialProxy)
+	require.True(t, *usageRepo.lastLog.UsedResidentialProxy)
+	require.NotNil(t, usageRepo.lastLog.ProxyTrafficInputBytes)
+	require.EqualValues(t, 512, *usageRepo.lastLog.ProxyTrafficInputBytes)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_UsesIdleExtraProfitRateWhenWindowActive(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

@@ -270,6 +270,154 @@ func (_u *UsageLogUpdate) ClearSubscriptionID() *UsageLogUpdate {
 	return _u
 }
 
+// SetProxyID sets the "proxy_id" field.
+func (_u *UsageLogUpdate) SetProxyID(v int64) *UsageLogUpdate {
+	_u.mutation.ResetProxyID()
+	_u.mutation.SetProxyID(v)
+	return _u
+}
+
+// SetNillableProxyID sets the "proxy_id" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyID(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyID(*v)
+	}
+	return _u
+}
+
+// AddProxyID adds value to the "proxy_id" field.
+func (_u *UsageLogUpdate) AddProxyID(v int64) *UsageLogUpdate {
+	_u.mutation.AddProxyID(v)
+	return _u
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (_u *UsageLogUpdate) ClearProxyID() *UsageLogUpdate {
+	_u.mutation.ClearProxyID()
+	return _u
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (_u *UsageLogUpdate) SetUsedResidentialProxy(v bool) *UsageLogUpdate {
+	_u.mutation.SetUsedResidentialProxy(v)
+	return _u
+}
+
+// SetNillableUsedResidentialProxy sets the "used_residential_proxy" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUsedResidentialProxy(v *bool) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUsedResidentialProxy(*v)
+	}
+	return _u
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (_u *UsageLogUpdate) ClearUsedResidentialProxy() *UsageLogUpdate {
+	_u.mutation.ClearUsedResidentialProxy()
+	return _u
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdate) SetProxyTrafficInputBytes(v int64) *UsageLogUpdate {
+	_u.mutation.ResetProxyTrafficInputBytes()
+	_u.mutation.SetProxyTrafficInputBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyTrafficInputBytes(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyTrafficInputBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficInputBytes adds value to the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdate) AddProxyTrafficInputBytes(v int64) *UsageLogUpdate {
+	_u.mutation.AddProxyTrafficInputBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdate) ClearProxyTrafficInputBytes() *UsageLogUpdate {
+	_u.mutation.ClearProxyTrafficInputBytes()
+	return _u
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdate) SetProxyTrafficOutputBytes(v int64) *UsageLogUpdate {
+	_u.mutation.ResetProxyTrafficOutputBytes()
+	_u.mutation.SetProxyTrafficOutputBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyTrafficOutputBytes(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyTrafficOutputBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficOutputBytes adds value to the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdate) AddProxyTrafficOutputBytes(v int64) *UsageLogUpdate {
+	_u.mutation.AddProxyTrafficOutputBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdate) ClearProxyTrafficOutputBytes() *UsageLogUpdate {
+	_u.mutation.ClearProxyTrafficOutputBytes()
+	return _u
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdate) SetProxyTrafficOverheadBytes(v int64) *UsageLogUpdate {
+	_u.mutation.ResetProxyTrafficOverheadBytes()
+	_u.mutation.SetProxyTrafficOverheadBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyTrafficOverheadBytes(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyTrafficOverheadBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficOverheadBytes adds value to the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdate) AddProxyTrafficOverheadBytes(v int64) *UsageLogUpdate {
+	_u.mutation.AddProxyTrafficOverheadBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdate) ClearProxyTrafficOverheadBytes() *UsageLogUpdate {
+	_u.mutation.ClearProxyTrafficOverheadBytes()
+	return _u
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (_u *UsageLogUpdate) SetProxyTrafficEstimateSource(v string) *UsageLogUpdate {
+	_u.mutation.SetProxyTrafficEstimateSource(v)
+	return _u
+}
+
+// SetNillableProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyTrafficEstimateSource(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyTrafficEstimateSource(*v)
+	}
+	return _u
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (_u *UsageLogUpdate) ClearProxyTrafficEstimateSource() *UsageLogUpdate {
+	_u.mutation.ClearProxyTrafficEstimateSource()
+	return _u
+}
+
 // SetInputTokens sets the "input_tokens" field.
 func (_u *UsageLogUpdate) SetInputTokens(v int) *UsageLogUpdate {
 	_u.mutation.ResetInputTokens()
@@ -1026,6 +1174,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ProxyTrafficEstimateSource(); ok {
+		if err := usagelog.ProxyTrafficEstimateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_traffic_estimate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_traffic_estimate_source": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.FxRateSource(); ok {
 		if err := usagelog.FxRateSourceValidator(v); err != nil {
 			return &ValidationError{Name: "fx_rate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.fx_rate_source": %w`, err)}
@@ -1114,6 +1267,54 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyID(); ok {
+		_spec.SetField(usagelog.FieldProxyID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyID(); ok {
+		_spec.AddField(usagelog.FieldProxyID, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyIDCleared() {
+		_spec.ClearField(usagelog.FieldProxyID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.UsedResidentialProxy(); ok {
+		_spec.SetField(usagelog.FieldUsedResidentialProxy, field.TypeBool, value)
+	}
+	if _u.mutation.UsedResidentialProxyCleared() {
+		_spec.ClearField(usagelog.FieldUsedResidentialProxy, field.TypeBool)
+	}
+	if value, ok := _u.mutation.ProxyTrafficInputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficInputBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficInputBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficOutputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficOutputBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficOutputBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficOverheadBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficOverheadBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficOverheadBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficEstimateSource(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficEstimateSource, field.TypeString, value)
+	}
+	if _u.mutation.ProxyTrafficEstimateSourceCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficEstimateSource, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -1703,6 +1904,154 @@ func (_u *UsageLogUpdateOne) SetNillableSubscriptionID(v *int64) *UsageLogUpdate
 // ClearSubscriptionID clears the value of the "subscription_id" field.
 func (_u *UsageLogUpdateOne) ClearSubscriptionID() *UsageLogUpdateOne {
 	_u.mutation.ClearSubscriptionID()
+	return _u
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (_u *UsageLogUpdateOne) SetProxyID(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetProxyID()
+	_u.mutation.SetProxyID(v)
+	return _u
+}
+
+// SetNillableProxyID sets the "proxy_id" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyID(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyID(*v)
+	}
+	return _u
+}
+
+// AddProxyID adds value to the "proxy_id" field.
+func (_u *UsageLogUpdateOne) AddProxyID(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddProxyID(v)
+	return _u
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (_u *UsageLogUpdateOne) ClearProxyID() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyID()
+	return _u
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (_u *UsageLogUpdateOne) SetUsedResidentialProxy(v bool) *UsageLogUpdateOne {
+	_u.mutation.SetUsedResidentialProxy(v)
+	return _u
+}
+
+// SetNillableUsedResidentialProxy sets the "used_residential_proxy" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUsedResidentialProxy(v *bool) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUsedResidentialProxy(*v)
+	}
+	return _u
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (_u *UsageLogUpdateOne) ClearUsedResidentialProxy() *UsageLogUpdateOne {
+	_u.mutation.ClearUsedResidentialProxy()
+	return _u
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdateOne) SetProxyTrafficInputBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetProxyTrafficInputBytes()
+	_u.mutation.SetProxyTrafficInputBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyTrafficInputBytes(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyTrafficInputBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficInputBytes adds value to the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdateOne) AddProxyTrafficInputBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddProxyTrafficInputBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (_u *UsageLogUpdateOne) ClearProxyTrafficInputBytes() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyTrafficInputBytes()
+	return _u
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdateOne) SetProxyTrafficOutputBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetProxyTrafficOutputBytes()
+	_u.mutation.SetProxyTrafficOutputBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyTrafficOutputBytes(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyTrafficOutputBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficOutputBytes adds value to the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdateOne) AddProxyTrafficOutputBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddProxyTrafficOutputBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (_u *UsageLogUpdateOne) ClearProxyTrafficOutputBytes() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyTrafficOutputBytes()
+	return _u
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdateOne) SetProxyTrafficOverheadBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetProxyTrafficOverheadBytes()
+	_u.mutation.SetProxyTrafficOverheadBytes(v)
+	return _u
+}
+
+// SetNillableProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyTrafficOverheadBytes(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyTrafficOverheadBytes(*v)
+	}
+	return _u
+}
+
+// AddProxyTrafficOverheadBytes adds value to the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdateOne) AddProxyTrafficOverheadBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddProxyTrafficOverheadBytes(v)
+	return _u
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (_u *UsageLogUpdateOne) ClearProxyTrafficOverheadBytes() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyTrafficOverheadBytes()
+	return _u
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (_u *UsageLogUpdateOne) SetProxyTrafficEstimateSource(v string) *UsageLogUpdateOne {
+	_u.mutation.SetProxyTrafficEstimateSource(v)
+	return _u
+}
+
+// SetNillableProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyTrafficEstimateSource(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyTrafficEstimateSource(*v)
+	}
+	return _u
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (_u *UsageLogUpdateOne) ClearProxyTrafficEstimateSource() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyTrafficEstimateSource()
 	return _u
 }
 
@@ -2475,6 +2824,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ProxyTrafficEstimateSource(); ok {
+		if err := usagelog.ProxyTrafficEstimateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_traffic_estimate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_traffic_estimate_source": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.FxRateSource(); ok {
 		if err := usagelog.FxRateSourceValidator(v); err != nil {
 			return &ValidationError{Name: "fx_rate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.fx_rate_source": %w`, err)}
@@ -2580,6 +2934,54 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyID(); ok {
+		_spec.SetField(usagelog.FieldProxyID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyID(); ok {
+		_spec.AddField(usagelog.FieldProxyID, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyIDCleared() {
+		_spec.ClearField(usagelog.FieldProxyID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.UsedResidentialProxy(); ok {
+		_spec.SetField(usagelog.FieldUsedResidentialProxy, field.TypeBool, value)
+	}
+	if _u.mutation.UsedResidentialProxyCleared() {
+		_spec.ClearField(usagelog.FieldUsedResidentialProxy, field.TypeBool)
+	}
+	if value, ok := _u.mutation.ProxyTrafficInputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficInputBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficInputBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficOutputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficOutputBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficOutputBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficOverheadBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyTrafficOverheadBytes(); ok {
+		_spec.AddField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyTrafficOverheadBytesCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyTrafficEstimateSource(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficEstimateSource, field.TypeString, value)
+	}
+	if _u.mutation.ProxyTrafficEstimateSourceCleared() {
+		_spec.ClearField(usagelog.FieldProxyTrafficEstimateSource, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)

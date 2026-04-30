@@ -9,7 +9,7 @@
 - Awesome-cod简化
 
 ```
-请优化； 不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+请基于 docs/plans/2026-04-30-residential-ip-traffic-estimation-remediation-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 ```
 
 - Awesome-code
@@ -50,6 +50,20 @@ version=1.2.6
 目前是否存在一些重大的支付/额度错误并严重影响业务（特别是用户充值、用户购买订阅套餐）的正常运行？不要修改源代码；而是彻底调研源代码后回答问题。
 ```
 
+# 基于实际运营情况优化代码逻辑
+
+- 调查
+
+```
+基于 remote.env ，你调查一下今天站点的工作情况，看看有哪些是sub2api设计缺陷所致的。并且提出修改建议，保存在 docs/plans 里。
+```
+
+- 优化
+
+```
+docs/plans/xxx.md 暴露了一些实际运营时出现的问题，它们很多与sub2api的设计缺陷有关。 请判断哪些问题值得解决，然后优化。 注意，不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+```
+
 # 版本
 
 - v1.0.9我还没有调整美元/人民币的相关逻辑。如果我改不好，可以回退到这个版本。
@@ -76,6 +90,28 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+docs/plans/2026-04-30-site-health-investigation-and-design-flaw-remediation.md 暴露了一些实际运营时出现的问题，它们很多与sub2api的设计缺陷有关。 请判断哪些问题值得解决，然后优化。 注意，不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
+请基于 docs/plans/2026-04-30-residential-ip-traffic-estimation-remediation-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
+基于 remote.env ，你调查一下今天站点的工作情况，看看有哪些是sub2api设计缺陷所致的。并且提出修改建议，保存在 docs/plans 里。
+
+---
+
+'/Volumes/2T01/winE/PythonCloud/AI/sub2api运营/ip流量/Residential Proxies traffic_table_data (exported 2026-04-30 23_13_44).csv' 是最近我的站的住宅ip（decodo相关节点）的一个消耗量。请结合我的站点的实际使用情况（你可以基于 remote.env 的鉴权信息访问）回答：
+
+- 目前sub2api对住宅ip消耗的估算是适宜的、高估还是低估？
+- 不管是适宜、高估还是低估，为什么？
+- 为了保证对住宅ip消耗的估算是适宜的，有哪些需要改进的点？
+
+---
+
+基于 docs/plans/2026-04-30-chatgpt-oauth-image-generation-experimental-plan.md 优化； 不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---
 

@@ -339,6 +339,36 @@ func TestGatewayServiceRecordUsage_UsesFallbackRequestIDForUsageLog(t *testing.T
 	require.Equal(t, "local:gateway-local-fallback", usageRepo.lastLog.RequestID)
 }
 
+func TestGatewayServiceRecordUsage_PersistsResidentialProxyAttribution(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+	proxyID := int64(77)
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID:          "req_proxy",
+			Model:              "claude-sonnet-4-20250514",
+			Usage:              ClaudeUsage{InputTokens: 120, OutputTokens: 80},
+			ProxyRequestBytes:  256,
+			ProxyResponseBytes: 1024,
+			Duration:           time.Second,
+		},
+		APIKey:    &APIKey{ID: 1, Key: "sk", GroupID: ptr(int64(2)), Group: &Group{ID: 2, RateMultiplier: 1}},
+		User:      &User{ID: 1},
+		Account:   &Account{ID: 9, ProxyID: &proxyID},
+		UserAgent: "codex",
+		IPAddress: "127.0.0.1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.ProxyID)
+	require.Equal(t, proxyID, *usageRepo.lastLog.ProxyID)
+	require.NotNil(t, usageRepo.lastLog.UsedResidentialProxy)
+	require.True(t, *usageRepo.lastLog.UsedResidentialProxy)
+	require.NotNil(t, usageRepo.lastLog.ProxyTrafficOutputBytes)
+	require.EqualValues(t, 1024, *usageRepo.lastLog.ProxyTrafficOutputBytes)
+}
+
 func TestGatewayServiceRecordUsage_PrefersClientRequestIDOverUpstreamRequestID(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}

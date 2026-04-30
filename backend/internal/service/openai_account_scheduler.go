@@ -694,6 +694,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	loadSkew := calcLoadSkewByMoments(loadRateSum, loadRateSumSquares, len(candidates))
 
 	weights := s.service.openAIWSSchedulerWeights()
+	now := time.Now()
 	for i := range candidates {
 		item := &candidates[i]
 		priorityFactor := 1.0
@@ -707,12 +708,13 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		if item.hasTTFT && hasTTFTSample && maxTTFT > minTTFT {
 			ttftFactor = 1 - clamp01((item.ttft-minTTFT)/(maxTTFT-minTTFT))
 		}
+		rateLimitFactor := openAICodexSchedulingHeadroomFactor(item.account, now)
 
-		item.score = weights.Priority*priorityFactor +
+		item.score = (weights.Priority*priorityFactor +
 			weights.Load*loadFactor +
 			weights.Queue*queueFactor +
 			weights.ErrorRate*errorFactor +
-			weights.TTFT*ttftFactor
+			weights.TTFT*ttftFactor) * rateLimitFactor
 	}
 
 	topK := s.service.openAIWSLBTopK()

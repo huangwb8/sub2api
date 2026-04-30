@@ -40,6 +40,18 @@ const (
 	FieldGroupID = "group_id"
 	// FieldSubscriptionID holds the string denoting the subscription_id field in the database.
 	FieldSubscriptionID = "subscription_id"
+	// FieldProxyID holds the string denoting the proxy_id field in the database.
+	FieldProxyID = "proxy_id"
+	// FieldUsedResidentialProxy holds the string denoting the used_residential_proxy field in the database.
+	FieldUsedResidentialProxy = "used_residential_proxy"
+	// FieldProxyTrafficInputBytes holds the string denoting the proxy_traffic_input_bytes field in the database.
+	FieldProxyTrafficInputBytes = "proxy_traffic_input_bytes"
+	// FieldProxyTrafficOutputBytes holds the string denoting the proxy_traffic_output_bytes field in the database.
+	FieldProxyTrafficOutputBytes = "proxy_traffic_output_bytes"
+	// FieldProxyTrafficOverheadBytes holds the string denoting the proxy_traffic_overhead_bytes field in the database.
+	FieldProxyTrafficOverheadBytes = "proxy_traffic_overhead_bytes"
+	// FieldProxyTrafficEstimateSource holds the string denoting the proxy_traffic_estimate_source field in the database.
+	FieldProxyTrafficEstimateSource = "proxy_traffic_estimate_source"
 	// FieldInputTokens holds the string denoting the input_tokens field in the database.
 	FieldInputTokens = "input_tokens"
 	// FieldOutputTokens holds the string denoting the output_tokens field in the database.
@@ -165,6 +177,12 @@ var Columns = []string{
 	FieldBillingMode,
 	FieldGroupID,
 	FieldSubscriptionID,
+	FieldProxyID,
+	FieldUsedResidentialProxy,
+	FieldProxyTrafficInputBytes,
+	FieldProxyTrafficOutputBytes,
+	FieldProxyTrafficOverheadBytes,
+	FieldProxyTrafficEstimateSource,
 	FieldInputTokens,
 	FieldOutputTokens,
 	FieldCacheCreationTokens,
@@ -222,6 +240,8 @@ var (
 	BillingTierValidator func(string) error
 	// BillingModeValidator is a validator for the "billing_mode" field. It is called by the builders before save.
 	BillingModeValidator func(string) error
+	// ProxyTrafficEstimateSourceValidator is a validator for the "proxy_traffic_estimate_source" field. It is called by the builders before save.
+	ProxyTrafficEstimateSourceValidator func(string) error
 	// DefaultInputTokens holds the default value on creation for the "input_tokens" field.
 	DefaultInputTokens int
 	// DefaultOutputTokens holds the default value on creation for the "output_tokens" field.
@@ -339,6 +359,36 @@ func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 // BySubscriptionID orders the results by the subscription_id field.
 func BySubscriptionID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubscriptionID, opts...).ToFunc()
+}
+
+// ByProxyID orders the results by the proxy_id field.
+func ByProxyID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyID, opts...).ToFunc()
+}
+
+// ByUsedResidentialProxy orders the results by the used_residential_proxy field.
+func ByUsedResidentialProxy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsedResidentialProxy, opts...).ToFunc()
+}
+
+// ByProxyTrafficInputBytes orders the results by the proxy_traffic_input_bytes field.
+func ByProxyTrafficInputBytes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyTrafficInputBytes, opts...).ToFunc()
+}
+
+// ByProxyTrafficOutputBytes orders the results by the proxy_traffic_output_bytes field.
+func ByProxyTrafficOutputBytes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyTrafficOutputBytes, opts...).ToFunc()
+}
+
+// ByProxyTrafficOverheadBytes orders the results by the proxy_traffic_overhead_bytes field.
+func ByProxyTrafficOverheadBytes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyTrafficOverheadBytes, opts...).ToFunc()
+}
+
+// ByProxyTrafficEstimateSource orders the results by the proxy_traffic_estimate_source field.
+func ByProxyTrafficEstimateSource(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyTrafficEstimateSource, opts...).ToFunc()
 }
 
 // ByInputTokens orders the results by the input_tokens field.

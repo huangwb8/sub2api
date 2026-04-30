@@ -169,6 +169,90 @@ func (_c *UsageLogCreate) SetNillableSubscriptionID(v *int64) *UsageLogCreate {
 	return _c
 }
 
+// SetProxyID sets the "proxy_id" field.
+func (_c *UsageLogCreate) SetProxyID(v int64) *UsageLogCreate {
+	_c.mutation.SetProxyID(v)
+	return _c
+}
+
+// SetNillableProxyID sets the "proxy_id" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyID(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyID(*v)
+	}
+	return _c
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (_c *UsageLogCreate) SetUsedResidentialProxy(v bool) *UsageLogCreate {
+	_c.mutation.SetUsedResidentialProxy(v)
+	return _c
+}
+
+// SetNillableUsedResidentialProxy sets the "used_residential_proxy" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUsedResidentialProxy(v *bool) *UsageLogCreate {
+	if v != nil {
+		_c.SetUsedResidentialProxy(*v)
+	}
+	return _c
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (_c *UsageLogCreate) SetProxyTrafficInputBytes(v int64) *UsageLogCreate {
+	_c.mutation.SetProxyTrafficInputBytes(v)
+	return _c
+}
+
+// SetNillableProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyTrafficInputBytes(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyTrafficInputBytes(*v)
+	}
+	return _c
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (_c *UsageLogCreate) SetProxyTrafficOutputBytes(v int64) *UsageLogCreate {
+	_c.mutation.SetProxyTrafficOutputBytes(v)
+	return _c
+}
+
+// SetNillableProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyTrafficOutputBytes(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyTrafficOutputBytes(*v)
+	}
+	return _c
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (_c *UsageLogCreate) SetProxyTrafficOverheadBytes(v int64) *UsageLogCreate {
+	_c.mutation.SetProxyTrafficOverheadBytes(v)
+	return _c
+}
+
+// SetNillableProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyTrafficOverheadBytes(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyTrafficOverheadBytes(*v)
+	}
+	return _c
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (_c *UsageLogCreate) SetProxyTrafficEstimateSource(v string) *UsageLogCreate {
+	_c.mutation.SetProxyTrafficEstimateSource(v)
+	return _c
+}
+
+// SetNillableProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyTrafficEstimateSource(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyTrafficEstimateSource(*v)
+	}
+	return _c
+}
+
 // SetInputTokens sets the "input_tokens" field.
 func (_c *UsageLogCreate) SetInputTokens(v int) *UsageLogCreate {
 	_c.mutation.SetInputTokens(v)
@@ -775,6 +859,11 @@ func (_c *UsageLogCreate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.ProxyTrafficEstimateSource(); ok {
+		if err := usagelog.ProxyTrafficEstimateSourceValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_traffic_estimate_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_traffic_estimate_source": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.InputTokens(); !ok {
 		return &ValidationError{Name: "input_tokens", err: errors.New(`ent: missing required field "UsageLog.input_tokens"`)}
 	}
@@ -916,6 +1005,30 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.BillingMode(); ok {
 		_spec.SetField(usagelog.FieldBillingMode, field.TypeString, value)
 		_node.BillingMode = &value
+	}
+	if value, ok := _c.mutation.ProxyID(); ok {
+		_spec.SetField(usagelog.FieldProxyID, field.TypeInt64, value)
+		_node.ProxyID = &value
+	}
+	if value, ok := _c.mutation.UsedResidentialProxy(); ok {
+		_spec.SetField(usagelog.FieldUsedResidentialProxy, field.TypeBool, value)
+		_node.UsedResidentialProxy = &value
+	}
+	if value, ok := _c.mutation.ProxyTrafficInputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficInputBytes, field.TypeInt64, value)
+		_node.ProxyTrafficInputBytes = &value
+	}
+	if value, ok := _c.mutation.ProxyTrafficOutputBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOutputBytes, field.TypeInt64, value)
+		_node.ProxyTrafficOutputBytes = &value
+	}
+	if value, ok := _c.mutation.ProxyTrafficOverheadBytes(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficOverheadBytes, field.TypeInt64, value)
+		_node.ProxyTrafficOverheadBytes = &value
+	}
+	if value, ok := _c.mutation.ProxyTrafficEstimateSource(); ok {
+		_spec.SetField(usagelog.FieldProxyTrafficEstimateSource, field.TypeString, value)
+		_node.ProxyTrafficEstimateSource = &value
 	}
 	if value, ok := _c.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -1381,6 +1494,138 @@ func (u *UsageLogUpsert) UpdateSubscriptionID() *UsageLogUpsert {
 // ClearSubscriptionID clears the value of the "subscription_id" field.
 func (u *UsageLogUpsert) ClearSubscriptionID() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldSubscriptionID)
+	return u
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (u *UsageLogUpsert) SetProxyID(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyID, v)
+	return u
+}
+
+// UpdateProxyID sets the "proxy_id" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyID() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyID)
+	return u
+}
+
+// AddProxyID adds v to the "proxy_id" field.
+func (u *UsageLogUpsert) AddProxyID(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldProxyID, v)
+	return u
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (u *UsageLogUpsert) ClearProxyID() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyID)
+	return u
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (u *UsageLogUpsert) SetUsedResidentialProxy(v bool) *UsageLogUpsert {
+	u.Set(usagelog.FieldUsedResidentialProxy, v)
+	return u
+}
+
+// UpdateUsedResidentialProxy sets the "used_residential_proxy" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUsedResidentialProxy() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUsedResidentialProxy)
+	return u
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (u *UsageLogUpsert) ClearUsedResidentialProxy() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUsedResidentialProxy)
+	return u
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsert) SetProxyTrafficInputBytes(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyTrafficInputBytes, v)
+	return u
+}
+
+// UpdateProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyTrafficInputBytes() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyTrafficInputBytes)
+	return u
+}
+
+// AddProxyTrafficInputBytes adds v to the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsert) AddProxyTrafficInputBytes(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldProxyTrafficInputBytes, v)
+	return u
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsert) ClearProxyTrafficInputBytes() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyTrafficInputBytes)
+	return u
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsert) SetProxyTrafficOutputBytes(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyTrafficOutputBytes, v)
+	return u
+}
+
+// UpdateProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyTrafficOutputBytes() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyTrafficOutputBytes)
+	return u
+}
+
+// AddProxyTrafficOutputBytes adds v to the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsert) AddProxyTrafficOutputBytes(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldProxyTrafficOutputBytes, v)
+	return u
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsert) ClearProxyTrafficOutputBytes() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyTrafficOutputBytes)
+	return u
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsert) SetProxyTrafficOverheadBytes(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyTrafficOverheadBytes, v)
+	return u
+}
+
+// UpdateProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyTrafficOverheadBytes() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyTrafficOverheadBytes)
+	return u
+}
+
+// AddProxyTrafficOverheadBytes adds v to the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsert) AddProxyTrafficOverheadBytes(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldProxyTrafficOverheadBytes, v)
+	return u
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsert) ClearProxyTrafficOverheadBytes() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyTrafficOverheadBytes)
+	return u
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsert) SetProxyTrafficEstimateSource(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyTrafficEstimateSource, v)
+	return u
+}
+
+// UpdateProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyTrafficEstimateSource() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyTrafficEstimateSource)
+	return u
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsert) ClearProxyTrafficEstimateSource() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyTrafficEstimateSource)
 	return u
 }
 
@@ -2223,6 +2468,160 @@ func (u *UsageLogUpsertOne) UpdateSubscriptionID() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearSubscriptionID() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearSubscriptionID()
+	})
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (u *UsageLogUpsertOne) SetProxyID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyID(v)
+	})
+}
+
+// AddProxyID adds v to the "proxy_id" field.
+func (u *UsageLogUpsertOne) AddProxyID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyID(v)
+	})
+}
+
+// UpdateProxyID sets the "proxy_id" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyID()
+	})
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (u *UsageLogUpsertOne) ClearProxyID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyID()
+	})
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (u *UsageLogUpsertOne) SetUsedResidentialProxy(v bool) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUsedResidentialProxy(v)
+	})
+}
+
+// UpdateUsedResidentialProxy sets the "used_residential_proxy" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUsedResidentialProxy() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUsedResidentialProxy()
+	})
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (u *UsageLogUpsertOne) ClearUsedResidentialProxy() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUsedResidentialProxy()
+	})
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertOne) SetProxyTrafficInputBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficInputBytes(v)
+	})
+}
+
+// AddProxyTrafficInputBytes adds v to the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertOne) AddProxyTrafficInputBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficInputBytes(v)
+	})
+}
+
+// UpdateProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyTrafficInputBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficInputBytes()
+	})
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertOne) ClearProxyTrafficInputBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficInputBytes()
+	})
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertOne) SetProxyTrafficOutputBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficOutputBytes(v)
+	})
+}
+
+// AddProxyTrafficOutputBytes adds v to the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertOne) AddProxyTrafficOutputBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficOutputBytes(v)
+	})
+}
+
+// UpdateProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyTrafficOutputBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficOutputBytes()
+	})
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertOne) ClearProxyTrafficOutputBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficOutputBytes()
+	})
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertOne) SetProxyTrafficOverheadBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficOverheadBytes(v)
+	})
+}
+
+// AddProxyTrafficOverheadBytes adds v to the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertOne) AddProxyTrafficOverheadBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficOverheadBytes(v)
+	})
+}
+
+// UpdateProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyTrafficOverheadBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficOverheadBytes()
+	})
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertOne) ClearProxyTrafficOverheadBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficOverheadBytes()
+	})
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsertOne) SetProxyTrafficEstimateSource(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficEstimateSource(v)
+	})
+}
+
+// UpdateProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyTrafficEstimateSource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficEstimateSource()
+	})
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsertOne) ClearProxyTrafficEstimateSource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficEstimateSource()
 	})
 }
 
@@ -3323,6 +3722,160 @@ func (u *UsageLogUpsertBulk) UpdateSubscriptionID() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearSubscriptionID() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearSubscriptionID()
+	})
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (u *UsageLogUpsertBulk) SetProxyID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyID(v)
+	})
+}
+
+// AddProxyID adds v to the "proxy_id" field.
+func (u *UsageLogUpsertBulk) AddProxyID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyID(v)
+	})
+}
+
+// UpdateProxyID sets the "proxy_id" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyID()
+	})
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (u *UsageLogUpsertBulk) ClearProxyID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyID()
+	})
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (u *UsageLogUpsertBulk) SetUsedResidentialProxy(v bool) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUsedResidentialProxy(v)
+	})
+}
+
+// UpdateUsedResidentialProxy sets the "used_residential_proxy" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUsedResidentialProxy() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUsedResidentialProxy()
+	})
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (u *UsageLogUpsertBulk) ClearUsedResidentialProxy() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUsedResidentialProxy()
+	})
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertBulk) SetProxyTrafficInputBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficInputBytes(v)
+	})
+}
+
+// AddProxyTrafficInputBytes adds v to the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertBulk) AddProxyTrafficInputBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficInputBytes(v)
+	})
+}
+
+// UpdateProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyTrafficInputBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficInputBytes()
+	})
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (u *UsageLogUpsertBulk) ClearProxyTrafficInputBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficInputBytes()
+	})
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertBulk) SetProxyTrafficOutputBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficOutputBytes(v)
+	})
+}
+
+// AddProxyTrafficOutputBytes adds v to the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertBulk) AddProxyTrafficOutputBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficOutputBytes(v)
+	})
+}
+
+// UpdateProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyTrafficOutputBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficOutputBytes()
+	})
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (u *UsageLogUpsertBulk) ClearProxyTrafficOutputBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficOutputBytes()
+	})
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertBulk) SetProxyTrafficOverheadBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficOverheadBytes(v)
+	})
+}
+
+// AddProxyTrafficOverheadBytes adds v to the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertBulk) AddProxyTrafficOverheadBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyTrafficOverheadBytes(v)
+	})
+}
+
+// UpdateProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyTrafficOverheadBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficOverheadBytes()
+	})
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (u *UsageLogUpsertBulk) ClearProxyTrafficOverheadBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficOverheadBytes()
+	})
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsertBulk) SetProxyTrafficEstimateSource(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyTrafficEstimateSource(v)
+	})
+}
+
+// UpdateProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyTrafficEstimateSource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyTrafficEstimateSource()
+	})
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (u *UsageLogUpsertBulk) ClearProxyTrafficEstimateSource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyTrafficEstimateSource()
 	})
 }
 

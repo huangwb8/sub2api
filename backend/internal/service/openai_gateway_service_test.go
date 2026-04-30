@@ -461,6 +461,61 @@ func TestOpenAISelectAccountWithLoadAwareness_FiltersUnschedulableWhenNoConcurre
 	}
 }
 
+func TestOpenAISelectAccountWithLoadAwareness_PrefersHigherCodexHeadroom(t *testing.T) {
+	now := time.Now()
+	groupID := int64(1)
+	lowHeadroomLastUsed := now.Add(-2 * time.Hour)
+	highHeadroomLastUsed := now.Add(-1 * time.Hour)
+
+	lowHeadroom := Account{
+		ID:          11,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+		LastUsedAt:  &lowHeadroomLastUsed,
+		Extra: map[string]any{
+			"codex_7d_used_percent": 96.0,
+			"codex_7d_reset_at":     now.Add(6 * time.Hour).UTC().Format(time.RFC3339),
+		},
+	}
+	highHeadroom := Account{
+		ID:          12,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+		LastUsedAt:  &highHeadroomLastUsed,
+		Extra: map[string]any{
+			"codex_7d_used_percent": 22.0,
+			"codex_7d_reset_at":     now.Add(6 * time.Hour).UTC().Format(time.RFC3339),
+		},
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo: stubOpenAIAccountRepo{accounts: []Account{lowHeadroom, highHeadroom}},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{
+			loadMap: map[int64]*AccountLoadInfo{
+				lowHeadroom.ID:  {AccountID: lowHeadroom.ID, LoadRate: 0},
+				highHeadroom.ID: {AccountID: highHeadroom.ID, LoadRate: 0},
+			},
+		}),
+	}
+
+	selection, err := svc.SelectAccountWithLoadAwareness(context.Background(), &groupID, "", "gpt-5.2", nil)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, highHeadroom.ID, selection.Account.ID)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
 func TestOpenAISelectAccountForModelWithExclusions_StickyUnschedulableClearsSession(t *testing.T) {
 	sessionHash := "session-1"
 	repo := stubOpenAIAccountRepo{

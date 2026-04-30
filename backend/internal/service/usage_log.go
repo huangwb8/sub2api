@@ -125,6 +125,10 @@ type UsageLog struct {
 
 	GroupID        *int64
 	SubscriptionID *int64
+	ProxyID        *int64
+	// UsedResidentialProxy keeps a historical routing snapshot.
+	// Nil means historical rows written before proxy attribution was introduced.
+	UsedResidentialProxy *bool
 
 	InputTokens         int
 	OutputTokens        int
@@ -151,7 +155,11 @@ type UsageLog struct {
 	FXSafetyMargin    *float64
 	RateMultiplier    float64
 	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
-	AccountRateMultiplier *float64
+	AccountRateMultiplier      *float64
+	ProxyTrafficInputBytes     *int64
+	ProxyTrafficOutputBytes    *int64
+	ProxyTrafficOverheadBytes  *int64
+	ProxyTrafficEstimateSource *string
 
 	BillingType  int8
 	RequestType  RequestType

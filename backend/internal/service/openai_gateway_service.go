@@ -229,14 +229,16 @@ type OpenAIForwardResult struct {
 	ServiceTier *string
 	// ReasoningEffort is extracted from request body (reasoning.effort) or derived from model suffix.
 	// Stored for usage records display; nil means not provided / not applicable.
-	ReasoningEffort *string
-	Stream          bool
-	OpenAIWSMode    bool
-	ResponseHeaders http.Header
-	Duration        time.Duration
-	FirstTokenMs    *int
-	ImageCount      int
-	ImageSize       string
+	ReasoningEffort    *string
+	Stream             bool
+	OpenAIWSMode       bool
+	ResponseHeaders    http.Header
+	Duration           time.Duration
+	FirstTokenMs       *int
+	ProxyRequestBytes  int64
+	ProxyResponseBytes int64
+	ImageCount         int
+	ImageSize          string
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -1386,6 +1388,13 @@ func (s *OpenAIGatewayService) isBetterAccount(candidate, current *Account) bool
 		return false
 	}
 
+	now := time.Now()
+	candidateHeadroom := openAICodexSchedulingHeadroomFactor(candidate, now)
+	currentHeadroom := openAICodexSchedulingHeadroomFactor(current, now)
+	if candidateHeadroom != currentHeadroom {
+		return candidateHeadroom > currentHeadroom
+	}
+
 	// 同优先级，比较最后使用时间
 	// Same priority, compare last used time
 	switch {
@@ -1560,6 +1569,7 @@ func (s *OpenAIGatewayService) SelectAccountWithLoadAwareness(ctx context.Contex
 		}
 	} else {
 		var available []accountWithLoad
+		now := time.Now()
 		for _, acc := range candidates {
 			loadInfo := loadMap[acc.ID]
 			if loadInfo == nil {
@@ -1581,6 +1591,11 @@ func (s *OpenAIGatewayService) SelectAccountWithLoadAwareness(ctx context.Contex
 				}
 				if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
 					return a.loadInfo.LoadRate < b.loadInfo.LoadRate
+				}
+				aHeadroom := openAICodexSchedulingHeadroomFactor(a.account, now)
+				bHeadroom := openAICodexSchedulingHeadroomFactor(b.account, now)
+				if aHeadroom != bHeadroom {
+					return aHeadroom > bHeadroom
 				}
 				switch {
 				case a.account.LastUsedAt == nil && b.account.LastUsedAt != nil:
@@ -2472,16 +2487,17 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		serviceTier := extractOpenAIServiceTier(reqBody)
 
 		return &OpenAIForwardResult{
-			RequestID:       resp.Header.Get("x-request-id"),
-			Usage:           *usage,
-			Model:           originalModel,
-			UpstreamModel:   upstreamModel,
-			ServiceTier:     serviceTier,
-			ReasoningEffort: reasoningEffort,
-			Stream:          reqStream,
-			OpenAIWSMode:    false,
-			Duration:        time.Since(startTime),
-			FirstTokenMs:    firstTokenMs,
+			RequestID:         resp.Header.Get("x-request-id"),
+			Usage:             *usage,
+			Model:             originalModel,
+			UpstreamModel:     upstreamModel,
+			ServiceTier:       serviceTier,
+			ReasoningEffort:   reasoningEffort,
+			Stream:            reqStream,
+			OpenAIWSMode:      false,
+			Duration:          time.Since(startTime),
+			FirstTokenMs:      firstTokenMs,
+			ProxyRequestBytes: int64(len(reqBody)),
 		}, nil
 	}
 }
@@ -2640,15 +2656,16 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	}
 
 	return &OpenAIForwardResult{
-		RequestID:       resp.Header.Get("x-request-id"),
-		Usage:           *usage,
-		Model:           reqModel,
-		ServiceTier:     extractOpenAIServiceTierFromBody(body),
-		ReasoningEffort: reasoningEffort,
-		Stream:          reqStream,
-		OpenAIWSMode:    false,
-		Duration:        time.Since(startTime),
-		FirstTokenMs:    firstTokenMs,
+		RequestID:         resp.Header.Get("x-request-id"),
+		Usage:             *usage,
+		Model:             reqModel,
+		ServiceTier:       extractOpenAIServiceTierFromBody(body),
+		ReasoningEffort:   reasoningEffort,
+		Stream:            reqStream,
+		OpenAIWSMode:      false,
+		Duration:          time.Since(startTime),
+		FirstTokenMs:      firstTokenMs,
+		ProxyRequestBytes: int64(len(body)),
 	}, nil
 }
 
@@ -4626,6 +4643,14 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	if subscription != nil {
 		usageLog.SubscriptionID = &subscription.ID
 	}
+	trafficObservation := MeterResidentialIPTraffic(ResidentialIPTrafficInput{
+		ProxyID:       account.ProxyID,
+		RequestBytes:  result.ProxyRequestBytes,
+		ResponseBytes: result.ProxyResponseBytes,
+		TotalTokens:   totalUsageTokens(usageLog),
+		Calibration:   defaultResidentialIPCalibration(),
+	})
+	applyResidentialIPTrafficObservation(usageLog, trafficObservation)
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
@@ -4866,6 +4891,39 @@ func codexRateLimitResetAtFromExtra(extra map[string]any, now time.Time) *time.T
 		return &resetAt
 	}
 	return nil
+}
+
+func openAICodexSchedulingHeadroomFactor(account *Account, now time.Time) float64 {
+	if account == nil || !account.IsOpenAI() || len(account.Extra) == 0 {
+		return 1.0
+	}
+
+	maxUtilization := 0.0
+	for _, window := range []string{"7d", "5h"} {
+		progress := buildCodexUsageProgressFromExtra(account.Extra, window, now)
+		if progress == nil {
+			continue
+		}
+		if progress.Utilization > maxUtilization {
+			maxUtilization = progress.Utilization
+		}
+	}
+	return codexUtilizationHeadroomFactor(maxUtilization)
+}
+
+func codexUtilizationHeadroomFactor(utilization float64) float64 {
+	percent := clamp01(utilization / 100.0)
+
+	switch {
+	case percent <= 0.70:
+		return 1.0
+	case percent <= 0.85:
+		return 1.0 - ((percent-0.70)/0.15)*0.40
+	case percent <= 0.95:
+		return 0.60 - ((percent-0.85)/0.10)*0.35
+	default:
+		return 0.25 - ((percent-0.95)/0.05)*0.20
+	}
 }
 
 func applyOpenAICodexRateLimitFromExtra(account *Account, now time.Time) (*time.Time, bool) {

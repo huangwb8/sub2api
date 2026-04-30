@@ -382,6 +382,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // upstream_model
 			sql.NullInt64{},   // group_id
 			sql.NullInt64{},   // subscription_id
+			sql.NullInt64{},   // proxy_id
+			sql.NullBool{},    // used_residential_proxy
+			sql.NullInt64{},   // proxy_traffic_input_bytes
+			sql.NullInt64{},   // proxy_traffic_output_bytes
+			sql.NullInt64{},   // proxy_traffic_overhead_bytes
+			sql.NullString{},  // proxy_traffic_estimate_source
 			1,                 // input_tokens
 			2,                 // output_tokens
 			3,                 // cache_creation_tokens
@@ -446,6 +452,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullBool{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
@@ -499,6 +511,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullBool{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,

@@ -237,6 +237,71 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_SessionSticky(t *testin
 	}
 }
 
+func TestDefaultOpenAIAccountScheduler_SelectPrefersHigherCodexHeadroom(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(12)
+	now := time.Now()
+	lowHeadroomLastUsed := now.Add(-2 * time.Hour)
+	highHeadroomLastUsed := now.Add(-1 * time.Hour)
+	cfg := &config.Config{}
+	cfg.Gateway.OpenAIWS.LBTopK = 1
+
+	lowHeadroom := Account{
+		ID:          41001,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+		LastUsedAt:  &lowHeadroomLastUsed,
+		Extra: map[string]any{
+			"codex_7d_used_percent": 97.0,
+			"codex_7d_reset_at":     now.Add(6 * time.Hour).UTC().Format(time.RFC3339),
+		},
+	}
+	highHeadroom := Account{
+		ID:          41002,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+		LastUsedAt:  &highHeadroomLastUsed,
+		Extra: map[string]any{
+			"codex_7d_used_percent": 18.0,
+			"codex_7d_reset_at":     now.Add(6 * time.Hour).UTC().Format(time.RFC3339),
+		},
+	}
+
+	service := &OpenAIGatewayService{
+		accountRepo: stubOpenAIAccountRepo{accounts: []Account{lowHeadroom, highHeadroom}},
+		cfg:         cfg,
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{
+			loadMap: map[int64]*AccountLoadInfo{
+				lowHeadroom.ID:  {AccountID: lowHeadroom.ID, LoadRate: 0},
+				highHeadroom.ID: {AccountID: highHeadroom.ID, LoadRate: 0},
+			},
+		}),
+	}
+	scheduler := newDefaultOpenAIAccountScheduler(service, nil)
+
+	selection, _, err := scheduler.Select(ctx, OpenAIAccountScheduleRequest{
+		GroupID:           &groupID,
+		RequestedModel:    "gpt-5.1",
+		RequiredTransport: OpenAIUpstreamTransportAny,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, highHeadroom.ID, selection.Account.ID)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
 func TestDefaultOpenAIAccountScheduler_SelectBySessionHashClearsHighErrorRateSticky(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(11)

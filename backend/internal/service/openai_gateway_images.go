@@ -387,9 +387,17 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesRequest(
 	}
 
 	if reqStream {
-		return s.handleImagesStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		result, err := s.handleImagesStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		if result != nil {
+			result.ProxyRequestBytes = int64(len(requestBody))
+		}
+		return result, err
 	}
-	return s.handleImagesBufferedResponse(resp, c, requestBody, originalModel, billingModel, upstreamModel, startTime)
+	result, err := s.handleImagesBufferedResponse(resp, c, requestBody, originalModel, billingModel, upstreamModel, startTime)
+	if result != nil {
+		result.ProxyRequestBytes = int64(len(requestBody))
+	}
+	return result, err
 }
 
 func (s *OpenAIGatewayService) handleImagesBufferedResponse(
@@ -416,15 +424,16 @@ func (s *OpenAIGatewayService) handleImagesBufferedResponse(
 
 	imageCount, imageSize := parseOpenAIImagesMetadata(respBody, requestBody)
 	return &OpenAIForwardResult{
-		RequestID:     resp.Header.Get("x-request-id"),
-		Usage:         parseOpenAIImagesUsage(respBody),
-		Model:         originalModel,
-		BillingModel:  billingModel,
-		UpstreamModel: upstreamModel,
-		ImageCount:    imageCount,
-		ImageSize:     imageSize,
-		Stream:        false,
-		Duration:      time.Since(startTime),
+		RequestID:          resp.Header.Get("x-request-id"),
+		Usage:              parseOpenAIImagesUsage(respBody),
+		Model:              originalModel,
+		BillingModel:       billingModel,
+		UpstreamModel:      upstreamModel,
+		ImageCount:         imageCount,
+		ImageSize:          imageSize,
+		Stream:             false,
+		Duration:           time.Since(startTime),
+		ProxyResponseBytes: int64(len(respBody)),
 	}, nil
 }
 

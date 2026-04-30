@@ -63,6 +63,25 @@ func (UsageLog) Fields() []ent.Field {
 		field.Int64("subscription_id").
 			Optional().
 			Nillable(),
+		field.Int64("proxy_id").
+			Optional().
+			Nillable(),
+		field.Bool("used_residential_proxy").
+			Optional().
+			Nillable(),
+		field.Int64("proxy_traffic_input_bytes").
+			Optional().
+			Nillable(),
+		field.Int64("proxy_traffic_output_bytes").
+			Optional().
+			Nillable(),
+		field.Int64("proxy_traffic_overhead_bytes").
+			Optional().
+			Nillable(),
+		field.String("proxy_traffic_estimate_source").
+			MaxLen(64).
+			Optional().
+			Nillable(),
 
 		// Token 计数字段
 		field.Int("input_tokens").

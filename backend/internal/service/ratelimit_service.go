@@ -1291,6 +1291,7 @@ func (s *RateLimitService) ClearRateLimit(ctx context.Context, accountID int64) 
 			slog.Warn("temp_unsched_cache_delete_failed", "account_id", accountID, "error", err)
 		}
 	}
+	s.resetTempUnschedRuntimeState(ctx, accountID)
 	s.ResetOpenAI403Counter(ctx, accountID)
 	return nil
 }
@@ -1357,6 +1358,7 @@ func (s *RateLimitService) ClearTempUnschedulable(ctx context.Context, accountID
 	if err := s.accountRepo.ClearModelRateLimits(ctx, accountID); err != nil {
 		slog.Warn("clear_model_rate_limits_on_temp_unsched_reset_failed", "account_id", accountID, "error", err)
 	}
+	s.resetTempUnschedRuntimeState(ctx, accountID)
 	return nil
 }
 
@@ -1451,6 +1453,15 @@ func (s *RateLimitService) HandleTempUnschedulable(ctx context.Context, account 
 
 const tempUnschedBodyMaxBytes = 64 << 10
 const tempUnschedMessageMaxBytes = 2048
+
+const (
+	tempUnschedBackoffMaxDuration    = 30 * time.Minute
+	tempUnschedBackoffResetWindow    = 6 * time.Hour
+	tempUnschedRuntimeCountKey       = "temp_unsched_runtime_consecutive_count"
+	tempUnschedRuntimeStatusKey      = "temp_unsched_runtime_last_status_code"
+	tempUnschedRuntimeRuleKey        = "temp_unsched_runtime_last_rule_id"
+	tempUnschedRuntimeTriggeredAtKey = "temp_unsched_runtime_last_triggered_at"
+)
 
 func (s *RateLimitService) tryTempUnschedulable(ctx context.Context, account *Account, statusCode int, responseBody []byte) bool {
 	if s == nil || account == nil {
@@ -1650,7 +1661,8 @@ func (s *RateLimitService) triggerTempUnschedulable(ctx context.Context, account
 	}
 
 	now := time.Now()
-	until := now.Add(time.Duration(rule.DurationMinutes) * time.Minute)
+	cooldownDuration, runtimeUpdates := s.nextTempUnschedCooldown(ctx, account, rule, statusCode, now)
+	until := now.Add(cooldownDuration)
 
 	state := &TempUnschedState{
 		UntilUnix:       until.Unix(),
@@ -1673,6 +1685,11 @@ func (s *RateLimitService) triggerTempUnschedulable(ctx context.Context, account
 		slog.Warn("temp_unsched_set_failed", "account_id", account.ID, "error", err)
 		return false
 	}
+	if len(runtimeUpdates) > 0 {
+		if err := s.accountRepo.UpdateExtra(ctx, account.ID, runtimeUpdates); err != nil {
+			slog.Warn("temp_unsched_runtime_update_failed", "account_id", account.ID, "error", err)
+		}
+	}
 
 	if s.tempUnschedCache != nil {
 		if err := s.tempUnschedCache.SetTempUnsched(ctx, account.ID, state); err != nil {
@@ -1682,6 +1699,70 @@ func (s *RateLimitService) triggerTempUnschedulable(ctx context.Context, account
 
 	slog.Info("account_temp_unschedulable", "account_id", account.ID, "until", until, "rule_index", ruleIndex, "status_code", statusCode)
 	return true
+}
+
+func (s *RateLimitService) nextTempUnschedCooldown(ctx context.Context, account *Account, rule TempUnschedulableRule, statusCode int, now time.Time) (time.Duration, map[string]any) {
+	baseDuration := time.Duration(rule.DurationMinutes) * time.Minute
+	if baseDuration <= 0 {
+		return 0, nil
+	}
+
+	consecutiveCount := 1
+	extra := account.Extra
+	if s != nil && s.accountRepo != nil && account != nil && account.ID > 0 {
+		if latest, err := s.accountRepo.GetByID(ctx, account.ID); err == nil && latest != nil && len(latest.Extra) > 0 {
+			extra = latest.Extra
+		}
+	}
+
+	ruleKey := tempUnschedRuntimeRuleValue(rule)
+	if prevCount := parseExtraInt(extra[tempUnschedRuntimeCountKey]); prevCount > 0 &&
+		parseExtraInt(extra[tempUnschedRuntimeStatusKey]) == statusCode &&
+		strings.TrimSpace(fmt.Sprint(extra[tempUnschedRuntimeRuleKey])) == ruleKey {
+		if lastTriggeredAt, err := parseTime(strings.TrimSpace(fmt.Sprint(extra[tempUnschedRuntimeTriggeredAtKey]))); err == nil &&
+			now.Sub(lastTriggeredAt) <= tempUnschedBackoffResetWindow {
+			consecutiveCount = prevCount + 1
+		}
+	}
+
+	cooldown := baseDuration
+	for step := 1; step < consecutiveCount && cooldown < tempUnschedBackoffMaxDuration; step++ {
+		cooldown *= 2
+		if cooldown > tempUnschedBackoffMaxDuration {
+			cooldown = tempUnschedBackoffMaxDuration
+		}
+	}
+
+	return cooldown, map[string]any{
+		tempUnschedRuntimeCountKey:       consecutiveCount,
+		tempUnschedRuntimeStatusKey:      statusCode,
+		tempUnschedRuntimeRuleKey:        ruleKey,
+		tempUnschedRuntimeTriggeredAtKey: now.UTC().Format(time.RFC3339),
+	}
+}
+
+func tempUnschedRuntimeRuleValue(rule TempUnschedulableRule) string {
+	if trimmed := strings.TrimSpace(rule.ID); trimmed != "" {
+		return trimmed
+	}
+	if dedupKey := tempUnschedulableRuleDedupKey(rule); dedupKey != "" {
+		return dedupKey
+	}
+	return fmt.Sprintf("%d:%d", rule.ErrorCode, rule.DurationMinutes)
+}
+
+func (s *RateLimitService) resetTempUnschedRuntimeState(ctx context.Context, accountID int64) {
+	if s == nil || s.accountRepo == nil || accountID <= 0 {
+		return
+	}
+	if err := s.accountRepo.UpdateExtra(ctx, accountID, map[string]any{
+		tempUnschedRuntimeCountKey:       0,
+		tempUnschedRuntimeStatusKey:      nil,
+		tempUnschedRuntimeRuleKey:        nil,
+		tempUnschedRuntimeTriggeredAtKey: nil,
+	}); err != nil {
+		slog.Warn("temp_unsched_runtime_reset_failed", "account_id", accountID, "error", err)
+	}
 }
 
 func truncateTempUnschedMessage(body []byte, maxBytes int) string {

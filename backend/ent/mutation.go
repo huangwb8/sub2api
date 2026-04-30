@@ -26589,84 +26589,94 @@ func (m *UsageCleanupTaskMutation) ResetEdge(name string) error {
 // UsageLogMutation represents an operation that mutates the UsageLog nodes in the graph.
 type UsageLogMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *int64
-	request_id                  *string
-	model                       *string
-	requested_model             *string
-	upstream_model              *string
-	channel_id                  *int64
-	addchannel_id               *int64
-	model_mapping_chain         *string
-	billing_tier                *string
-	billing_mode                *string
-	input_tokens                *int
-	addinput_tokens             *int
-	output_tokens               *int
-	addoutput_tokens            *int
-	cache_creation_tokens       *int
-	addcache_creation_tokens    *int
-	cache_read_tokens           *int
-	addcache_read_tokens        *int
-	cache_creation_5m_tokens    *int
-	addcache_creation_5m_tokens *int
-	cache_creation_1h_tokens    *int
-	addcache_creation_1h_tokens *int
-	input_cost                  *float64
-	addinput_cost               *float64
-	output_cost                 *float64
-	addoutput_cost              *float64
-	cache_creation_cost         *float64
-	addcache_creation_cost      *float64
-	cache_read_cost             *float64
-	addcache_read_cost          *float64
-	total_cost                  *float64
-	addtotal_cost               *float64
-	actual_cost                 *float64
-	addactual_cost              *float64
-	charged_amount_cny          *float64
-	addcharged_amount_cny       *float64
-	estimated_cost_cny          *float64
-	addestimated_cost_cny       *float64
-	fx_rate_usd_cny             *float64
-	addfx_rate_usd_cny          *float64
-	fx_rate_source              *string
-	fx_fetched_at               *time.Time
-	fx_safety_margin            *float64
-	addfx_safety_margin         *float64
-	rate_multiplier             *float64
-	addrate_multiplier          *float64
-	account_rate_multiplier     *float64
-	addaccount_rate_multiplier  *float64
-	billing_type                *int8
-	addbilling_type             *int8
-	stream                      *bool
-	duration_ms                 *int
-	addduration_ms              *int
-	first_token_ms              *int
-	addfirst_token_ms           *int
-	user_agent                  *string
-	ip_address                  *string
-	image_count                 *int
-	addimage_count              *int
-	image_size                  *string
-	cache_ttl_overridden        *bool
-	created_at                  *time.Time
-	clearedFields               map[string]struct{}
-	user                        *int64
-	cleareduser                 bool
-	api_key                     *int64
-	clearedapi_key              bool
-	account                     *int64
-	clearedaccount              bool
-	group                       *int64
-	clearedgroup                bool
-	subscription                *int64
-	clearedsubscription         bool
-	done                        bool
-	oldValue                    func(context.Context) (*UsageLog, error)
-	predicates                  []predicate.UsageLog
+	op                              Op
+	typ                             string
+	id                              *int64
+	request_id                      *string
+	model                           *string
+	requested_model                 *string
+	upstream_model                  *string
+	channel_id                      *int64
+	addchannel_id                   *int64
+	model_mapping_chain             *string
+	billing_tier                    *string
+	billing_mode                    *string
+	proxy_id                        *int64
+	addproxy_id                     *int64
+	used_residential_proxy          *bool
+	proxy_traffic_input_bytes       *int64
+	addproxy_traffic_input_bytes    *int64
+	proxy_traffic_output_bytes      *int64
+	addproxy_traffic_output_bytes   *int64
+	proxy_traffic_overhead_bytes    *int64
+	addproxy_traffic_overhead_bytes *int64
+	proxy_traffic_estimate_source   *string
+	input_tokens                    *int
+	addinput_tokens                 *int
+	output_tokens                   *int
+	addoutput_tokens                *int
+	cache_creation_tokens           *int
+	addcache_creation_tokens        *int
+	cache_read_tokens               *int
+	addcache_read_tokens            *int
+	cache_creation_5m_tokens        *int
+	addcache_creation_5m_tokens     *int
+	cache_creation_1h_tokens        *int
+	addcache_creation_1h_tokens     *int
+	input_cost                      *float64
+	addinput_cost                   *float64
+	output_cost                     *float64
+	addoutput_cost                  *float64
+	cache_creation_cost             *float64
+	addcache_creation_cost          *float64
+	cache_read_cost                 *float64
+	addcache_read_cost              *float64
+	total_cost                      *float64
+	addtotal_cost                   *float64
+	actual_cost                     *float64
+	addactual_cost                  *float64
+	charged_amount_cny              *float64
+	addcharged_amount_cny           *float64
+	estimated_cost_cny              *float64
+	addestimated_cost_cny           *float64
+	fx_rate_usd_cny                 *float64
+	addfx_rate_usd_cny              *float64
+	fx_rate_source                  *string
+	fx_fetched_at                   *time.Time
+	fx_safety_margin                *float64
+	addfx_safety_margin             *float64
+	rate_multiplier                 *float64
+	addrate_multiplier              *float64
+	account_rate_multiplier         *float64
+	addaccount_rate_multiplier      *float64
+	billing_type                    *int8
+	addbilling_type                 *int8
+	stream                          *bool
+	duration_ms                     *int
+	addduration_ms                  *int
+	first_token_ms                  *int
+	addfirst_token_ms               *int
+	user_agent                      *string
+	ip_address                      *string
+	image_count                     *int
+	addimage_count                  *int
+	image_size                      *string
+	cache_ttl_overridden            *bool
+	created_at                      *time.Time
+	clearedFields                   map[string]struct{}
+	user                            *int64
+	cleareduser                     bool
+	api_key                         *int64
+	clearedapi_key                  bool
+	account                         *int64
+	clearedaccount                  bool
+	group                           *int64
+	clearedgroup                    bool
+	subscription                    *int64
+	clearedsubscription             bool
+	done                            bool
+	oldValue                        func(context.Context) (*UsageLog, error)
+	predicates                      []predicate.UsageLog
 }
 
 var _ ent.Mutation = (*UsageLogMutation)(nil)
@@ -27358,6 +27368,384 @@ func (m *UsageLogMutation) SubscriptionIDCleared() bool {
 func (m *UsageLogMutation) ResetSubscriptionID() {
 	m.subscription = nil
 	delete(m.clearedFields, usagelog.FieldSubscriptionID)
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (m *UsageLogMutation) SetProxyID(i int64) {
+	m.proxy_id = &i
+	m.addproxy_id = nil
+}
+
+// ProxyID returns the value of the "proxy_id" field in the mutation.
+func (m *UsageLogMutation) ProxyID() (r int64, exists bool) {
+	v := m.proxy_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyID returns the old "proxy_id" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldProxyID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyID: %w", err)
+	}
+	return oldValue.ProxyID, nil
+}
+
+// AddProxyID adds i to the "proxy_id" field.
+func (m *UsageLogMutation) AddProxyID(i int64) {
+	if m.addproxy_id != nil {
+		*m.addproxy_id += i
+	} else {
+		m.addproxy_id = &i
+	}
+}
+
+// AddedProxyID returns the value that was added to the "proxy_id" field in this mutation.
+func (m *UsageLogMutation) AddedProxyID() (r int64, exists bool) {
+	v := m.addproxy_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProxyID clears the value of the "proxy_id" field.
+func (m *UsageLogMutation) ClearProxyID() {
+	m.proxy_id = nil
+	m.addproxy_id = nil
+	m.clearedFields[usagelog.FieldProxyID] = struct{}{}
+}
+
+// ProxyIDCleared returns if the "proxy_id" field was cleared in this mutation.
+func (m *UsageLogMutation) ProxyIDCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldProxyID]
+	return ok
+}
+
+// ResetProxyID resets all changes to the "proxy_id" field.
+func (m *UsageLogMutation) ResetProxyID() {
+	m.proxy_id = nil
+	m.addproxy_id = nil
+	delete(m.clearedFields, usagelog.FieldProxyID)
+}
+
+// SetUsedResidentialProxy sets the "used_residential_proxy" field.
+func (m *UsageLogMutation) SetUsedResidentialProxy(b bool) {
+	m.used_residential_proxy = &b
+}
+
+// UsedResidentialProxy returns the value of the "used_residential_proxy" field in the mutation.
+func (m *UsageLogMutation) UsedResidentialProxy() (r bool, exists bool) {
+	v := m.used_residential_proxy
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedResidentialProxy returns the old "used_residential_proxy" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUsedResidentialProxy(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedResidentialProxy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedResidentialProxy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedResidentialProxy: %w", err)
+	}
+	return oldValue.UsedResidentialProxy, nil
+}
+
+// ClearUsedResidentialProxy clears the value of the "used_residential_proxy" field.
+func (m *UsageLogMutation) ClearUsedResidentialProxy() {
+	m.used_residential_proxy = nil
+	m.clearedFields[usagelog.FieldUsedResidentialProxy] = struct{}{}
+}
+
+// UsedResidentialProxyCleared returns if the "used_residential_proxy" field was cleared in this mutation.
+func (m *UsageLogMutation) UsedResidentialProxyCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUsedResidentialProxy]
+	return ok
+}
+
+// ResetUsedResidentialProxy resets all changes to the "used_residential_proxy" field.
+func (m *UsageLogMutation) ResetUsedResidentialProxy() {
+	m.used_residential_proxy = nil
+	delete(m.clearedFields, usagelog.FieldUsedResidentialProxy)
+}
+
+// SetProxyTrafficInputBytes sets the "proxy_traffic_input_bytes" field.
+func (m *UsageLogMutation) SetProxyTrafficInputBytes(i int64) {
+	m.proxy_traffic_input_bytes = &i
+	m.addproxy_traffic_input_bytes = nil
+}
+
+// ProxyTrafficInputBytes returns the value of the "proxy_traffic_input_bytes" field in the mutation.
+func (m *UsageLogMutation) ProxyTrafficInputBytes() (r int64, exists bool) {
+	v := m.proxy_traffic_input_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyTrafficInputBytes returns the old "proxy_traffic_input_bytes" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldProxyTrafficInputBytes(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyTrafficInputBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyTrafficInputBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyTrafficInputBytes: %w", err)
+	}
+	return oldValue.ProxyTrafficInputBytes, nil
+}
+
+// AddProxyTrafficInputBytes adds i to the "proxy_traffic_input_bytes" field.
+func (m *UsageLogMutation) AddProxyTrafficInputBytes(i int64) {
+	if m.addproxy_traffic_input_bytes != nil {
+		*m.addproxy_traffic_input_bytes += i
+	} else {
+		m.addproxy_traffic_input_bytes = &i
+	}
+}
+
+// AddedProxyTrafficInputBytes returns the value that was added to the "proxy_traffic_input_bytes" field in this mutation.
+func (m *UsageLogMutation) AddedProxyTrafficInputBytes() (r int64, exists bool) {
+	v := m.addproxy_traffic_input_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProxyTrafficInputBytes clears the value of the "proxy_traffic_input_bytes" field.
+func (m *UsageLogMutation) ClearProxyTrafficInputBytes() {
+	m.proxy_traffic_input_bytes = nil
+	m.addproxy_traffic_input_bytes = nil
+	m.clearedFields[usagelog.FieldProxyTrafficInputBytes] = struct{}{}
+}
+
+// ProxyTrafficInputBytesCleared returns if the "proxy_traffic_input_bytes" field was cleared in this mutation.
+func (m *UsageLogMutation) ProxyTrafficInputBytesCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldProxyTrafficInputBytes]
+	return ok
+}
+
+// ResetProxyTrafficInputBytes resets all changes to the "proxy_traffic_input_bytes" field.
+func (m *UsageLogMutation) ResetProxyTrafficInputBytes() {
+	m.proxy_traffic_input_bytes = nil
+	m.addproxy_traffic_input_bytes = nil
+	delete(m.clearedFields, usagelog.FieldProxyTrafficInputBytes)
+}
+
+// SetProxyTrafficOutputBytes sets the "proxy_traffic_output_bytes" field.
+func (m *UsageLogMutation) SetProxyTrafficOutputBytes(i int64) {
+	m.proxy_traffic_output_bytes = &i
+	m.addproxy_traffic_output_bytes = nil
+}
+
+// ProxyTrafficOutputBytes returns the value of the "proxy_traffic_output_bytes" field in the mutation.
+func (m *UsageLogMutation) ProxyTrafficOutputBytes() (r int64, exists bool) {
+	v := m.proxy_traffic_output_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyTrafficOutputBytes returns the old "proxy_traffic_output_bytes" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldProxyTrafficOutputBytes(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyTrafficOutputBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyTrafficOutputBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyTrafficOutputBytes: %w", err)
+	}
+	return oldValue.ProxyTrafficOutputBytes, nil
+}
+
+// AddProxyTrafficOutputBytes adds i to the "proxy_traffic_output_bytes" field.
+func (m *UsageLogMutation) AddProxyTrafficOutputBytes(i int64) {
+	if m.addproxy_traffic_output_bytes != nil {
+		*m.addproxy_traffic_output_bytes += i
+	} else {
+		m.addproxy_traffic_output_bytes = &i
+	}
+}
+
+// AddedProxyTrafficOutputBytes returns the value that was added to the "proxy_traffic_output_bytes" field in this mutation.
+func (m *UsageLogMutation) AddedProxyTrafficOutputBytes() (r int64, exists bool) {
+	v := m.addproxy_traffic_output_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProxyTrafficOutputBytes clears the value of the "proxy_traffic_output_bytes" field.
+func (m *UsageLogMutation) ClearProxyTrafficOutputBytes() {
+	m.proxy_traffic_output_bytes = nil
+	m.addproxy_traffic_output_bytes = nil
+	m.clearedFields[usagelog.FieldProxyTrafficOutputBytes] = struct{}{}
+}
+
+// ProxyTrafficOutputBytesCleared returns if the "proxy_traffic_output_bytes" field was cleared in this mutation.
+func (m *UsageLogMutation) ProxyTrafficOutputBytesCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldProxyTrafficOutputBytes]
+	return ok
+}
+
+// ResetProxyTrafficOutputBytes resets all changes to the "proxy_traffic_output_bytes" field.
+func (m *UsageLogMutation) ResetProxyTrafficOutputBytes() {
+	m.proxy_traffic_output_bytes = nil
+	m.addproxy_traffic_output_bytes = nil
+	delete(m.clearedFields, usagelog.FieldProxyTrafficOutputBytes)
+}
+
+// SetProxyTrafficOverheadBytes sets the "proxy_traffic_overhead_bytes" field.
+func (m *UsageLogMutation) SetProxyTrafficOverheadBytes(i int64) {
+	m.proxy_traffic_overhead_bytes = &i
+	m.addproxy_traffic_overhead_bytes = nil
+}
+
+// ProxyTrafficOverheadBytes returns the value of the "proxy_traffic_overhead_bytes" field in the mutation.
+func (m *UsageLogMutation) ProxyTrafficOverheadBytes() (r int64, exists bool) {
+	v := m.proxy_traffic_overhead_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyTrafficOverheadBytes returns the old "proxy_traffic_overhead_bytes" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldProxyTrafficOverheadBytes(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyTrafficOverheadBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyTrafficOverheadBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyTrafficOverheadBytes: %w", err)
+	}
+	return oldValue.ProxyTrafficOverheadBytes, nil
+}
+
+// AddProxyTrafficOverheadBytes adds i to the "proxy_traffic_overhead_bytes" field.
+func (m *UsageLogMutation) AddProxyTrafficOverheadBytes(i int64) {
+	if m.addproxy_traffic_overhead_bytes != nil {
+		*m.addproxy_traffic_overhead_bytes += i
+	} else {
+		m.addproxy_traffic_overhead_bytes = &i
+	}
+}
+
+// AddedProxyTrafficOverheadBytes returns the value that was added to the "proxy_traffic_overhead_bytes" field in this mutation.
+func (m *UsageLogMutation) AddedProxyTrafficOverheadBytes() (r int64, exists bool) {
+	v := m.addproxy_traffic_overhead_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProxyTrafficOverheadBytes clears the value of the "proxy_traffic_overhead_bytes" field.
+func (m *UsageLogMutation) ClearProxyTrafficOverheadBytes() {
+	m.proxy_traffic_overhead_bytes = nil
+	m.addproxy_traffic_overhead_bytes = nil
+	m.clearedFields[usagelog.FieldProxyTrafficOverheadBytes] = struct{}{}
+}
+
+// ProxyTrafficOverheadBytesCleared returns if the "proxy_traffic_overhead_bytes" field was cleared in this mutation.
+func (m *UsageLogMutation) ProxyTrafficOverheadBytesCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldProxyTrafficOverheadBytes]
+	return ok
+}
+
+// ResetProxyTrafficOverheadBytes resets all changes to the "proxy_traffic_overhead_bytes" field.
+func (m *UsageLogMutation) ResetProxyTrafficOverheadBytes() {
+	m.proxy_traffic_overhead_bytes = nil
+	m.addproxy_traffic_overhead_bytes = nil
+	delete(m.clearedFields, usagelog.FieldProxyTrafficOverheadBytes)
+}
+
+// SetProxyTrafficEstimateSource sets the "proxy_traffic_estimate_source" field.
+func (m *UsageLogMutation) SetProxyTrafficEstimateSource(s string) {
+	m.proxy_traffic_estimate_source = &s
+}
+
+// ProxyTrafficEstimateSource returns the value of the "proxy_traffic_estimate_source" field in the mutation.
+func (m *UsageLogMutation) ProxyTrafficEstimateSource() (r string, exists bool) {
+	v := m.proxy_traffic_estimate_source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyTrafficEstimateSource returns the old "proxy_traffic_estimate_source" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldProxyTrafficEstimateSource(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyTrafficEstimateSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyTrafficEstimateSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyTrafficEstimateSource: %w", err)
+	}
+	return oldValue.ProxyTrafficEstimateSource, nil
+}
+
+// ClearProxyTrafficEstimateSource clears the value of the "proxy_traffic_estimate_source" field.
+func (m *UsageLogMutation) ClearProxyTrafficEstimateSource() {
+	m.proxy_traffic_estimate_source = nil
+	m.clearedFields[usagelog.FieldProxyTrafficEstimateSource] = struct{}{}
+}
+
+// ProxyTrafficEstimateSourceCleared returns if the "proxy_traffic_estimate_source" field was cleared in this mutation.
+func (m *UsageLogMutation) ProxyTrafficEstimateSourceCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldProxyTrafficEstimateSource]
+	return ok
+}
+
+// ResetProxyTrafficEstimateSource resets all changes to the "proxy_traffic_estimate_source" field.
+func (m *UsageLogMutation) ResetProxyTrafficEstimateSource() {
+	m.proxy_traffic_estimate_source = nil
+	delete(m.clearedFields, usagelog.FieldProxyTrafficEstimateSource)
 }
 
 // SetInputTokens sets the "input_tokens" field.
@@ -29212,7 +29600,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 43)
+	fields := make([]string, 0, 49)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -29251,6 +29639,24 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.subscription != nil {
 		fields = append(fields, usagelog.FieldSubscriptionID)
+	}
+	if m.proxy_id != nil {
+		fields = append(fields, usagelog.FieldProxyID)
+	}
+	if m.used_residential_proxy != nil {
+		fields = append(fields, usagelog.FieldUsedResidentialProxy)
+	}
+	if m.proxy_traffic_input_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficInputBytes)
+	}
+	if m.proxy_traffic_output_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficOutputBytes)
+	}
+	if m.proxy_traffic_overhead_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficOverheadBytes)
+	}
+	if m.proxy_traffic_estimate_source != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficEstimateSource)
 	}
 	if m.input_tokens != nil {
 		fields = append(fields, usagelog.FieldInputTokens)
@@ -29376,6 +29782,18 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case usagelog.FieldSubscriptionID:
 		return m.SubscriptionID()
+	case usagelog.FieldProxyID:
+		return m.ProxyID()
+	case usagelog.FieldUsedResidentialProxy:
+		return m.UsedResidentialProxy()
+	case usagelog.FieldProxyTrafficInputBytes:
+		return m.ProxyTrafficInputBytes()
+	case usagelog.FieldProxyTrafficOutputBytes:
+		return m.ProxyTrafficOutputBytes()
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		return m.ProxyTrafficOverheadBytes()
+	case usagelog.FieldProxyTrafficEstimateSource:
+		return m.ProxyTrafficEstimateSource()
 	case usagelog.FieldInputTokens:
 		return m.InputTokens()
 	case usagelog.FieldOutputTokens:
@@ -29471,6 +29889,18 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldGroupID(ctx)
 	case usagelog.FieldSubscriptionID:
 		return m.OldSubscriptionID(ctx)
+	case usagelog.FieldProxyID:
+		return m.OldProxyID(ctx)
+	case usagelog.FieldUsedResidentialProxy:
+		return m.OldUsedResidentialProxy(ctx)
+	case usagelog.FieldProxyTrafficInputBytes:
+		return m.OldProxyTrafficInputBytes(ctx)
+	case usagelog.FieldProxyTrafficOutputBytes:
+		return m.OldProxyTrafficOutputBytes(ctx)
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		return m.OldProxyTrafficOverheadBytes(ctx)
+	case usagelog.FieldProxyTrafficEstimateSource:
+		return m.OldProxyTrafficEstimateSource(ctx)
 	case usagelog.FieldInputTokens:
 		return m.OldInputTokens(ctx)
 	case usagelog.FieldOutputTokens:
@@ -29630,6 +30060,48 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSubscriptionID(v)
+		return nil
+	case usagelog.FieldProxyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyID(v)
+		return nil
+	case usagelog.FieldUsedResidentialProxy:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedResidentialProxy(v)
+		return nil
+	case usagelog.FieldProxyTrafficInputBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyTrafficInputBytes(v)
+		return nil
+	case usagelog.FieldProxyTrafficOutputBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyTrafficOutputBytes(v)
+		return nil
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyTrafficOverheadBytes(v)
+		return nil
+	case usagelog.FieldProxyTrafficEstimateSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyTrafficEstimateSource(v)
 		return nil
 	case usagelog.FieldInputTokens:
 		v, ok := value.(int)
@@ -29852,6 +30324,18 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addchannel_id != nil {
 		fields = append(fields, usagelog.FieldChannelID)
 	}
+	if m.addproxy_id != nil {
+		fields = append(fields, usagelog.FieldProxyID)
+	}
+	if m.addproxy_traffic_input_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficInputBytes)
+	}
+	if m.addproxy_traffic_output_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficOutputBytes)
+	}
+	if m.addproxy_traffic_overhead_bytes != nil {
+		fields = append(fields, usagelog.FieldProxyTrafficOverheadBytes)
+	}
 	if m.addinput_tokens != nil {
 		fields = append(fields, usagelog.FieldInputTokens)
 	}
@@ -29928,6 +30412,14 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case usagelog.FieldChannelID:
 		return m.AddedChannelID()
+	case usagelog.FieldProxyID:
+		return m.AddedProxyID()
+	case usagelog.FieldProxyTrafficInputBytes:
+		return m.AddedProxyTrafficInputBytes()
+	case usagelog.FieldProxyTrafficOutputBytes:
+		return m.AddedProxyTrafficOutputBytes()
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		return m.AddedProxyTrafficOverheadBytes()
 	case usagelog.FieldInputTokens:
 		return m.AddedInputTokens()
 	case usagelog.FieldOutputTokens:
@@ -29987,6 +30479,34 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddChannelID(v)
+		return nil
+	case usagelog.FieldProxyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProxyID(v)
+		return nil
+	case usagelog.FieldProxyTrafficInputBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProxyTrafficInputBytes(v)
+		return nil
+	case usagelog.FieldProxyTrafficOutputBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProxyTrafficOutputBytes(v)
+		return nil
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProxyTrafficOverheadBytes(v)
 		return nil
 	case usagelog.FieldInputTokens:
 		v, ok := value.(int)
@@ -30174,6 +30694,24 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldSubscriptionID) {
 		fields = append(fields, usagelog.FieldSubscriptionID)
 	}
+	if m.FieldCleared(usagelog.FieldProxyID) {
+		fields = append(fields, usagelog.FieldProxyID)
+	}
+	if m.FieldCleared(usagelog.FieldUsedResidentialProxy) {
+		fields = append(fields, usagelog.FieldUsedResidentialProxy)
+	}
+	if m.FieldCleared(usagelog.FieldProxyTrafficInputBytes) {
+		fields = append(fields, usagelog.FieldProxyTrafficInputBytes)
+	}
+	if m.FieldCleared(usagelog.FieldProxyTrafficOutputBytes) {
+		fields = append(fields, usagelog.FieldProxyTrafficOutputBytes)
+	}
+	if m.FieldCleared(usagelog.FieldProxyTrafficOverheadBytes) {
+		fields = append(fields, usagelog.FieldProxyTrafficOverheadBytes)
+	}
+	if m.FieldCleared(usagelog.FieldProxyTrafficEstimateSource) {
+		fields = append(fields, usagelog.FieldProxyTrafficEstimateSource)
+	}
 	if m.FieldCleared(usagelog.FieldChargedAmountCny) {
 		fields = append(fields, usagelog.FieldChargedAmountCny)
 	}
@@ -30247,6 +30785,24 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldSubscriptionID:
 		m.ClearSubscriptionID()
+		return nil
+	case usagelog.FieldProxyID:
+		m.ClearProxyID()
+		return nil
+	case usagelog.FieldUsedResidentialProxy:
+		m.ClearUsedResidentialProxy()
+		return nil
+	case usagelog.FieldProxyTrafficInputBytes:
+		m.ClearProxyTrafficInputBytes()
+		return nil
+	case usagelog.FieldProxyTrafficOutputBytes:
+		m.ClearProxyTrafficOutputBytes()
+		return nil
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		m.ClearProxyTrafficOverheadBytes()
+		return nil
+	case usagelog.FieldProxyTrafficEstimateSource:
+		m.ClearProxyTrafficEstimateSource()
 		return nil
 	case usagelog.FieldChargedAmountCny:
 		m.ClearChargedAmountCny()
@@ -30330,6 +30886,24 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldSubscriptionID:
 		m.ResetSubscriptionID()
+		return nil
+	case usagelog.FieldProxyID:
+		m.ResetProxyID()
+		return nil
+	case usagelog.FieldUsedResidentialProxy:
+		m.ResetUsedResidentialProxy()
+		return nil
+	case usagelog.FieldProxyTrafficInputBytes:
+		m.ResetProxyTrafficInputBytes()
+		return nil
+	case usagelog.FieldProxyTrafficOutputBytes:
+		m.ResetProxyTrafficOutputBytes()
+		return nil
+	case usagelog.FieldProxyTrafficOverheadBytes:
+		m.ResetProxyTrafficOverheadBytes()
+		return nil
+	case usagelog.FieldProxyTrafficEstimateSource:
+		m.ResetProxyTrafficEstimateSource()
 		return nil
 	case usagelog.FieldInputTokens:
 		m.ResetInputTokens()

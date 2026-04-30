@@ -18,32 +18,38 @@ var (
 
 // CreateUsageLogRequest 创建使用日志请求
 type CreateUsageLogRequest struct {
-	UserID                int64   `json:"user_id"`
-	APIKeyID              int64   `json:"api_key_id"`
-	AccountID             int64   `json:"account_id"`
-	RequestID             string  `json:"request_id"`
-	Model                 string  `json:"model"`
-	InputTokens           int     `json:"input_tokens"`
-	OutputTokens          int     `json:"output_tokens"`
-	CacheCreationTokens   int     `json:"cache_creation_tokens"`
-	CacheReadTokens       int     `json:"cache_read_tokens"`
-	CacheCreation5mTokens int     `json:"cache_creation_5m_tokens"`
-	CacheCreation1hTokens int     `json:"cache_creation_1h_tokens"`
-	InputCost             float64 `json:"input_cost"`
-	OutputCost            float64 `json:"output_cost"`
-	CacheCreationCost     float64 `json:"cache_creation_cost"`
-	CacheReadCost         float64 `json:"cache_read_cost"`
-	TotalCost             float64   `json:"total_cost"`
-	ActualCost            float64   `json:"actual_cost"`
-	ChargedAmountCNY      *float64  `json:"charged_amount_cny"`
-	EstimatedCostCNY      *float64  `json:"estimated_cost_cny"`
-	FXRateUSDCNY          *float64  `json:"fx_rate_usd_cny"`
-	FXRateSource          *string   `json:"fx_rate_source"`
-	FXFetchedAt           *time.Time `json:"fx_fetched_at"`
-	FXSafetyMargin        *float64  `json:"fx_safety_margin"`
-	RateMultiplier        float64 `json:"rate_multiplier"`
-	Stream                bool    `json:"stream"`
-	DurationMs            *int    `json:"duration_ms"`
+	UserID                     int64      `json:"user_id"`
+	APIKeyID                   int64      `json:"api_key_id"`
+	AccountID                  int64      `json:"account_id"`
+	ProxyID                    *int64     `json:"proxy_id"`
+	UsedResidentialProxy       *bool      `json:"used_residential_proxy"`
+	RequestID                  string     `json:"request_id"`
+	Model                      string     `json:"model"`
+	InputTokens                int        `json:"input_tokens"`
+	OutputTokens               int        `json:"output_tokens"`
+	CacheCreationTokens        int        `json:"cache_creation_tokens"`
+	CacheReadTokens            int        `json:"cache_read_tokens"`
+	CacheCreation5mTokens      int        `json:"cache_creation_5m_tokens"`
+	CacheCreation1hTokens      int        `json:"cache_creation_1h_tokens"`
+	InputCost                  float64    `json:"input_cost"`
+	OutputCost                 float64    `json:"output_cost"`
+	CacheCreationCost          float64    `json:"cache_creation_cost"`
+	CacheReadCost              float64    `json:"cache_read_cost"`
+	TotalCost                  float64    `json:"total_cost"`
+	ActualCost                 float64    `json:"actual_cost"`
+	ChargedAmountCNY           *float64   `json:"charged_amount_cny"`
+	EstimatedCostCNY           *float64   `json:"estimated_cost_cny"`
+	FXRateUSDCNY               *float64   `json:"fx_rate_usd_cny"`
+	FXRateSource               *string    `json:"fx_rate_source"`
+	FXFetchedAt                *time.Time `json:"fx_fetched_at"`
+	FXSafetyMargin             *float64   `json:"fx_safety_margin"`
+	RateMultiplier             float64    `json:"rate_multiplier"`
+	ProxyTrafficInputBytes     *int64     `json:"proxy_traffic_input_bytes"`
+	ProxyTrafficOutputBytes    *int64     `json:"proxy_traffic_output_bytes"`
+	ProxyTrafficOverheadBytes  *int64     `json:"proxy_traffic_overhead_bytes"`
+	ProxyTrafficEstimateSource *string    `json:"proxy_traffic_estimate_source"`
+	Stream                     bool       `json:"stream"`
+	DurationMs                 *int       `json:"duration_ms"`
 }
 
 // UsageStats 使用统计
@@ -110,27 +116,33 @@ func (s *UsageService) Create(ctx context.Context, req CreateUsageLogRequest) (*
 
 	// 创建使用日志
 	usageLog := &UsageLog{
-		UserID:                req.UserID,
-		APIKeyID:              req.APIKeyID,
-		AccountID:             req.AccountID,
-		RequestID:             req.RequestID,
-		Model:                 req.Model,
-		InputTokens:           req.InputTokens,
-		OutputTokens:          req.OutputTokens,
-		CacheCreationTokens:   req.CacheCreationTokens,
-		CacheReadTokens:       req.CacheReadTokens,
-		CacheCreation5mTokens: req.CacheCreation5mTokens,
-		CacheCreation1hTokens: req.CacheCreation1hTokens,
-		InputCost:             req.InputCost,
-		OutputCost:            req.OutputCost,
-		CacheCreationCost:     req.CacheCreationCost,
-		CacheReadCost:         req.CacheReadCost,
-		TotalCost:             req.TotalCost,
-		ActualCost:            req.ActualCost,
-		EstimatedCostCNY:      req.EstimatedCostCNY,
-		RateMultiplier:        req.RateMultiplier,
-		Stream:                req.Stream,
-		DurationMs:            req.DurationMs,
+		UserID:                     req.UserID,
+		APIKeyID:                   req.APIKeyID,
+		AccountID:                  req.AccountID,
+		ProxyID:                    req.ProxyID,
+		UsedResidentialProxy:       req.UsedResidentialProxy,
+		RequestID:                  req.RequestID,
+		Model:                      req.Model,
+		InputTokens:                req.InputTokens,
+		OutputTokens:               req.OutputTokens,
+		CacheCreationTokens:        req.CacheCreationTokens,
+		CacheReadTokens:            req.CacheReadTokens,
+		CacheCreation5mTokens:      req.CacheCreation5mTokens,
+		CacheCreation1hTokens:      req.CacheCreation1hTokens,
+		InputCost:                  req.InputCost,
+		OutputCost:                 req.OutputCost,
+		CacheCreationCost:          req.CacheCreationCost,
+		CacheReadCost:              req.CacheReadCost,
+		TotalCost:                  req.TotalCost,
+		ActualCost:                 req.ActualCost,
+		EstimatedCostCNY:           req.EstimatedCostCNY,
+		RateMultiplier:             req.RateMultiplier,
+		ProxyTrafficInputBytes:     req.ProxyTrafficInputBytes,
+		ProxyTrafficOutputBytes:    req.ProxyTrafficOutputBytes,
+		ProxyTrafficOverheadBytes:  req.ProxyTrafficOverheadBytes,
+		ProxyTrafficEstimateSource: req.ProxyTrafficEstimateSource,
+		Stream:                     req.Stream,
+		DurationMs:                 req.DurationMs,
 	}
 	if req.ChargedAmountCNY != nil {
 		usageLog.ChargedAmountCNY = req.ChargedAmountCNY

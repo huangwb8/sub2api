@@ -177,6 +177,9 @@ func (s *GatewayService) ForwardAsResponses(
 	} else {
 		result, handleErr = s.handleResponsesBufferedStreamingResponse(resp, c, originalModel, mappedModel, reasoningEffort, startTime)
 	}
+	if result != nil {
+		result.ProxyRequestBytes = int64(len(anthropicBody))
+	}
 
 	return result, handleErr
 }
@@ -326,6 +329,7 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 	// Convert to Responses format
 	responsesResp := apicompat.AnthropicToResponsesResponse(finalResp)
 	responsesResp.Model = originalModel // Use original model name
+	responseBytes, _ := json.Marshal(responsesResp)
 
 	if s.responseHeaderFilter != nil {
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
@@ -333,13 +337,14 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 	c.JSON(http.StatusOK, responsesResp)
 
 	return &ForwardResult{
-		RequestID:       requestID,
-		Usage:           usage,
-		Model:           originalModel,
-		UpstreamModel:   mappedModel,
-		ReasoningEffort: reasoningEffort,
-		Stream:          false,
-		Duration:        time.Since(startTime),
+		RequestID:          requestID,
+		Usage:              usage,
+		Model:              originalModel,
+		UpstreamModel:      mappedModel,
+		ReasoningEffort:    reasoningEffort,
+		Stream:             false,
+		Duration:           time.Since(startTime),
+		ProxyResponseBytes: int64(len(responseBytes)),
 	}, nil
 }
 

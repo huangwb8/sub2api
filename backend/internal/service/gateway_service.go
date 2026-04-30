@@ -492,12 +492,14 @@ type ForwardResult struct {
 	Model     string
 	// UpstreamModel is the actual upstream model after mapping.
 	// Prefer empty when it is identical to Model; persistence normalizes equal values away as no-op mappings.
-	UpstreamModel    string
-	Stream           bool
-	Duration         time.Duration
-	FirstTokenMs     *int // 首字时间（流式请求）
-	ClientDisconnect bool // 客户端是否在流式传输过程中断开
-	ReasoningEffort  *string
+	UpstreamModel      string
+	Stream             bool
+	Duration           time.Duration
+	FirstTokenMs       *int // 首字时间（流式请求）
+	ClientDisconnect   bool // 客户端是否在流式传输过程中断开
+	ReasoningEffort    *string
+	ProxyRequestBytes  int64
+	ProxyResponseBytes int64
 
 	// 图片生成计费字段（图片生成模型使用）
 	ImageCount int    // 生成的图片数量
@@ -8083,6 +8085,14 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
 	}
+	trafficObservation := MeterResidentialIPTraffic(ResidentialIPTrafficInput{
+		ProxyID:       account.ProxyID,
+		RequestBytes:  result.ProxyRequestBytes,
+		ResponseBytes: result.ProxyResponseBytes,
+		TotalTokens:   totalUsageTokens(usageLog),
+		Calibration:   defaultResidentialIPCalibration(),
+	})
+	applyResidentialIPTrafficObservation(usageLog, trafficObservation)
 	usageLog.ApplyChargeSnapshot(chargeSnapshot)
 
 	return usageLog
