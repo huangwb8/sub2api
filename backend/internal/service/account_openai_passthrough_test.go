@@ -205,6 +205,42 @@ func TestAccount_IsOpenAIResponsesWebSocketV2Enabled(t *testing.T) {
 	})
 }
 
+func TestAccount_IsOpenAIOAuthImagesExperimentalEnabled(t *testing.T) {
+	t.Run("仅OpenAI OAuth读取账号级开关", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeOAuth,
+			Extra: map[string]any{
+				"openai_oauth_images_experimental": true,
+			},
+		}
+		require.True(t, account.IsOpenAIOAuthImagesExperimentalEnabled())
+	})
+
+	t.Run("非OAuth或非OpenAI账号默认关闭", func(t *testing.T) {
+		require.False(t, (&Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Extra: map[string]any{"openai_oauth_images_experimental": true}}).IsOpenAIOAuthImagesExperimentalEnabled())
+		require.False(t, (&Account{Platform: PlatformAnthropic, Type: AccountTypeOAuth, Extra: map[string]any{"openai_oauth_images_experimental": true}}).IsOpenAIOAuthImagesExperimentalEnabled())
+	})
+}
+
+func TestAccount_OpenAIOAuthImagesProbeFields(t *testing.T) {
+	account := &Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Extra: map[string]any{
+			"openai_oauth_images_probe_supported": true,
+			"openai_oauth_images_strategy":        "API_PLATFORM_IMAGES_WITH_OAUTH",
+			"openai_oauth_images_probe_reason":    "manual_probe_passed",
+			"openai_oauth_images_probe_status":    204,
+		},
+	}
+
+	require.True(t, account.IsOpenAIOAuthImagesProbeSupported())
+	require.Equal(t, "api_platform_images_with_oauth", account.OpenAIOAuthImagesStrategy())
+	require.Equal(t, "manual_probe_passed", account.OpenAIOAuthImagesProbeReason())
+	require.Equal(t, 204, account.OpenAIOAuthImagesProbeStatus())
+}
+
 func TestAccount_ResolveOpenAIResponsesWebSocketV2Mode(t *testing.T) {
 	t.Run("default fallback to ctx_pool", func(t *testing.T) {
 		account := &Account{

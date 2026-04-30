@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
 	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -38,8 +39,9 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	upstreamModel string,
 ) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
-	if account == nil || account.Type != AccountTypeAPIKey {
-		return nil, errors.New("images API requires an OpenAI API key account")
+	capability, err := s.ValidateOpenAIImagesAccount(ctx, account, "generations", gjson.GetBytes(body, "stream").Bool())
+	if err != nil {
+		return nil, err
 	}
 	requestModel := strings.TrimSpace(gjson.GetBytes(body, "model").String())
 	if requestModel == "" {
@@ -61,7 +63,7 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	}
 
 	reqStream := gjson.GetBytes(body, "stream").Bool()
-	upstreamReq, err := s.buildOpenAIImagesRequest(ctx, c, account, openaiImagesGenerationsEndpoint, bytes.NewReader(body), token, "application/json")
+	upstreamReq, err := s.buildOpenAIImagesRequest(ctx, c, account, openaiImagesGenerationsEndpoint, bytes.NewReader(body), token, "application/json", capability)
 	if err != nil {
 		return nil, fmt.Errorf("build images request: %w", err)
 	}
@@ -80,8 +82,9 @@ func (s *OpenAIGatewayService) ForwardAsImageEdit(
 	upstreamModel string,
 ) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
-	if account == nil || account.Type != AccountTypeAPIKey {
-		return nil, errors.New("images API requires an OpenAI API key account")
+	capability, err := s.ValidateOpenAIImagesAccount(ctx, account, "edits", false)
+	if err != nil {
+		return nil, err
 	}
 	if c.Request.MultipartForm == nil {
 		if err := c.Request.ParseMultipartForm(64 << 20); err != nil {
@@ -117,7 +120,7 @@ func (s *OpenAIGatewayService) ForwardAsImageEdit(
 	if err != nil {
 		return nil, fmt.Errorf("get access token: %w", err)
 	}
-	upstreamReq, err := s.buildOpenAIImagesRequest(ctx, c, account, openaiImagesEditsEndpoint, bytes.NewReader(body.Bytes()), token, writer.FormDataContentType())
+	upstreamReq, err := s.buildOpenAIImagesRequest(ctx, c, account, openaiImagesEditsEndpoint, bytes.NewReader(body.Bytes()), token, writer.FormDataContentType(), capability)
 	if err != nil {
 		return nil, fmt.Errorf("build image edit request: %w", err)
 	}
@@ -179,8 +182,9 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	body io.Reader,
 	token string,
 	contentType string,
+	capability *OpenAIOAuthImagesCapability,
 ) (*http.Request, error) {
-	targetURL, err := s.buildOpenAIImagesURL(account, endpoint)
+	targetURL, err := s.buildOpenAIImagesURL(account, endpoint, capability)
 	if err != nil {
 		return nil, err
 	}
@@ -188,29 +192,79 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("authorization", "Bearer "+token)
-	if contentType != "" {
-		req.Header.Set("content-type", contentType)
-	}
-	for key, values := range c.Request.Header {
-		lowerKey := strings.ToLower(key)
-		switch lowerKey {
-		case "accept", "accept-language", "openai-beta", "user-agent":
-			for _, v := range values {
-				req.Header.Add(key, v)
-			}
-		}
-	}
-	if contentType != "" {
-		req.Header.Set("content-type", contentType)
-	}
-	if customUA := account.GetOpenAIUserAgent(); customUA != "" {
-		req.Header.Set("user-agent", customUA)
+	if err := s.applyOpenAIImagesRequestHeaders(req, c, account, token, contentType, capability); err != nil {
+		return nil, err
 	}
 	return req, nil
 }
 
-func (s *OpenAIGatewayService) buildOpenAIImagesURL(account *Account, endpoint string) (string, error) {
+func (s *OpenAIGatewayService) applyOpenAIImagesRequestHeaders(
+	req *http.Request,
+	c *gin.Context,
+	account *Account,
+	token string,
+	contentType string,
+	capability *OpenAIOAuthImagesCapability,
+) error {
+	if req == nil {
+		return errors.New("nil request")
+	}
+	req.Header.Set("authorization", "Bearer "+token)
+	if contentType != "" {
+		req.Header.Set("content-type", contentType)
+	}
+
+	if c != nil && c.Request != nil {
+		for key, values := range c.Request.Header {
+			lowerKey := strings.ToLower(key)
+			switch lowerKey {
+			case "accept", "accept-language", "openai-beta", "user-agent":
+				for _, v := range values {
+					req.Header.Add(key, v)
+				}
+			}
+		}
+	}
+
+	if account != nil && account.IsOpenAIOAuth() {
+		if capability == nil {
+			return errors.New("missing oauth images capability")
+		}
+		switch capability.Strategy {
+		case OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth:
+			if chatgptAccountID := account.GetChatGPTAccountID(); chatgptAccountID != "" {
+				req.Header.Set("chatgpt-account-id", chatgptAccountID)
+			}
+			if req.Header.Get("originator") == "" {
+				req.Header.Set("originator", "codex_cli_rs")
+			}
+			if req.Header.Get("accept") == "" {
+				req.Header.Set("accept", "application/json")
+			}
+			if req.Header.Get("accept-language") == "" {
+				req.Header.Set("accept-language", "en-US,en;q=0.9")
+			}
+			if customUA := account.GetOpenAIUserAgent(); customUA != "" {
+				req.Header.Set("user-agent", customUA)
+			} else if !openai.IsCodexCLIRequest(req.Header.Get("user-agent")) {
+				req.Header.Set("user-agent", codexCLIUserAgent)
+			}
+		default:
+			return fmt.Errorf("unsupported oauth images strategy: %s", capability.Strategy)
+		}
+	} else if account != nil {
+		if customUA := account.GetOpenAIUserAgent(); customUA != "" {
+			req.Header.Set("user-agent", customUA)
+		}
+	}
+
+	return nil
+}
+
+func (s *OpenAIGatewayService) buildOpenAIImagesURL(account *Account, endpoint string, capability *OpenAIOAuthImagesCapability) (string, error) {
+	if account != nil && account.IsOpenAIOAuth() {
+		return s.resolveOpenAIImagesUpstream(account, endpoint, capability)
+	}
 	baseURL := "https://api.openai.com"
 	if account != nil {
 		baseURL = account.GetOpenAIBaseURL()
@@ -223,6 +277,28 @@ func (s *OpenAIGatewayService) buildOpenAIImagesURL(account *Account, endpoint s
 		return "", err
 	}
 	return buildOpenAIEndpointURL(validatedURL, endpoint), nil
+}
+
+func (s *OpenAIGatewayService) resolveOpenAIImagesUpstream(account *Account, endpoint string, capability *OpenAIOAuthImagesCapability) (string, error) {
+	if account == nil {
+		return "", errors.New("account is nil")
+	}
+	if !account.IsOpenAIOAuth() {
+		return s.buildOpenAIImagesURL(account, endpoint, nil)
+	}
+	if capability == nil {
+		return "", errors.New("oauth images capability is required")
+	}
+	switch capability.Strategy {
+	case OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth:
+		validatedURL, err := s.validateUpstreamBaseURL("https://api.openai.com")
+		if err != nil {
+			return "", err
+		}
+		return buildOpenAIEndpointURL(validatedURL, endpoint), nil
+	default:
+		return "", fmt.Errorf("unsupported oauth images strategy: %s", capability.Strategy)
+	}
 }
 
 func buildOpenAIEndpointURL(base, endpoint string) string {
@@ -338,12 +414,15 @@ func (s *OpenAIGatewayService) handleImagesBufferedResponse(
 	}
 	c.Data(resp.StatusCode, contentType, respBody)
 
+	imageCount, imageSize := parseOpenAIImagesMetadata(respBody, requestBody)
 	return &OpenAIForwardResult{
 		RequestID:     resp.Header.Get("x-request-id"),
 		Usage:         parseOpenAIImagesUsage(respBody),
 		Model:         originalModel,
 		BillingModel:  billingModel,
 		UpstreamModel: upstreamModel,
+		ImageCount:    imageCount,
+		ImageSize:     imageSize,
 		Stream:        false,
 		Duration:      time.Since(startTime),
 	}, nil
@@ -441,6 +520,35 @@ func parseOpenAIImagesUsage(body []byte) OpenAIUsage {
 		OutputTokens:      outputTokens,
 		ImageInputTokens:  imageInputTokens,
 		ImageOutputTokens: imageOutputTokens,
+	}
+}
+
+func parseOpenAIImagesMetadata(responseBody []byte, requestBody []byte) (int, string) {
+	imageCount := 0
+	if len(responseBody) > 0 && gjson.ValidBytes(responseBody) {
+		imageCount = len(gjson.GetBytes(responseBody, "data").Array())
+	}
+	if imageCount == 0 && len(requestBody) > 0 {
+		imageCount = int(gjson.GetBytes(requestBody, "n").Int())
+	}
+	if imageCount <= 0 {
+		imageCount = 1
+	}
+
+	size := normalizeOpenAIImageSize(gjson.GetBytes(requestBody, "size").String())
+	return imageCount, size
+}
+
+func normalizeOpenAIImageSize(raw string) string {
+	switch strings.TrimSpace(strings.ToLower(raw)) {
+	case "1536x1024", "1792x1024", "1024x1536", "1024x1792":
+		return "2K"
+	case "2048x2048", "4096x4096":
+		return "4K"
+	case "", "auto":
+		return "1K"
+	default:
+		return "1K"
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -104,4 +105,48 @@ func TestOpenAIGatewayService_ForwardAsImageGeneration_NonStream(t *testing.T) {
 	require.Equal(t, 3, result.Usage.InputTokens)
 	require.Equal(t, 5, result.Usage.OutputTokens)
 	require.Equal(t, 5, result.Usage.ImageOutputTokens)
+	require.Equal(t, 1, result.ImageCount)
+	require.Equal(t, "1K", result.ImageSize)
+}
+
+func TestOpenAIGatewayService_BuildOpenAIImagesRequest_OAuthExperimental(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+	c.Request.Header.Set("Accept-Language", "zh-CN")
+	c.Request.Header.Set("User-Agent", "Mozilla/5.0")
+
+	svc := &OpenAIGatewayService{
+		cfg: &config.Config{
+			Gateway: config.GatewayConfig{
+				OpenAIOAuthImagesExperimentalEnabled: true,
+			},
+			Security: config.SecurityConfig{
+				URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+			},
+		},
+	}
+	account := &Account{
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Credentials: map[string]any{"chatgpt_account_id": "acct_123"},
+	}
+	req, err := svc.buildOpenAIImagesRequest(
+		context.Background(),
+		c,
+		account,
+		openaiImagesGenerationsEndpoint,
+		bytes.NewReader([]byte(`{}`)),
+		"oauth-token",
+		"application/json",
+		&OpenAIOAuthImagesCapability{Supported: true, Strategy: OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth},
+	)
+	require.NoError(t, err)
+	require.Equal(t, "https://api.openai.com/v1/images/generations", req.URL.String())
+	require.Equal(t, "Bearer oauth-token", req.Header.Get("authorization"))
+	require.Equal(t, "acct_123", req.Header.Get("chatgpt-account-id"))
+	require.Equal(t, "codex_cli_rs", req.Header.Get("originator"))
+	require.Equal(t, "zh-CN", req.Header.Get("accept-language"))
+	require.Equal(t, codexCLIUserAgent, req.Header.Get("user-agent"))
 }

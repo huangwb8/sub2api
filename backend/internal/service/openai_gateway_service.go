@@ -235,6 +235,8 @@ type OpenAIForwardResult struct {
 	ResponseHeaders http.Header
 	Duration        time.Duration
 	FirstTokenMs    *int
+	ImageCount      int
+	ImageSize       string
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -343,8 +345,10 @@ type OpenAIGatewayService struct {
 
 	openaiWSFallbackUntil sync.Map // key: int64(accountID), value: time.Time
 	openaiWSRetryMetrics  openAIWSRetryMetrics
-	responseHeaderFilter  *responseheaders.CompiledHeaderFilter
-	codexSnapshotThrottle *accountWriteThrottle
+	// OpenAI OAuth Images capability cache，避免热路径重复读取/归一化实验开关状态。
+	openaiOAuthImagesCapabilities sync.Map // key: int64(accountID), value: OpenAIOAuthImagesCapability
+	responseHeaderFilter          *responseheaders.CompiledHeaderFilter
+	codexSnapshotThrottle         *accountWriteThrottle
 }
 
 // NewOpenAIGatewayService creates a new OpenAIGatewayService

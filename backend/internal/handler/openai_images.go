@@ -148,10 +148,20 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 	switchCount := 0
 	failedAccountIDs := make(map[int64]struct{})
 	sameAccountRetryCount := make(map[int64]int)
+	deferredOAuthSelections := make([]*service.AccountSelectionResult, 0, 2)
+	deferredOAuthSelectionIDs := make(map[int64]struct{})
+	var lastEligibilityErr error
 	var lastFailoverErr *service.UpstreamFailoverError
 
 	for {
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		var (
+			selection        *service.AccountSelectionResult
+			scheduleDecision service.OpenAIAccountScheduleDecision
+			err              error
+		)
+		usedDeferredOAuth := false
+
+		selection, scheduleDecision, err = h.gatewayService.SelectAccountWithScheduler(
 			c.Request.Context(),
 			apiKey.GroupID,
 			"",
@@ -160,17 +170,27 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
 		)
+		if err != nil && len(deferredOAuthSelections) > 0 {
+			selection = deferredOAuthSelections[0]
+			deferredOAuthSelections = deferredOAuthSelections[1:]
+			usedDeferredOAuth = true
+			err = nil
+		}
 		if err != nil {
 			reqLog.Warn("openai_images.account_select_failed", zap.Error(err), zap.Int("excluded_account_count", len(failedAccountIDs)))
 			if len(failedAccountIDs) == 0 {
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
 			}
+			if typedErr, ok := service.ResolveOpenAIOAuthImagesError(lastEligibilityErr); ok {
+				h.handleStreamingAwareError(c, typedErr.Status, typedErr.ErrType, typedErr.Message, streamStarted)
+				return
+			}
 			if lastFailoverErr != nil {
 				h.handleFailoverExhausted(c, lastFailoverErr, streamStarted)
 				return
 			}
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available OpenAI API key accounts for Images API", streamStarted)
+			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available OpenAI accounts for Images API", streamStarted)
 			return
 		}
 		if selection == nil || selection.Account == nil {
@@ -179,12 +199,43 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 		}
 		account := selection.Account
 		_ = scheduleDecision
-		if account.Type != service.AccountTypeAPIKey {
+		capability, eligibilityErr := h.gatewayService.ValidateOpenAIImagesAccount(c.Request.Context(), account, operation, reqStream)
+		if eligibilityErr != nil {
+			lastEligibilityErr = eligibilityErr
 			failedAccountIDs[account.ID] = struct{}{}
-			reqLog.Debug("openai_images.skip_non_apikey_account", zap.Int64("account_id", account.ID), zap.String("account_type", string(account.Type)))
+			if typedErr, ok := service.ResolveOpenAIOAuthImagesError(eligibilityErr); ok {
+				reqLog.Debug(
+					"openai_images.skip_ineligible_account",
+					zap.Int64("account_id", account.ID),
+					zap.String("account_type", string(account.Type)),
+					zap.String("reason_code", typedErr.Code),
+					zap.String("reason_message", typedErr.Message),
+				)
+			} else {
+				reqLog.Debug("openai_images.skip_ineligible_account", zap.Int64("account_id", account.ID), zap.String("account_type", string(account.Type)), zap.Error(eligibilityErr))
+			}
 			continue
 		}
-		reqLog.Debug("openai_images.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
+		if account.Type == service.AccountTypeOAuth && !usedDeferredOAuth {
+			if _, seen := deferredOAuthSelectionIDs[account.ID]; !seen {
+				deferredOAuthSelections = append(deferredOAuthSelections, selection)
+				deferredOAuthSelectionIDs[account.ID] = struct{}{}
+			}
+			failedAccountIDs[account.ID] = struct{}{}
+			reqLog.Debug(
+				"openai_images.defer_oauth_account",
+				zap.Int64("account_id", account.ID),
+				zap.String("strategy", capability.Strategy),
+				zap.String("reason", "prefer_apikey_first"),
+			)
+			continue
+		}
+		reqLog.Debug(
+			"openai_images.account_selected",
+			zap.Int64("account_id", account.ID),
+			zap.String("account_name", account.Name),
+			zap.Bool("oauth_images_experimental", account.Type == service.AccountTypeOAuth),
+		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)

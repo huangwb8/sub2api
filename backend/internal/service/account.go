@@ -1393,6 +1393,53 @@ func (a *Account) IsOpenAIWSAllowStoreRecoveryEnabled() bool {
 	return ok && enabled
 }
 
+// IsOpenAIOAuthImagesExperimentalEnabled 返回 OpenAI OAuth 图片实验能力是否按账号开启。
+// 字段：accounts.extra.openai_oauth_images_experimental。
+func (a *Account) IsOpenAIOAuthImagesExperimentalEnabled() bool {
+	if a == nil || !a.IsOpenAIOAuth() || a.Extra == nil {
+		return false
+	}
+	enabled, ok := a.Extra["openai_oauth_images_experimental"].(bool)
+	return ok && enabled
+}
+
+// IsOpenAIOAuthImagesProbeSupported 返回账号的 OAuth 图片 capability probe 是否已确认支持。
+// 字段：accounts.extra.openai_oauth_images_probe_supported。
+func (a *Account) IsOpenAIOAuthImagesProbeSupported() bool {
+	if a == nil || !a.IsOpenAIOAuth() || a.Extra == nil {
+		return false
+	}
+	enabled, ok := a.Extra["openai_oauth_images_probe_supported"].(bool)
+	return ok && enabled
+}
+
+// OpenAIOAuthImagesStrategy 返回账号声明的 OAuth 图片实验策略。
+// 字段：accounts.extra.openai_oauth_images_strategy。
+func (a *Account) OpenAIOAuthImagesStrategy() string {
+	if a == nil || !a.IsOpenAIOAuth() {
+		return ""
+	}
+	return strings.ToLower(strings.TrimSpace(a.GetExtraString("openai_oauth_images_strategy")))
+}
+
+// OpenAIOAuthImagesProbeReason 返回最近一次 capability probe 的摘要原因。
+// 字段：accounts.extra.openai_oauth_images_probe_reason。
+func (a *Account) OpenAIOAuthImagesProbeReason() string {
+	if a == nil || !a.IsOpenAIOAuth() {
+		return ""
+	}
+	return strings.TrimSpace(a.GetExtraString("openai_oauth_images_probe_reason"))
+}
+
+// OpenAIOAuthImagesProbeStatus 返回最近一次 capability probe 的状态码。
+// 字段：accounts.extra.openai_oauth_images_probe_status。
+func (a *Account) OpenAIOAuthImagesProbeStatus() int {
+	if a == nil || !a.IsOpenAIOAuth() || a.Extra == nil {
+		return 0
+	}
+	return ParseExtraInt(a.Extra["openai_oauth_images_probe_status"])
+}
+
 // IsOpenAIOAuthPassthroughEnabled 兼容旧接口，等价于 OAuth 账号的 IsOpenAIPassthroughEnabled。
 func (a *Account) IsOpenAIOAuthPassthroughEnabled() bool {
 	return a != nil && a.IsOpenAIOAuth() && a.IsOpenAIPassthroughEnabled()

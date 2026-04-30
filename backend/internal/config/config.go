@@ -372,6 +372,11 @@ type GatewayConfig struct {
 	// OpenAIPassthroughAllowTimeoutHeaders: OpenAI 透传模式是否放行客户端超时头
 	// 关闭（默认）可避免 x-stainless-timeout 等头导致上游提前断流。
 	OpenAIPassthroughAllowTimeoutHeaders bool `mapstructure:"openai_passthrough_allow_timeout_headers"`
+	// OpenAIOAuthImagesExperimentalEnabled 控制 OpenAI OAuth 图片生成功能实验开关。
+	// 默认关闭，关闭时图片链路维持“仅 API Key”语义。
+	OpenAIOAuthImagesExperimentalEnabled bool `mapstructure:"openai_oauth_images_experimental_enabled"`
+	// OpenAIOAuthImagesProbeTTLSeconds 控制 OAuth 图片 capability 探测结果缓存 TTL（秒）。
+	OpenAIOAuthImagesProbeTTLSeconds int `mapstructure:"openai_oauth_images_probe_ttl_seconds"`
 	// OpenAIWS: OpenAI Responses WebSocket 配置（默认开启，可按需回滚到 HTTP）
 	OpenAIWS GatewayOpenAIWSConfig `mapstructure:"openai_ws"`
 
@@ -1385,6 +1390,8 @@ func setDefaults() {
 	viper.SetDefault("gateway.max_account_switches_gemini", 3)
 	viper.SetDefault("gateway.force_codex_cli", false)
 	viper.SetDefault("gateway.openai_passthrough_allow_timeout_headers", false)
+	viper.SetDefault("gateway.openai_oauth_images_experimental_enabled", false)
+	viper.SetDefault("gateway.openai_oauth_images_probe_ttl_seconds", 600)
 	// OpenAI Responses WebSocket（默认开启；可通过 force_http 紧急回滚）
 	viper.SetDefault("gateway.openai_ws.enabled", true)
 	viper.SetDefault("gateway.openai_ws.mode_router_v2_enabled", false)
