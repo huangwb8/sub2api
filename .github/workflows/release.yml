@@ -7,55 +7,135 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g., v1.0.0)'
+        description: 'Tag to publish (for example: v1.2.8)'
         required: true
         type: string
-      simple_release:
-        description: 'Simple release: only x86_64 GHCR image, skip other artifacts'
+      publish_profile:
+        description: 'Publish profile for the primary release workflow'
         required: false
-        type: boolean
-        default: false
-
-# 环境变量：合并 workflow_dispatch 输入和 repository variable
-# tag push 触发时读取 vars.SIMPLE_RELEASE，workflow_dispatch 时使用输入参数
-env:
-  SIMPLE_RELEASE: ${{ github.event.inputs.simple_release == 'true' || vars.SIMPLE_RELEASE == 'true' }}
+        type: choice
+        default: dockerhub-amd64-only
+        options:
+          - dockerhub-amd64-only
+          - dockerhub-amd64-and-ghcr-amd64
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  # Update VERSION file with tag version
-  update-version:
+  publish-primary-image:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout target ref
         uses: actions/checkout@v6
-
-      - name: Update VERSION file
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
-          else
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
-          echo "$VERSION" > backend/cmd/server/VERSION
-          echo "Updated VERSION file to: $VERSION"
-
-      - name: Upload VERSION artifact
-        uses: actions/upload-artifact@v7
         with:
-          name: version-file
-          path: backend/cmd/server/VERSION
-          retention-days: 1
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
-  build-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          INPUT_PROFILE: ${{ github.event.inputs.publish_profile }}
+          DEFAULT_PROFILE: ${{ vars.RELEASE_PUBLISH_PROFILE }}
+          DOCKERHUB_REPOSITORY: ${{ vars.DOCKERHUB_REPOSITORY }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          set -euo pipefail
+
+          tag="${INPUT_TAG:-${GITHUB_REF#refs/tags/}}"
+          if [[ -z "${tag}" || "${tag}" != v* ]]; then
+            echo "::error::Release workflow requires a v-prefixed tag."
+            exit 1
+          fi
+
+          version="${tag#v}"
+          profile="${INPUT_PROFILE:-${DEFAULT_PROFILE:-dockerhub-amd64-only}}"
+          case "${profile}" in
+            dockerhub-amd64-only|dockerhub-amd64-and-ghcr-amd64) ;;
+            *)
+              echo "Unsupported publish profile '${profile}', fallback to dockerhub-amd64-only."
+              profile="dockerhub-amd64-only"
+              ;;
+          esac
+
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          owner_lower="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          ghcr_image="ghcr.io/${owner_lower}/${repo_name}"
+
+          dockerhub_image="${DOCKERHUB_REPOSITORY}"
+          if [[ -z "${dockerhub_image}" && -n "${DOCKERHUB_NAMESPACE}" ]]; then
+            dockerhub_image="${DOCKERHUB_NAMESPACE}/${repo_name}"
+          fi
+          if [[ -z "${dockerhub_image}" && -n "${DOCKERHUB_USERNAME}" ]]; then
+            dockerhub_image="${DOCKERHUB_USERNAME}/${repo_name}"
+          fi
+          if [[ -z "${dockerhub_image}" ]]; then
+            echo "::error::Docker Hub repository is not configured."
+            exit 1
+          fi
+
+          stable="true"
+          if [[ "${version}" == *-* ]]; then
+            stable="false"
+          fi
+
+          add_tags() {
+            local image="$1"
+            local tags_file="$2"
+
+            printf '%s:%s\n' "${image}" "${version}" >> "${tags_file}"
+            if [[ "${stable}" == "true" ]]; then
+              printf '%s:latest\n' "${image}" >> "${tags_file}"
+              printf '%s:%s.%s\n' "${image}" "${version%%.*}" "$(echo "${version}" | cut -d. -f2)" >> "${tags_file}"
+              printf '%s:%s\n' "${image}" "${version%%.*}" >> "${tags_file}"
+            fi
+          }
+
+          dockerhub_tags_file="$(mktemp)"
+          ghcr_tags_file="$(mktemp)"
+          all_tags_file="$(mktemp)"
+          add_tags "${dockerhub_image}" "${dockerhub_tags_file}"
+
+          publish_ghcr="false"
+          if [[ "${profile}" == "dockerhub-amd64-and-ghcr-amd64" ]]; then
+            publish_ghcr="true"
+            add_tags "${ghcr_image}" "${ghcr_tags_file}"
+          fi
+
+          cat "${dockerhub_tags_file}" >> "${all_tags_file}"
+          if [[ "${publish_ghcr}" == "true" ]]; then
+            cat "${ghcr_tags_file}" >> "${all_tags_file}"
+          fi
+
+          commit="$(git rev-parse HEAD)"
+          build_date="$(git log -1 --format=%cI HEAD)"
+
+          {
+            echo "tag=${tag}"
+            echo "version=${version}"
+            echo "profile=${profile}"
+            echo "stable=${stable}"
+            echo "dockerhub_image=${dockerhub_image}"
+            echo "ghcr_image=${ghcr_image}"
+            echo "publish_ghcr=${publish_ghcr}"
+            echo "commit=${commit}"
+            echo "date=${build_date}"
+            echo "dockerhub_tags<<EOF"
+            sort -u "${dockerhub_tags_file}"
+            echo "EOF"
+            echo "all_tags<<EOF"
+            sort -u "${all_tags_file}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -69,42 +149,13 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Build frontend
+      - name: Build frontend assets
         run: pnpm run build
         working-directory: frontend
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: frontend-dist
-          path: backend/internal/web/dist/
-          retention-days: 1
-
-  release:
-    needs: [update-version, build-frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.ref }}
-
-      - name: Download VERSION artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: version-file
-          path: backend/cmd/server/
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-dist
-          path: backend/internal/web/dist/
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -114,193 +165,83 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       - name: Verify Go version
-        run: |
-          go version | grep -q 'go1.26.2'
+        run: go version | grep -q 'go1.26.2'
 
-      # Docker setup for GoReleaser
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Build linux/amd64 release binary
+        shell: bash
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          DATE: ${{ steps.meta.outputs.date }}
+        run: |
+          set -euo pipefail
+          pushd backend >/dev/null
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -tags embed \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.Date=${DATE} -X main.BuildType=release" \
+            -trimpath \
+            -o ../sub2api \
+            ./cmd/server
+          popd >/dev/null
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
-        if: ${{ env.DOCKERHUB_USERNAME != '' }}
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Login to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        if: ${{ steps.meta.outputs.publish_ghcr == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch tags with annotations
-        run: |
-          # 确保获取完整的 annotated tag 信息
-          git fetch --tags --force
-
-      - name: Get tag message
-        id: tag_message
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
-          echo "Processing tag: $TAG_NAME"
-
-          # 获取完整的 tag message（跳过第一行标题）
-          TAG_MESSAGE=$(git tag -l --format='%(contents:body)' "$TAG_NAME")
-
-          # 调试输出
-          echo "Tag message length: ${#TAG_MESSAGE}"
-          echo "Tag message preview:"
-          echo "$TAG_MESSAGE" | head -10
-
-          # 使用 EOF 分隔符处理多行内容
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Set lowercase owner for GHCR
-        id: lowercase
-        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+      - name: Build and push primary amd64 image
+        uses: docker/build-push-action@v6
         with:
-          version: '~> v2'
-          args: release --clean --skip=validate ${{ env.SIMPLE_RELEASE == 'true' && '--config=.goreleaser.simple.yaml' || '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_MESSAGE: ${{ steps.tag_message.outputs.message }}
-          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPO_OWNER_LOWER: ${{ steps.lowercase.outputs.owner }}
-          GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || 'skip' }}
+          context: .
+          file: Dockerfile.goreleaser
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.meta.outputs.all_tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.commit }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=release-amd64
+          cache-to: type=gha,mode=max,scope=release-amd64
 
-      # Update DockerHub description
-      - name: Update DockerHub description
-        if: ${{ env.SIMPLE_RELEASE != 'true' && env.DOCKERHUB_USERNAME != '' }}
-        uses: peter-evans/dockerhub-description@v5
+      - name: Write workflow summary
+        if: always()
+        shell: bash
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/sub2api
-          short-description: "Sub2API - AI API Gateway Platform"
-          readme-filepath: ./deploy/DOCKER.md
-
-      # Send Telegram notification
-      - name: Send Telegram Notification
-        if: ${{ env.SIMPLE_RELEASE != 'true' }}
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        continue-on-error: true
+          TAG: ${{ steps.meta.outputs.tag }}
+          PROFILE: ${{ steps.meta.outputs.profile }}
+          DOCKERHUB_IMAGE: ${{ steps.meta.outputs.dockerhub_image }}
+          DOCKERHUB_TAGS: ${{ steps.meta.outputs.dockerhub_tags }}
+          GHCR_IMAGE: ${{ steps.meta.outputs.ghcr_image }}
+          PUBLISH_GHCR: ${{ steps.meta.outputs.publish_ghcr }}
         run: |
-          # 检查必要的环境变量
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "Telegram credentials not configured, skipping notification"
-            exit 0
-          fi
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME=${{ github.event.inputs.tag }}
-          else
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-          fi
-          VERSION=${TAG_NAME#v}
-          REPO="${{ github.repository }}"
-          GHCR_IMAGE="ghcr.io/${REPO,,}"  # ${,,} converts to lowercase
-
-          # 获取 tag message 内容并转义 Markdown 特殊字符
-          TAG_MESSAGE='${{ steps.tag_message.outputs.message }}'
-          TAG_MESSAGE=$(echo "$TAG_MESSAGE" | sed 's/\([_*`\[]\)/\\\1/g')
-
-          # 限制消息长度（Telegram 消息限制 4096 字符，预留空间给头尾固定内容）
-          if [ ${#TAG_MESSAGE} -gt 3500 ]; then
-            TAG_MESSAGE="${TAG_MESSAGE:0:3500}..."
-          fi
-
-          # 构建消息内容
-          MESSAGE="🚀 *Sub2API 新版本发布！*"$'\n'$'\n'
-          MESSAGE+="📦 版本号: \`${VERSION}\`"$'\n'$'\n'
-
-          # 添加更新内容
-          if [ -n "$TAG_MESSAGE" ]; then
-            MESSAGE+="${TAG_MESSAGE}"$'\n'$'\n'
-          fi
-
-          MESSAGE+="🐳 *Docker 部署:*"$'\n'
-          MESSAGE+="\`\`\`bash"$'\n'
-          # 根据是否配置 DockerHub 动态生成
-          if [ -n "$DOCKERHUB_USERNAME" ]; then
-            DOCKER_IMAGE="${DOCKERHUB_USERNAME}/sub2api"
-            MESSAGE+="# Docker Hub"$'\n'
-            MESSAGE+="docker pull ${DOCKER_IMAGE}:${TAG_NAME}"$'\n'
-            MESSAGE+="# GitHub Container Registry"$'\n'
-          fi
-          MESSAGE+="docker pull ${GHCR_IMAGE}:${TAG_NAME}"$'\n'
-          MESSAGE+="\`\`\`"$'\n'$'\n'
-          MESSAGE+="🔗 *相关链接:*"$'\n'
-          MESSAGE+="• [GitHub Release](https://github.com/${REPO}/releases/tag/${TAG_NAME})"$'\n'
-          if [ -n "$DOCKERHUB_USERNAME" ]; then
-            MESSAGE+="• [Docker Hub](https://hub.docker.com/r/${DOCKER_IMAGE})"$'\n'
-          fi
-          MESSAGE+="• [GitHub Packages](https://github.com/${REPO}/pkgs/container/sub2api)"$'\n'$'\n'
-          MESSAGE+="#Sub2API #Release #${TAG_NAME//./_}"
-
-          # 发送消息
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --arg chat_id "${TELEGRAM_CHAT_ID}" \
-              --arg text "${MESSAGE}" \
-              '{
-                chat_id: $chat_id,
-                text: $text,
-                parse_mode: "Markdown",
-                disable_web_page_preview: true
-              }')"
-
-  sync-version-file:
-    needs: [release]
-    if: ${{ needs.release.result == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout default branch
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-
-      - name: Sync VERSION file to released tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
-          else
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
-
-          CURRENT_VERSION=$(tr -d '\r\n' < backend/cmd/server/VERSION || true)
-          if [ "$CURRENT_VERSION" = "$VERSION" ]; then
-            echo "VERSION file already matches $VERSION"
-            exit 0
-          fi
-
-          echo "$VERSION" > backend/cmd/server/VERSION
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/cmd/server/VERSION
-          git commit -m "chore: sync VERSION to ${VERSION} [skip ci]"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          {
+            echo '## Release Summary'
+            echo "- Tag: \`${TAG}\`"
+            echo "- Primary target: \`${DOCKERHUB_IMAGE}\`"
+            echo "- Publish profile: \`${PROFILE}\`"
+            echo '- Docker Hub tags:'
+            while IFS= read -r tag; do
+              [[ -n "${tag}" ]] || continue
+              echo "  - \`${tag}\`"
+            done <<< "${DOCKERHUB_TAGS}"
+            if [[ "${PUBLISH_GHCR}" == "true" ]]; then
+              echo "- Extra registry: \`${GHCR_IMAGE}\` (amd64)"
+            else
+              echo '- Extra registry: skipped'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

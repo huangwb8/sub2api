@@ -40,17 +40,17 @@ Step-by-step GitHub repository setup tutorial:
 |----------|---------|
 | `check-version-sync.yml` | Checks whether `backend/cmd/server/VERSION`, the latest GitHub release, and `CHANGELOG.md` are aligned |
 | `create-release.yml` | Reads `backend/cmd/server/VERSION`, generates an annotated Git tag, and triggers the existing tag-based release pipeline |
-| `release.yml` | Existing main release pipeline: builds artifacts with GoReleaser and publishes release assets/images on tag push |
-| `publish-release-images.yml` | Automatically backfills or repairs missing Docker image tags for the latest GitHub release |
+| `release.yml` | Primary release pipeline: publishes Docker Hub `linux/amd64` first, with optional GHCR amd64 mirroring via `publish_profile` |
+| `publish-release-images.yml` | Manual backfill pipeline for optional GHCR and multi-arch image publishing |
 
 ### Recommended Release Flow
 
 1. Update `backend/cmd/server/VERSION`
 2. Update `CHANGELOG.md` with either a versioned section or releasable `[Unreleased]` content
 3. Run `make verify-release-automation`
-4. Trigger `create-release.yml`
-5. Wait for `release.yml` to finish publishing the release artifacts
-6. Let `publish-release-images.yml` backfill any missing Docker tags automatically, or run it manually for a specific release tag
+4. Push the release tag or manually run `release.yml` for the target tag
+5. Wait for `release.yml` to finish publishing the primary Docker Hub amd64 image
+6. Run `publish-release-images.yml` only when you explicitly need GHCR amd64 or multi-arch backfill
 
 ### Required Repository Configuration
 
@@ -58,8 +58,9 @@ Step-by-step GitHub repository setup tutorial:
 - `secrets.DOCKERHUB_TOKEN`: Docker Hub access token
 - `vars.DOCKERHUB_REPOSITORY`: optional full Docker Hub repository name, for example `weishaw/sub2api`
 - `vars.DOCKERHUB_NAMESPACE`: optional namespace fallback when `DOCKERHUB_REPOSITORY` is not set
+- `vars.RELEASE_PUBLISH_PROFILE`: optional default primary publish profile for tag pushes; recommended value is `dockerhub-amd64-only`
 
-If Docker Hub variables or secrets are absent, `publish-release-images.yml` still publishes to GitHub Container Registry and skips Docker Hub safely.
+If Docker Hub variables or secrets are absent, `release.yml` fails because the primary release contract is "Docker Hub amd64 first". Optional GHCR or multi-arch publishing remains available through `publish-release-images.yml`.
 
 ---
 

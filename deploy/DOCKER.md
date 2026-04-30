@@ -60,8 +60,8 @@ volumes:
 
 ## Supported Architectures
 
-- `linux/amd64`
-- `linux/arm64`
+- Primary release path: `linux/amd64`
+- Optional manual backfill path: `linux/arm64`
 
 ## Tags
 
@@ -73,6 +73,7 @@ volumes:
 ## Automated Publishing
 
 Sub2API publishes Docker images from the GitHub release pipeline, using `backend/cmd/server/VERSION` as the version source.
+The default release path now prioritizes getting the Docker Hub `linux/amd64` image online first.
 
 If you need a step-by-step GitHub repository setup guide, read:
 - `docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md`
@@ -80,8 +81,8 @@ If you need a step-by-step GitHub repository setup guide, read:
 ### Related Workflows
 
 - `create-release.yml`: reads `backend/cmd/server/VERSION`, creates the annotated release tag, and triggers the main release job
-- `release.yml`: builds release artifacts and publishes the primary image set
-- `publish-release-images.yml`: re-checks the latest GitHub release and backfills missing image tags automatically
+- `release.yml`: publishes the primary Docker Hub `linux/amd64` image immediately; `workflow_dispatch` supports `publish_profile` for optional GHCR amd64 mirroring
+- `publish-release-images.yml`: manual backfill workflow for optional GHCR and multi-arch publishing, controlled by `publish_profile`
 
 ### Registries
 
@@ -93,10 +94,10 @@ If you need a step-by-step GitHub repository setup guide, read:
 1. Update `backend/cmd/server/VERSION`
 2. Update `CHANGELOG.md`
 3. Run `make verify-release-automation`
-4. Trigger `create-release.yml`
-5. Use `publish-release-images.yml` only when you need to backfill or repair image tags
+4. Create or push the release tag so `release.yml` can publish the primary Docker Hub amd64 image
+5. Run `publish-release-images.yml` only when you explicitly want to backfill GHCR or multi-arch tags
 
-If Docker Hub credentials are not configured, the automation continues to publish to GitHub Container Registry and skips Docker Hub gracefully.
+If Docker Hub credentials are not configured, the primary release workflow fails fast because Docker Hub amd64 is the first-class target.
 
 ## Links
 

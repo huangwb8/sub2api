@@ -1,21 +1,28 @@
 name: Publish Release Images
 
 on:
-  schedule:
-    - cron: '0 18 * * *'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Optional release tag to rebuild (for example: v0.1.111)'
+        description: 'Optional release tag to rebuild (for example: v1.2.8)'
         required: false
         type: string
+      publish_profile:
+        description: 'Backfill profile for optional registries and architectures'
+        required: false
+        type: choice
+        default: full
+        options:
+          - dockerhub-amd64-only
+          - dockerhub-amd64-and-ghcr-amd64
+          - full
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: publish-release-images
+  group: publish-release-images-${{ github.event.inputs.tag || 'latest' }}
   cancel-in-progress: false
 
 jobs:
@@ -66,6 +73,45 @@ jobs:
       - name: Skip when no release is available
         if: ${{ steps.release.outputs.found != 'true' }}
         run: echo 'No published GitHub release found. Nothing to publish.'
+
+      - name: Resolve backfill profile
+        if: ${{ steps.release.outputs.found == 'true' }}
+        id: profile
+        shell: bash
+        env:
+          INPUT_PROFILE: ${{ github.event.inputs.publish_profile }}
+        run: |
+          set -euo pipefail
+
+          profile="${INPUT_PROFILE:-full}"
+          case "${profile}" in
+            dockerhub-amd64-only)
+              platforms="linux/amd64"
+              publish_ghcr="false"
+              needs_qemu="false"
+              ;;
+            dockerhub-amd64-and-ghcr-amd64)
+              platforms="linux/amd64"
+              publish_ghcr="true"
+              needs_qemu="false"
+              ;;
+            full)
+              platforms="linux/amd64,linux/arm64"
+              publish_ghcr="true"
+              needs_qemu="true"
+              ;;
+            *)
+              echo "::error::Unsupported publish profile: ${profile}"
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "profile=${profile}"
+            echo "platforms=${platforms}"
+            echo "publish_ghcr=${publish_ghcr}"
+            echo "needs_qemu=${needs_qemu}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout selected release tag
         if: ${{ steps.release.outputs.found == 'true' }}
@@ -119,8 +165,21 @@ jobs:
             echo "dockerhub_status=${dockerhub_status}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Log in to GitHub Container Registry
+      - name: Ensure Docker Hub target is available
         if: ${{ steps.release.outputs.found == 'true' }}
+        shell: bash
+        env:
+          DOCKERHUB_STATUS: ${{ steps.images.outputs.dockerhub_status }}
+          DOCKERHUB_IMAGE: ${{ steps.images.outputs.dockerhub_image }}
+        run: |
+          set -euo pipefail
+          if [[ "${DOCKERHUB_STATUS}" != "enabled" || -z "${DOCKERHUB_IMAGE}" ]]; then
+            echo "::error::Docker Hub repository or credentials are not configured."
+            exit 1
+          fi
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ steps.profile.outputs.publish_ghcr == 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -128,7 +187,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: ${{ steps.images.outputs.dockerhub_status == 'enabled' }}
+        if: ${{ steps.release.outputs.found == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -142,7 +201,7 @@ jobs:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           GHCR_IMAGE: ${{ steps.images.outputs.ghcr_image }}
           DOCKERHUB_IMAGE: ${{ steps.images.outputs.dockerhub_image }}
-          DOCKERHUB_STATUS: ${{ steps.images.outputs.dockerhub_status }}
+          PUBLISH_GHCR: ${{ steps.profile.outputs.publish_ghcr }}
         run: |
           set -euo pipefail
 
@@ -189,9 +248,9 @@ jobs:
             fi
           }
 
-          add_registry_tags "${GHCR_IMAGE}"
-          if [[ "${DOCKERHUB_STATUS}" == "enabled" ]]; then
-            add_registry_tags "${DOCKERHUB_IMAGE}"
+          add_registry_tags "${DOCKERHUB_IMAGE}"
+          if [[ "${PUBLISH_GHCR}" == "true" ]]; then
+            add_registry_tags "${GHCR_IMAGE}"
           fi
 
           {
@@ -244,7 +303,7 @@ jobs:
         run: echo "All required image tags already exist for ${{ steps.release.outputs.tag }}."
 
       - name: Set up QEMU
-        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build == 'true' }}
+        if: ${{ steps.release.outputs.found == 'true' && steps.probe.outputs.should_build == 'true' && steps.profile.outputs.needs_qemu == 'true' }}
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -257,8 +316,10 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.profile.outputs.platforms }}
           push: true
+          provenance: false
+          sbom: false
           tags: ${{ steps.tags.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -283,7 +344,9 @@ jobs:
           SOURCE_REVISION: ${{ steps.source.outputs.revision }}
           GHCR_IMAGE: ${{ steps.images.outputs.ghcr_image }}
           DOCKERHUB_IMAGE: ${{ steps.images.outputs.dockerhub_image }}
-          DOCKERHUB_STATUS: ${{ steps.images.outputs.dockerhub_status }}
+          PROFILE: ${{ steps.profile.outputs.profile }}
+          PLATFORMS: ${{ steps.profile.outputs.platforms }}
+          PUBLISH_GHCR: ${{ steps.profile.outputs.publish_ghcr }}
           STABLE: ${{ steps.tags.outputs.stable }}
           SHOULD_BUILD: ${{ steps.probe.outputs.should_build }}
           MISSING_REFS: ${{ steps.probe.outputs.missing_refs }}
@@ -299,12 +362,14 @@ jobs:
             echo "- Release URL: ${RELEASE_URL}"
             echo "- Release version: \`${RELEASE_VERSION}\`"
             echo "- Source revision: \`${SOURCE_REVISION}\`"
-            echo "- GHCR image: \`${GHCR_IMAGE}\`"
-            if [[ -n "${DOCKERHUB_IMAGE}" ]]; then
-              echo "- Docker Hub image: \`${DOCKERHUB_IMAGE}\` (${DOCKERHUB_STATUS})"
+            echo "- Docker Hub image: \`${DOCKERHUB_IMAGE}\`"
+            if [[ "${PUBLISH_GHCR}" == 'true' ]]; then
+              echo "- GHCR image: \`${GHCR_IMAGE}\`"
             else
-              echo '- Docker Hub image: not configured'
+              echo '- GHCR image: skipped'
             fi
+            echo "- Publish profile: \`${PROFILE}\`"
+            echo "- Platforms: \`${PLATFORMS}\`"
             echo "- Stable release: \`${STABLE}\`"
 
             if [[ "${SHOULD_BUILD}" == 'true' ]]; then

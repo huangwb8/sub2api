@@ -1,6 +1,6 @@
 # GitHub 仓库发布自动化配置教程
 
-这份教程教你把 Sub2API 的 GitHub 仓库配置成“版本文件驱动 release，并自动发布 Docker 镜像”的状态。
+这份教程教你把 Sub2API 的 GitHub 仓库配置成“版本文件驱动 release，并优先自动发布 Docker Hub amd64 镜像”的状态。
 
 适用对象：
 - 第一次接手这个仓库的维护者
@@ -13,10 +13,10 @@
 
 1. 用 `backend/cmd/server/VERSION` 作为版本源
 2. 手动触发 `create-release.yml` 创建 annotated tag
-3. 自动触发现有 `release.yml` 发布 GitHub Release / GoReleaser 产物
-4. 自动把镜像推到 GHCR
-5. 可选地把镜像推到 Docker Hub
-6. 当镜像缺失时，用 `publish-release-images.yml` 自动补发
+3. 自动触发现有 `release.yml` 第一时间把 `linux/amd64` 镜像推到 Docker Hub
+4. 按需把 amd64 镜像同步到 GHCR
+5. 按需补发 `linux/arm64` 与多架构标签
+6. 当需要补发或扩展发布时，用 `publish-release-images.yml` 手动执行
 
 ## 前置条件
 
@@ -61,19 +61,20 @@ make verify-release-automation
 
 为什么这一步必须做：
 - `create-release.yml` 需要推送 tag
-- `release.yml` 需要创建 GitHub Release
-- `publish-release-images.yml` 需要写入 GitHub Packages
+- `release.yml` 需要读取源码并推送 Docker 镜像
+- `publish-release-images.yml` 在需要 GHCR 或多架构补发时需要写入 GitHub Packages
 
-## Step 3：确认 GitHub Container Registry 可用
+## Step 3：确认 Docker Hub 是第一优先目标
 
-Sub2API 默认一定会推 GHCR，即使你还没配置 Docker Hub。
+Sub2API 默认先推 Docker Hub 的 amd64 镜像；如果你还没配置 Docker Hub，这条主发布链路会直接失败。
 
 你需要确认：
 
-1. 仓库没有被组织策略禁止写入 GitHub Packages
-2. 仓库 owner 有权限发布到 `ghcr.io/<owner>/sub2api`
+1. 你已经准备好 Docker Hub 用户名
+2. 你已经准备好可写入的 Docker Hub Access Token
+3. 仓库没有缺失 `DOCKERHUB_*` 对应 secrets / vars
 
-最常见情况里，不需要额外手动创建 GHCR 仓库，首次推送时会自动生成。
+GHCR 现在属于按需补发项，不再是默认首发目标。
 
 ## Step 4：配置 Docker Hub Secrets
 
@@ -286,21 +287,19 @@ make verify-release-automation
 你要确认这些关键步骤成功：
 
 1. 前端构建成功
-2. VERSION artifact 上传成功
-3. GoReleaser 执行成功
-4. GitHub Release 创建成功
-5. GHCR 镜像发布成功
-6. 如果配了 Docker Hub，Docker Hub 镜像也成功
+2. Go 二进制构建成功
+3. Docker Hub amd64 镜像推送成功
+4. 如果你手动选择了 `dockerhub-amd64-and-ghcr-amd64`，GHCR amd64 镜像也成功
 
 发布成功后，你应该能在这些地方看到结果：
 
-1. `Releases` 页面出现新版本
-2. `Packages` 页面出现 GHCR 镜像
-3. Docker Hub 上出现对应标签
+1. Docker Hub 上出现对应标签
+2. 如果你开启了 GHCR，同步能在 `Packages` 页面看到 amd64 镜像
+3. 如果你需要 GitHub Release 页面，可额外使用 `gh release create` 或其它发布工具手动创建
 
-## Step 10：验证镜像补发流程
+## Step 10：按需验证补发 / 扩展发布流程
 
-这个步骤用于确认兜底机制真的可用。
+这个步骤用于确认“额外 registry / 多架构”只会在你明确需要时才执行。
 
 进入 GitHub 仓库：
 
@@ -308,13 +307,16 @@ make verify-release-automation
 2. 选择 `Publish Release Images`
 3. 点击 `Run workflow`
 4. 如果要补指定版本，就填写 `tag`
-5. 否则留空，默认处理最新 release
+5. 选择 `publish_profile`
+6. 否则留空，默认处理最新 release
 
 预期结果：
 
-1. 如果镜像标签都已经存在，workflow 会直接跳过
-2. 如果某些镜像标签缺失，workflow 会自动重建并推送
-3. summary 会显示缺了哪些 tags、是否执行了补发
+1. `dockerhub-amd64-only`：仅补 Docker Hub amd64 标签
+2. `dockerhub-amd64-and-ghcr-amd64`：补 Docker Hub amd64，并同步 GHCR amd64
+3. `full`：按需补 Docker Hub + GHCR 的 amd64/arm64 与多架构标签
+4. 如果目标标签都已存在，workflow 会直接跳过
+5. summary 会显示使用的 profile、平台和缺失标签
 
 ## Step 11：理解最终镜像标签规则
 
