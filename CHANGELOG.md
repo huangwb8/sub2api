@@ -33,6 +33,7 @@
 - 调整了 Dashboard 超售测算中的住宅 IP 解释方式：管理后台现在同时返回套餐定价口径和站点成本口径，旧版平铺字段继续保留兼容，但前端已同步展示口径说明、校准来源、流量基础与最近一次供应商对账摘要。
 
 ### Fixed（修复）
+- 修复了管理控制台 Dashboard“套餐定价测算”里住宅 IP 单价从 0 改为非 0 后成本仍显示为 0 的问题：前端重算住宅 IP 成本时现在会复用后端返回的美元兑人民币汇率快照，避免因旧单价成本为 0 无法反推汇率而把新成本继续乘成 0。
 - 修复了 Codex 限额恢复后本地限流状态可能继续残留的问题：当 OpenAI OAuth 成功响应或 2xx 主动探测返回的 Codex 快照显示 5h/7d 均未耗尽时，系统会清理由旧 Codex 耗尽快照造成的 `rate_limit_reset_at`，同时保留更长的普通上游 429 限流。
 - 修复了 OpenAI OAuth 账号进入 `Codex 限额中` 后仍会被后台筛选、分组账号数和 Dashboard 正常账户统计误归到“正常”的问题：后端现在统一把 Codex 5h/7d 配额耗尽视为限流态，账号列表 `active/rate_limited/unschedulable` 筛选、分组 `rate_limited_account_count` 与 Dashboard `normal_accounts/ratelimit_accounts` 均按同一口径归类。
 - 修复了 OpenAI Codex 5h/7d 用量已到 100% 但账号管理和 Ops 仍显示正常可用的问题：后端统一通过实际可调度状态派生账号可用性，账号 DTO 新增 effective status 字段，前端状态展示与筛选同步识别 Codex 限额中，并在 Codex 快照写入后按更保守恢复时间同步 `rate_limit_reset_at`。

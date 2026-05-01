@@ -576,6 +576,110 @@ describe('admin DashboardView', () => {
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
   })
 
+  it('uses the estimate FX rate when recalculating residential IP cost after entering a price', async () => {
+    getOversellCalculator.mockResolvedValueOnce({
+      generated_at: '2026-05-01T05:36:59Z',
+      defaults: {
+        actual_cost_cny: 29.375,
+        residential_ip_price_usd_per_gb_month: 0,
+        capacity_units_per_product: 3,
+        confidence_level: 0.95,
+        profit_rate_percent: 20,
+        profit_mode: 'net_margin',
+        target_profit_total_cny: 0
+      },
+      input: {
+        actual_cost_cny: 29.375,
+        residential_ip_price_usd_per_gb_month: 0,
+        capacity_units_per_product: 3,
+        confidence_level: 0.95,
+        profit_rate_percent: 20,
+        profit_mode: 'net_margin',
+        target_profit_total_cny: 0
+      },
+      estimate: {
+        light_user_threshold_units: 0.3,
+        estimated_light_user_ratio: 0.91,
+        sampled_subscription_count: 15,
+        light_user_count: 14,
+        estimated_from_live_data: true,
+        fallback_applied: false,
+        basis: 'last_30_days',
+        current_cheapest_monthly_price_cny: 90,
+        current_cheapest_plan_name: '月付基础版',
+        residential_ip_actual_days: 14,
+        residential_ip_involved_users: 15,
+        residential_ip_total_traffic_gb: 12.063,
+        residential_ip_monthly_cost_usd: 0,
+        residential_ip_monthly_cost_cny: 0,
+        residential_ip_price_usd_per_gb_month: 0,
+        residential_ip_fx_rate_usd_cny: 7.2,
+        residential_ip_fx_rate_source: 'fallback_floor',
+        residential_ip_traffic_basis: 'usage_log_observed_proxy_bytes',
+        residential_ip_estimates: [
+          {
+            scope: 'pricing',
+            includes_admin: false,
+            includes_failed_requests: false,
+            includes_probe_traffic: false,
+            actual_days: 14,
+            involved_users: 15,
+            estimated_total_traffic_gb: 12.063,
+            estimated_monthly_traffic_gb: 25.85,
+            estimated_monthly_cost_usd: 0,
+            estimated_monthly_cost_cny: 0,
+            residential_ip_price_usd_per_gb_month: 0,
+            effective_bytes_per_token: 5.53,
+            calibration_source: 'usage_log_observed_proxy_bytes',
+            traffic_basis: 'usage_log_observed_proxy_bytes',
+            observed_traffic_bytes: 0,
+            estimated_traffic_bytes: 0
+          }
+        ],
+        residential_ip_reconciliation: null
+      },
+      result: {
+        feasible: true,
+        minimum_users: 10,
+        recommended_monthly_price_cny: 18.28,
+        current_cheapest_monthly_price_cny: 90,
+        monthly_price_gap_cny: 71.72,
+        expected_mean_units: 0.543,
+        risk_adjusted_mean_units: 1.493,
+        confidence_level: 0.95,
+        price_multiplier: 1.25,
+        reason: 'test'
+      },
+      plans: []
+    })
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          ProfitabilityTrendChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="oversell-residential-ip-cost"]').text()).toBe('¥0.0000')
+
+    await wrapper.get('[data-testid="oversell-residential-ip-price"]').setValue('3')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="oversell-residential-ip-cost"]').text()).toBe('¥558.36')
+    expect(wrapper.text()).toContain('汇率 7.2')
+  })
+
   it('uses per-plan recommended prices for plans with the same validity but different entitlements', async () => {
     getOversellCalculator.mockResolvedValueOnce({
       generated_at: '2026-04-20T09:30:00Z',

@@ -1335,6 +1335,7 @@ const pricingResidentialIpEstimate = computed(() =>
 const resolveResidentialIPMonthlyCost = (
   residentialEstimate: ResidentialIpEstimateView | null,
   priceUSDPerGBMonth: number,
+  fallbackFxRateUSDCNY: number,
   modeledUserCount: number
 ) => {
   const actualDays = Math.max(Math.round(residentialEstimate?.actual_days || 0), 0)
@@ -1350,13 +1351,19 @@ const resolveResidentialIPMonthlyCost = (
   const totalTrafficGB = sampledTotalTrafficGB * projectionRatio
   const monthlyTrafficGB = sampledMonthlyTrafficGB * projectionRatio
   const normalizedPrice = Math.max(priceUSDPerGBMonth || 0, 0)
-  const fxRateUSDCNY =
+  const derivedFxRateUSDCNY =
     residentialEstimate && residentialEstimate.estimated_monthly_cost_usd > 0
       ? Math.max(
           residentialEstimate.estimated_monthly_cost_cny / residentialEstimate.estimated_monthly_cost_usd,
           0
         )
       : 0
+  const normalizedFallbackFxRate = Number.isFinite(fallbackFxRateUSDCNY)
+    ? Math.max(fallbackFxRateUSDCNY, 0)
+    : 0
+  const fxRateUSDCNY = derivedFxRateUSDCNY > 0
+    ? derivedFxRateUSDCNY
+    : normalizedFallbackFxRate || 7.2
   const monthlyCostUSD = monthlyTrafficGB > 0 && normalizedPrice > 0 ? monthlyTrafficGB * normalizedPrice : 0
   const monthlyCostCNY = monthlyCostUSD * fxRateUSDCNY
 
@@ -1393,6 +1400,7 @@ const oversellScenario = computed(() => {
   const residentialIp = resolveResidentialIPMonthlyCost(
     pricingResidentialIpEstimate.value,
     oversellForm.residentialIpPriceUSDPerGBMonth,
+    estimate.residential_ip_fx_rate_usd_cny,
     userCount
   )
   const residentialIpCostPerUser = residentialIp.monthlyCostCNY / userCount
