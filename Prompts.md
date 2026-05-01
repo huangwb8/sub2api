@@ -99,6 +99,32 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 
 # 日常
 
+---
+
+在 ./skills 里开发一个agent skill，名为`sub2api-summary`。它的用途是：收集某个时间段某个实际在运营的sub2api站点，通过分析实际的运营数据来提供sub2api优化的建议。 具体大致是这样工作的：
+
+工作目录：./tmp/sub2api-summary/run-{时间戳}
+
+输入：
+
+- 实际站点的鉴权信息：用户必须提供； 否则将中止工作
+- 时间段的定义：用户可选提供。如果没说，默认是最近24h
+
+工作过程：
+
+- 通过鉴权信息获得访问权限
+- 只读必要的数据； 必要时可以下载数据，保存在 ./tmp/sub2api-summary/run-{时间戳}/data 里
+- 分析数据。分析代码可以保存在 保存在 ./tmp/sub2api-summary/run-{时间戳}/analysis 里
+- 结合源代码，彻底了解数据所揭露的问题
+- 写一个优化计划，保存在 ./tmp/sub2api-summary/run-{时间戳}/plan.md
+
+注意：
+
+- 开发时应该符合 /Volumes/2T01/winE/PythonCloud/Agents/pipelines/skills/AGENTS.md 的基本规范
+- 你先把demo做出来； 然后使用 auto-test-skill skill 对该skill进行1次迭代优化。
+
+---
+
 你再仔细地审查一下这个计划，有没有问题。 因为和扣费有关，是项目的核心业务，不能有半点差池。
 
 ---

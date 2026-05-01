@@ -1,0 +1,40 @@
+# sub2api-summary 技能配置文件
+
+skill_info:
+  name: sub2api-summary
+  version: 0.1.0
+  description: 基于真实 sub2api 运营数据生成优化计划
+  author: "Bensz Conan"
+  category: 运维分析
+
+directories:
+  work_root: "tmp/sub2api-summary"
+  data: "data"
+  analysis: "analysis"
+  plans: "plans"
+  tests: "tests"
+
+defaults:
+  timezone: "Asia/Shanghai"
+  lookback_hours: 24
+  page_size: 200
+  user_limit: 50
+  request_timeout_seconds: 30
+
+collection:
+  auth_modes:
+    - "admin-api-key"
+    - "bearer"
+  preferred_auth_header: "x-api-key"
+  required_core_files:
+    - "usage_stats.json"
+  optional_endpoints_continue_on_error: true
+  read_only_methods:
+    - "GET"
+
+analysis_thresholds:
+  high_average_duration_ms: 8000
+  high_top_model_share: 0.6
+  high_top_user_share: 0.5
+  high_unhealthy_account_ratio: 0.2
+  stale_stats_warn: true
