@@ -19,6 +19,7 @@
 - 新增了住宅 IP 流量对账与校准最小闭环：`usage_logs` 现可持久化住宅代理归因与流量快照，Dashboard 超售测算新增 `pricing/site` 双口径估算、供应商账单样本对账元数据，并补充 `docs/住宅 IP 流量对账与校准说明.md` 与套餐限额参考文档。
 
 ### Changed（变更）
+- 在 AGENTS.md 新增了 `skills/sub2api-summary` 同步规则：当后端源码（API 接口、数据模型、鉴权机制等）发生可能影响该 skill 行为或准确性的变更时，要求同步更新 skill 内的 `references/source-map.md` 及相关脚本和配置文件
 - 调整了 Dashboard 套餐定价测算里的住宅 IP 成本链路：前端移除了“住宅 IP 双口径说明”子面板，改为基于当前校准后的样本人均月流量按“测算用户数”投影住宅 IP 总成本；后端则改为优先使用站点自身近期 observed proxy bytes 动态校准 `Bytes/token`，样本不足时回退到历史校准参考值 `7.096031857 Bytes/token`，并记住管理员最近一次非零住宅 IP 单价，不再把外部供应商账单直接作为线上默认估算输入。
 - 调整了 GitHub Release 镜像发布链路：`release.yml` 现在默认优先发布 Docker Hub `linux/amd64` 镜像，`publish-release-images.yml` 改为仅在手动选择 `publish_profile` 时补发 GHCR 或多架构标签，减少首个可用镜像的等待时间。
 - 优化了代理自动容错恢复策略：代理故障转移新增半开试探、冷却时间指数退避和最大冷却上限，默认保护范围从“仅 OpenAI OAuth”调整为“所有平台账号可参与，管理员仍可切回仅 OpenAI OAuth”，同时在源代理缺少地理信息时允许按同区优先、跨区兜底的顺序继续迁移。
