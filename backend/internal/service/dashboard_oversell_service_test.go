@@ -6,19 +6,40 @@ import (
 	"testing"
 )
 
-func TestLoadDashboardOversellDefaults_UsesNonZeroResidentialIPPrice(t *testing.T) {
-	svc := &DashboardRecommendationService{}
+func TestLoadDashboardOversellDefaults_UsesStoredResidentialIPPrice(t *testing.T) {
+	repo := newMockSettingRepo()
+	if err := repo.Set(t.Context(), SettingKeyDashboardResidentialIPPrice, "12.34"); err != nil {
+		t.Fatalf("seed setting: %v", err)
+	}
+	svc := &DashboardRecommendationService{settingRepo: repo}
 
 	defaults, err := svc.loadDashboardOversellDefaults(t.Context())
 	if err != nil {
 		t.Fatalf("loadDashboardOversellDefaults() error = %v", err)
 	}
-	if math.Abs(defaults.ResidentialIPPriceUSDPerGBMonth-dashboardOversellDefaultResidentialIPPrice) > 0.000001 {
+	if math.Abs(defaults.ResidentialIPPriceUSDPerGBMonth-12.34) > 0.000001 {
 		t.Fatalf(
 			"ResidentialIPPriceUSDPerGBMonth = %v, want %v",
 			defaults.ResidentialIPPriceUSDPerGBMonth,
-			dashboardOversellDefaultResidentialIPPrice,
+			12.34,
 		)
+	}
+}
+
+func TestPersistDashboardOversellDefaults_RemembersLatestResidentialIPPrice(t *testing.T) {
+	repo := newMockSettingRepo()
+	svc := &DashboardRecommendationService{settingRepo: repo}
+
+	svc.persistDashboardOversellDefaults(t.Context(), DashboardOversellCalculatorRequest{
+		ResidentialIPPriceUSDPerGBMonth: 15.75,
+	})
+
+	value, err := repo.GetValue(t.Context(), SettingKeyDashboardResidentialIPPrice)
+	if err != nil {
+		t.Fatalf("GetValue() error = %v", err)
+	}
+	if value != "15.75000000" {
+		t.Fatalf("persisted price = %q, want 15.75000000", value)
 	}
 }
 

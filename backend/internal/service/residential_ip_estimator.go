@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -11,6 +12,8 @@ import (
 const (
 	dashboardOversellDefaultEffectiveBytesPerToken = 7.096031856906913
 	dashboardOversellLegacyEstimatedBytesPerToken  = 4.0
+	dashboardOversellCalibrationLookbackDays       = 30
+	dashboardOversellCalibrationMinObservedTokens  = 10000
 )
 
 type ResidentialIPScope string
@@ -58,17 +61,16 @@ type residentialIPUsageWindow struct {
 	legacyEstimatedTokens int64
 }
 
+type residentialIPCalibrationSample struct {
+	lastObservedAt sql.NullTime
+	observedBytes  int64
+	observedTokens int64
+}
+
 func (s *DashboardRecommendationService) estimateResidentialIPScopes(
 	ctx context.Context,
 	residentialIPPriceUSDPerGBMonth float64,
 ) ([]ResidentialIPEstimate, *ResidentialIPReconciliationResult, residentialIPFXSnapshot, error) {
-	calibration := defaultResidentialIPCalibration()
-	reconciliation := defaultResidentialIPReconciliationResult()
-	if reconciliation != nil && reconciliation.SuggestedCalibration > 0 {
-		calibration.EffectiveBytesPerToken = reconciliation.SuggestedCalibration
-		calibration.Source = "supplier_reconciliation"
-	}
-
 	fxSnapshot := residentialIPFXSnapshot{
 		rate:   dashboardOversellFallbackUSDCNYRate,
 		source: "fallback_floor",
@@ -86,6 +88,12 @@ func (s *DashboardRecommendationService) estimateResidentialIPScopes(
 	windowEnd := now
 	windowStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).
 		AddDate(0, 0, -(dashboardOversellResidentialIPLookbackDays - 1))
+	calibrationWindowStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).
+		AddDate(0, 0, -(dashboardOversellCalibrationLookbackDays - 1))
+	calibration, err := s.loadResidentialIPCalibration(ctx, calibrationWindowStart, windowEnd)
+	if err != nil {
+		return nil, nil, residentialIPFXSnapshot{}, err
+	}
 
 	scopes := []struct {
 		scope         ResidentialIPScope
@@ -113,7 +121,83 @@ func (s *DashboardRecommendationService) estimateResidentialIPScopes(
 		estimates = append(estimates, estimate)
 	}
 
-	return estimates, reconciliation, fxSnapshot, nil
+	return estimates, nil, fxSnapshot, nil
+}
+
+func (s *DashboardRecommendationService) loadResidentialIPCalibration(
+	ctx context.Context,
+	windowStart time.Time,
+	windowEnd time.Time,
+) (ResidentialIPCalibration, error) {
+	calibration := defaultResidentialIPCalibration()
+	if s == nil || s.db == nil {
+		return calibration, nil
+	}
+
+	sample := residentialIPCalibrationSample{}
+	query := `
+SELECT
+	MAX(ul.created_at) AS last_observed_at,
+	COALESCE(SUM(
+		CASE
+			WHEN (
+				COALESCE(ul.input_tokens, 0) +
+				COALESCE(ul.output_tokens, 0) +
+				COALESCE(ul.cache_creation_tokens, 0) +
+				COALESCE(ul.cache_read_tokens, 0)
+			) > 0
+			AND (
+				ul.proxy_traffic_input_bytes IS NOT NULL
+				OR ul.proxy_traffic_output_bytes IS NOT NULL
+			)
+			THEN
+				COALESCE(ul.proxy_traffic_input_bytes, 0) +
+				COALESCE(ul.proxy_traffic_output_bytes, 0)
+			ELSE 0
+		END
+	), 0) AS observed_bytes,
+	COALESCE(SUM(
+		CASE
+			WHEN (
+				COALESCE(ul.input_tokens, 0) +
+				COALESCE(ul.output_tokens, 0) +
+				COALESCE(ul.cache_creation_tokens, 0) +
+				COALESCE(ul.cache_read_tokens, 0)
+			) > 0
+			AND (
+				ul.proxy_traffic_input_bytes IS NOT NULL
+				OR ul.proxy_traffic_output_bytes IS NOT NULL
+			)
+			THEN
+				COALESCE(ul.input_tokens, 0) +
+				COALESCE(ul.output_tokens, 0) +
+				COALESCE(ul.cache_creation_tokens, 0) +
+				COALESCE(ul.cache_read_tokens, 0)
+			ELSE 0
+		END
+	), 0) AS observed_tokens
+FROM usage_logs ul
+LEFT JOIN accounts a ON a.id = ul.account_id
+WHERE ul.created_at >= $1
+  AND ul.created_at < $2
+  AND (
+    CASE
+      WHEN ul.used_residential_proxy IS NOT NULL THEN ul.used_residential_proxy
+      WHEN a.deleted_at IS NULL AND a.proxy_id IS NOT NULL THEN TRUE
+      ELSE FALSE
+    END
+  )
+`
+
+	if err := s.db.QueryRowContext(ctx, query, windowStart, windowEnd).Scan(
+		&sample.lastObservedAt,
+		&sample.observedBytes,
+		&sample.observedTokens,
+	); err != nil {
+		return calibration, fmt.Errorf("query residential ip calibration: %w", err)
+	}
+
+	return buildResidentialIPCalibration(sample), nil
 }
 
 func (s *DashboardRecommendationService) loadResidentialIPUsageWindow(
@@ -279,12 +363,36 @@ func buildResidentialIPEstimate(
 }
 
 func defaultResidentialIPCalibration() ResidentialIPCalibration {
-	lastCalibratedAt := time.Date(2026, 4, 30, 0, 0, 0, 0, time.UTC)
 	return ResidentialIPCalibration{
 		EffectiveBytesPerToken: dashboardOversellDefaultEffectiveBytesPerToken,
-		Source:                 "supplier_reconciliation",
-		LastCalibratedAt:       &lastCalibratedAt,
+		Source:                 "static_default",
 	}
+}
+
+func buildResidentialIPCalibration(sample residentialIPCalibrationSample) ResidentialIPCalibration {
+	calibration := defaultResidentialIPCalibration()
+	if sample.observedTokens < dashboardOversellCalibrationMinObservedTokens || sample.observedBytes <= 0 {
+		return calibration
+	}
+
+	value := float64(sample.observedBytes) / float64(sample.observedTokens)
+	if value <= 0 || math.IsNaN(value) || math.IsInf(value, 0) {
+		return calibration
+	}
+	if value < 1 {
+		value = 1
+	}
+	if value > 64 {
+		value = 64
+	}
+
+	calibration.EffectiveBytesPerToken = value
+	calibration.Source = "usage_log_observed_proxy_bytes"
+	if sample.lastObservedAt.Valid {
+		last := sample.lastObservedAt.Time.UTC()
+		calibration.LastCalibratedAt = &last
+	}
+	return calibration
 }
 
 func bytesToGB(totalBytes int64) float64 {

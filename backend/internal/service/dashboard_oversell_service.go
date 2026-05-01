@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,7 +17,6 @@ const (
 	dashboardOversellDefaultConfidenceLevel    = 0.95
 	dashboardOversellDefaultProfitRatePercent  = 20.0
 	dashboardOversellDefaultProfitMode         = "net_margin"
-	dashboardOversellDefaultResidentialIPPrice = 29.52 / 9.08
 	dashboardOversellDaysPerMonth              = 30.0
 	dashboardOversellResidentialIPLookbackDays = 14
 	dashboardOversellFallbackUSDCNYRate        = 7.2
@@ -141,6 +141,7 @@ func (s *DashboardRecommendationService) CalculateOversellCalculator(
 	if err != nil {
 		return nil, err
 	}
+	s.persistDashboardOversellDefaults(ctx, req)
 	normalized := normalizeDashboardOversellRequest(req, defaults)
 	estimate, err := s.loadDashboardOversellEstimate(ctx, plans, normalized.ResidentialIPPriceUSDPerGBMonth)
 	if err != nil {
@@ -165,10 +166,20 @@ func (s *DashboardRecommendationService) loadDashboardOversellDefaults(ctx conte
 		ProfitRatePercent:               dashboardOversellDefaultProfitRatePercent,
 		ProfitMode:                      dashboardOversellDefaultProfitMode,
 		TargetProfitTotalCNY:            0,
-		ResidentialIPPriceUSDPerGBMonth: dashboardOversellDefaultResidentialIPPrice,
+		ResidentialIPPriceUSDPerGBMonth: 0,
 	}
 
-	if s == nil || s.db == nil {
+	if s == nil {
+		return defaults, nil
+	}
+	if s.settingRepo != nil {
+		if raw, err := s.settingRepo.GetValue(ctx, SettingKeyDashboardResidentialIPPrice); err == nil {
+			if parsed, parseErr := strconv.ParseFloat(strings.TrimSpace(raw), 64); parseErr == nil && parsed > 0 {
+				defaults.ResidentialIPPriceUSDPerGBMonth = parsed
+			}
+		}
+	}
+	if s.db == nil {
 		return defaults, nil
 	}
 
@@ -184,6 +195,23 @@ WHERE deleted_at IS NULL
 	}
 
 	return defaults, nil
+}
+
+func (s *DashboardRecommendationService) persistDashboardOversellDefaults(
+	ctx context.Context,
+	req DashboardOversellCalculatorRequest,
+) {
+	if s == nil || s.settingRepo == nil {
+		return
+	}
+	if req.ResidentialIPPriceUSDPerGBMonth <= 0 || math.IsNaN(req.ResidentialIPPriceUSDPerGBMonth) || math.IsInf(req.ResidentialIPPriceUSDPerGBMonth, 0) {
+		return
+	}
+	_ = s.settingRepo.Set(
+		ctx,
+		SettingKeyDashboardResidentialIPPrice,
+		strconv.FormatFloat(req.ResidentialIPPriceUSDPerGBMonth, 'f', 8, 64),
+	)
 }
 
 func (s *DashboardRecommendationService) loadDashboardOversellPlans(

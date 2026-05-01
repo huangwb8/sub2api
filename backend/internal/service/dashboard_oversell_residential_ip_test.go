@@ -7,28 +7,40 @@ import (
 	"time"
 )
 
-func TestResidentialIPReconciliation_FiveDaySupplierSampleGap(t *testing.T) {
-	result := defaultResidentialIPReconciliationResult()
-	if result == nil {
-		t.Fatal("defaultResidentialIPReconciliationResult() = nil")
+func TestResidentialIPCalibration_UsesObservedUsageSample(t *testing.T) {
+	lastObservedAt := time.Date(2026, 5, 1, 8, 0, 0, 0, time.UTC)
+	calibration := buildResidentialIPCalibration(residentialIPCalibrationSample{
+		lastObservedAt: sqlNullTime(lastObservedAt),
+		observedBytes:  420000,
+		observedTokens: 60000,
+	})
+
+	if calibration.Source != "usage_log_observed_proxy_bytes" {
+		t.Fatalf("Source = %q, want usage_log_observed_proxy_bytes", calibration.Source)
 	}
-	if result.WindowStart.Format("2006-01-02") != "2026-04-26" {
-		t.Fatalf("WindowStart = %s, want 2026-04-26", result.WindowStart.Format("2006-01-02"))
+	if math.Abs(calibration.EffectiveBytesPerToken-7.0) > 0.000001 {
+		t.Fatalf("EffectiveBytesPerToken = %v, want 7.0", calibration.EffectiveBytesPerToken)
 	}
-	if result.WindowEnd.Format("2006-01-02") != "2026-04-30" {
-		t.Fatalf("WindowEnd = %s, want 2026-04-30", result.WindowEnd.Format("2006-01-02"))
+	if calibration.LastCalibratedAt == nil || !calibration.LastCalibratedAt.Equal(lastObservedAt) {
+		t.Fatalf("LastCalibratedAt = %v, want %v", calibration.LastCalibratedAt, lastObservedAt)
 	}
-	if math.Abs(result.SupplierTrafficGB-9.08) > 0.000001 {
-		t.Fatalf("SupplierTrafficGB = %v, want 9.08", result.SupplierTrafficGB)
+}
+
+func TestResidentialIPCalibration_FallsBackToHistoricalDefaultWhenObservedSampleIsInsufficient(t *testing.T) {
+	calibration := buildResidentialIPCalibration(residentialIPCalibrationSample{
+		observedBytes:  12000,
+		observedTokens: 9999,
+	})
+
+	if calibration.Source != "static_default" {
+		t.Fatalf("Source = %q, want static_default", calibration.Source)
 	}
-	if math.Abs(result.EstimatedTrafficGB-5.118354) > 0.00001 {
-		t.Fatalf("EstimatedTrafficGB = %v, want about 5.118354", result.EstimatedTrafficGB)
-	}
-	if math.Abs(result.SuggestedCalibration-7.096031857) > 0.000001 {
-		t.Fatalf("SuggestedCalibration = %v, want about 7.096031857", result.SuggestedCalibration)
-	}
-	if math.Abs(result.RelativeErrorRate-(-0.436304)) > 0.00001 {
-		t.Fatalf("RelativeErrorRate = %v, want about -0.436304", result.RelativeErrorRate)
+	if math.Abs(calibration.EffectiveBytesPerToken-dashboardOversellDefaultEffectiveBytesPerToken) > 0.000001 {
+		t.Fatalf(
+			"EffectiveBytesPerToken = %v, want %v",
+			calibration.EffectiveBytesPerToken,
+			dashboardOversellDefaultEffectiveBytesPerToken,
+		)
 	}
 }
 
@@ -67,23 +79,27 @@ func TestResidentialIPEstimate_ReportsCalibrationMetadata(t *testing.T) {
 		ResidentialIPScopePricing,
 		false,
 		window,
-		defaultResidentialIPCalibration(),
+		ResidentialIPCalibration{
+			EffectiveBytesPerToken: 6.5,
+			Source:                 "usage_log_observed_proxy_bytes",
+		},
 		12,
 		7.2,
 		now,
 	)
 
-	if estimate.CalibrationSource != "supplier_reconciliation" {
-		t.Fatalf("CalibrationSource = %q, want supplier_reconciliation", estimate.CalibrationSource)
+	if estimate.CalibrationSource != "usage_log_observed_proxy_bytes" {
+		t.Fatalf("CalibrationSource = %q, want usage_log_observed_proxy_bytes", estimate.CalibrationSource)
 	}
-	if math.Abs(estimate.EffectiveBytesPerToken-7.096031856906913) > 0.000001 {
-		t.Fatalf("EffectiveBytesPerToken = %v, want about 7.0960318569", estimate.EffectiveBytesPerToken)
+	if math.Abs(estimate.EffectiveBytesPerToken-6.5) > 0.000001 {
+		t.Fatalf("EffectiveBytesPerToken = %v, want 6.5", estimate.EffectiveBytesPerToken)
 	}
 	if estimate.TrafficBasis != "legacy_token_estimate" {
 		t.Fatalf("TrafficBasis = %q, want legacy_token_estimate", estimate.TrafficBasis)
 	}
-	if math.Abs(estimate.EstimatedTotalTrafficGB-9.08) > 0.01 {
-		t.Fatalf("EstimatedTotalTrafficGB = %v, want about 9.08", estimate.EstimatedTotalTrafficGB)
+	expectedGB := bytesToGB(int64(float64(window.legacyEstimatedTokens) * 6.5))
+	if math.Abs(estimate.EstimatedTotalTrafficGB-expectedGB) > 0.01 {
+		t.Fatalf("EstimatedTotalTrafficGB = %v, want about %v", estimate.EstimatedTotalTrafficGB, expectedGB)
 	}
 }
 

@@ -158,10 +158,11 @@ const (
 	SettingKeyCustomEndpoints             = "custom_endpoints"              // 自定义端点列表（JSON 数组）
 
 	// 默认配置
-	SettingKeyDefaultConcurrency            = "default_concurrency"             // 新用户默认并发量
-	SettingKeyDefaultBalance                = "default_balance"                 // 新用户默认余额
-	SettingKeyDefaultSubscriptions          = "default_subscriptions"           // 新用户默认订阅列表（JSON）
-	SettingKeySubscriptionCapacityTightness = "subscription_capacity_tightness" // 管理员对补号紧张度的偏好（0-100）
+	SettingKeyDefaultConcurrency            = "default_concurrency"                             // 新用户默认并发量
+	SettingKeyDefaultBalance                = "default_balance"                                 // 新用户默认余额
+	SettingKeyDefaultSubscriptions          = "default_subscriptions"                           // 新用户默认订阅列表（JSON）
+	SettingKeySubscriptionCapacityTightness = "subscription_capacity_tightness"                 // 管理员对补号紧张度的偏好（0-100）
+	SettingKeyDashboardResidentialIPPrice   = "dashboard_residential_ip_price_usd_per_gb_month" // Dashboard 套餐测算最近一次使用的住宅 IP 单价
 
 	// 管理员 API Key
 	SettingKeyAdminAPIKey = "admin_api_key" // 全局管理员 API Key（用于外部系统集成）
