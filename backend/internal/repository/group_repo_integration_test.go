@@ -668,6 +668,51 @@ func (s *GroupRepoSuite) TestGetAccountCount_Empty() {
 	s.Require().Zero(count)
 }
 
+func (s *GroupRepoSuite) TestListWithFilters_RateLimitedAccountCountIncludesCodexQuota() {
+	group := &service.Group{
+		Name:             "g-openai-codex",
+		Platform:         service.PlatformOpenAI,
+		RateMultiplier:   1.0,
+		IsExclusive:      false,
+		Status:           service.StatusActive,
+		SubscriptionType: service.SubscriptionTypeStandard,
+	}
+	s.Require().NoError(s.repo.Create(s.ctx, group))
+
+	var normalID int64
+	s.Require().NoError(scanSingleRow(
+		s.ctx,
+		s.tx,
+		"INSERT INTO accounts (name, platform, type, status, schedulable, extra) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+		[]any{"openai-normal", service.PlatformOpenAI, service.AccountTypeOAuth, service.StatusActive, true, []byte(`{}`)},
+		&normalID,
+	))
+	var codexID int64
+	s.Require().NoError(scanSingleRow(
+		s.ctx,
+		s.tx,
+		"INSERT INTO accounts (name, platform, type, status, schedulable, extra) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+		[]any{
+			"openai-codex-exhausted",
+			service.PlatformOpenAI,
+			service.AccountTypeOAuth,
+			service.StatusActive,
+			true,
+			[]byte(`{"codex_7d_used_percent":100,"codex_7d_reset_at":"2099-03-15T00:00:00Z"}`),
+		},
+		&codexID,
+	))
+
+	_, err := s.tx.ExecContext(s.ctx, "INSERT INTO account_groups (account_id, group_id, priority, created_at) VALUES ($1, $2, $3, NOW()), ($4, $5, $6, NOW())", normalID, group.ID, 1, codexID, group.ID, 2)
+	s.Require().NoError(err)
+
+	groups, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 20}, service.PlatformOpenAI, "", group.Name, nil)
+	s.Require().NoError(err)
+	s.Require().Len(groups, 1)
+	s.Require().Equal(int64(2), groups[0].ActiveAccountCount)
+	s.Require().Equal(int64(1), groups[0].RateLimitedAccountCount)
+}
+
 // --- DeleteAccountGroupsByGroupID ---
 
 func (s *GroupRepoSuite) TestDeleteAccountGroupsByGroupID() {

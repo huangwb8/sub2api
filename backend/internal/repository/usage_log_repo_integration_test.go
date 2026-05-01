@@ -692,6 +692,17 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-error", Status: service.StatusError, Schedulable: true})
 	mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-rl", RateLimitedAt: &now, RateLimitResetAt: &resetAt, Schedulable: true})
 	mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-ov", OverloadUntil: &resetAt, Schedulable: true})
+	mustCreateAccount(s.T(), s.client, &service.Account{
+		Name:        "a-codex",
+		Platform:    service.PlatformOpenAI,
+		Type:        service.AccountTypeOAuth,
+		Status:      service.StatusActive,
+		Schedulable: true,
+		Extra: map[string]any{
+			"codex_7d_used_percent": 100.0,
+			"codex_7d_reset_at":     now.Add(24 * time.Hour).UTC().Format(time.RFC3339),
+		},
+	})
 
 	d1, d2, d3 := 100, 200, 300
 	logToday := &service.UsageLog{
@@ -770,9 +781,10 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.ActiveUsers+2, stats.ActiveUsers, "ActiveUsers mismatch")
 	s.Require().Equal(baseStats.TotalAPIKeys+3, stats.TotalAPIKeys, "TotalAPIKeys mismatch")
 	s.Require().Equal(baseStats.ActiveAPIKeys+2, stats.ActiveAPIKeys, "ActiveAPIKeys mismatch")
-	s.Require().Equal(baseStats.TotalAccounts+4, stats.TotalAccounts, "TotalAccounts mismatch")
+	s.Require().Equal(baseStats.TotalAccounts+5, stats.TotalAccounts, "TotalAccounts mismatch")
+	s.Require().Equal(baseStats.NormalAccounts+1, stats.NormalAccounts, "NormalAccounts mismatch")
 	s.Require().Equal(baseStats.ErrorAccounts+1, stats.ErrorAccounts, "ErrorAccounts mismatch")
-	s.Require().Equal(baseStats.RateLimitAccounts+1, stats.RateLimitAccounts, "RateLimitAccounts mismatch")
+	s.Require().Equal(baseStats.RateLimitAccounts+2, stats.RateLimitAccounts, "RateLimitAccounts mismatch")
 	s.Require().Equal(baseStats.OverloadAccounts+1, stats.OverloadAccounts, "OverloadAccounts mismatch")
 
 	s.Require().Equal(baseStats.TotalRequests+4, stats.TotalRequests, "TotalRequests mismatch")

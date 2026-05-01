@@ -1673,16 +1673,25 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		return err
 	}
 
-	accountStatsQuery := `
+	codexRateLimited := codexRateLimitedSQL("platform", "type", "extra", "$3")
+	accountStatsQuery := fmt.Sprintf(`
 		SELECT
 			COUNT(*) as total_accounts,
-			COUNT(CASE WHEN status = $1 AND schedulable = true THEN 1 END) as normal_accounts,
+			COUNT(CASE WHEN status = $1 AND schedulable = true
+				AND (rate_limit_reset_at IS NULL OR rate_limit_reset_at <= $3)
+				AND (overload_until IS NULL OR overload_until <= $4)
+				AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until <= $4)
+				AND NOT %s
+			THEN 1 END) as normal_accounts,
 			COUNT(CASE WHEN status = $2 THEN 1 END) as error_accounts,
-			COUNT(CASE WHEN rate_limited_at IS NOT NULL AND rate_limit_reset_at > $3 THEN 1 END) as ratelimit_accounts,
+			COUNT(CASE WHEN status = $1 AND (
+				(rate_limited_at IS NOT NULL AND rate_limit_reset_at > $3) OR
+				%s
+			) THEN 1 END) as ratelimit_accounts,
 			COUNT(CASE WHEN overload_until IS NOT NULL AND overload_until > $4 THEN 1 END) as overload_accounts
 		FROM accounts
 		WHERE deleted_at IS NULL
-	`
+	`, codexRateLimited, codexRateLimited)
 	if err := scanSingleRow(
 		ctx,
 		r.sql,

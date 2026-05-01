@@ -309,6 +309,28 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			},
 		},
 		{
+			name: "filter_by_status_active_excludes_codex_rate_limited_accounts",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{Name: "active-normal", Status: service.StatusActive})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-codex-exhausted",
+					Platform:    service.PlatformOpenAI,
+					Type:        service.AccountTypeOAuth,
+					Status:      service.StatusActive,
+					Schedulable: true,
+					Extra: map[string]any{
+						"codex_7d_used_percent": 100.0,
+						"codex_7d_reset_at":     time.Now().Add(6 * time.Hour).UTC().Format(time.RFC3339),
+					},
+				})
+			},
+			status:    service.StatusActive,
+			wantCount: 1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal("active-normal", accounts[0].Name)
+			},
+		},
+		{
 			name: "filter_by_status_unschedulable_excludes_rate_limited_and_temp_unschedulable",
 			setup: func(client *dbent.Client) {
 				mustCreateAccount(s.T(), client, &service.Account{Name: "active-normal", Status: service.StatusActive, Schedulable: true})
@@ -337,6 +359,32 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			},
 		},
 		{
+			name: "filter_by_status_unschedulable_excludes_codex_rate_limited_accounts",
+			setup: func(client *dbent.Client) {
+				unsched := mustCreateAccount(s.T(), client, &service.Account{Name: "active-unsched", Status: service.StatusActive})
+				err := client.Account.UpdateOneID(unsched.ID).
+					SetSchedulable(false).
+					Exec(context.Background())
+				s.Require().NoError(err)
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-codex-exhausted",
+					Platform:    service.PlatformOpenAI,
+					Type:        service.AccountTypeOAuth,
+					Status:      service.StatusActive,
+					Schedulable: false,
+					Extra: map[string]any{
+						"codex_5h_used_percent": 100.0,
+						"codex_5h_reset_at":     time.Now().Add(2 * time.Hour).UTC().Format(time.RFC3339),
+					},
+				})
+			},
+			status:    "unschedulable",
+			wantCount: 1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal("active-unsched", accounts[0].Name)
+			},
+		},
+		{
 			name: "filter_by_status_rate_limited_excludes_temp_unschedulable",
 			setup: func(client *dbent.Client) {
 				rateLimited := mustCreateAccount(s.T(), client, &service.Account{Name: "active-rate-limited", Status: service.StatusActive})
@@ -355,6 +403,27 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			wantCount: 1,
 			validate: func(accounts []service.Account) {
 				s.Require().Equal("active-rate-limited", accounts[0].Name)
+			},
+		},
+		{
+			name: "filter_by_status_rate_limited_includes_codex_rate_limited_accounts",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-codex-exhausted",
+					Platform:    service.PlatformOpenAI,
+					Type:        service.AccountTypeOAuth,
+					Status:      service.StatusActive,
+					Schedulable: true,
+					Extra: map[string]any{
+						"codex_7d_used_percent": 100.0,
+						"codex_7d_reset_at":     time.Now().Add(24 * time.Hour).UTC().Format(time.RFC3339),
+					},
+				})
+			},
+			status:    "rate_limited",
+			wantCount: 1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal("openai-codex-exhausted", accounts[0].Name)
 			},
 		},
 		{

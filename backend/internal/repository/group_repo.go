@@ -518,16 +518,18 @@ func (r *groupRepository) ExistsByIDs(ctx context.Context, ids []int64) (map[int
 
 func (r *groupRepository) GetAccountCount(ctx context.Context, groupID int64) (total int64, active int64, err error) {
 	var rateLimited int64
+	codexRateLimited := codexRateLimitedSQL("a.platform", "a.type", "a.extra", "NOW()")
 	err = scanSingleRow(ctx, r.sql,
-		`SELECT COUNT(*),
+		fmt.Sprintf(`SELECT COUNT(*),
 			COUNT(*) FILTER (WHERE a.status = 'active' AND a.schedulable = true),
 			COUNT(*) FILTER (WHERE a.status = 'active' AND (
 				a.rate_limit_reset_at > NOW() OR
 				a.overload_until > NOW() OR
-				a.temp_unschedulable_until > NOW()
+				a.temp_unschedulable_until > NOW() OR
+				%s
 			))
 		FROM account_groups ag JOIN accounts a ON a.id = ag.account_id
-		WHERE ag.group_id = $1`,
+		WHERE ag.group_id = $1`, codexRateLimited),
 		[]any{groupID}, &total, &active, &rateLimited)
 	return
 }
@@ -667,20 +669,22 @@ func (r *groupRepository) loadAccountCounts(ctx context.Context, groupIDs []int6
 		return counts, nil
 	}
 
+	codexRateLimited := codexRateLimitedSQL("a.platform", "a.type", "a.extra", "NOW()")
 	rows, err := r.sql.QueryContext(
 		ctx,
-		`SELECT ag.group_id,
+		fmt.Sprintf(`SELECT ag.group_id,
 			COUNT(*) AS total,
 			COUNT(*) FILTER (WHERE a.status = 'active' AND a.schedulable = true) AS active,
 			COUNT(*) FILTER (WHERE a.status = 'active' AND (
 				a.rate_limit_reset_at > NOW() OR
 				a.overload_until > NOW() OR
-				a.temp_unschedulable_until > NOW()
+				a.temp_unschedulable_until > NOW() OR
+				%s
 			)) AS rate_limited
 		FROM account_groups ag
 		JOIN accounts a ON a.id = ag.account_id
 		WHERE ag.group_id = ANY($1)
-		GROUP BY ag.group_id`,
+		GROUP BY ag.group_id`, codexRateLimited),
 		pq.Array(groupIDs),
 	)
 	if err != nil {

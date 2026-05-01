@@ -44,7 +44,7 @@ type DashboardStats struct {
 
 	// 账户统计
 	TotalAccounts     int64 `json:"total_accounts"`
-	NormalAccounts    int64 `json:"normal_accounts"`    // 正常账户数 (schedulable=true, status=active)
+	NormalAccounts    int64 `json:"normal_accounts"`    // 正常账户数（active + schedulable，且不在限流/过载/临时不可调度/Codex 限额中）
 	ErrorAccounts     int64 `json:"error_accounts"`     // 异常账户数 (status=error)
 	RateLimitAccounts int64 `json:"ratelimit_accounts"` // 限流账户数
 	OverloadAccounts  int64 `json:"overload_accounts"`  // 过载账户数

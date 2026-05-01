@@ -506,6 +506,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 					dbaccount.RateLimitResetAtIsNil(),
 					dbaccount.RateLimitResetAtLTE(time.Now()),
 				),
+				notCodexRateLimitedPredicate("NOW()"),
 				dbpredicate.Account(func(s *entsql.Selector) {
 					col := s.C("temp_unschedulable_until")
 					s.Where(entsql.Or(
@@ -517,7 +518,13 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 		case "rate_limited":
 			q = q.Where(
 				dbaccount.StatusEQ(service.StatusActive),
-				dbaccount.RateLimitResetAtGT(time.Now()),
+				dbpredicate.Account(func(s *entsql.Selector) {
+					col := s.C("rate_limit_reset_at")
+					s.Where(entsql.Or(
+						entsql.GT(col, entsql.Expr("NOW()")),
+						entsql.ExprP(codexRateLimitedSQL(s.C("platform"), s.C("type"), s.C("extra"), "NOW()")),
+					))
+				}),
 				dbpredicate.Account(func(s *entsql.Selector) {
 					col := s.C("temp_unschedulable_until")
 					s.Where(entsql.Or(
@@ -545,6 +552,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 					dbaccount.RateLimitResetAtIsNil(),
 					dbaccount.RateLimitResetAtLTE(time.Now()),
 				),
+				notCodexRateLimitedPredicate("NOW()"),
 				dbpredicate.Account(func(s *entsql.Selector) {
 					col := s.C("temp_unschedulable_until")
 					s.Where(entsql.Or(
