@@ -37,6 +37,7 @@ type UsageBillingCommand struct {
 
 	BalanceCostUSD         float64
 	BalanceCostCNY         float64
+	MaxBalanceOverdraftCNY float64
 	SubscriptionCostUSD    float64
 	APIKeyQuotaCostUSD     float64
 	APIKeyRateLimitCostUSD float64

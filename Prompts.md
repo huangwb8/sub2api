@@ -101,6 +101,10 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 
 ---
 
+请基于 docs/plans/2026-05-01-billing-accuracy-and-limit-guard-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
 请基于 docs/plans/2026-05-01-proxy-observability-analysis-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---

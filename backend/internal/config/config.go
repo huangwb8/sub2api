@@ -320,8 +320,10 @@ type ProxyProbeConfig struct {
 }
 
 type BillingConfig struct {
-	CircuitBreaker CircuitBreakerConfig `mapstructure:"circuit_breaker"`
-	FX             BillingFXConfig      `mapstructure:"fx"`
+	CircuitBreaker CircuitBreakerConfig    `mapstructure:"circuit_breaker"`
+	FX             BillingFXConfig         `mapstructure:"fx"`
+	LimitGuard     BillingLimitGuardConfig `mapstructure:"limit_guard"`
+	Balance        BillingBalanceConfig    `mapstructure:"balance"`
 }
 
 type CircuitBreakerConfig struct {
@@ -339,6 +341,15 @@ type BillingFXConfig struct {
 	TimeoutMS       int     `mapstructure:"timeout_ms"`
 	SafetyMargin    float64 `mapstructure:"safety_margin"`
 	DefaultLiveURL  string  `mapstructure:"default_live_url"`
+}
+
+type BillingLimitGuardConfig struct {
+	MinRemainingUSD float64 `mapstructure:"min_remaining_usd"`
+	Percent         float64 `mapstructure:"percent"`
+}
+
+type BillingBalanceConfig struct {
+	MaxOverdraftCNY float64 `mapstructure:"max_overdraft_cny"`
 }
 
 type ConcurrencyConfig struct {
@@ -1223,6 +1234,9 @@ func setDefaults() {
 	viper.SetDefault("billing.fx.timeout_ms", 3000)
 	viper.SetDefault("billing.fx.safety_margin", 0.02)
 	viper.SetDefault("billing.fx.default_live_url", "https://open.er-api.com/v6/latest/USD")
+	viper.SetDefault("billing.limit_guard.min_remaining_usd", 0.5)
+	viper.SetDefault("billing.limit_guard.percent", 0.01)
+	viper.SetDefault("billing.balance.max_overdraft_cny", 7.2)
 
 	// Turnstile
 	viper.SetDefault("turnstile.required", false)
@@ -1812,6 +1826,15 @@ func (c *Config) Validate() error {
 	}
 	if c.Billing.FX.SafetyMargin < 0 {
 		return fmt.Errorf("billing.fx.safety_margin must be non-negative")
+	}
+	if c.Billing.LimitGuard.MinRemainingUSD < 0 {
+		return fmt.Errorf("billing.limit_guard.min_remaining_usd must be non-negative")
+	}
+	if c.Billing.LimitGuard.Percent < 0 {
+		return fmt.Errorf("billing.limit_guard.percent must be non-negative")
+	}
+	if c.Billing.Balance.MaxOverdraftCNY < 0 {
+		return fmt.Errorf("billing.balance.max_overdraft_cny must be non-negative")
 	}
 	if c.Database.MaxOpenConns <= 0 {
 		return fmt.Errorf("database.max_open_conns must be positive")

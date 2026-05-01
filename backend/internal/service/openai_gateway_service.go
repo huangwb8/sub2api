@@ -229,16 +229,19 @@ type OpenAIForwardResult struct {
 	ServiceTier *string
 	// ReasoningEffort is extracted from request body (reasoning.effort) or derived from model suffix.
 	// Stored for usage records display; nil means not provided / not applicable.
-	ReasoningEffort    *string
-	Stream             bool
-	OpenAIWSMode       bool
-	ResponseHeaders    http.Header
-	Duration           time.Duration
-	FirstTokenMs       *int
-	ProxyRequestBytes  int64
-	ProxyResponseBytes int64
-	ImageCount         int
-	ImageSize          string
+	ReasoningEffort       *string
+	Stream                bool
+	OpenAIWSMode          bool
+	ResponseHeaders       http.Header
+	Duration              time.Duration
+	FirstTokenMs          *int
+	ClientDisconnect      bool
+	PartialUsage          bool
+	UsageIncompleteReason string
+	ProxyRequestBytes     int64
+	ProxyResponseBytes    int64
+	ImageCount            int
+	ImageSize             string
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -2458,13 +2461,22 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		// Handle normal response
 		var usage *OpenAIUsage
 		var firstTokenMs *int
+		var clientDisconnect bool
+		var partialUsage bool
+		var usageIncompleteReason string
 		if reqStream {
 			streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
 			if err != nil {
-				return nil, err
+				if !isStreamUsageIncompleteError(err) || streamResult == nil || !hasOpenAIUsage(streamResult.usage) {
+					return nil, err
+				}
+				logger.LegacyPrintf("service.openai_gateway", "partial stream usage retained for billing: account=%d model=%s error=%v", account.ID, originalModel, err)
+				partialUsage = true
+				usageIncompleteReason = err.Error()
 			}
 			usage = streamResult.usage
 			firstTokenMs = streamResult.firstTokenMs
+			clientDisconnect = streamResult.clientDisconnect
 		} else {
 			usage, err = s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel)
 			if err != nil {
@@ -2487,17 +2499,20 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		serviceTier := extractOpenAIServiceTier(reqBody)
 
 		return &OpenAIForwardResult{
-			RequestID:         resp.Header.Get("x-request-id"),
-			Usage:             *usage,
-			Model:             originalModel,
-			UpstreamModel:     upstreamModel,
-			ServiceTier:       serviceTier,
-			ReasoningEffort:   reasoningEffort,
-			Stream:            reqStream,
-			OpenAIWSMode:      false,
-			Duration:          time.Since(startTime),
-			FirstTokenMs:      firstTokenMs,
-			ProxyRequestBytes: int64(len(reqBody)),
+			RequestID:             resp.Header.Get("x-request-id"),
+			Usage:                 *usage,
+			Model:                 originalModel,
+			UpstreamModel:         upstreamModel,
+			ServiceTier:           serviceTier,
+			ReasoningEffort:       reasoningEffort,
+			Stream:                reqStream,
+			OpenAIWSMode:          false,
+			Duration:              time.Since(startTime),
+			FirstTokenMs:          firstTokenMs,
+			ClientDisconnect:      clientDisconnect,
+			PartialUsage:          partialUsage,
+			UsageIncompleteReason: usageIncompleteReason,
+			ProxyRequestBytes:     int64(len(reqBody)),
 		}, nil
 	}
 }
@@ -3564,8 +3579,9 @@ func (s *OpenAIGatewayService) handleCompatErrorResponse(
 
 // openaiStreamingResult streaming response result
 type openaiStreamingResult struct {
-	usage        *OpenAIUsage
-	firstTokenMs *int
+	usage            *OpenAIUsage
+	firstTokenMs     *int
+	clientDisconnect bool
 }
 
 func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string) (*openaiStreamingResult, error) {
@@ -3667,7 +3683,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 
 	needModelReplace := originalModel != mappedModel
 	resultWithUsage := func() *openaiStreamingResult {
-		return &openaiStreamingResult{usage: usage, firstTokenMs: firstTokenMs}
+		return &openaiStreamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}
 	}
 	markProxySuccess := func() {
 		if s.rateLimitService != nil {
@@ -4671,16 +4687,17 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 
 	billingResult, billingErr := func() (*UsageBillingApplyResult, error) {
 		return applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-			Cost:                  cost,
-			ChargeSnapshot:        chargeSnapshot,
-			User:                  user,
-			APIKey:                apiKey,
-			Account:               account,
-			Subscription:          subscription,
-			RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-			IsSubscriptionBill:    isSubscriptionBilling,
-			AccountRateMultiplier: accountRateMultiplier,
-			APIKeyService:         input.APIKeyService,
+			Cost:                   cost,
+			ChargeSnapshot:         chargeSnapshot,
+			User:                   user,
+			APIKey:                 apiKey,
+			Account:                account,
+			Subscription:           subscription,
+			RequestPayloadHash:     resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
+			IsSubscriptionBill:     isSubscriptionBilling,
+			AccountRateMultiplier:  accountRateMultiplier,
+			APIKeyService:          input.APIKeyService,
+			MaxBalanceOverdraftCNY: s.maxBalanceOverdraftCNY(),
 		}, s.billingDeps(), s.usageBillingRepo)
 	}()
 

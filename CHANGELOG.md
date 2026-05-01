@@ -6,6 +6,16 @@
 
 ## [Unreleased]
 
+### Added（新增）
+- 新增了计费限额保护配置：`billing.limit_guard.min_remaining_usd`、`billing.limit_guard.percent` 和 `billing.balance.max_overdraft_cny`，用于在订阅/API Key 限额接近耗尽时提前保护，并为余额扣费提供最大透支下限。
+
+### Changed（变更）
+- 优化了网关计费准确性：Anthropic/OpenAI 流式响应在缺少终止事件但已解析到非零 usage 时，会保留 partial usage 继续进入计费链路，减少客户端断开或上游读错误导致的完全漏计。
+- 优化了订阅和 API Key 限额检查：请求前检查从“已用量达到限额才拒绝”调整为“剩余额度低于保护垫即拒绝”，并在触发时记录窗口、限额、已用量和保护垫信息。
+
+### Fixed（修复）
+- 修复了余额模式扣费可能在成功请求后把用户余额打到无限负数的问题：事务扣费现在会受 `billing.balance.max_overdraft_cny` 下限约束，越过下限时返回余额不足并回滚本次计费副作用。
+
 ## [1.2.15] - 2026-05-01
 
 ### Added（新增）

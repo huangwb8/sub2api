@@ -492,14 +492,16 @@ type ForwardResult struct {
 	Model     string
 	// UpstreamModel is the actual upstream model after mapping.
 	// Prefer empty when it is identical to Model; persistence normalizes equal values away as no-op mappings.
-	UpstreamModel      string
-	Stream             bool
-	Duration           time.Duration
-	FirstTokenMs       *int // 首字时间（流式请求）
-	ClientDisconnect   bool // 客户端是否在流式传输过程中断开
-	ReasoningEffort    *string
-	ProxyRequestBytes  int64
-	ProxyResponseBytes int64
+	UpstreamModel         string
+	Stream                bool
+	Duration              time.Duration
+	FirstTokenMs          *int // 首字时间（流式请求）
+	ClientDisconnect      bool // 客户端是否在流式传输过程中断开
+	PartialUsage          bool
+	UsageIncompleteReason string
+	ReasoningEffort       *string
+	ProxyRequestBytes     int64
+	ProxyResponseBytes    int64
 
 	// 图片生成计费字段（图片生成模型使用）
 	ImageCount int    // 生成的图片数量
@@ -4489,6 +4491,8 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	var usage *ClaudeUsage
 	var firstTokenMs *int
 	var clientDisconnect bool
+	var partialUsage bool
+	var usageIncompleteReason string
 	if reqStream {
 		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, reqModel, shouldMimicClaudeCode)
 		if err != nil {
@@ -4497,11 +4501,18 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 					StatusCode: 403,
 				}
 			}
-			return nil, err
+			if !isStreamUsageIncompleteError(err) || streamResult == nil || !hasClaudeUsage(streamResult.usage) {
+				return nil, err
+			}
+			logger.LegacyPrintf("service.gateway", "partial stream usage retained for billing: account=%d model=%s error=%v", account.ID, originalModel, err)
 		}
 		usage = streamResult.usage
 		firstTokenMs = streamResult.firstTokenMs
 		clientDisconnect = streamResult.clientDisconnect
+		if err != nil {
+			partialUsage = true
+			usageIncompleteReason = err.Error()
+		}
 	} else {
 		usage, err = s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, reqModel)
 		if err != nil {
@@ -4510,14 +4521,16 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	}
 
 	return &ForwardResult{
-		RequestID:        resp.Header.Get("x-request-id"),
-		Usage:            *usage,
-		Model:            originalModel, // 使用原始模型用于计费和日志
-		UpstreamModel:    mappedModel,
-		Stream:           reqStream,
-		Duration:         time.Since(startTime),
-		FirstTokenMs:     firstTokenMs,
-		ClientDisconnect: clientDisconnect,
+		RequestID:             resp.Header.Get("x-request-id"),
+		Usage:                 *usage,
+		Model:                 originalModel, // 使用原始模型用于计费和日志
+		UpstreamModel:         mappedModel,
+		Stream:                reqStream,
+		Duration:              time.Since(startTime),
+		FirstTokenMs:          firstTokenMs,
+		ClientDisconnect:      clientDisconnect,
+		PartialUsage:          partialUsage,
+		UsageIncompleteReason: usageIncompleteReason,
 	}, nil
 }
 
@@ -6634,6 +6647,29 @@ type streamingResult struct {
 	clientDisconnect bool // 客户端是否在流式传输过程中断开
 }
 
+func isStreamUsageIncompleteError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "stream usage incomplete")
+}
+
+func hasClaudeUsage(usage *ClaudeUsage) bool {
+	return usage != nil && (usage.InputTokens > 0 ||
+		usage.OutputTokens > 0 ||
+		usage.CacheCreationInputTokens > 0 ||
+		usage.CacheReadInputTokens > 0 ||
+		usage.CacheCreation5mTokens > 0 ||
+		usage.CacheCreation1hTokens > 0 ||
+		usage.ImageOutputTokens > 0)
+}
+
+func hasOpenAIUsage(usage *OpenAIUsage) bool {
+	return usage != nil && (usage.InputTokens > 0 ||
+		usage.OutputTokens > 0 ||
+		usage.CacheCreationInputTokens > 0 ||
+		usage.CacheReadInputTokens > 0 ||
+		usage.ImageInputTokens > 0 ||
+		usage.ImageOutputTokens > 0)
+}
+
 func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string, mimicClaudeCode bool) (*streamingResult, error) {
 	// 更新5h窗口状态
 	s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
@@ -7388,16 +7424,17 @@ type usageLogBestEffortWriter interface {
 
 // postUsageBillingParams 统一扣费所需的参数
 type postUsageBillingParams struct {
-	Cost                  *CostBreakdown
-	ChargeSnapshot        *UsageChargeSnapshot
-	User                  *User
-	APIKey                *APIKey
-	Account               *Account
-	Subscription          *UserSubscription
-	RequestPayloadHash    string
-	IsSubscriptionBill    bool
-	AccountRateMultiplier float64
-	APIKeyService         APIKeyQuotaUpdater
+	Cost                   *CostBreakdown
+	ChargeSnapshot         *UsageChargeSnapshot
+	User                   *User
+	APIKey                 *APIKey
+	Account                *Account
+	Subscription           *UserSubscription
+	RequestPayloadHash     string
+	IsSubscriptionBill     bool
+	AccountRateMultiplier  float64
+	APIKeyService          APIKeyQuotaUpdater
+	MaxBalanceOverdraftCNY float64
 }
 
 type accountActualCostUsageRecorder interface {
@@ -7537,6 +7574,7 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 	} else if p.Cost.ActualCost > 0 {
 		cmd.BalanceCostUSD = p.Cost.ActualCost
 		cmd.BalanceCostCNY = p.balanceChargeAmountCNY()
+		cmd.MaxBalanceOverdraftCNY = p.MaxBalanceOverdraftCNY
 		if p.ChargeSnapshot != nil {
 			cmd.FXRateUSDCNY = p.ChargeSnapshot.FXRateUSDCNY
 			cmd.FXRateSource = p.ChargeSnapshot.FXRateSource
@@ -7641,6 +7679,30 @@ func (p *postUsageBillingParams) balanceChargeAmountCNY() float64 {
 		return p.ChargeSnapshot.ChargedAmountCNY
 	}
 	return 0
+}
+
+func billingMaxBalanceOverdraftCNY(cfg *config.Config) float64 {
+	if cfg == nil {
+		return 0
+	}
+	if cfg.Billing.Balance.MaxOverdraftCNY < 0 {
+		return 0
+	}
+	return cfg.Billing.Balance.MaxOverdraftCNY
+}
+
+func (s *GatewayService) maxBalanceOverdraftCNY() float64 {
+	if s == nil {
+		return 0
+	}
+	return billingMaxBalanceOverdraftCNY(s.cfg)
+}
+
+func (s *OpenAIGatewayService) maxBalanceOverdraftCNY() float64 {
+	if s == nil {
+		return 0
+	}
+	return billingMaxBalanceOverdraftCNY(s.cfg)
 }
 
 func detachedBillingContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -7891,16 +7953,17 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 
 	requestID := usageLog.RequestID
 	billingResult, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-		Cost:                  cost,
-		ChargeSnapshot:        chargeSnapshot,
-		User:                  user,
-		APIKey:                apiKey,
-		Account:               account,
-		Subscription:          subscription,
-		RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-		IsSubscriptionBill:    isSubscriptionBilling,
-		AccountRateMultiplier: accountRateMultiplier,
-		APIKeyService:         input.APIKeyService,
+		Cost:                   cost,
+		ChargeSnapshot:         chargeSnapshot,
+		User:                   user,
+		APIKey:                 apiKey,
+		Account:                account,
+		Subscription:           subscription,
+		RequestPayloadHash:     resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
+		IsSubscriptionBill:     isSubscriptionBilling,
+		AccountRateMultiplier:  accountRateMultiplier,
+		APIKeyService:          input.APIKeyService,
+		MaxBalanceOverdraftCNY: s.maxBalanceOverdraftCNY(),
 	}, s.billingDeps(), s.usageBillingRepo)
 
 	if billingErr != nil {

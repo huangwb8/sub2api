@@ -82,3 +82,27 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 		})
 	}
 }
+
+func TestBuildUsageBillingCommand_CarriesBalanceOverdraftGuard(t *testing.T) {
+	t.Parallel()
+
+	p := &postUsageBillingParams{
+		Cost:                   &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		ChargeSnapshot:         &UsageChargeSnapshot{ChargedAmountCNY: 7.2},
+		User:                   &User{ID: 1},
+		APIKey:                 &APIKey{ID: 2},
+		Account:                &Account{ID: 3},
+		MaxBalanceOverdraftCNY: 0.8,
+	}
+
+	cmd := buildUsageBillingCommand("req-guard", nil, p)
+	if cmd == nil {
+		t.Fatal("buildUsageBillingCommand returned nil")
+	}
+	if cmd.BalanceCostCNY != 7.2 {
+		t.Fatalf("BalanceCostCNY = %v, want 7.2", cmd.BalanceCostCNY)
+	}
+	if cmd.MaxBalanceOverdraftCNY != 0.8 {
+		t.Fatalf("MaxBalanceOverdraftCNY = %v, want 0.8", cmd.MaxBalanceOverdraftCNY)
+	}
+}

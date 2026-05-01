@@ -105,6 +105,9 @@ type BillingCacheService struct {
 
 // NewBillingCacheService 创建计费缓存服务
 func NewBillingCacheService(cache BillingCache, userRepo UserRepository, subRepo UserSubscriptionRepository, apiKeyRepo APIKeyRepository, cfg *config.Config) *BillingCacheService {
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
 	svc := &BillingCacheService{
 		cache:                 cache,
 		userRepo:              userRepo,
@@ -615,14 +618,15 @@ func (s *BillingCacheService) evaluateRateLimits(ctx context.Context, apiKey *AP
 		}()
 	}
 
-	// Check limits
-	if apiKey.RateLimit5h > 0 && usage5h >= apiKey.RateLimit5h {
+	// Check limits with a small guard band so near-exhausted keys stop before
+	// a single large request or burst can obviously cross the window limit.
+	if s.limitGuardExceeded("api_key_5h", apiKey.ID, apiKey.RateLimit5h, usage5h) {
 		return ErrAPIKeyRateLimit5hExceeded
 	}
-	if apiKey.RateLimit1d > 0 && usage1d >= apiKey.RateLimit1d {
+	if s.limitGuardExceeded("api_key_1d", apiKey.ID, apiKey.RateLimit1d, usage1d) {
 		return ErrAPIKeyRateLimit1dExceeded
 	}
-	if apiKey.RateLimit7d > 0 && usage7d >= apiKey.RateLimit7d {
+	if s.limitGuardExceeded("api_key_7d", apiKey.ID, apiKey.RateLimit7d, usage7d) {
 		return ErrAPIKeyRateLimit7dExceeded
 	}
 	return nil
@@ -726,19 +730,63 @@ func (s *BillingCacheService) checkSubscriptionEligibility(ctx context.Context, 
 	}
 
 	// 检查限额（使用传入的Group限额配置）
-	if group.HasDailyLimit() && subData.DailyUsage >= *group.DailyLimitUSD {
+	if group.HasDailyLimit() && s.limitGuardExceeded("subscription_daily", subscription.ID, *group.DailyLimitUSD, subData.DailyUsage) {
 		return ErrDailyLimitExceeded
 	}
 
-	if group.HasWeeklyLimit() && subData.WeeklyUsage >= *group.WeeklyLimitUSD {
+	if group.HasWeeklyLimit() && s.limitGuardExceeded("subscription_weekly", subscription.ID, *group.WeeklyLimitUSD, subData.WeeklyUsage) {
 		return ErrWeeklyLimitExceeded
 	}
 
-	if group.HasMonthlyLimit() && subData.MonthlyUsage >= *group.MonthlyLimitUSD {
+	if group.HasMonthlyLimit() && s.limitGuardExceeded("subscription_monthly", subscription.ID, *group.MonthlyLimitUSD, subData.MonthlyUsage) {
 		return ErrMonthlyLimitExceeded
 	}
 
 	return nil
+}
+
+func (s *BillingCacheService) limitGuardExceeded(scope string, id int64, limit, used float64) bool {
+	if limit <= 0 {
+		return false
+	}
+	remaining := limit - used
+	if remaining <= 0 {
+		return true
+	}
+	guard := s.limitGuardUSD(limit)
+	if guard <= 0 {
+		return false
+	}
+	if remaining < guard {
+		logger.LegacyPrintf("service.billing_cache", "billing limit guard triggered: scope=%s id=%d limit=%.6f used=%.6f remaining=%.6f guard=%.6f",
+			scope, id, limit, used, remaining, guard)
+		return true
+	}
+	return false
+}
+
+func (s *BillingCacheService) limitGuardUSD(limit float64) float64 {
+	if limit <= 0 {
+		return 0
+	}
+	minRemaining := 0.5
+	percent := 0.01
+	if s != nil && s.cfg != nil {
+		if s.cfg.Billing.LimitGuard.MinRemainingUSD >= 0 {
+			minRemaining = s.cfg.Billing.LimitGuard.MinRemainingUSD
+		}
+		if s.cfg.Billing.LimitGuard.Percent >= 0 {
+			percent = s.cfg.Billing.LimitGuard.Percent
+		}
+	}
+	guard := minRemaining
+	if percentGuard := limit * percent; percentGuard > guard {
+		guard = percentGuard
+	}
+	if guard > limit {
+		return limit
+	}
+	return guard
 }
 
 type billingCircuitBreakerState int
