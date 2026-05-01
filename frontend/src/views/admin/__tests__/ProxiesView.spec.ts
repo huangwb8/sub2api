@@ -12,6 +12,22 @@ const {
   showErrorMock,
   showInfoMock
 } = vi.hoisted(() => ({
+  _installLocalStorageStub: (() => {
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value)
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key)
+      }),
+      clear: vi.fn(() => {
+        store.clear()
+      })
+    })
+    return true
+  })(),
   listProxiesMock: vi.fn(),
   getProxyAccountsMock: vi.fn(),
   getAllWithCountMock: vi.fn(),
@@ -283,6 +299,7 @@ function mountView() {
 
 describe('ProxiesView', () => {
   beforeEach(() => {
+    localStorage.clear()
     listProxiesMock.mockReset()
     getProxyAccountsMock.mockReset()
     getAllWithCountMock.mockReset()
@@ -335,6 +352,7 @@ describe('ProxiesView', () => {
         host: '2.2.2.2',
         account_count: 0,
         latency_status: 'success',
+        latency_ms: 90,
         quality_status: 'healthy'
       }),
       buildProxy({
@@ -344,6 +362,35 @@ describe('ProxiesView', () => {
         account_count: 0,
         latency_status: 'failed',
         quality_status: 'failed'
+      }),
+      buildProxy({
+        id: 4,
+        name: '可用但较慢代理',
+        host: '4.4.4.4',
+        account_count: 1,
+        latency_status: 'success',
+        latency_ms: 260,
+        quality_status: 'warn',
+        quality_grade: 'B'
+      }),
+      buildProxy({
+        id: 5,
+        name: '挑战代理',
+        host: '5.5.5.5',
+        account_count: 0,
+        latency_status: 'success',
+        latency_ms: 110,
+        quality_status: 'challenge'
+      }),
+      buildProxy({
+        id: 6,
+        name: '停用代理',
+        host: '6.6.6.6',
+        status: 'inactive',
+        account_count: 0,
+        latency_status: 'success',
+        latency_ms: 80,
+        quality_status: 'healthy'
       })
     ])
     updateAccountMock.mockResolvedValue({
@@ -365,9 +412,16 @@ describe('ProxiesView', () => {
 
     const targetSelect = wrapper.get('[data-testid="proxy-transfer-select-101"]')
     const optionValues = targetSelect.findAll('option').map((option) => option.attributes('value'))
+    const optionTexts = targetSelect.findAll('option').map((option) => option.text())
 
+    expect(optionValues).toEqual(['', '2', '4'])
     expect(optionValues).toContain('2')
+    expect(optionValues).toContain('4')
     expect(optionValues).not.toContain('3')
+    expect(optionValues).not.toContain('5')
+    expect(optionValues).not.toContain('6')
+    expect(optionTexts[1]).toContain('90ms')
+    expect(optionTexts[2]).toContain('260ms')
 
     await targetSelect.setValue('2')
     await wrapper.get('[data-testid="proxy-transfer-submit-101"]').trigger('click')

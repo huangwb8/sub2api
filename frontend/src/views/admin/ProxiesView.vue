@@ -1083,11 +1083,51 @@ const isTransferTargetAvailable = (proxy: Proxy) => {
   return true
 }
 
+const transferTargetQualityRank = (status?: Proxy['quality_status']) => {
+  switch (status) {
+    case 'healthy':
+      return 0
+    case 'warn':
+      return 1
+    default:
+      return 2
+  }
+}
+
+const transferTargetLatencyRank = (proxy: Proxy) => {
+  if (proxy.latency_status === 'success' && typeof proxy.latency_ms === 'number') {
+    return proxy.latency_ms
+  }
+  return Number.MAX_SAFE_INTEGER
+}
+
+const compareTransferTargets = (left: Proxy, right: Proxy) => {
+  const qualityRankDiff = transferTargetQualityRank(left.quality_status) - transferTargetQualityRank(right.quality_status)
+  if (qualityRankDiff !== 0) return qualityRankDiff
+
+  const latencyDiff = transferTargetLatencyRank(left) - transferTargetLatencyRank(right)
+  if (latencyDiff !== 0) return latencyDiff
+
+  const qualityScoreDiff = (right.quality_score ?? -1) - (left.quality_score ?? -1)
+  if (qualityScoreDiff !== 0) return qualityScoreDiff
+
+  const accountCountDiff = (left.account_count ?? 0) - (right.account_count ?? 0)
+  if (accountCountDiff !== 0) return accountCountDiff
+
+  return left.name.localeCompare(right.name, 'zh-CN')
+}
+
 const buildTransferTargetLabel = (proxy: Proxy) => {
   const parts = [proxy.name, `${proxy.host}:${proxy.port}`]
   const location = formatLocation(proxy)
   if (location) {
     parts.push(location)
+  }
+  if (typeof proxy.latency_ms === 'number' && proxy.latency_status === 'success') {
+    parts.push(`${proxy.latency_ms}ms`)
+  }
+  if (proxy.quality_grade) {
+    parts.push(`Q${proxy.quality_grade}`)
   }
   return parts.join(' · ')
 }
@@ -1180,9 +1220,10 @@ const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
 
 const availableTransferTargets = computed(() => {
   const currentProxyID = accountsProxy.value?.id
-  return accountTransferCandidateProxies.value.filter(
-    (proxy) => proxy.id !== currentProxyID && isTransferTargetAvailable(proxy)
-  )
+  return accountTransferCandidateProxies.value
+    .filter((proxy) => proxy.id !== currentProxyID && isTransferTargetAvailable(proxy))
+    .slice()
+    .sort(compareTransferTargets)
 })
 
 const accountTransferOptions = computed(() => [
