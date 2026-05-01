@@ -4961,6 +4961,10 @@ func syncOpenAICodexRateLimitFromExtra(ctx context.Context, repo AccountReposito
 }
 
 func syncOpenAICodexRateLimitFromUpdates(ctx context.Context, repo AccountRepository, accountID int64, updates map[string]any, now time.Time) *time.Time {
+	return syncOpenAICodexRateLimitFromUpdatesWithClear(ctx, repo, accountID, updates, now, true)
+}
+
+func syncOpenAICodexRateLimitFromUpdatesWithClear(ctx context.Context, repo AccountRepository, accountID int64, updates map[string]any, now time.Time, allowClear bool) *time.Time {
 	if repo == nil || accountID <= 0 || len(updates) == 0 {
 		return nil
 	}
@@ -4968,8 +4972,55 @@ func syncOpenAICodexRateLimitFromUpdates(ctx context.Context, repo AccountReposi
 	if err != nil || account == nil {
 		return nil
 	}
+	return syncOpenAICodexRateLimitFromAccountUpdates(ctx, repo, account, updates, now, allowClear)
+}
+
+func syncOpenAICodexRateLimitFromAccountUpdates(ctx context.Context, repo AccountRepository, account *Account, updates map[string]any, now time.Time, allowClear bool) *time.Time {
+	if repo == nil || account == nil || account.ID <= 0 || len(updates) == 0 {
+		return nil
+	}
+	previousCodexResetAt := codexRateLimitResetAtFromExtra(account.Extra, now)
+	previousRateLimitResetAt := account.RateLimitResetAt
 	mergeAccountExtra(account, updates)
-	return syncOpenAICodexRateLimitFromExtra(ctx, repo, account, now)
+	if resetAt := syncOpenAICodexRateLimitFromExtra(ctx, repo, account, now); resetAt != nil {
+		return resetAt
+	}
+	if allowClear && shouldClearRecoveredOpenAICodexRateLimit(account, previousRateLimitResetAt, previousCodexResetAt, now) {
+		if err := repo.ClearRateLimit(ctx, account.ID); err != nil {
+			slog.Warn("openai_codex_recovered_clear_rate_limit_failed", "account_id", account.ID, "error", err)
+			return nil
+		}
+		account.RateLimitResetAt = nil
+		account.RateLimitedAt = nil
+	}
+	return nil
+}
+
+func shouldClearRecoveredOpenAICodexRateLimit(account *Account, previousRateLimitResetAt, previousCodexResetAt *time.Time, now time.Time) bool {
+	if account == nil || !account.IsOpenAI() || account.Status == StatusError {
+		return false
+	}
+	if previousRateLimitResetAt == nil || !now.Before(*previousRateLimitResetAt) {
+		return false
+	}
+	if previousCodexResetAt == nil || !now.Before(*previousCodexResetAt) {
+		return false
+	}
+	if account.OverloadUntil != nil && now.Before(*account.OverloadUntil) {
+		return false
+	}
+	return timesWithin(previousRateLimitResetAt, previousCodexResetAt, 5*time.Second)
+}
+
+func timesWithin(a, b *time.Time, tolerance time.Duration) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	diff := a.Sub(*b)
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff <= tolerance
 }
 
 // updateCodexUsageSnapshot saves the Codex usage snapshot to account's Extra field
@@ -4993,10 +5044,15 @@ func (s *OpenAIGatewayService) updateCodexUsageSnapshot(ctx context.Context, acc
 	go func() {
 		updateCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+		accountBeforeUpdate, _ := s.accountRepo.GetByID(updateCtx, accountID)
 		if err := s.accountRepo.UpdateExtra(updateCtx, accountID, updates); err != nil {
 			return
 		}
-		syncOpenAICodexRateLimitFromUpdates(updateCtx, s.accountRepo, accountID, updates, now)
+		if accountBeforeUpdate != nil {
+			syncOpenAICodexRateLimitFromAccountUpdates(updateCtx, s.accountRepo, accountBeforeUpdate, updates, now, true)
+			return
+		}
+		syncOpenAICodexRateLimitFromUpdatesWithClear(updateCtx, s.accountRepo, accountID, updates, now, false)
 	}()
 }
 

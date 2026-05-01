@@ -657,13 +657,13 @@ func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, acco
 		return nil, err
 	}
 	if len(updates) > 0 {
-		s.persistOpenAICodexProbeSnapshot(account.ID, updates)
+		s.persistOpenAICodexProbeSnapshot(account.ID, updates, resp.StatusCode >= 200 && resp.StatusCode < 300)
 		return updates, nil
 	}
 	return nil, nil
 }
 
-func (s *AccountUsageService) persistOpenAICodexProbeSnapshot(accountID int64, updates map[string]any) {
+func (s *AccountUsageService) persistOpenAICodexProbeSnapshot(accountID int64, updates map[string]any, allowClear bool) {
 	if s == nil || s.accountRepo == nil || accountID <= 0 {
 		return
 	}
@@ -674,10 +674,15 @@ func (s *AccountUsageService) persistOpenAICodexProbeSnapshot(accountID int64, u
 	go func() {
 		updateCtx, updateCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer updateCancel()
+		accountBeforeUpdate, _ := s.accountRepo.GetByID(updateCtx, accountID)
 		if err := s.accountRepo.UpdateExtra(updateCtx, accountID, updates); err != nil {
 			return
 		}
-		syncOpenAICodexRateLimitFromUpdates(updateCtx, s.accountRepo, accountID, updates, time.Now())
+		if accountBeforeUpdate != nil {
+			syncOpenAICodexRateLimitFromAccountUpdates(updateCtx, s.accountRepo, accountBeforeUpdate, updates, time.Now(), allowClear)
+			return
+		}
+		syncOpenAICodexRateLimitFromUpdatesWithClear(updateCtx, s.accountRepo, accountID, updates, time.Now(), false)
 	}()
 }
 

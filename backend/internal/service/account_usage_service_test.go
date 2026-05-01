@@ -11,6 +11,7 @@ type accountUsageCodexProbeRepo struct {
 	stubOpenAIAccountRepo
 	updateExtraCh chan map[string]any
 	rateLimitCh   chan time.Time
+	clearRateCh   chan int64
 }
 
 func (r *accountUsageCodexProbeRepo) UpdateExtra(_ context.Context, _ int64, updates map[string]any) error {
@@ -27,6 +28,13 @@ func (r *accountUsageCodexProbeRepo) UpdateExtra(_ context.Context, _ int64, upd
 func (r *accountUsageCodexProbeRepo) SetRateLimited(_ context.Context, _ int64, resetAt time.Time) error {
 	if r.rateLimitCh != nil {
 		r.rateLimitCh <- resetAt
+	}
+	return nil
+}
+
+func (r *accountUsageCodexProbeRepo) ClearRateLimit(_ context.Context, id int64) error {
+	if r.clearRateCh != nil {
+		r.clearRateCh <- id
 	}
 	return nil
 }
@@ -112,7 +120,7 @@ func TestAccountUsageService_PersistOpenAICodexProbeSnapshotSyncsRateLimit(t *te
 	svc.persistOpenAICodexProbeSnapshot(321, map[string]any{
 		"codex_7d_used_percent": 100.0,
 		"codex_7d_reset_at":     resetAt.Format(time.RFC3339),
-	})
+	}, false)
 
 	select {
 	case updates := <-repo.updateExtraCh:
@@ -162,6 +170,123 @@ func TestSyncOpenAICodexRateLimitFromUpdatesKeepsLongerExistingReset(t *testing.
 	select {
 	case persisted := <-repo.rateLimitCh:
 		t.Fatalf("不应使用较短的 Codex reset 覆盖已有上游限流: %v", persisted)
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestSyncOpenAICodexRateLimitFromUpdatesClearsRecoveredCodexReset(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC().Truncate(time.Second)
+	codexReset := now.Add(2 * time.Hour)
+	repo := &accountUsageCodexProbeRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{accounts: []Account{{
+			ID:               765,
+			Platform:         PlatformOpenAI,
+			Type:             AccountTypeOAuth,
+			Status:           StatusActive,
+			Schedulable:      true,
+			RateLimitResetAt: &codexReset,
+			Extra: map[string]any{
+				"codex_7d_used_percent": 100.0,
+				"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+			},
+		}}},
+		rateLimitCh: make(chan time.Time, 1),
+		clearRateCh: make(chan int64, 1),
+	}
+
+	got := syncOpenAICodexRateLimitFromUpdates(context.Background(), repo, 765, map[string]any{
+		"codex_7d_used_percent": 42.0,
+		"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+		"codex_5h_used_percent": 7.0,
+		"codex_5h_reset_at":     now.Add(time.Hour).Format(time.RFC3339),
+	}, now)
+
+	if got != nil {
+		t.Fatalf("recovered codex reset = %v, want nil", got)
+	}
+	select {
+	case id := <-repo.clearRateCh:
+		if id != 765 {
+			t.Fatalf("cleared account id = %d, want 765", id)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("等待恢复后的 Codex 限流清理超时")
+	}
+	select {
+	case reset := <-repo.rateLimitCh:
+		t.Fatalf("不应重新设置限流: %v", reset)
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestSyncOpenAICodexRateLimitFromUpdatesDoesNotClearLongerOrdinaryReset(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC().Truncate(time.Second)
+	codexReset := now.Add(2 * time.Hour)
+	ordinaryReset := now.Add(4 * time.Hour)
+	repo := &accountUsageCodexProbeRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{accounts: []Account{{
+			ID:               876,
+			Platform:         PlatformOpenAI,
+			Type:             AccountTypeOAuth,
+			Status:           StatusActive,
+			Schedulable:      true,
+			RateLimitResetAt: &ordinaryReset,
+			Extra: map[string]any{
+				"codex_7d_used_percent": 100.0,
+				"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+			},
+		}}},
+		clearRateCh: make(chan int64, 1),
+	}
+
+	got := syncOpenAICodexRateLimitFromUpdates(context.Background(), repo, 876, map[string]any{
+		"codex_7d_used_percent": 42.0,
+		"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+	}, now)
+
+	if got != nil {
+		t.Fatalf("reset = %v, want nil", got)
+	}
+	select {
+	case id := <-repo.clearRateCh:
+		t.Fatalf("不应清理更长的普通上游限流: account=%d", id)
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestSyncOpenAICodexRateLimitFromUpdatesDoesNotClearWhenClearDisabled(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC().Truncate(time.Second)
+	codexReset := now.Add(2 * time.Hour)
+	repo := &accountUsageCodexProbeRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{accounts: []Account{{
+			ID:               987,
+			Platform:         PlatformOpenAI,
+			Type:             AccountTypeOAuth,
+			Status:           StatusActive,
+			Schedulable:      true,
+			RateLimitResetAt: &codexReset,
+			Extra: map[string]any{
+				"codex_7d_used_percent": 100.0,
+				"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+			},
+		}}},
+		clearRateCh: make(chan int64, 1),
+	}
+
+	_ = syncOpenAICodexRateLimitFromUpdatesWithClear(context.Background(), repo, 987, map[string]any{
+		"codex_7d_used_percent": 42.0,
+		"codex_7d_reset_at":     codexReset.Format(time.RFC3339),
+	}, now, false)
+
+	select {
+	case id := <-repo.clearRateCh:
+		t.Fatalf("不应在禁止清理时清除限流: account=%d", id)
 	case <-time.After(200 * time.Millisecond):
 	}
 }
