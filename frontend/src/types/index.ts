@@ -44,6 +44,10 @@ export interface User {
 export interface AdminUser extends User {
   // 管理员备注（普通用户接口不返回）
   notes: string
+  temporary_invitation?: boolean
+  temporary_invitation_deadline_at?: string | null
+  temporary_invitation_disabled_at?: string | null
+  temporary_invitation_delete_at?: string | null
   // 用户历史总充值（正向 balance/admin_balance 累计）
   total_recharged?: number
   // 用户专属分组倍率配置 (group_id -> rate_multiplier)
@@ -1111,7 +1115,7 @@ export interface AdminDataImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation' | 'invitation_temp'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2'
 
 export interface UsageLog {

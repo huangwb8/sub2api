@@ -1632,6 +1632,11 @@ export default {
       admin: '管理员',
       user: '用户',
       disabled: '禁用',
+      temporaryInvitationBadge: '临时邀请',
+      temporaryInvitationActiveHint: '24 小时内需累计充值超过 30 元，否则会自动禁用。截止时间：{time}',
+      temporaryInvitationDisabledHint: '该临时邀请用户已被自动禁用。重新启用会重置 24 小时观察期；若持续禁用，则会在 {time} 被彻底删除。',
+      temporaryInvitationPendingDelete: '待删除',
+      temporaryInvitationResetHint: '重新启用后会重新开始 24 小时充值观察期。',
       email: '邮箱',
       password: '密码',
       username: '用户名',
@@ -3748,6 +3753,7 @@ export default {
         concurrency: '并发数',
         subscription: '订阅',
         invitation: '邀请码',
+        invitation_temp: '邀请码（临时）',
         // 管理员在用户管理页面调整余额/并发时产生的记录
         admin_balance: '余额（管理员）',
         admin_concurrency: '并发数（管理员）'
@@ -3758,6 +3764,8 @@ export default {
       subscription: '订阅',
       invitation: '邀请码',
       invitationHint: '邀请码用于限制用户注册，使用后自动标记为已使用。',
+      invitation_temp: '邀请码（临时）',
+      temporaryInvitationHint: '临时邀请码用户需在注册后 24 小时内累计充值超过 30 元，否则会被自动禁用；禁用超过 7 天会被自动彻底删除。',
       allTypes: '全部类型',
       allStatus: '全部状态',
       unused: '未使用',

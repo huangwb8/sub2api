@@ -7,24 +7,28 @@ import (
 )
 
 type User struct {
-	ID             int64
-	Email          string
-	Username       string
-	AvatarURL      string
-	AvatarType     string
-	AvatarStyle    string
-	Notes          string
-	PasswordHash   string
-	Role           string
-	Balance        float64
-	TotalRecharged float64
-	Concurrency    int
-	RPMLimit       *int
-	Status         string
-	AllowedGroups  []int64
-	TokenVersion   int64 // Incremented on password change to invalidate existing tokens
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID                            int64
+	Email                         string
+	Username                      string
+	AvatarURL                     string
+	AvatarType                    string
+	AvatarStyle                   string
+	Notes                         string
+	PasswordHash                  string
+	Role                          string
+	Balance                       float64
+	TotalRecharged                float64
+	Concurrency                   int
+	RPMLimit                      *int
+	Status                        string
+	AllowedGroups                 []int64
+	TemporaryInvitation           bool
+	TemporaryInvitationDeadlineAt *time.Time
+	TemporaryInvitationDisabledAt *time.Time
+	TemporaryInvitationDeleteAt   *time.Time
+	TokenVersion                  int64 // Incremented on password change to invalidate existing tokens
+	CreatedAt                     time.Time
+	UpdatedAt                     time.Time
 
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier

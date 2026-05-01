@@ -70,6 +70,10 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetConcurrency(userIn.Concurrency).
 		SetNillableRpmLimit(userIn.RPMLimit).
 		SetStatus(userIn.Status).
+		SetTemporaryInvitation(userIn.TemporaryInvitation).
+		SetNillableTemporaryInvitationDeadlineAt(userIn.TemporaryInvitationDeadlineAt).
+		SetNillableTemporaryInvitationDisabledAt(userIn.TemporaryInvitationDisabledAt).
+		SetNillableTemporaryInvitationDeleteAt(userIn.TemporaryInvitationDeleteAt).
 		Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, nil, service.ErrEmailExists)
@@ -145,7 +149,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		txClient = r.client
 	}
 
-	updated, err := txClient.User.UpdateOneID(userIn.ID).
+	update := txClient.User.UpdateOneID(userIn.ID).
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
 		SetAvatarURL(userIn.AvatarURL).
@@ -156,9 +160,30 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetRole(userIn.Role).
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
-		SetNillableRpmLimit(userIn.RPMLimit).
 		SetStatus(userIn.Status).
-		Save(ctx)
+		SetTemporaryInvitation(userIn.TemporaryInvitation)
+	if userIn.RPMLimit == nil {
+		update = update.ClearRpmLimit()
+	} else {
+		update = update.SetRpmLimit(*userIn.RPMLimit)
+	}
+	if userIn.TemporaryInvitationDeadlineAt == nil {
+		update = update.ClearTemporaryInvitationDeadlineAt()
+	} else {
+		update = update.SetTemporaryInvitationDeadlineAt(*userIn.TemporaryInvitationDeadlineAt)
+	}
+	if userIn.TemporaryInvitationDisabledAt == nil {
+		update = update.ClearTemporaryInvitationDisabledAt()
+	} else {
+		update = update.SetTemporaryInvitationDisabledAt(*userIn.TemporaryInvitationDisabledAt)
+	}
+	if userIn.TemporaryInvitationDeleteAt == nil {
+		update = update.ClearTemporaryInvitationDeleteAt()
+	} else {
+		update = update.SetTemporaryInvitationDeleteAt(*userIn.TemporaryInvitationDeleteAt)
+	}
+
+	updated, err := update.Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
 	}
@@ -605,6 +630,10 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 	dst.AvatarStyle = service.AvatarStyleOrDefault(src.AvatarStyle)
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+	dst.TemporaryInvitation = src.TemporaryInvitation
+	dst.TemporaryInvitationDeadlineAt = src.TemporaryInvitationDeadlineAt
+	dst.TemporaryInvitationDisabledAt = src.TemporaryInvitationDisabledAt
+	dst.TemporaryInvitationDeleteAt = src.TemporaryInvitationDeleteAt
 }
 
 // UpdateTotpSecret 更新用户的 TOTP 加密密钥

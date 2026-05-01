@@ -147,7 +147,7 @@ func (s *AuthService) RegisterWithAffiliate(ctx context.Context, email, password
 			return "", nil, ErrInvitationCodeInvalid
 		}
 		// 检查类型和状态
-		if redeemCode.Type != RedeemTypeInvitation || redeemCode.Status != StatusUnused {
+		if !IsInvitationRedeemType(redeemCode.Type) || redeemCode.Status != StatusUnused {
 			logger.LegacyPrintf("service.auth", "[Auth] Invitation code invalid: type=%s, status=%s", redeemCode.Type, redeemCode.Status)
 			return "", nil, ErrInvitationCodeInvalid
 		}
@@ -203,6 +203,9 @@ func (s *AuthService) RegisterWithAffiliate(ctx context.Context, email, password
 		Balance:      defaultBalance,
 		Concurrency:  defaultConcurrency,
 		Status:       StatusActive,
+	}
+	if invitationRedeemCode != nil && IsTemporaryInvitationRedeemType(invitationRedeemCode.Type) {
+		ApplyTemporaryInvitationWindow(user, time.Now())
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -591,7 +594,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				if err != nil {
 					return nil, nil, ErrInvitationCodeInvalid
 				}
-				if redeemCode.Type != RedeemTypeInvitation || redeemCode.Status != StatusUnused {
+				if !IsInvitationRedeemType(redeemCode.Type) || redeemCode.Status != StatusUnused {
 					return nil, nil, ErrInvitationCodeInvalid
 				}
 				invitationRedeemCode = redeemCode
@@ -622,6 +625,9 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				Balance:      defaultBalance,
 				Concurrency:  defaultConcurrency,
 				Status:       StatusActive,
+			}
+			if invitationRedeemCode != nil && IsTemporaryInvitationRedeemType(invitationRedeemCode.Type) {
+				ApplyTemporaryInvitationWindow(newUser, time.Now())
 			}
 
 			if s.entClient != nil && invitationRedeemCode != nil {

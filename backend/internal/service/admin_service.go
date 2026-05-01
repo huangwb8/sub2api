@@ -714,6 +714,12 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 
 	if input.Status != "" {
 		user.Status = input.Status
+		if oldStatus == StatusDisabled &&
+			input.Status == StatusActive &&
+			user.TemporaryInvitation &&
+			user.TemporaryInvitationDisabledAt != nil {
+			ApplyTemporaryInvitationWindow(user, time.Now())
+		}
 	}
 
 	if input.Concurrency != nil {
@@ -2334,6 +2340,9 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			Type:   input.Type,
 			Value:  input.Value,
 			Status: StatusUnused,
+		}
+		if IsInvitationRedeemType(input.Type) {
+			code.Value = 0
 		}
 		// 订阅类型专用字段
 		if input.Type == RedeemTypeSubscription {

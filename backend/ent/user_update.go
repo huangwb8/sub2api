@@ -190,6 +190,80 @@ func (_u *UserUpdate) SetNillableStatus(v *string) *UserUpdate {
 	return _u
 }
 
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (_u *UserUpdate) SetTemporaryInvitation(v bool) *UserUpdate {
+	_u.mutation.SetTemporaryInvitation(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitation sets the "temporary_invitation" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTemporaryInvitation(v *bool) *UserUpdate {
+	if v != nil {
+		_u.SetTemporaryInvitation(*v)
+	}
+	return _u
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (_u *UserUpdate) SetTemporaryInvitationDeadlineAt(v time.Time) *UserUpdate {
+	_u.mutation.SetTemporaryInvitationDeadlineAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTemporaryInvitationDeadlineAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetTemporaryInvitationDeadlineAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (_u *UserUpdate) ClearTemporaryInvitationDeadlineAt() *UserUpdate {
+	_u.mutation.ClearTemporaryInvitationDeadlineAt()
+	return _u
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (_u *UserUpdate) SetTemporaryInvitationDisabledAt(v time.Time) *UserUpdate {
+	_u.mutation.SetTemporaryInvitationDisabledAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTemporaryInvitationDisabledAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetTemporaryInvitationDisabledAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (_u *UserUpdate) ClearTemporaryInvitationDisabledAt() *UserUpdate {
+	_u.mutation.ClearTemporaryInvitationDisabledAt()
+	return _u
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (_u *UserUpdate) SetTemporaryInvitationDeleteAt(v time.Time) *UserUpdate {
+	_u.mutation.SetTemporaryInvitationDeleteAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableTemporaryInvitationDeleteAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetTemporaryInvitationDeleteAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (_u *UserUpdate) ClearTemporaryInvitationDeleteAt() *UserUpdate {
+	_u.mutation.ClearTemporaryInvitationDeleteAt()
+	return _u
+}
+
 // SetUsername sets the "username" field.
 func (_u *UserUpdate) SetUsername(v string) *UserUpdate {
 	_u.mutation.SetUsername(v)
@@ -875,6 +949,27 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TemporaryInvitation(); ok {
+		_spec.SetField(user.FieldTemporaryInvitation, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDeadlineAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeadlineAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDeadlineAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDeadlineAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDisabledAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDisabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDisabledAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDisabledAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDeleteAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeleteAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDeleteAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDeleteAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
@@ -1613,6 +1708,80 @@ func (_u *UserUpdateOne) SetNillableStatus(v *string) *UserUpdateOne {
 	return _u
 }
 
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (_u *UserUpdateOne) SetTemporaryInvitation(v bool) *UserUpdateOne {
+	_u.mutation.SetTemporaryInvitation(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitation sets the "temporary_invitation" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTemporaryInvitation(v *bool) *UserUpdateOne {
+	if v != nil {
+		_u.SetTemporaryInvitation(*v)
+	}
+	return _u
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (_u *UserUpdateOne) SetTemporaryInvitationDeadlineAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetTemporaryInvitationDeadlineAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTemporaryInvitationDeadlineAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetTemporaryInvitationDeadlineAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (_u *UserUpdateOne) ClearTemporaryInvitationDeadlineAt() *UserUpdateOne {
+	_u.mutation.ClearTemporaryInvitationDeadlineAt()
+	return _u
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (_u *UserUpdateOne) SetTemporaryInvitationDisabledAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetTemporaryInvitationDisabledAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTemporaryInvitationDisabledAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetTemporaryInvitationDisabledAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (_u *UserUpdateOne) ClearTemporaryInvitationDisabledAt() *UserUpdateOne {
+	_u.mutation.ClearTemporaryInvitationDisabledAt()
+	return _u
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (_u *UserUpdateOne) SetTemporaryInvitationDeleteAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetTemporaryInvitationDeleteAt(v)
+	return _u
+}
+
+// SetNillableTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableTemporaryInvitationDeleteAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetTemporaryInvitationDeleteAt(*v)
+	}
+	return _u
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (_u *UserUpdateOne) ClearTemporaryInvitationDeleteAt() *UserUpdateOne {
+	_u.mutation.ClearTemporaryInvitationDeleteAt()
+	return _u
+}
+
 // SetUsername sets the "username" field.
 func (_u *UserUpdateOne) SetUsername(v string) *UserUpdateOne {
 	_u.mutation.SetUsername(v)
@@ -2328,6 +2497,27 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TemporaryInvitation(); ok {
+		_spec.SetField(user.FieldTemporaryInvitation, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDeadlineAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeadlineAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDeadlineAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDeadlineAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDisabledAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDisabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDisabledAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDisabledAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TemporaryInvitationDeleteAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeleteAt, field.TypeTime, value)
+	}
+	if _u.mutation.TemporaryInvitationDeleteAtCleared() {
+		_spec.ClearField(user.FieldTemporaryInvitationDeleteAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)

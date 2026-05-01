@@ -246,7 +246,7 @@
           :sort-storage-key="USER_SORT_STORAGE_KEY"
           @sort="handleSort"
         >
-          <template #cell-email="{ value }">
+          <template #cell-email="{ value, row }">
             <div class="flex items-center gap-2">
               <div
                 class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30"
@@ -255,7 +255,17 @@
                   {{ value.charAt(0).toUpperCase() }}
                 </span>
               </div>
-              <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+              <div class="min-w-0">
+                <div class="truncate font-medium text-gray-900 dark:text-white">{{ value }}</div>
+                <div v-if="isTemporaryInvitationUser(row)" class="mt-1 flex flex-wrap items-center gap-2">
+                  <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                    {{ t('admin.users.temporaryInvitationBadge') }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ getTemporaryInvitationSummary(row) }}
+                  </span>
+                </div>
+              </div>
             </div>
           </template>
 
@@ -443,7 +453,7 @@
             />
           </template>
 
-          <template #cell-status="{ value }">
+          <template #cell-status="{ value, row }">
             <div class="flex items-center gap-1.5">
               <span
                 :class="[
@@ -451,9 +461,17 @@
                   value === 'active' ? 'bg-green-500' : 'bg-red-500'
                 ]"
               ></span>
-              <span class="text-sm text-gray-700 dark:text-gray-300">
-                {{ value === 'active' ? t('common.active') : t('admin.users.disabled') }}
-              </span>
+              <div class="min-w-0">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ value === 'active' ? t('common.active') : t('admin.users.disabled') }}
+                </div>
+                <div
+                  v-if="value === 'disabled' && isTemporaryInvitationUser(row)"
+                  class="text-xs text-gray-500 dark:text-gray-400"
+                >
+                  {{ t('admin.users.temporaryInvitationPendingDelete') }}
+                </div>
+              </div>
             </div>
           </template>
 
@@ -1107,6 +1125,22 @@ const getUserGroups = (user: AdminUser) => {
   return { exclusive, publicGroups }
 }
 
+const isTemporaryInvitationUser = (user: AdminUser) => Boolean(user.temporary_invitation)
+
+const getTemporaryInvitationSummary = (user: AdminUser) => {
+  if (!isTemporaryInvitationUser(user)) {
+    return ''
+  }
+  if (user.status === 'disabled') {
+    return t('admin.users.temporaryInvitationDisabledHint', {
+      time: formatOptionalDate(user.temporary_invitation_delete_at)
+    })
+  }
+  return t('admin.users.temporaryInvitationActiveHint', {
+    time: formatOptionalDate(user.temporary_invitation_deadline_at)
+  })
+}
+
 // Group filter options: "All Groups" + active exclusive groups (value = group name for fuzzy match)
 const groupFilterOptions = computed(() => {
   const options: { value: string; label: string }[] = [
@@ -1612,9 +1646,14 @@ const handleToggleStatus = async (user: AdminUser) => {
   const newStatus = user.status === 'active' ? 'disabled' : 'active'
   try {
     await adminAPI.users.toggleStatus(user.id, newStatus)
-    appStore.showSuccess(
-      newStatus === 'active' ? t('admin.users.userEnabled') : t('admin.users.userDisabled')
-    )
+    const successMessage = newStatus === 'active'
+      ? (
+          isTemporaryInvitationUser(user)
+            ? `${t('admin.users.userEnabled')} ${t('admin.users.temporaryInvitationResetHint')}`
+            : t('admin.users.userEnabled')
+        )
+      : t('admin.users.userDisabled')
+    appStore.showSuccess(successMessage)
     loadUsers()
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.users.failedToToggle'))

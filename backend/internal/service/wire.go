@@ -668,6 +668,7 @@ var ProviderSet = wire.NewSet(
 	ProvideTokenRefreshService,
 	ProvideAccountExpiryService,
 	ProvideSubscriptionExpiryService,
+	ProvideTemporaryInvitationService,
 	ProvideTimingWheelService,
 	ProvideDashboardAggregationService,
 	ProvideUsageCleanupService,
@@ -702,6 +703,12 @@ func ProvidePaymentConfigService(entClient *dbent.Client, settingRepo SettingRep
 // ProvidePaymentOrderExpiryService creates and starts PaymentOrderExpiryService.
 func ProvidePaymentOrderExpiryService(paymentSvc *PaymentService) *PaymentOrderExpiryService {
 	svc := NewPaymentOrderExpiryService(paymentSvc, 60*time.Second)
+	svc.Start()
+	return svc
+}
+
+func ProvideTemporaryInvitationService(entClient *dbent.Client, authCacheInvalidator APIKeyAuthCacheInvalidator) *TemporaryInvitationService {
+	svc := NewTemporaryInvitationService(entClient, authCacheInvalidator, time.Minute)
 	svc.Start()
 	return svc
 }

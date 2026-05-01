@@ -63,10 +63,14 @@ func UserFromServiceAdmin(u *service.User) *AdminUser {
 		return nil
 	}
 	return &AdminUser{
-		User:        *base,
-		Notes:       u.Notes,
-		GroupRates:  u.GroupRates,
-		RiskProfile: UserRiskProfileFromService(u.RiskProfile),
+		User:                          *base,
+		Notes:                         u.Notes,
+		TemporaryInvitation:           u.TemporaryInvitation,
+		TemporaryInvitationDeadlineAt: u.TemporaryInvitationDeadlineAt,
+		TemporaryInvitationDisabledAt: u.TemporaryInvitationDisabledAt,
+		TemporaryInvitationDeleteAt:   u.TemporaryInvitationDeleteAt,
+		GroupRates:                    u.GroupRates,
+		RiskProfile:                   UserRiskProfileFromService(u.RiskProfile),
 	}
 }
 

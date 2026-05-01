@@ -31,7 +31,11 @@ type User struct {
 type AdminUser struct {
 	User
 
-	Notes string `json:"notes"`
+	Notes                         string     `json:"notes"`
+	TemporaryInvitation           bool       `json:"temporary_invitation"`
+	TemporaryInvitationDeadlineAt *time.Time `json:"temporary_invitation_deadline_at,omitempty"`
+	TemporaryInvitationDisabledAt *time.Time `json:"temporary_invitation_disabled_at,omitempty"`
+	TemporaryInvitationDeleteAt   *time.Time `json:"temporary_invitation_delete_at,omitempty"`
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier
 	GroupRates  map[int64]float64 `json:"group_rates,omitempty"`

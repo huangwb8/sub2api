@@ -157,6 +157,62 @@ func (_c *UserCreate) SetNillableStatus(v *string) *UserCreate {
 	return _c
 }
 
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (_c *UserCreate) SetTemporaryInvitation(v bool) *UserCreate {
+	_c.mutation.SetTemporaryInvitation(v)
+	return _c
+}
+
+// SetNillableTemporaryInvitation sets the "temporary_invitation" field if the given value is not nil.
+func (_c *UserCreate) SetNillableTemporaryInvitation(v *bool) *UserCreate {
+	if v != nil {
+		_c.SetTemporaryInvitation(*v)
+	}
+	return _c
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (_c *UserCreate) SetTemporaryInvitationDeadlineAt(v time.Time) *UserCreate {
+	_c.mutation.SetTemporaryInvitationDeadlineAt(v)
+	return _c
+}
+
+// SetNillableTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableTemporaryInvitationDeadlineAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetTemporaryInvitationDeadlineAt(*v)
+	}
+	return _c
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (_c *UserCreate) SetTemporaryInvitationDisabledAt(v time.Time) *UserCreate {
+	_c.mutation.SetTemporaryInvitationDisabledAt(v)
+	return _c
+}
+
+// SetNillableTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableTemporaryInvitationDisabledAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetTemporaryInvitationDisabledAt(*v)
+	}
+	return _c
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (_c *UserCreate) SetTemporaryInvitationDeleteAt(v time.Time) *UserCreate {
+	_c.mutation.SetTemporaryInvitationDeleteAt(v)
+	return _c
+}
+
+// SetNillableTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableTemporaryInvitationDeleteAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetTemporaryInvitationDeleteAt(*v)
+	}
+	return _c
+}
+
 // SetUsername sets the "username" field.
 func (_c *UserCreate) SetUsername(v string) *UserCreate {
 	_c.mutation.SetUsername(v)
@@ -520,6 +576,10 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.TemporaryInvitation(); !ok {
+		v := user.DefaultTemporaryInvitation
+		_c.mutation.SetTemporaryInvitation(v)
+	}
 	if _, ok := _c.mutation.Username(); !ok {
 		v := user.DefaultUsername
 		_c.mutation.SetUsername(v)
@@ -592,6 +652,9 @@ func (_c *UserCreate) check() error {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.TemporaryInvitation(); !ok {
+		return &ValidationError{Name: "temporary_invitation", err: errors.New(`ent: missing required field "User.temporary_invitation"`)}
 	}
 	if _, ok := _c.mutation.Username(); !ok {
 		return &ValidationError{Name: "username", err: errors.New(`ent: missing required field "User.username"`)}
@@ -692,6 +755,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.TemporaryInvitation(); ok {
+		_spec.SetField(user.FieldTemporaryInvitation, field.TypeBool, value)
+		_node.TemporaryInvitation = value
+	}
+	if value, ok := _c.mutation.TemporaryInvitationDeadlineAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeadlineAt, field.TypeTime, value)
+		_node.TemporaryInvitationDeadlineAt = &value
+	}
+	if value, ok := _c.mutation.TemporaryInvitationDisabledAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDisabledAt, field.TypeTime, value)
+		_node.TemporaryInvitationDisabledAt = &value
+	}
+	if value, ok := _c.mutation.TemporaryInvitationDeleteAt(); ok {
+		_spec.SetField(user.FieldTemporaryInvitationDeleteAt, field.TypeTime, value)
+		_node.TemporaryInvitationDeleteAt = &value
 	}
 	if value, ok := _c.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
@@ -1111,6 +1190,72 @@ func (u *UserUpsert) UpdateStatus() *UserUpsert {
 	return u
 }
 
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (u *UserUpsert) SetTemporaryInvitation(v bool) *UserUpsert {
+	u.Set(user.FieldTemporaryInvitation, v)
+	return u
+}
+
+// UpdateTemporaryInvitation sets the "temporary_invitation" field to the value that was provided on create.
+func (u *UserUpsert) UpdateTemporaryInvitation() *UserUpsert {
+	u.SetExcluded(user.FieldTemporaryInvitation)
+	return u
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (u *UserUpsert) SetTemporaryInvitationDeadlineAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldTemporaryInvitationDeadlineAt, v)
+	return u
+}
+
+// UpdateTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateTemporaryInvitationDeadlineAt() *UserUpsert {
+	u.SetExcluded(user.FieldTemporaryInvitationDeadlineAt)
+	return u
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (u *UserUpsert) ClearTemporaryInvitationDeadlineAt() *UserUpsert {
+	u.SetNull(user.FieldTemporaryInvitationDeadlineAt)
+	return u
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (u *UserUpsert) SetTemporaryInvitationDisabledAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldTemporaryInvitationDisabledAt, v)
+	return u
+}
+
+// UpdateTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateTemporaryInvitationDisabledAt() *UserUpsert {
+	u.SetExcluded(user.FieldTemporaryInvitationDisabledAt)
+	return u
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (u *UserUpsert) ClearTemporaryInvitationDisabledAt() *UserUpsert {
+	u.SetNull(user.FieldTemporaryInvitationDisabledAt)
+	return u
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (u *UserUpsert) SetTemporaryInvitationDeleteAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldTemporaryInvitationDeleteAt, v)
+	return u
+}
+
+// UpdateTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateTemporaryInvitationDeleteAt() *UserUpsert {
+	u.SetExcluded(user.FieldTemporaryInvitationDeleteAt)
+	return u
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (u *UserUpsert) ClearTemporaryInvitationDeleteAt() *UserUpsert {
+	u.SetNull(user.FieldTemporaryInvitationDeleteAt)
+	return u
+}
+
 // SetUsername sets the "username" field.
 func (u *UserUpsert) SetUsername(v string) *UserUpsert {
 	u.Set(user.FieldUsername, v)
@@ -1422,6 +1567,83 @@ func (u *UserUpsertOne) SetStatus(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateStatus() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (u *UserUpsertOne) SetTemporaryInvitation(v bool) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitation(v)
+	})
+}
+
+// UpdateTemporaryInvitation sets the "temporary_invitation" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateTemporaryInvitation() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitation()
+	})
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (u *UserUpsertOne) SetTemporaryInvitationDeadlineAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDeadlineAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateTemporaryInvitationDeadlineAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDeadlineAt()
+	})
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (u *UserUpsertOne) ClearTemporaryInvitationDeadlineAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDeadlineAt()
+	})
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (u *UserUpsertOne) SetTemporaryInvitationDisabledAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDisabledAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateTemporaryInvitationDisabledAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDisabledAt()
+	})
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (u *UserUpsertOne) ClearTemporaryInvitationDisabledAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDisabledAt()
+	})
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (u *UserUpsertOne) SetTemporaryInvitationDeleteAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDeleteAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateTemporaryInvitationDeleteAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDeleteAt()
+	})
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (u *UserUpsertOne) ClearTemporaryInvitationDeleteAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDeleteAt()
 	})
 }
 
@@ -1920,6 +2142,83 @@ func (u *UserUpsertBulk) SetStatus(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateStatus() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (u *UserUpsertBulk) SetTemporaryInvitation(v bool) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitation(v)
+	})
+}
+
+// UpdateTemporaryInvitation sets the "temporary_invitation" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateTemporaryInvitation() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitation()
+	})
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (u *UserUpsertBulk) SetTemporaryInvitationDeadlineAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDeadlineAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateTemporaryInvitationDeadlineAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDeadlineAt()
+	})
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (u *UserUpsertBulk) ClearTemporaryInvitationDeadlineAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDeadlineAt()
+	})
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (u *UserUpsertBulk) SetTemporaryInvitationDisabledAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDisabledAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateTemporaryInvitationDisabledAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDisabledAt()
+	})
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (u *UserUpsertBulk) ClearTemporaryInvitationDisabledAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDisabledAt()
+	})
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (u *UserUpsertBulk) SetTemporaryInvitationDeleteAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetTemporaryInvitationDeleteAt(v)
+	})
+}
+
+// UpdateTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateTemporaryInvitationDeleteAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateTemporaryInvitationDeleteAt()
+	})
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (u *UserUpsertBulk) ClearTemporaryInvitationDeleteAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearTemporaryInvitationDeleteAt()
 	})
 }
 

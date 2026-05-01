@@ -56,6 +56,20 @@ func (User) Fields() []ent.Field {
 		field.String("status").
 			MaxLen(20).
 			Default(domain.StatusActive),
+		field.Bool("temporary_invitation").
+			Default(false),
+		field.Time("temporary_invitation_deadline_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("temporary_invitation_disabled_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("temporary_invitation_delete_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 
 		// Optional profile fields (added later; default '' in DB migration)
 		field.String("username").
@@ -114,6 +128,8 @@ func (User) Indexes() []ent.Index {
 	return []ent.Index{
 		// email 字段已在 Fields() 中声明 Unique()，无需重复索引
 		index.Fields("status"),
+		index.Fields("temporary_invitation"),
+		index.Fields("temporary_invitation_delete_at"),
 		index.Fields("deleted_at"),
 	}
 }

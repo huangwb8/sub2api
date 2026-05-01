@@ -34,7 +34,7 @@
 
 ```
 github项目：huangwb8/sub2api
-version=1.2.15
+version=1.2.16
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
 ```
 
@@ -98,6 +98,16 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+---
+
+你帮我起草一个隐私政策和服务条款，保存在 docs 里。 我主要关注：
+
+- 用户仅允许自己使用，不能转售给其它人。
+- 管理员根据市场成本可能会调整额度或价格。
+- 通常情况下管理员不会退回购买商品的金额。如果管理员无法继续服务，会按已使用的量返回金额。优先余额； 但如果站点不再自动运营，则会返回现金。
+
+其它的点你按常规来写就行，我没啥关系。 
 
 ---
 

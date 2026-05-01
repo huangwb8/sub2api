@@ -32330,69 +32330,73 @@ func (m *UsageLogMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *int64
-	created_at                    *time.Time
-	updated_at                    *time.Time
-	deleted_at                    *time.Time
-	email                         *string
-	password_hash                 *string
-	role                          *string
-	balance                       *float64
-	addbalance                    *float64
-	concurrency                   *int
-	addconcurrency                *int
-	rpm_limit                     *int
-	addrpm_limit                  *int
-	status                        *string
-	username                      *string
-	avatar_url                    *string
-	avatar_type                   *string
-	avatar_style                  *string
-	notes                         *string
-	totp_secret_encrypted         *string
-	totp_enabled                  *bool
-	totp_enabled_at               *time.Time
-	clearedFields                 map[string]struct{}
-	api_keys                      map[int64]struct{}
-	removedapi_keys               map[int64]struct{}
-	clearedapi_keys               bool
-	redeem_codes                  map[int64]struct{}
-	removedredeem_codes           map[int64]struct{}
-	clearedredeem_codes           bool
-	subscriptions                 map[int64]struct{}
-	removedsubscriptions          map[int64]struct{}
-	clearedsubscriptions          bool
-	assigned_subscriptions        map[int64]struct{}
-	removedassigned_subscriptions map[int64]struct{}
-	clearedassigned_subscriptions bool
-	announcement_reads            map[int64]struct{}
-	removedannouncement_reads     map[int64]struct{}
-	clearedannouncement_reads     bool
-	allowed_groups                map[int64]struct{}
-	removedallowed_groups         map[int64]struct{}
-	clearedallowed_groups         bool
-	usage_logs                    map[int64]struct{}
-	removedusage_logs             map[int64]struct{}
-	clearedusage_logs             bool
-	attribute_values              map[int64]struct{}
-	removedattribute_values       map[int64]struct{}
-	clearedattribute_values       bool
-	promo_code_usages             map[int64]struct{}
-	removedpromo_code_usages      map[int64]struct{}
-	clearedpromo_code_usages      bool
-	payment_orders                map[int64]struct{}
-	removedpayment_orders         map[int64]struct{}
-	clearedpayment_orders         bool
-	risk_profile                  *int64
-	clearedrisk_profile           bool
-	risk_events                   map[int64]struct{}
-	removedrisk_events            map[int64]struct{}
-	clearedrisk_events            bool
-	done                          bool
-	oldValue                      func(context.Context) (*User, error)
-	predicates                    []predicate.User
+	op                               Op
+	typ                              string
+	id                               *int64
+	created_at                       *time.Time
+	updated_at                       *time.Time
+	deleted_at                       *time.Time
+	email                            *string
+	password_hash                    *string
+	role                             *string
+	balance                          *float64
+	addbalance                       *float64
+	concurrency                      *int
+	addconcurrency                   *int
+	rpm_limit                        *int
+	addrpm_limit                     *int
+	status                           *string
+	temporary_invitation             *bool
+	temporary_invitation_deadline_at *time.Time
+	temporary_invitation_disabled_at *time.Time
+	temporary_invitation_delete_at   *time.Time
+	username                         *string
+	avatar_url                       *string
+	avatar_type                      *string
+	avatar_style                     *string
+	notes                            *string
+	totp_secret_encrypted            *string
+	totp_enabled                     *bool
+	totp_enabled_at                  *time.Time
+	clearedFields                    map[string]struct{}
+	api_keys                         map[int64]struct{}
+	removedapi_keys                  map[int64]struct{}
+	clearedapi_keys                  bool
+	redeem_codes                     map[int64]struct{}
+	removedredeem_codes              map[int64]struct{}
+	clearedredeem_codes              bool
+	subscriptions                    map[int64]struct{}
+	removedsubscriptions             map[int64]struct{}
+	clearedsubscriptions             bool
+	assigned_subscriptions           map[int64]struct{}
+	removedassigned_subscriptions    map[int64]struct{}
+	clearedassigned_subscriptions    bool
+	announcement_reads               map[int64]struct{}
+	removedannouncement_reads        map[int64]struct{}
+	clearedannouncement_reads        bool
+	allowed_groups                   map[int64]struct{}
+	removedallowed_groups            map[int64]struct{}
+	clearedallowed_groups            bool
+	usage_logs                       map[int64]struct{}
+	removedusage_logs                map[int64]struct{}
+	clearedusage_logs                bool
+	attribute_values                 map[int64]struct{}
+	removedattribute_values          map[int64]struct{}
+	clearedattribute_values          bool
+	promo_code_usages                map[int64]struct{}
+	removedpromo_code_usages         map[int64]struct{}
+	clearedpromo_code_usages         bool
+	payment_orders                   map[int64]struct{}
+	removedpayment_orders            map[int64]struct{}
+	clearedpayment_orders            bool
+	risk_profile                     *int64
+	clearedrisk_profile              bool
+	risk_events                      map[int64]struct{}
+	removedrisk_events               map[int64]struct{}
+	clearedrisk_events               bool
+	done                             bool
+	oldValue                         func(context.Context) (*User, error)
+	predicates                       []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -32938,6 +32942,189 @@ func (m *UserMutation) OldStatus(ctx context.Context) (v string, err error) {
 // ResetStatus resets all changes to the "status" field.
 func (m *UserMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetTemporaryInvitation sets the "temporary_invitation" field.
+func (m *UserMutation) SetTemporaryInvitation(b bool) {
+	m.temporary_invitation = &b
+}
+
+// TemporaryInvitation returns the value of the "temporary_invitation" field in the mutation.
+func (m *UserMutation) TemporaryInvitation() (r bool, exists bool) {
+	v := m.temporary_invitation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporaryInvitation returns the old "temporary_invitation" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTemporaryInvitation(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporaryInvitation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporaryInvitation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporaryInvitation: %w", err)
+	}
+	return oldValue.TemporaryInvitation, nil
+}
+
+// ResetTemporaryInvitation resets all changes to the "temporary_invitation" field.
+func (m *UserMutation) ResetTemporaryInvitation() {
+	m.temporary_invitation = nil
+}
+
+// SetTemporaryInvitationDeadlineAt sets the "temporary_invitation_deadline_at" field.
+func (m *UserMutation) SetTemporaryInvitationDeadlineAt(t time.Time) {
+	m.temporary_invitation_deadline_at = &t
+}
+
+// TemporaryInvitationDeadlineAt returns the value of the "temporary_invitation_deadline_at" field in the mutation.
+func (m *UserMutation) TemporaryInvitationDeadlineAt() (r time.Time, exists bool) {
+	v := m.temporary_invitation_deadline_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporaryInvitationDeadlineAt returns the old "temporary_invitation_deadline_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTemporaryInvitationDeadlineAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporaryInvitationDeadlineAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporaryInvitationDeadlineAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporaryInvitationDeadlineAt: %w", err)
+	}
+	return oldValue.TemporaryInvitationDeadlineAt, nil
+}
+
+// ClearTemporaryInvitationDeadlineAt clears the value of the "temporary_invitation_deadline_at" field.
+func (m *UserMutation) ClearTemporaryInvitationDeadlineAt() {
+	m.temporary_invitation_deadline_at = nil
+	m.clearedFields[user.FieldTemporaryInvitationDeadlineAt] = struct{}{}
+}
+
+// TemporaryInvitationDeadlineAtCleared returns if the "temporary_invitation_deadline_at" field was cleared in this mutation.
+func (m *UserMutation) TemporaryInvitationDeadlineAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldTemporaryInvitationDeadlineAt]
+	return ok
+}
+
+// ResetTemporaryInvitationDeadlineAt resets all changes to the "temporary_invitation_deadline_at" field.
+func (m *UserMutation) ResetTemporaryInvitationDeadlineAt() {
+	m.temporary_invitation_deadline_at = nil
+	delete(m.clearedFields, user.FieldTemporaryInvitationDeadlineAt)
+}
+
+// SetTemporaryInvitationDisabledAt sets the "temporary_invitation_disabled_at" field.
+func (m *UserMutation) SetTemporaryInvitationDisabledAt(t time.Time) {
+	m.temporary_invitation_disabled_at = &t
+}
+
+// TemporaryInvitationDisabledAt returns the value of the "temporary_invitation_disabled_at" field in the mutation.
+func (m *UserMutation) TemporaryInvitationDisabledAt() (r time.Time, exists bool) {
+	v := m.temporary_invitation_disabled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporaryInvitationDisabledAt returns the old "temporary_invitation_disabled_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTemporaryInvitationDisabledAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporaryInvitationDisabledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporaryInvitationDisabledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporaryInvitationDisabledAt: %w", err)
+	}
+	return oldValue.TemporaryInvitationDisabledAt, nil
+}
+
+// ClearTemporaryInvitationDisabledAt clears the value of the "temporary_invitation_disabled_at" field.
+func (m *UserMutation) ClearTemporaryInvitationDisabledAt() {
+	m.temporary_invitation_disabled_at = nil
+	m.clearedFields[user.FieldTemporaryInvitationDisabledAt] = struct{}{}
+}
+
+// TemporaryInvitationDisabledAtCleared returns if the "temporary_invitation_disabled_at" field was cleared in this mutation.
+func (m *UserMutation) TemporaryInvitationDisabledAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldTemporaryInvitationDisabledAt]
+	return ok
+}
+
+// ResetTemporaryInvitationDisabledAt resets all changes to the "temporary_invitation_disabled_at" field.
+func (m *UserMutation) ResetTemporaryInvitationDisabledAt() {
+	m.temporary_invitation_disabled_at = nil
+	delete(m.clearedFields, user.FieldTemporaryInvitationDisabledAt)
+}
+
+// SetTemporaryInvitationDeleteAt sets the "temporary_invitation_delete_at" field.
+func (m *UserMutation) SetTemporaryInvitationDeleteAt(t time.Time) {
+	m.temporary_invitation_delete_at = &t
+}
+
+// TemporaryInvitationDeleteAt returns the value of the "temporary_invitation_delete_at" field in the mutation.
+func (m *UserMutation) TemporaryInvitationDeleteAt() (r time.Time, exists bool) {
+	v := m.temporary_invitation_delete_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemporaryInvitationDeleteAt returns the old "temporary_invitation_delete_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldTemporaryInvitationDeleteAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemporaryInvitationDeleteAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemporaryInvitationDeleteAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemporaryInvitationDeleteAt: %w", err)
+	}
+	return oldValue.TemporaryInvitationDeleteAt, nil
+}
+
+// ClearTemporaryInvitationDeleteAt clears the value of the "temporary_invitation_delete_at" field.
+func (m *UserMutation) ClearTemporaryInvitationDeleteAt() {
+	m.temporary_invitation_delete_at = nil
+	m.clearedFields[user.FieldTemporaryInvitationDeleteAt] = struct{}{}
+}
+
+// TemporaryInvitationDeleteAtCleared returns if the "temporary_invitation_delete_at" field was cleared in this mutation.
+func (m *UserMutation) TemporaryInvitationDeleteAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldTemporaryInvitationDeleteAt]
+	return ok
+}
+
+// ResetTemporaryInvitationDeleteAt resets all changes to the "temporary_invitation_delete_at" field.
+func (m *UserMutation) ResetTemporaryInvitationDeleteAt() {
+	m.temporary_invitation_delete_at = nil
+	delete(m.clearedFields, user.FieldTemporaryInvitationDeleteAt)
 }
 
 // SetUsername sets the "username" field.
@@ -33921,7 +34108,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -33951,6 +34138,18 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, user.FieldStatus)
+	}
+	if m.temporary_invitation != nil {
+		fields = append(fields, user.FieldTemporaryInvitation)
+	}
+	if m.temporary_invitation_deadline_at != nil {
+		fields = append(fields, user.FieldTemporaryInvitationDeadlineAt)
+	}
+	if m.temporary_invitation_disabled_at != nil {
+		fields = append(fields, user.FieldTemporaryInvitationDisabledAt)
+	}
+	if m.temporary_invitation_delete_at != nil {
+		fields = append(fields, user.FieldTemporaryInvitationDeleteAt)
 	}
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
@@ -34004,6 +34203,14 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.RpmLimit()
 	case user.FieldStatus:
 		return m.Status()
+	case user.FieldTemporaryInvitation:
+		return m.TemporaryInvitation()
+	case user.FieldTemporaryInvitationDeadlineAt:
+		return m.TemporaryInvitationDeadlineAt()
+	case user.FieldTemporaryInvitationDisabledAt:
+		return m.TemporaryInvitationDisabledAt()
+	case user.FieldTemporaryInvitationDeleteAt:
+		return m.TemporaryInvitationDeleteAt()
 	case user.FieldUsername:
 		return m.Username()
 	case user.FieldAvatarURL:
@@ -34049,6 +34256,14 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRpmLimit(ctx)
 	case user.FieldStatus:
 		return m.OldStatus(ctx)
+	case user.FieldTemporaryInvitation:
+		return m.OldTemporaryInvitation(ctx)
+	case user.FieldTemporaryInvitationDeadlineAt:
+		return m.OldTemporaryInvitationDeadlineAt(ctx)
+	case user.FieldTemporaryInvitationDisabledAt:
+		return m.OldTemporaryInvitationDisabledAt(ctx)
+	case user.FieldTemporaryInvitationDeleteAt:
+		return m.OldTemporaryInvitationDeleteAt(ctx)
 	case user.FieldUsername:
 		return m.OldUsername(ctx)
 	case user.FieldAvatarURL:
@@ -34143,6 +34358,34 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case user.FieldTemporaryInvitation:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporaryInvitation(v)
+		return nil
+	case user.FieldTemporaryInvitationDeadlineAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporaryInvitationDeadlineAt(v)
+		return nil
+	case user.FieldTemporaryInvitationDisabledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporaryInvitationDisabledAt(v)
+		return nil
+	case user.FieldTemporaryInvitationDeleteAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemporaryInvitationDeleteAt(v)
 		return nil
 	case user.FieldUsername:
 		v, ok := value.(string)
@@ -34275,6 +34518,15 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldRpmLimit) {
 		fields = append(fields, user.FieldRpmLimit)
 	}
+	if m.FieldCleared(user.FieldTemporaryInvitationDeadlineAt) {
+		fields = append(fields, user.FieldTemporaryInvitationDeadlineAt)
+	}
+	if m.FieldCleared(user.FieldTemporaryInvitationDisabledAt) {
+		fields = append(fields, user.FieldTemporaryInvitationDisabledAt)
+	}
+	if m.FieldCleared(user.FieldTemporaryInvitationDeleteAt) {
+		fields = append(fields, user.FieldTemporaryInvitationDeleteAt)
+	}
 	if m.FieldCleared(user.FieldTotpSecretEncrypted) {
 		fields = append(fields, user.FieldTotpSecretEncrypted)
 	}
@@ -34300,6 +34552,15 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldRpmLimit:
 		m.ClearRpmLimit()
+		return nil
+	case user.FieldTemporaryInvitationDeadlineAt:
+		m.ClearTemporaryInvitationDeadlineAt()
+		return nil
+	case user.FieldTemporaryInvitationDisabledAt:
+		m.ClearTemporaryInvitationDisabledAt()
+		return nil
+	case user.FieldTemporaryInvitationDeleteAt:
+		m.ClearTemporaryInvitationDeleteAt()
 		return nil
 	case user.FieldTotpSecretEncrypted:
 		m.ClearTotpSecretEncrypted()
@@ -34344,6 +34605,18 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case user.FieldTemporaryInvitation:
+		m.ResetTemporaryInvitation()
+		return nil
+	case user.FieldTemporaryInvitationDeadlineAt:
+		m.ResetTemporaryInvitationDeadlineAt()
+		return nil
+	case user.FieldTemporaryInvitationDisabledAt:
+		m.ResetTemporaryInvitationDisabledAt()
+		return nil
+	case user.FieldTemporaryInvitationDeleteAt:
+		m.ResetTemporaryInvitationDeleteAt()
 		return nil
 	case user.FieldUsername:
 		m.ResetUsername()

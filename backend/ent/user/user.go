@@ -35,6 +35,14 @@ const (
 	FieldRpmLimit = "rpm_limit"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldTemporaryInvitation holds the string denoting the temporary_invitation field in the database.
+	FieldTemporaryInvitation = "temporary_invitation"
+	// FieldTemporaryInvitationDeadlineAt holds the string denoting the temporary_invitation_deadline_at field in the database.
+	FieldTemporaryInvitationDeadlineAt = "temporary_invitation_deadline_at"
+	// FieldTemporaryInvitationDisabledAt holds the string denoting the temporary_invitation_disabled_at field in the database.
+	FieldTemporaryInvitationDisabledAt = "temporary_invitation_disabled_at"
+	// FieldTemporaryInvitationDeleteAt holds the string denoting the temporary_invitation_delete_at field in the database.
+	FieldTemporaryInvitationDeleteAt = "temporary_invitation_delete_at"
 	// FieldUsername holds the string denoting the username field in the database.
 	FieldUsername = "username"
 	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
@@ -183,6 +191,10 @@ var Columns = []string{
 	FieldConcurrency,
 	FieldRpmLimit,
 	FieldStatus,
+	FieldTemporaryInvitation,
+	FieldTemporaryInvitationDeadlineAt,
+	FieldTemporaryInvitationDisabledAt,
+	FieldTemporaryInvitationDeleteAt,
 	FieldUsername,
 	FieldAvatarURL,
 	FieldAvatarType,
@@ -239,6 +251,8 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultTemporaryInvitation holds the default value on creation for the "temporary_invitation" field.
+	DefaultTemporaryInvitation bool
 	// DefaultUsername holds the default value on creation for the "username" field.
 	DefaultUsername string
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
@@ -315,6 +329,26 @@ func ByRpmLimit(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByTemporaryInvitation orders the results by the temporary_invitation field.
+func ByTemporaryInvitation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemporaryInvitation, opts...).ToFunc()
+}
+
+// ByTemporaryInvitationDeadlineAt orders the results by the temporary_invitation_deadline_at field.
+func ByTemporaryInvitationDeadlineAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemporaryInvitationDeadlineAt, opts...).ToFunc()
+}
+
+// ByTemporaryInvitationDisabledAt orders the results by the temporary_invitation_disabled_at field.
+func ByTemporaryInvitationDisabledAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemporaryInvitationDisabledAt, opts...).ToFunc()
+}
+
+// ByTemporaryInvitationDeleteAt orders the results by the temporary_invitation_delete_at field.
+func ByTemporaryInvitationDeleteAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemporaryInvitationDeleteAt, opts...).ToFunc()
 }
 
 // ByUsername orders the results by the username field.

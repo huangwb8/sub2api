@@ -1358,34 +1358,38 @@ func init() {
 	user.DefaultStatus = userDescStatus.Default.(string)
 	// user.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	user.StatusValidator = userDescStatus.Validators[0].(func(string) error)
+	// userDescTemporaryInvitation is the schema descriptor for temporary_invitation field.
+	userDescTemporaryInvitation := userFields[7].Descriptor()
+	// user.DefaultTemporaryInvitation holds the default value on creation for the temporary_invitation field.
+	user.DefaultTemporaryInvitation = userDescTemporaryInvitation.Default.(bool)
 	// userDescUsername is the schema descriptor for username field.
-	userDescUsername := userFields[7].Descriptor()
+	userDescUsername := userFields[11].Descriptor()
 	// user.DefaultUsername holds the default value on creation for the username field.
 	user.DefaultUsername = userDescUsername.Default.(string)
 	// user.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	user.UsernameValidator = userDescUsername.Validators[0].(func(string) error)
 	// userDescAvatarURL is the schema descriptor for avatar_url field.
-	userDescAvatarURL := userFields[8].Descriptor()
+	userDescAvatarURL := userFields[12].Descriptor()
 	// user.DefaultAvatarURL holds the default value on creation for the avatar_url field.
 	user.DefaultAvatarURL = userDescAvatarURL.Default.(string)
 	// userDescAvatarType is the schema descriptor for avatar_type field.
-	userDescAvatarType := userFields[9].Descriptor()
+	userDescAvatarType := userFields[13].Descriptor()
 	// user.DefaultAvatarType holds the default value on creation for the avatar_type field.
 	user.DefaultAvatarType = userDescAvatarType.Default.(string)
 	// user.AvatarTypeValidator is a validator for the "avatar_type" field. It is called by the builders before save.
 	user.AvatarTypeValidator = userDescAvatarType.Validators[0].(func(string) error)
 	// userDescAvatarStyle is the schema descriptor for avatar_style field.
-	userDescAvatarStyle := userFields[10].Descriptor()
+	userDescAvatarStyle := userFields[14].Descriptor()
 	// user.DefaultAvatarStyle holds the default value on creation for the avatar_style field.
 	user.DefaultAvatarStyle = userDescAvatarStyle.Default.(string)
 	// user.AvatarStyleValidator is a validator for the "avatar_style" field. It is called by the builders before save.
 	user.AvatarStyleValidator = userDescAvatarStyle.Validators[0].(func(string) error)
 	// userDescNotes is the schema descriptor for notes field.
-	userDescNotes := userFields[11].Descriptor()
+	userDescNotes := userFields[15].Descriptor()
 	// user.DefaultNotes holds the default value on creation for the notes field.
 	user.DefaultNotes = userDescNotes.Default.(string)
 	// userDescTotpEnabled is the schema descriptor for totp_enabled field.
-	userDescTotpEnabled := userFields[13].Descriptor()
+	userDescTotpEnabled := userFields[17].Descriptor()
 	// user.DefaultTotpEnabled holds the default value on creation for the totp_enabled field.
 	user.DefaultTotpEnabled = userDescTotpEnabled.Default.(bool)
 	userallowedgroupFields := schema.UserAllowedGroup{}.Fields()

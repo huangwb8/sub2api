@@ -12,6 +12,7 @@
 | 代理巡检历史结构 | `backend/ent/schema/proxy_probe_log.go` | `proxy_probe_logs` 短期历史、巡检来源、出口信息与错误截断字段 |
 | 代理巡检写入 | `backend/internal/service/proxy_failover_service.go`、`backend/internal/service/admin_service.go` | 自动巡检与手动测试旁路写入，不改变迁移和探测主流程 |
 | 代理可靠性分析 | `backend/internal/repository/proxy_probe_log_repo.go`、`backend/internal/handler/admin/proxy_handler.go` | `/admin/proxies/:id/probe-logs` 与 `/admin/proxies/:id/reliability` 的只读分析口径 |
+| 临时邀请用户状态 | `backend/internal/service/auth_service.go`、`backend/internal/service/temporary_invitation_service.go`、`backend/internal/service/admin_service.go` | `邀请码（临时）` 注册后的 24h 充值观察、自动禁用/删除与管理员重新启用重置窗口语义 |
 | 前端管理端 API | `frontend/src/api/admin/usage.ts` | 管理端 usage 接口的参数与返回类型 |
 | 前端代理 API | `frontend/src/api/admin/proxies.ts` | 代理巡检历史与可靠性接口类型 |
 | 前端 Dashboard API | `frontend/src/api/admin/dashboard.ts` | Dashboard 接口的参数与返回类型 |

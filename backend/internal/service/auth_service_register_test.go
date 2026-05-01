@@ -10,6 +10,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,6 +63,155 @@ type defaultSubscriptionAssignerStub struct {
 	err   error
 }
 
+type authRedeemRepoStub struct {
+	code     *RedeemCode
+	getErr   error
+	useErr   error
+	usedCode *int64
+	usedBy   *int64
+}
+
+func (s *authRedeemRepoStub) Create(context.Context, *RedeemCode) error {
+	panic("unexpected Create call")
+}
+func (s *authRedeemRepoStub) CreateBatch(context.Context, []RedeemCode) error {
+	panic("unexpected CreateBatch call")
+}
+func (s *authRedeemRepoStub) GetByID(context.Context, int64) (*RedeemCode, error) {
+	panic("unexpected GetByID call")
+}
+func (s *authRedeemRepoStub) GetByCode(context.Context, string) (*RedeemCode, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
+	return s.code, nil
+}
+func (s *authRedeemRepoStub) Update(context.Context, *RedeemCode) error {
+	panic("unexpected Update call")
+}
+func (s *authRedeemRepoStub) Delete(context.Context, int64) error { panic("unexpected Delete call") }
+func (s *authRedeemRepoStub) Use(_ context.Context, id, userID int64) error {
+	if s.useErr != nil {
+		return s.useErr
+	}
+	s.usedCode = &id
+	s.usedBy = &userID
+	return nil
+}
+func (s *authRedeemRepoStub) List(context.Context, pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error) {
+	panic("unexpected List call")
+}
+func (s *authRedeemRepoStub) ListWithFilters(context.Context, pagination.PaginationParams, string, string, string) ([]RedeemCode, *pagination.PaginationResult, error) {
+	panic("unexpected ListWithFilters call")
+}
+func (s *authRedeemRepoStub) ListByUser(context.Context, int64, int) ([]RedeemCode, error) {
+	panic("unexpected ListByUser call")
+}
+func (s *authRedeemRepoStub) ListByUserPaginated(context.Context, int64, pagination.PaginationParams, string) ([]RedeemCode, *pagination.PaginationResult, error) {
+	panic("unexpected ListByUserPaginated call")
+}
+func (s *authRedeemRepoStub) SumPositiveBalanceByUser(context.Context, int64) (float64, error) {
+	panic("unexpected SumPositiveBalanceByUser call")
+}
+
+type refreshTokenCacheNoopStub struct{}
+
+func (refreshTokenCacheNoopStub) StoreRefreshToken(context.Context, string, *RefreshTokenData, time.Duration) error {
+	return nil
+}
+func (refreshTokenCacheNoopStub) GetRefreshToken(context.Context, string) (*RefreshTokenData, error) {
+	return nil, ErrRefreshTokenNotFound
+}
+func (refreshTokenCacheNoopStub) ConsumeRefreshToken(context.Context, string) (*RefreshTokenData, error) {
+	return nil, ErrRefreshTokenNotFound
+}
+func (refreshTokenCacheNoopStub) DeleteRefreshToken(context.Context, string) error { return nil }
+func (refreshTokenCacheNoopStub) DeleteUserRefreshTokens(context.Context, int64) error {
+	return nil
+}
+func (refreshTokenCacheNoopStub) DeleteTokenFamily(context.Context, string) error { return nil }
+func (refreshTokenCacheNoopStub) AddToUserTokenSet(context.Context, int64, string, time.Duration) error {
+	return nil
+}
+func (refreshTokenCacheNoopStub) AddToFamilyTokenSet(context.Context, string, string, time.Duration) error {
+	return nil
+}
+func (refreshTokenCacheNoopStub) GetUserTokenHashes(context.Context, int64) ([]string, error) {
+	return nil, nil
+}
+func (refreshTokenCacheNoopStub) GetFamilyTokenHashes(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+func (refreshTokenCacheNoopStub) IsTokenInFamily(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
+type authOAuthUserRepoStub struct {
+	nextID      int64
+	createdUser *User
+	updatedUser *User
+}
+
+func (s *authOAuthUserRepoStub) Create(_ context.Context, user *User) error {
+	if s.nextID != 0 && user.ID == 0 {
+		user.ID = s.nextID
+	}
+	clone := *user
+	s.createdUser = &clone
+	return nil
+}
+func (s *authOAuthUserRepoStub) GetByID(context.Context, int64) (*User, error) {
+	panic("unexpected GetByID call")
+}
+func (s *authOAuthUserRepoStub) GetByEmail(context.Context, string) (*User, error) {
+	return nil, ErrUserNotFound
+}
+func (s *authOAuthUserRepoStub) GetFirstAdmin(context.Context) (*User, error) {
+	panic("unexpected GetFirstAdmin call")
+}
+func (s *authOAuthUserRepoStub) Update(_ context.Context, user *User) error {
+	clone := *user
+	s.updatedUser = &clone
+	return nil
+}
+func (s *authOAuthUserRepoStub) Delete(context.Context, int64) error { panic("unexpected Delete call") }
+func (s *authOAuthUserRepoStub) List(context.Context, pagination.PaginationParams) ([]User, *pagination.PaginationResult, error) {
+	panic("unexpected List call")
+}
+func (s *authOAuthUserRepoStub) ListWithFilters(context.Context, pagination.PaginationParams, UserListFilters) ([]User, *pagination.PaginationResult, error) {
+	panic("unexpected ListWithFilters call")
+}
+func (s *authOAuthUserRepoStub) UpdateBalance(context.Context, int64, float64) error {
+	panic("unexpected UpdateBalance call")
+}
+func (s *authOAuthUserRepoStub) DeductBalance(context.Context, int64, float64) error {
+	panic("unexpected DeductBalance call")
+}
+func (s *authOAuthUserRepoStub) UpdateConcurrency(context.Context, int64, int) error {
+	panic("unexpected UpdateConcurrency call")
+}
+func (s *authOAuthUserRepoStub) ExistsByEmail(context.Context, string) (bool, error) {
+	return false, nil
+}
+func (s *authOAuthUserRepoStub) RemoveGroupFromAllowedGroups(context.Context, int64) (int64, error) {
+	panic("unexpected RemoveGroupFromAllowedGroups call")
+}
+func (s *authOAuthUserRepoStub) AddGroupToAllowedGroups(context.Context, int64, int64) error {
+	panic("unexpected AddGroupToAllowedGroups call")
+}
+func (s *authOAuthUserRepoStub) RemoveGroupFromUserAllowedGroups(context.Context, int64, int64) error {
+	panic("unexpected RemoveGroupFromUserAllowedGroups call")
+}
+func (s *authOAuthUserRepoStub) UpdateTotpSecret(context.Context, int64, *string) error {
+	panic("unexpected UpdateTotpSecret call")
+}
+func (s *authOAuthUserRepoStub) EnableTotp(context.Context, int64) error {
+	panic("unexpected EnableTotp call")
+}
+func (s *authOAuthUserRepoStub) DisableTotp(context.Context, int64) error {
+	panic("unexpected DisableTotp call")
+}
+
 func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
 	if input != nil {
 		s.calls = append(s.calls, *input)
@@ -107,7 +257,11 @@ func (s *emailCacheStub) SetPasswordResetEmailCooldown(ctx context.Context, emai
 	return nil
 }
 
-func newAuthService(repo *userRepoStub, settings map[string]string, emailCache EmailCache) *AuthService {
+func newAuthService(repo UserRepository, settings map[string]string, emailCache EmailCache) *AuthService {
+	return newAuthServiceWithDeps(repo, settings, emailCache, nil, nil)
+}
+
+func newAuthServiceWithDeps(repo UserRepository, settings map[string]string, emailCache EmailCache, redeemRepo RedeemCodeRepository, refreshTokenCache RefreshTokenCache) *AuthService {
 	cfg := &config.Config{
 		JWT: config.JWTConfig{
 			Secret:     "test-secret",
@@ -132,8 +286,8 @@ func newAuthService(repo *userRepoStub, settings map[string]string, emailCache E
 	return NewAuthService(
 		nil, // entClient
 		repo,
-		nil, // redeemRepo
-		nil, // refreshTokenCache
+		redeemRepo,
+		refreshTokenCache,
 		cfg,
 		settingService,
 		emailService,
@@ -464,4 +618,68 @@ func TestAuthService_Register_AssignsDefaultSubscriptions(t *testing.T) {
 	require.Equal(t, 30, assigner.calls[0].ValidityDays)
 	require.Equal(t, int64(12), assigner.calls[1].GroupID)
 	require.Equal(t, 7, assigner.calls[1].ValidityDays)
+}
+
+func TestAuthService_Register_TemporaryInvitationMarksUser(t *testing.T) {
+	repo := &userRepoStub{nextID: 99}
+	redeemRepo := &authRedeemRepoStub{
+		code: &RedeemCode{
+			ID:     7,
+			Code:   "TEMP-CODE",
+			Type:   RedeemTypeInvitationTemp,
+			Status: StatusUnused,
+		},
+	}
+	service := newAuthServiceWithDeps(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+	}, nil, redeemRepo, nil)
+
+	before := time.Now()
+	_, user, err := service.RegisterWithAffiliate(context.Background(), "temp@test.com", "password", "", "", "TEMP-CODE", "")
+	after := time.Now()
+
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.True(t, user.TemporaryInvitation)
+	require.NotNil(t, user.TemporaryInvitationDeadlineAt)
+	require.Nil(t, user.TemporaryInvitationDisabledAt)
+	require.Nil(t, user.TemporaryInvitationDeleteAt)
+	require.WithinDuration(t, before.Add(TemporaryInvitationSignupWindow), *user.TemporaryInvitationDeadlineAt, 2*time.Second)
+	require.WithinDuration(t, after.Add(TemporaryInvitationSignupWindow), *user.TemporaryInvitationDeadlineAt, 2*time.Second)
+	require.NotNil(t, redeemRepo.usedCode)
+	require.NotNil(t, redeemRepo.usedBy)
+	require.Equal(t, int64(7), *redeemRepo.usedCode)
+	require.Equal(t, user.ID, *redeemRepo.usedBy)
+}
+
+func TestAuthService_OAuthRegister_TemporaryInvitationMarksUser(t *testing.T) {
+	repo := &authOAuthUserRepoStub{nextID: 321}
+	redeemRepo := &authRedeemRepoStub{
+		code: &RedeemCode{
+			ID:     11,
+			Code:   "TEMP-OAUTH",
+			Type:   RedeemTypeInvitationTemp,
+			Status: StatusUnused,
+		},
+	}
+	service := newAuthServiceWithDeps(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+	}, nil, redeemRepo, refreshTokenCacheNoopStub{})
+
+	before := time.Now()
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPair(context.Background(), "oauth-temp@test.com", "oauth-temp", "TEMP-OAUTH")
+	after := time.Now()
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.NotNil(t, user)
+	require.NotNil(t, repo.createdUser)
+	require.True(t, user.TemporaryInvitation)
+	require.NotNil(t, user.TemporaryInvitationDeadlineAt)
+	require.WithinDuration(t, before.Add(TemporaryInvitationSignupWindow), *user.TemporaryInvitationDeadlineAt, 2*time.Second)
+	require.WithinDuration(t, after.Add(TemporaryInvitationSignupWindow), *user.TemporaryInvitationDeadlineAt, 2*time.Second)
+	require.NotEmpty(t, tokenPair.AccessToken)
+	require.NotEmpty(t, tokenPair.RefreshToken)
 }

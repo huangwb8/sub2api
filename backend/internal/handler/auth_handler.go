@@ -413,7 +413,7 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 	}
 
 	// 检查类型和状态
-	if redeemCode.Type != service.RedeemTypeInvitation {
+	if !service.IsInvitationRedeemType(redeemCode.Type) {
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
 			ErrorCode: "INVITATION_CODE_INVALID",

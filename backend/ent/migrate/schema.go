@@ -1145,6 +1145,10 @@ var (
 		{Name: "concurrency", Type: field.TypeInt, Default: 5},
 		{Name: "rpm_limit", Type: field.TypeInt, Nullable: true},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
+		{Name: "temporary_invitation", Type: field.TypeBool, Default: false},
+		{Name: "temporary_invitation_deadline_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "temporary_invitation_disabled_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "temporary_invitation_delete_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "username", Type: field.TypeString, Size: 100, Default: ""},
 		{Name: "avatar_url", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "avatar_type", Type: field.TypeString, Size: 32, Default: "generated"},
@@ -1164,6 +1168,16 @@ var (
 				Name:    "user_status",
 				Unique:  false,
 				Columns: []*schema.Column{UsersColumns[10]},
+			},
+			{
+				Name:    "user_temporary_invitation",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[11]},
+			},
+			{
+				Name:    "user_temporary_invitation_delete_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[14]},
 			},
 			{
 				Name:    "user_deleted_at",

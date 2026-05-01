@@ -1606,6 +1606,11 @@ export default {
       admin: 'Admin',
       user: 'User',
       disabled: 'Disabled',
+      temporaryInvitationBadge: 'Temp Invite',
+      temporaryInvitationActiveHint: 'This user must accumulate more than CNY 30 within 24 hours or the account will be auto-disabled. Deadline: {time}',
+      temporaryInvitationDisabledHint: 'This temporary-invitation user was auto-disabled. Re-enabling starts a fresh 24-hour observation window; if it stays disabled, the account will be permanently deleted at {time}.',
+      temporaryInvitationPendingDelete: 'Pending Delete',
+      temporaryInvitationResetHint: 'Re-enabling this user starts a fresh 24-hour recharge observation window.',
       email: 'Email',
       password: 'Password',
       username: 'Username',
@@ -3613,6 +3618,8 @@ export default {
       subscription: 'Subscription',
       invitation: 'Invitation',
       invitationHint: 'Invitation codes are used to restrict user registration. They are automatically marked as used after use.',
+      invitation_temp: 'Invitation (Temporary)',
+      temporaryInvitationHint: 'Users created with temporary invitation codes must accumulate more than CNY 30 in recharges within 24 hours, or they will be auto-disabled. If they stay disabled for more than 7 days, the account is permanently deleted.',
       unused: 'Unused',
       used: 'Used',
       columns: {
@@ -3660,6 +3667,7 @@ export default {
         concurrency: 'Concurrency',
         subscription: 'Subscription',
         invitation: 'Invitation',
+        invitation_temp: 'Invitation (Temporary)',
         // Admin adjustment types (created when admin modifies user balance/concurrency)
         admin_balance: 'Balance (Admin)',
         admin_concurrency: 'Concurrency (Admin)'

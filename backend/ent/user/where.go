@@ -105,6 +105,26 @@ func Status(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldStatus, v))
 }
 
+// TemporaryInvitation applies equality check predicate on the "temporary_invitation" field. It's identical to TemporaryInvitationEQ.
+func TemporaryInvitation(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitation, v))
+}
+
+// TemporaryInvitationDeadlineAt applies equality check predicate on the "temporary_invitation_deadline_at" field. It's identical to TemporaryInvitationDeadlineAtEQ.
+func TemporaryInvitationDeadlineAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDisabledAt applies equality check predicate on the "temporary_invitation_disabled_at" field. It's identical to TemporaryInvitationDisabledAtEQ.
+func TemporaryInvitationDisabledAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDeleteAt applies equality check predicate on the "temporary_invitation_delete_at" field. It's identical to TemporaryInvitationDeleteAtEQ.
+func TemporaryInvitationDeleteAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDeleteAt, v))
+}
+
 // Username applies equality check predicate on the "username" field. It's identical to UsernameEQ.
 func Username(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldUsername, v))
@@ -663,6 +683,166 @@ func StatusEqualFold(v string) predicate.User {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// TemporaryInvitationEQ applies the EQ predicate on the "temporary_invitation" field.
+func TemporaryInvitationEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitation, v))
+}
+
+// TemporaryInvitationNEQ applies the NEQ predicate on the "temporary_invitation" field.
+func TemporaryInvitationNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTemporaryInvitation, v))
+}
+
+// TemporaryInvitationDeadlineAtEQ applies the EQ predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtNEQ applies the NEQ predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtIn applies the In predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTemporaryInvitationDeadlineAt, vs...))
+}
+
+// TemporaryInvitationDeadlineAtNotIn applies the NotIn predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTemporaryInvitationDeadlineAt, vs...))
+}
+
+// TemporaryInvitationDeadlineAtGT applies the GT predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtGTE applies the GTE predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtLT applies the LT predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtLTE applies the LTE predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTemporaryInvitationDeadlineAt, v))
+}
+
+// TemporaryInvitationDeadlineAtIsNil applies the IsNil predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTemporaryInvitationDeadlineAt))
+}
+
+// TemporaryInvitationDeadlineAtNotNil applies the NotNil predicate on the "temporary_invitation_deadline_at" field.
+func TemporaryInvitationDeadlineAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTemporaryInvitationDeadlineAt))
+}
+
+// TemporaryInvitationDisabledAtEQ applies the EQ predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtNEQ applies the NEQ predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtIn applies the In predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTemporaryInvitationDisabledAt, vs...))
+}
+
+// TemporaryInvitationDisabledAtNotIn applies the NotIn predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTemporaryInvitationDisabledAt, vs...))
+}
+
+// TemporaryInvitationDisabledAtGT applies the GT predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtGTE applies the GTE predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtLT applies the LT predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtLTE applies the LTE predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTemporaryInvitationDisabledAt, v))
+}
+
+// TemporaryInvitationDisabledAtIsNil applies the IsNil predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTemporaryInvitationDisabledAt))
+}
+
+// TemporaryInvitationDisabledAtNotNil applies the NotNil predicate on the "temporary_invitation_disabled_at" field.
+func TemporaryInvitationDisabledAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTemporaryInvitationDisabledAt))
+}
+
+// TemporaryInvitationDeleteAtEQ applies the EQ predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtNEQ applies the NEQ predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtIn applies the In predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTemporaryInvitationDeleteAt, vs...))
+}
+
+// TemporaryInvitationDeleteAtNotIn applies the NotIn predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTemporaryInvitationDeleteAt, vs...))
+}
+
+// TemporaryInvitationDeleteAtGT applies the GT predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtGTE applies the GTE predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtLT applies the LT predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtLTE applies the LTE predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTemporaryInvitationDeleteAt, v))
+}
+
+// TemporaryInvitationDeleteAtIsNil applies the IsNil predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldTemporaryInvitationDeleteAt))
+}
+
+// TemporaryInvitationDeleteAtNotNil applies the NotNil predicate on the "temporary_invitation_delete_at" field.
+func TemporaryInvitationDeleteAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldTemporaryInvitationDeleteAt))
 }
 
 // UsernameEQ applies the EQ predicate on the "username" field.

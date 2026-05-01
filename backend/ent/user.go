@@ -38,6 +38,14 @@ type User struct {
 	RpmLimit *int `json:"rpm_limit,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// TemporaryInvitation holds the value of the "temporary_invitation" field.
+	TemporaryInvitation bool `json:"temporary_invitation,omitempty"`
+	// TemporaryInvitationDeadlineAt holds the value of the "temporary_invitation_deadline_at" field.
+	TemporaryInvitationDeadlineAt *time.Time `json:"temporary_invitation_deadline_at,omitempty"`
+	// TemporaryInvitationDisabledAt holds the value of the "temporary_invitation_disabled_at" field.
+	TemporaryInvitationDisabledAt *time.Time `json:"temporary_invitation_disabled_at,omitempty"`
+	// TemporaryInvitationDeleteAt holds the value of the "temporary_invitation_delete_at" field.
+	TemporaryInvitationDeleteAt *time.Time `json:"temporary_invitation_delete_at,omitempty"`
 	// Username holds the value of the "username" field.
 	Username string `json:"username,omitempty"`
 	// 用户头像 URL；可为外链或 /uploads/avatars 下的本地上传路径
@@ -217,7 +225,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldTotpEnabled:
+		case user.FieldTemporaryInvitation, user.FieldTotpEnabled:
 			values[i] = new(sql.NullBool)
 		case user.FieldBalance:
 			values[i] = new(sql.NullFloat64)
@@ -225,7 +233,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldAvatarURL, user.FieldAvatarType, user.FieldAvatarStyle, user.FieldNotes, user.FieldTotpSecretEncrypted:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTemporaryInvitationDeadlineAt, user.FieldTemporaryInvitationDisabledAt, user.FieldTemporaryInvitationDeleteAt, user.FieldTotpEnabledAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -309,6 +317,33 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case user.FieldTemporaryInvitation:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field temporary_invitation", values[i])
+			} else if value.Valid {
+				_m.TemporaryInvitation = value.Bool
+			}
+		case user.FieldTemporaryInvitationDeadlineAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field temporary_invitation_deadline_at", values[i])
+			} else if value.Valid {
+				_m.TemporaryInvitationDeadlineAt = new(time.Time)
+				*_m.TemporaryInvitationDeadlineAt = value.Time
+			}
+		case user.FieldTemporaryInvitationDisabledAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field temporary_invitation_disabled_at", values[i])
+			} else if value.Valid {
+				_m.TemporaryInvitationDisabledAt = new(time.Time)
+				*_m.TemporaryInvitationDisabledAt = value.Time
+			}
+		case user.FieldTemporaryInvitationDeleteAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field temporary_invitation_delete_at", values[i])
+			} else if value.Valid {
+				_m.TemporaryInvitationDeleteAt = new(time.Time)
+				*_m.TemporaryInvitationDeleteAt = value.Time
 			}
 		case user.FieldUsername:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -494,6 +529,24 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("temporary_invitation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TemporaryInvitation))
+	builder.WriteString(", ")
+	if v := _m.TemporaryInvitationDeadlineAt; v != nil {
+		builder.WriteString("temporary_invitation_deadline_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.TemporaryInvitationDisabledAt; v != nil {
+		builder.WriteString("temporary_invitation_disabled_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.TemporaryInvitationDeleteAt; v != nil {
+		builder.WriteString("temporary_invitation_delete_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("username=")
 	builder.WriteString(_m.Username)

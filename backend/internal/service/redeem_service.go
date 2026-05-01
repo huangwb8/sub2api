@@ -132,7 +132,7 @@ func (s *RedeemService) GenerateCodes(ctx context.Context, req GenerateCodesRequ
 	}
 
 	// 邀请码类型不需要数值，其他类型需要非零值（支持负数用于退款）
-	if req.Type != RedeemTypeInvitation && req.Value == 0 {
+	if !IsInvitationRedeemType(req.Type) && req.Value == 0 {
 		return nil, errors.New("value must not be zero")
 	}
 
@@ -147,7 +147,7 @@ func (s *RedeemService) GenerateCodes(ctx context.Context, req GenerateCodesRequ
 
 	// 邀请码类型的 value 设为 0
 	value := req.Value
-	if codeType == RedeemTypeInvitation {
+	if IsInvitationRedeemType(codeType) {
 		value = 0
 	}
 
@@ -188,7 +188,7 @@ func (s *RedeemService) CreateCode(ctx context.Context, code *RedeemCode) error 
 	if code.Type == "" {
 		code.Type = RedeemTypeBalance
 	}
-	if code.Type != RedeemTypeInvitation && code.Value == 0 {
+	if !IsInvitationRedeemType(code.Type) && code.Value == 0 {
 		return errors.New("value must not be zero")
 	}
 	if code.Status == "" {
