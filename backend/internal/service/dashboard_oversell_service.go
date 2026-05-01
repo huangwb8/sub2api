@@ -16,6 +16,7 @@ const (
 	dashboardOversellDefaultConfidenceLevel    = 0.95
 	dashboardOversellDefaultProfitRatePercent  = 20.0
 	dashboardOversellDefaultProfitMode         = "net_margin"
+	dashboardOversellDefaultResidentialIPPrice = 29.52 / 9.08
 	dashboardOversellDaysPerMonth              = 30.0
 	dashboardOversellResidentialIPLookbackDays = 14
 	dashboardOversellFallbackUSDCNYRate        = 7.2
@@ -164,7 +165,7 @@ func (s *DashboardRecommendationService) loadDashboardOversellDefaults(ctx conte
 		ProfitRatePercent:               dashboardOversellDefaultProfitRatePercent,
 		ProfitMode:                      dashboardOversellDefaultProfitMode,
 		TargetProfitTotalCNY:            0,
-		ResidentialIPPriceUSDPerGBMonth: 0,
+		ResidentialIPPriceUSDPerGBMonth: dashboardOversellDefaultResidentialIPPrice,
 	}
 
 	if s == nil || s.db == nil {

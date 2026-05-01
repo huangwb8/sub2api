@@ -139,25 +139,12 @@ vi.mock('vue-i18n', async () => {
     'admin.dashboard.oversell.result.floorPriceHint': '保守保本价 ¥{floor}',
     'admin.dashboard.oversell.result.priceGapHint': '与达标单价差额 {gap}',
     'admin.dashboard.oversell.result.residentialIpTraffic': '预计需 {traffic} GB/月',
-    'admin.dashboard.oversell.result.residentialIpCostHint': '按近 {days} 天人均流量折算 · 约 {traffic} GB · {users} 人 · 汇率 {fx}',
-    'admin.dashboard.oversell.result.residentialIpScopeHint': '当前结果口径：{scope} · 包含管理员：{includesAdmin}',
+    'admin.dashboard.oversell.result.residentialIpCostHint': '按近 {days} 天样本折算 · 约 {traffic} GB · {users} 人 · 汇率 {fx}',
     'admin.dashboard.oversell.result.residentialIpCalibrationHint': '校准系数 {bytes} Bytes/token · 来源 {source}',
     'admin.dashboard.oversell.result.revenueHint': '月收入 ¥{value}',
     'admin.dashboard.oversell.result.costHint': '保守月成本 ¥{value}',
     'admin.dashboard.oversell.result.note': 'Hoeffding 上界用于估算在给定把握度下，用户池人均消耗超出可承受阈值的风险。',
     'admin.dashboard.oversell.result.users': '{count} 人',
-    'admin.dashboard.oversell.residentialIpScopeTitle': '住宅 IP 双口径说明',
-    'admin.dashboard.oversell.residentialIpScopeDescription': '说明',
-    'admin.dashboard.oversell.reconciliationSummary': '对账：估算 {estimated} / 账单 {supplier} / 误差 {error}',
-    'admin.dashboard.oversell.scopePricing': '套餐定价口径',
-    'admin.dashboard.oversell.scopeSite': '站点真实成本口径',
-    'admin.dashboard.oversell.scopePricingDescription': '定价口径说明',
-    'admin.dashboard.oversell.scopeSiteDescription': '站点口径说明',
-    'admin.dashboard.oversell.scopeTraffic': '窗口总流量',
-    'admin.dashboard.oversell.scopeMonthlyCost': '折算月成本',
-    'admin.dashboard.oversell.scopeUsers': '涉及用户',
-    'admin.dashboard.oversell.scopeAdmin': '包含管理员',
-    'admin.dashboard.oversell.scopeTrafficBasisHint': '流量基础：{basis} · 校准来源：{calibration}',
     'admin.dashboard.oversell.table.title': '套餐价格换算',
     'admin.dashboard.oversell.table.plan': '套餐',
     'admin.dashboard.oversell.table.basis': '权益规模 / 测算依据',
@@ -578,6 +565,7 @@ describe('admin DashboardView', () => {
     expect(wrapper.text()).toContain('当前月费等价')
     expect(wrapper.text()).toContain('月付基础版')
     expect(wrapper.text()).toContain('额度 $50')
+    expect(wrapper.text()).not.toContain('住宅 IP 双口径说明')
 
     const initialRequiredPrice = wrapper.get('[data-testid="oversell-recommended-price"]').text()
     const userCountInput = wrapper.get('[data-testid="oversell-user-count"]')
@@ -797,7 +785,7 @@ describe('admin DashboardView', () => {
     expect(wrapper.get('[data-testid="oversell-recommended-price"]').text()).not.toEqual(initialRequiredPrice)
   })
 
-  it('projects residential IP cost from modeled user count instead of current site user count', async () => {
+  it('projects residential IP cost from modeled user count instead of freezing at the sample baseline', async () => {
     const wrapper = mount(DashboardView, {
       global: {
         stubs: {
@@ -832,9 +820,8 @@ describe('admin DashboardView', () => {
     expect(trafficAt20Users).toBe('预计需 15 GB/月')
     expect(costAt40Users).toBe('¥2.59K')
     expect(trafficAt40Users).toBe('预计需 30 GB/月')
-    expect(costAt40Users).not.toEqual(costAt20Users)
-    expect(trafficAt40Users).not.toEqual(trafficAt20Users)
-    expect(wrapper.text()).toContain('40 人')
+    expect(costAt40Users).not.toBe(costAt20Users)
+    expect(trafficAt40Users).not.toBe(trafficAt20Users)
   })
 
   it('renders help tooltip triggers for unified package pricing parameters', async () => {

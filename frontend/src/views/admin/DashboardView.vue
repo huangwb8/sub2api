@@ -595,16 +595,6 @@
                   <p class="calculator-result-card__meta">
                     {{
                       oversellScenario
-                        ? t('admin.dashboard.oversell.result.residentialIpScopeHint', {
-                            scope: t('admin.dashboard.oversell.scopePricing'),
-                            includesAdmin: oversellScenario.residentialIp.includesAdmin ? t('common.yes') : t('common.no')
-                          })
-                        : '--'
-                    }}
-                  </p>
-                  <p class="calculator-result-card__meta">
-                    {{
-                      oversellScenario
                         ? t('admin.dashboard.oversell.result.residentialIpCalibrationHint', {
                             bytes: formatDecimal(oversellScenario.residentialIp.effectiveBytesPerToken, 2),
                             source: oversellScenario.residentialIp.calibrationSource || 'n/a'
@@ -664,77 +654,6 @@
                   </p>
                   <p class="calculator-result-card__meta">
                     {{ oversellScenario ? t('admin.dashboard.oversell.result.priceGapHint', { gap: formatSignedCny(oversellScenario.priceGap) }) : '--' }}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section
-              v-if="residentialIpScopeCards.length > 0"
-              class="card border border-gray-200/70 bg-white/95 p-4 dark:border-dark-600 dark:bg-dark-800/90"
-            >
-              <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h4 class="dashboard-panel-section-title">
-                    {{ t('admin.dashboard.oversell.residentialIpScopeTitle') }}
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('admin.dashboard.oversell.residentialIpScopeDescription') }}
-                  </p>
-                </div>
-                <p v-if="residentialIpReconciliation" class="text-xs text-gray-500 dark:text-gray-400">
-                  {{
-                    t('admin.dashboard.oversell.reconciliationSummary', {
-                      estimated: formatDecimal(residentialIpReconciliation.estimated_traffic_gb, 2),
-                      supplier: formatDecimal(residentialIpReconciliation.supplier_traffic_gb, 2),
-                      error: formatPercentDetailed(Math.abs(residentialIpReconciliation.relative_error_rate), 1)
-                    })
-                  }}
-                </p>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <div
-                  v-for="item in residentialIpScopeCards"
-                  :key="item.scope"
-                  class="rounded-2xl border border-gray-200/80 bg-gray-50/80 p-4 dark:border-dark-600 dark:bg-dark-700/70"
-                >
-                  <div class="flex items-center justify-between gap-3">
-                    <h5 class="text-sm font-semibold text-gray-900 dark:text-white">
-                      {{ item.scope === 'pricing' ? t('admin.dashboard.oversell.scopePricing') : t('admin.dashboard.oversell.scopeSite') }}
-                    </h5>
-                    <span class="rounded-full bg-white px-2 py-1 text-xs text-gray-500 shadow-sm dark:bg-dark-800 dark:text-gray-300">
-                      {{ formatDecimal(item.effective_bytes_per_token, 2) }} B/token
-                    </span>
-                  </div>
-                  <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    {{ item.scope === 'pricing' ? t('admin.dashboard.oversell.scopePricingDescription') : t('admin.dashboard.oversell.scopeSiteDescription') }}
-                  </p>
-                  <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p class="text-gray-500 dark:text-gray-400">{{ t('admin.dashboard.oversell.scopeTraffic') }}</p>
-                      <p class="font-semibold text-gray-900 dark:text-white">{{ formatDecimal(item.estimated_total_traffic_gb, 2) }} GB</p>
-                    </div>
-                    <div>
-                      <p class="text-gray-500 dark:text-gray-400">{{ t('admin.dashboard.oversell.scopeMonthlyCost') }}</p>
-                      <p class="font-semibold text-gray-900 dark:text-white">{{ formatCny(item.estimated_monthly_cost_cny) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-gray-500 dark:text-gray-400">{{ t('admin.dashboard.oversell.scopeUsers') }}</p>
-                      <p class="font-semibold text-gray-900 dark:text-white">{{ item.involved_users }}</p>
-                    </div>
-                    <div>
-                      <p class="text-gray-500 dark:text-gray-400">{{ t('admin.dashboard.oversell.scopeAdmin') }}</p>
-                      <p class="font-semibold text-gray-900 dark:text-white">{{ item.includes_admin ? t('common.yes') : t('common.no') }}</p>
-                    </div>
-                  </div>
-                  <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    {{
-                      t('admin.dashboard.oversell.scopeTrafficBasisHint', {
-                        basis: item.traffic_basis || 'unknown',
-                        calibration: item.calibration_source || 'static_default'
-                      })
-                    }}
                   </p>
                 </div>
               </div>
@@ -1070,7 +989,6 @@ import type {
   ProfitabilityTrendPoint,
   ModelStat,
   ResidentialIpEstimateView,
-  ResidentialIpReconciliationView,
   UserUsageTrendPoint,
   UserSpendingRankingItem
 } from '@/types'
@@ -1414,20 +1332,6 @@ const pricingResidentialIpEstimate = computed(() =>
   resolveResidentialIpEstimateByScope(oversellCalculator.value?.estimate, 'pricing')
 )
 
-const siteResidentialIpEstimate = computed(() =>
-  resolveResidentialIpEstimateByScope(oversellCalculator.value?.estimate, 'site')
-)
-
-const residentialIpScopeCards = computed(() =>
-  [pricingResidentialIpEstimate.value, siteResidentialIpEstimate.value].filter(
-    (item): item is ResidentialIpEstimateView => item !== null
-  )
-)
-
-const residentialIpReconciliation = computed<ResidentialIpReconciliationView | null>(() =>
-  oversellCalculator.value?.estimate?.residential_ip_reconciliation ?? null
-)
-
 const resolveResidentialIPMonthlyCost = (
   residentialEstimate: ResidentialIpEstimateView | null,
   priceUSDPerGBMonth: number,
@@ -1437,8 +1341,14 @@ const resolveResidentialIPMonthlyCost = (
   const sampledInvolvedUsers = Math.max(Math.round(residentialEstimate?.involved_users || 0), 0)
   const modeledUsers = Math.max(Math.round(modeledUserCount || 0), 1)
   const sampledTotalTrafficGB = Math.max(residentialEstimate?.estimated_total_traffic_gb || 0, 0)
+  const sampledMonthlyTrafficGB = Math.max(
+    residentialEstimate?.estimated_monthly_traffic_gb ||
+      (actualDays > 0 ? (sampledTotalTrafficGB / actualDays) * 30 : 0),
+    0
+  )
   const projectionRatio = sampledInvolvedUsers > 0 ? modeledUsers / sampledInvolvedUsers : 0
   const totalTrafficGB = sampledTotalTrafficGB * projectionRatio
+  const monthlyTrafficGB = sampledMonthlyTrafficGB * projectionRatio
   const normalizedPrice = Math.max(priceUSDPerGBMonth || 0, 0)
   const fxRateUSDCNY =
     residentialEstimate && residentialEstimate.estimated_monthly_cost_usd > 0
@@ -1447,15 +1357,8 @@ const resolveResidentialIPMonthlyCost = (
           0
         )
       : 0
-  const monthlyCostUSD =
-    actualDays > 0 && totalTrafficGB > 0 && normalizedPrice > 0
-      ? (totalTrafficGB / actualDays) * normalizedPrice * 30
-      : 0
+  const monthlyCostUSD = monthlyTrafficGB > 0 && normalizedPrice > 0 ? monthlyTrafficGB * normalizedPrice : 0
   const monthlyCostCNY = monthlyCostUSD * fxRateUSDCNY
-  const monthlyTrafficGB =
-    actualDays > 0 && totalTrafficGB > 0
-      ? (totalTrafficGB / actualDays) * 30
-      : 0
 
   return {
     actualDays,

@@ -2,8 +2,25 @@ package service
 
 import (
 	"database/sql"
+	"math"
 	"testing"
 )
+
+func TestLoadDashboardOversellDefaults_UsesNonZeroResidentialIPPrice(t *testing.T) {
+	svc := &DashboardRecommendationService{}
+
+	defaults, err := svc.loadDashboardOversellDefaults(t.Context())
+	if err != nil {
+		t.Fatalf("loadDashboardOversellDefaults() error = %v", err)
+	}
+	if math.Abs(defaults.ResidentialIPPriceUSDPerGBMonth-dashboardOversellDefaultResidentialIPPrice) > 0.000001 {
+		t.Fatalf(
+			"ResidentialIPPriceUSDPerGBMonth = %v, want %v",
+			defaults.ResidentialIPPriceUSDPerGBMonth,
+			dashboardOversellDefaultResidentialIPPrice,
+		)
+	}
+}
 
 func TestDashboardOversellPriceMultiplier(t *testing.T) {
 	t.Run("markup", func(t *testing.T) {
