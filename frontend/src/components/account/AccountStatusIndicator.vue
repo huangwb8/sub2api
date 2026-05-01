@@ -2,7 +2,7 @@
   <div class="flex items-center gap-2">
     <!-- Rate Limit Display (429) - Two-line layout -->
     <div v-if="isRateLimited" class="flex flex-col items-center gap-1">
-      <span class="badge text-xs badge-warning">{{ t('admin.accounts.status.rateLimited') }}</span>
+      <span class="badge text-xs badge-warning">{{ rateLimitStatusText }}</span>
       <span class="text-[11px] text-gray-400 dark:text-gray-500">{{ rateLimitResumeText }}</span>
     </div>
 
@@ -69,7 +69,7 @@
       <div
         class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 whitespace-normal rounded bg-gray-900 px-3 py-2 text-center text-xs leading-relaxed text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-700"
       >
-        {{ t('admin.accounts.status.rateLimitedUntil', { time: formatDateTime(account.rate_limit_reset_at) }) }}
+        {{ t('admin.accounts.status.rateLimitedUntil', { time: formatDateTime(effectiveRateLimitResetAt) }) }}
         <div
           class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"
         ></div>
@@ -171,17 +171,50 @@ const emit = defineEmits<{
   (e: 'show-temp-unsched', account: Account): void
 }>()
 
-// Computed: is rate limited (429)
-const isRateLimited = computed(() => {
-  if (!props.account.rate_limit_reset_at) return false
-  return new Date(props.account.rate_limit_reset_at) > new Date()
-})
-
 type AccountModelStatusItem = {
   kind: 'rate_limit' | 'credits_exhausted' | 'credits_active'
   model: string
   reset_at: string
 }
+
+const parseFutureTime = (value: string | null | undefined, now = new Date()): string | null => {
+  if (!value) return null
+  const timestamp = new Date(value).getTime()
+  if (!Number.isFinite(timestamp) || timestamp <= now.getTime()) return null
+  return value
+}
+
+const codexRateLimitInfo = computed(() => {
+  if (props.account.platform !== 'openai' || props.account.type !== 'oauth') return null
+  const extra = props.account.extra
+  if (!extra) return null
+  const now = new Date()
+  const windows = [
+    { used: extra.codex_7d_used_percent, resetAt: extra.codex_7d_reset_at, reason: 'codex_7d_exhausted' },
+    { used: extra.codex_5h_used_percent, resetAt: extra.codex_5h_reset_at, reason: 'codex_5h_exhausted' }
+  ] as const
+  for (const window of windows) {
+    if (Number(window.used ?? 0) < 100) continue
+    const resetAt = parseFutureTime(window.resetAt, now)
+    if (resetAt) return { resetAt, reason: window.reason }
+  }
+  return null
+})
+
+const effectiveRateLimitResetAt = computed(() => {
+  return props.account.effective_rate_limit_reset_at
+    || parseFutureTime(props.account.rate_limit_reset_at)
+    || codexRateLimitInfo.value?.resetAt
+    || null
+})
+
+const effectiveStatus = computed(() => props.account.effective_status || null)
+
+// Computed: is rate limited (429/Codex quota)
+const isRateLimited = computed(() => {
+  if (effectiveStatus.value) return effectiveStatus.value === 'rate_limited'
+  return !!effectiveRateLimitResetAt.value
+})
 
 // Computed: active model statuses (普通模型限流 + 积分耗尽 + 走积分中)
 const activeModelStatuses = computed<AccountModelStatusItem[]>(() => {
@@ -269,12 +302,14 @@ const formatModelResetTime = (resetAt: string): string => {
 
 // Computed: is overloaded (529)
 const isOverloaded = computed(() => {
+  if (effectiveStatus.value) return effectiveStatus.value === 'overloaded'
   if (!props.account.overload_until) return false
   return new Date(props.account.overload_until) > new Date()
 })
 
 // Computed: is temp unschedulable
 const isTempUnschedulable = computed(() => {
+  if (effectiveStatus.value) return effectiveStatus.value === 'temp_unschedulable'
   if (!props.account.temp_unschedulable_until) return false
   return new Date(props.account.temp_unschedulable_until) > new Date()
 })
@@ -306,6 +341,7 @@ const isQuotaResetExpired = (startKey: 'quota_daily_start' | 'quota_weekly_start
 }
 
 const hasQuotaExceededStatus = computed(() => {
+  if (effectiveStatus.value) return effectiveStatus.value === 'quota_exhausted'
   if (props.account.schedulable) return false
   if (props.account.type !== 'apikey' && props.account.type !== 'bedrock') return false
 
@@ -324,17 +360,29 @@ const hasQuotaExceededStatus = computed(() => {
 
 // Computed: has error status
 const hasError = computed(() => {
+  if (effectiveStatus.value) return effectiveStatus.value === 'error'
   return props.account.status === 'error'
 })
 
 // Computed: countdown text for rate limit (429)
 const rateLimitCountdown = computed(() => {
-  return formatCountdown(props.account.rate_limit_reset_at)
+  return formatCountdown(effectiveRateLimitResetAt.value)
 })
 
 const rateLimitResumeText = computed(() => {
   if (!rateLimitCountdown.value) return ''
   return t('admin.accounts.status.rateLimitedAutoResume', { time: rateLimitCountdown.value })
+})
+
+const isCodexRateLimited = computed(() => {
+  const reason = props.account.effective_status_reason || codexRateLimitInfo.value?.reason || ''
+  return reason === 'codex_5h_exhausted' || reason === 'codex_7d_exhausted'
+})
+
+const rateLimitStatusText = computed(() => {
+  return isCodexRateLimited.value
+    ? t('admin.accounts.status.codexRateLimited')
+    : t('admin.accounts.status.rateLimited')
 })
 
 // Computed: countdown text for overload (529)
@@ -352,6 +400,9 @@ const statusClass = computed(() => {
   }
   if (hasQuotaExceededStatus.value) {
     return 'badge-warning'
+  }
+  if (effectiveStatus.value === 'paused') {
+    return 'badge-gray'
   }
   if (!props.account.schedulable) {
     return 'badge-gray'
@@ -379,10 +430,13 @@ const statusText = computed(() => {
   if (hasQuotaExceededStatus.value) {
     return t('admin.accounts.status.quotaExceeded')
   }
+  if (effectiveStatus.value === 'paused') {
+    return t('admin.accounts.status.paused')
+  }
   if (!props.account.schedulable) {
     return t('admin.accounts.status.paused')
   }
-  return t(`admin.accounts.status.${props.account.status}`)
+  return t(`admin.accounts.status.${effectiveStatus.value || props.account.status}`)
 })
 
 const handleTempUnschedClick = () => {

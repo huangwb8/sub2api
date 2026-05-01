@@ -89,6 +89,51 @@ describe('AccountStatusIndicator', () => {
     expect(wrapper.emitted('show-temp-unsched')).toHaveLength(1)
   })
 
+  it('Codex 5h 用量耗尽时显示 Codex 限额中，而不是正常', () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          platform: 'openai',
+          type: 'oauth',
+          extra: {
+            codex_5h_used_percent: 100,
+            codex_5h_reset_at: '2099-03-15T00:00:00Z',
+            codex_7d_used_percent: 42
+          }
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('admin.accounts.status.codexRateLimited')
+    expect(wrapper.text()).not.toContain('admin.accounts.status.active')
+  })
+
+  it('后端 effective_status 标记 Codex 限流时优先使用派生状态', () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          platform: 'openai',
+          type: 'oauth',
+          effective_status: 'rate_limited',
+          effective_status_reason: 'codex_7d_exhausted',
+          effective_rate_limit_reset_at: '2099-03-15T00:00:00Z'
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('admin.accounts.status.codexRateLimited')
+  })
+
   it('模型限流 + overages 启用 + 无 AICredits key → 显示 ⚡ (credits_active)', () => {
     const wrapper = mount(AccountStatusIndicator, {
       props: {

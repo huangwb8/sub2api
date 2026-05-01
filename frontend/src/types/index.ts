@@ -766,6 +766,8 @@ export interface Account {
   actual_cost_usage_usd?: number | null
   actual_cost_updated_at?: string | null
   status: 'active' | 'inactive' | 'error'
+  effective_status?: 'active' | 'inactive' | 'error' | 'rate_limited' | 'overloaded' | 'temp_unschedulable' | 'quota_exhausted' | 'paused' | null
+  effective_status_reason?: 'codex_5h_exhausted' | 'codex_7d_exhausted' | 'rate_limit' | 'overload' | 'temp_unschedulable' | 'quota_exhausted' | 'manual_paused' | 'expired' | string | null
   error_message: string | null
   last_used_at: string | null
   expires_at: number | null
@@ -780,6 +782,7 @@ export interface Account {
   schedulable: boolean
   rate_limited_at: string | null
   rate_limit_reset_at: string | null
+  effective_rate_limit_reset_at?: string | null
   overload_until: string | null
   temp_unschedulable_until: string | null
   temp_unschedulable_reason: string | null

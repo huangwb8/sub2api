@@ -932,22 +932,26 @@ func (s *OpenAIGatewayService) openAIWSStickySessionErrorRateMinSamples() int {
 }
 
 func (s *OpenAIGatewayService) openAIWSSchedulerWeights() GatewayOpenAIWSSchedulerScoreWeightsView {
-	if s != nil && s.cfg != nil {
-		return GatewayOpenAIWSSchedulerScoreWeightsView{
-			Priority:  s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Priority,
-			Load:      s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Load,
-			Queue:     s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Queue,
-			ErrorRate: s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.ErrorRate,
-			TTFT:      s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.TTFT,
-		}
-	}
-	return GatewayOpenAIWSSchedulerScoreWeightsView{
+	defaultWeights := GatewayOpenAIWSSchedulerScoreWeightsView{
 		Priority:  1.0,
 		Load:      1.0,
 		Queue:     0.7,
 		ErrorRate: 0.8,
 		TTFT:      0.5,
 	}
+	if s != nil && s.cfg != nil {
+		weights := GatewayOpenAIWSSchedulerScoreWeightsView{
+			Priority:  s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Priority,
+			Load:      s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Load,
+			Queue:     s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.Queue,
+			ErrorRate: s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.ErrorRate,
+			TTFT:      s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights.TTFT,
+		}
+		if weights.Priority+weights.Load+weights.Queue+weights.ErrorRate+weights.TTFT > 0 {
+			return weights
+		}
+	}
+	return defaultWeights
 }
 
 type GatewayOpenAIWSSchedulerScoreWeightsView struct {

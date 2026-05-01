@@ -50,22 +50,12 @@ func (s *OpsService) GetAccountAvailabilityStats(ctx context.Context, platformFi
 			continue
 		}
 
-		isTempUnsched := false
-		if acc.TempUnschedulableUntil != nil && now.Before(*acc.TempUnschedulableUntil) {
-			isTempUnsched = true
-		}
-
-		isRateLimited := acc.RateLimitResetAt != nil && now.Before(*acc.RateLimitResetAt)
-		isOverloaded := acc.OverloadUntil != nil && now.Before(*acc.OverloadUntil)
-		hasError := acc.Status == StatusError
-
-		// Normalize exclusive status flags so the UI doesn't show conflicting badges.
-		if hasError {
-			isRateLimited = false
-			isOverloaded = false
-		}
-
-		isAvailable := acc.Status == StatusActive && acc.Schedulable && !isRateLimited && !isOverloaded && !isTempUnsched
+		availability := acc.EffectiveAvailability(now)
+		isAvailable := availability.IsAvailable
+		isRateLimited := availability.Status == AccountEffectiveStatusRateLimited
+		isOverloaded := availability.Status == AccountEffectiveStatusOverloaded
+		isTempUnsched := availability.Status == AccountEffectiveStatusTempUnschedulable
+		hasError := availability.Status == AccountEffectiveStatusError
 
 		if acc.Platform != "" {
 			if _, ok := platform[acc.Platform]; !ok {
@@ -130,22 +120,22 @@ func (s *OpsService) GetAccountAvailabilityStats(ctx context.Context, platformFi
 			ErrorMessage: acc.ErrorMessage,
 		}
 
-		if isRateLimited && acc.RateLimitResetAt != nil {
-			item.RateLimitResetAt = acc.RateLimitResetAt
-			remainingSec := int64(time.Until(*acc.RateLimitResetAt).Seconds())
+		if isRateLimited && availability.EffectiveRateLimitAt != nil {
+			item.RateLimitResetAt = availability.EffectiveRateLimitAt
+			remainingSec := int64(availability.EffectiveRateLimitAt.Sub(now).Seconds())
 			if remainingSec > 0 {
 				item.RateLimitRemainingSec = &remainingSec
 			}
 		}
-		if isOverloaded && acc.OverloadUntil != nil {
-			item.OverloadUntil = acc.OverloadUntil
-			remainingSec := int64(time.Until(*acc.OverloadUntil).Seconds())
+		if isOverloaded && availability.OverloadUntil != nil {
+			item.OverloadUntil = availability.OverloadUntil
+			remainingSec := int64(availability.OverloadUntil.Sub(now).Seconds())
 			if remainingSec > 0 {
 				item.OverloadRemainingSec = &remainingSec
 			}
 		}
-		if isTempUnsched && acc.TempUnschedulableUntil != nil {
-			item.TempUnschedulableUntil = acc.TempUnschedulableUntil
+		if isTempUnsched && availability.TempUnschedulableUntil != nil {
+			item.TempUnschedulableUntil = availability.TempUnschedulableUntil
 		}
 
 		account[acc.ID] = item

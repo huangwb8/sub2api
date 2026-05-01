@@ -99,6 +99,12 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 
 # 日常
 
+请基于 awesome-code skill 彻底地调查一件事： 用户的实际token消耗是否可以被正确计量和扣除。 这个功能特别重要。打个比方，我的订阅套餐是90元，每天限额50美元； 我必须确保用户不会使用超过这个数。如果你有发现一些导致计量不准确的、特别是对管理员不利的缺陷，可以在 docs/plans 里写个优化计划。
+
+---
+
+请基于 docs/plans/2026-05-01-codex-quota-status-alignment-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
 ---
 
 修复p0级住宅ip成本核算：目前，在面板里， 住宅ip成本一直是0，没有参与实际计算。 

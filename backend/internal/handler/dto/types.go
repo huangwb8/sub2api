@@ -34,31 +34,31 @@ type AdminUser struct {
 	Notes string `json:"notes"`
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier
-	GroupRates map[int64]float64 `json:"group_rates,omitempty"`
-	RiskProfile *UserRiskProfile `json:"risk_profile,omitempty"`
+	GroupRates  map[int64]float64 `json:"group_rates,omitempty"`
+	RiskProfile *UserRiskProfile  `json:"risk_profile,omitempty"`
 }
 
 type UserRiskProfile struct {
-	ID                    int64                  `json:"id"`
-	UserID                int64                  `json:"user_id"`
-	Score                 float64                `json:"score"`
-	Status                string                 `json:"status"`
-	ConsecutiveBadDays    int                    `json:"consecutive_bad_days"`
-	LastEvaluatedAt       *time.Time             `json:"last_evaluated_at,omitempty"`
-	LastWarnedAt          *time.Time             `json:"last_warned_at,omitempty"`
-	GracePeriodStartedAt  *time.Time             `json:"grace_period_started_at,omitempty"`
-	LockedAt              *time.Time             `json:"locked_at,omitempty"`
-	LockReason            string                 `json:"lock_reason,omitempty"`
-	LastEvaluationSummary string                 `json:"last_evaluation_summary,omitempty"`
-	Exempted              bool                   `json:"exempted"`
-	ExemptedAt            *time.Time             `json:"exempted_at,omitempty"`
-	ExemptedBy            *int64                 `json:"exempted_by,omitempty"`
-	ExemptionReason       string                 `json:"exemption_reason,omitempty"`
-	UnlockedAt            *time.Time             `json:"unlocked_at,omitempty"`
-	UnlockedBy            *int64                 `json:"unlocked_by,omitempty"`
-	UnlockReason          string                 `json:"unlock_reason,omitempty"`
-	CreatedAt             time.Time              `json:"created_at"`
-	UpdatedAt             time.Time              `json:"updated_at"`
+	ID                    int64                   `json:"id"`
+	UserID                int64                   `json:"user_id"`
+	Score                 float64                 `json:"score"`
+	Status                string                  `json:"status"`
+	ConsecutiveBadDays    int                     `json:"consecutive_bad_days"`
+	LastEvaluatedAt       *time.Time              `json:"last_evaluated_at,omitempty"`
+	LastWarnedAt          *time.Time              `json:"last_warned_at,omitempty"`
+	GracePeriodStartedAt  *time.Time              `json:"grace_period_started_at,omitempty"`
+	LockedAt              *time.Time              `json:"locked_at,omitempty"`
+	LockReason            string                  `json:"lock_reason,omitempty"`
+	LastEvaluationSummary string                  `json:"last_evaluation_summary,omitempty"`
+	Exempted              bool                    `json:"exempted"`
+	ExemptedAt            *time.Time              `json:"exempted_at,omitempty"`
+	ExemptedBy            *int64                  `json:"exempted_by,omitempty"`
+	ExemptionReason       string                  `json:"exemption_reason,omitempty"`
+	UnlockedAt            *time.Time              `json:"unlocked_at,omitempty"`
+	UnlockedBy            *int64                  `json:"unlocked_by,omitempty"`
+	UnlockReason          string                  `json:"unlock_reason,omitempty"`
+	CreatedAt             time.Time               `json:"created_at"`
+	UpdatedAt             time.Time               `json:"updated_at"`
 	SignalSnapshot        *UserRiskSignalSnapshot `json:"signal_snapshot,omitempty"`
 }
 
@@ -73,17 +73,17 @@ type UserRiskSignalSnapshot struct {
 }
 
 type UserRiskEvent struct {
-	ID         int64          `json:"id"`
-	UserID     int64          `json:"user_id"`
-	EventType  string         `json:"event_type"`
-	Severity   string         `json:"severity"`
-	ScoreDelta float64        `json:"score_delta"`
-	ScoreAfter float64        `json:"score_after"`
-	Summary    string         `json:"summary"`
-	Metadata   map[string]any `json:"metadata,omitempty"`
-	WindowStart *time.Time    `json:"window_start,omitempty"`
-	WindowEnd   *time.Time    `json:"window_end,omitempty"`
-	CreatedAt  time.Time      `json:"created_at"`
+	ID          int64          `json:"id"`
+	UserID      int64          `json:"user_id"`
+	EventType   string         `json:"event_type"`
+	Severity    string         `json:"severity"`
+	ScoreDelta  float64        `json:"score_delta"`
+	ScoreAfter  float64        `json:"score_after"`
+	Summary     string         `json:"summary"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	WindowStart *time.Time     `json:"window_start,omitempty"`
+	WindowEnd   *time.Time     `json:"window_end,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type APIKey struct {
@@ -189,34 +189,37 @@ type AdminGroup struct {
 }
 
 type Account struct {
-	ID                  int64          `json:"id"`
-	Name                string         `json:"name"`
-	Notes               *string        `json:"notes"`
-	Platform            string         `json:"platform"`
-	Type                string         `json:"type"`
-	Credentials         map[string]any `json:"credentials"`
-	Extra               map[string]any `json:"extra"`
-	ProxyID             *int64         `json:"proxy_id"`
-	Concurrency         int            `json:"concurrency"`
-	LoadFactor          *int           `json:"load_factor,omitempty"`
-	Priority            int            `json:"priority"`
-	RateMultiplier      float64        `json:"rate_multiplier"`
-	ActualCostCNY       *float64       `json:"actual_cost_cny,omitempty"`
-	ActualCostUsageUSD  *float64       `json:"actual_cost_usage_usd,omitempty"`
-	ActualCostUpdatedAt *time.Time     `json:"actual_cost_updated_at,omitempty"`
-	Status              string         `json:"status"`
-	ErrorMessage        string         `json:"error_message"`
-	LastUsedAt          *time.Time     `json:"last_used_at"`
-	ExpiresAt           *int64         `json:"expires_at"`
-	AutoPauseOnExpired  bool           `json:"auto_pause_on_expired"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
+	ID                    int64          `json:"id"`
+	Name                  string         `json:"name"`
+	Notes                 *string        `json:"notes"`
+	Platform              string         `json:"platform"`
+	Type                  string         `json:"type"`
+	Credentials           map[string]any `json:"credentials"`
+	Extra                 map[string]any `json:"extra"`
+	ProxyID               *int64         `json:"proxy_id"`
+	Concurrency           int            `json:"concurrency"`
+	LoadFactor            *int           `json:"load_factor,omitempty"`
+	Priority              int            `json:"priority"`
+	RateMultiplier        float64        `json:"rate_multiplier"`
+	ActualCostCNY         *float64       `json:"actual_cost_cny,omitempty"`
+	ActualCostUsageUSD    *float64       `json:"actual_cost_usage_usd,omitempty"`
+	ActualCostUpdatedAt   *time.Time     `json:"actual_cost_updated_at,omitempty"`
+	Status                string         `json:"status"`
+	ErrorMessage          string         `json:"error_message"`
+	EffectiveStatus       string         `json:"effective_status,omitempty"`
+	EffectiveStatusReason string         `json:"effective_status_reason,omitempty"`
+	LastUsedAt            *time.Time     `json:"last_used_at"`
+	ExpiresAt             *int64         `json:"expires_at"`
+	AutoPauseOnExpired    bool           `json:"auto_pause_on_expired"`
+	CreatedAt             time.Time      `json:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at"`
 
 	Schedulable bool `json:"schedulable"`
 
-	RateLimitedAt    *time.Time `json:"rate_limited_at"`
-	RateLimitResetAt *time.Time `json:"rate_limit_reset_at"`
-	OverloadUntil    *time.Time `json:"overload_until"`
+	RateLimitedAt             *time.Time `json:"rate_limited_at"`
+	RateLimitResetAt          *time.Time `json:"rate_limit_reset_at"`
+	EffectiveRateLimitResetAt *time.Time `json:"effective_rate_limit_reset_at,omitempty"`
+	OverloadUntil             *time.Time `json:"overload_until"`
 
 	TempUnschedulableUntil  *time.Time `json:"temp_unschedulable_until"`
 	TempUnschedulableReason string     `json:"temp_unschedulable_reason"`

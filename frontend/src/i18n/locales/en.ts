@@ -2413,6 +2413,7 @@ export default {
         paused: 'Paused',
         limited: 'Limited',
         rateLimited: 'Rate Limited',
+        codexRateLimited: 'Codex Quota Limited',
         overloaded: 'Overloaded',
         tempUnschedulable: 'Temp Unschedulable',
         quotaExceeded: 'Quota Exceeded',

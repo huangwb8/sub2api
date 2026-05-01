@@ -68,6 +68,39 @@ func TestOpsGroupAvailabilityUsesFilteredGroupForFilteredAggregation(t *testing.
 	require.Equal(t, int64(2), accountStats[1].GroupID)
 }
 
+func TestOpsAccountAvailabilityTreatsOpenAICodexExhaustedAsRateLimited(t *testing.T) {
+	t.Parallel()
+
+	resetAt := time.Now().UTC().Add(time.Hour)
+	repo := &opsStatsAccountRepoStub{accounts: []Account{
+		{
+			ID:          11,
+			Name:        "codex-exhausted",
+			Platform:    PlatformOpenAI,
+			Type:        AccountTypeOAuth,
+			Status:      StatusActive,
+			Schedulable: true,
+			Extra: map[string]any{
+				"codex_5h_used_percent": 100.0,
+				"codex_5h_reset_at":     resetAt.Format(time.RFC3339),
+			},
+			Groups: []*Group{{ID: 1, Name: "GPT_Standard", Platform: PlatformOpenAI}},
+		},
+	}}
+	svc := NewOpsService(nil, nil, nil, repo, nil, nil, nil, nil, nil, nil, nil)
+
+	platformStats, groupStats, accountStats, _, err := svc.GetAccountAvailabilityStats(context.Background(), PlatformOpenAI, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(1), platformStats[PlatformOpenAI].TotalAccounts)
+	require.Equal(t, int64(0), platformStats[PlatformOpenAI].AvailableCount)
+	require.Equal(t, int64(1), platformStats[PlatformOpenAI].RateLimitCount)
+	require.Equal(t, int64(0), groupStats[1].AvailableCount)
+	require.True(t, accountStats[11].IsRateLimited)
+	require.False(t, accountStats[11].IsAvailable)
+	require.NotNil(t, accountStats[11].RateLimitResetAt)
+}
+
 func TestOpsGroupConcurrencyUsesPrimaryGroupForUnfilteredAggregation(t *testing.T) {
 	t.Parallel()
 

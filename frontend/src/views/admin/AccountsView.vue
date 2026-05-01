@@ -1269,25 +1269,53 @@ const buildAccountQueryFilters = () => ({
   sort_by: sortState.sort_by,
   sort_order: sortState.sort_order
 })
+const futureTime = (value: string | null | undefined, now: number): string | null => {
+  if (!value) return null
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) && timestamp > now ? value : null
+}
+const codexRateLimitResetAt = (account: Account, now: number): string | null => {
+  if (account.platform !== 'openai' || account.type !== 'oauth') return null
+  const extra = account.extra
+  if (!extra) return null
+  if (Number(extra.codex_7d_used_percent ?? 0) >= 100) {
+    const resetAt = futureTime(extra.codex_7d_reset_at, now)
+    if (resetAt) return resetAt
+  }
+  if (Number(extra.codex_5h_used_percent ?? 0) >= 100) {
+    const resetAt = futureTime(extra.codex_5h_reset_at, now)
+    if (resetAt) return resetAt
+  }
+  return null
+}
 const accountMatchesCurrentFilters = (account: Account) => {
   const filters = buildAccountQueryFilters()
   if (filters.platform && account.platform !== filters.platform) return false
   if (filters.type && account.type !== filters.type) return false
   if (filters.status) {
     const now = Date.now()
-    const rateLimitResetAt = account.rate_limit_reset_at ? new Date(account.rate_limit_reset_at).getTime() : Number.NaN
-    const isRateLimited = Number.isFinite(rateLimitResetAt) && rateLimitResetAt > now
-    const tempUnschedUntil = account.temp_unschedulable_until ? new Date(account.temp_unschedulable_until).getTime() : Number.NaN
-    const isTempUnschedulable = Number.isFinite(tempUnschedUntil) && tempUnschedUntil > now
+    const effectiveStatus = account.effective_status || ''
+    const isRateLimited = effectiveStatus
+      ? effectiveStatus === 'rate_limited'
+      : !!(futureTime(account.rate_limit_reset_at, now) || codexRateLimitResetAt(account, now))
+    const isTempUnschedulable = effectiveStatus
+      ? effectiveStatus === 'temp_unschedulable'
+      : !!futureTime(account.temp_unschedulable_until, now)
+    const isOverloaded = effectiveStatus
+      ? effectiveStatus === 'overloaded'
+      : !!futureTime(account.overload_until, now)
+    const isPaused = effectiveStatus
+      ? effectiveStatus === 'paused'
+      : !account.schedulable
 
     if (filters.status === 'active') {
-      if (account.status !== 'active' || isRateLimited || isTempUnschedulable || !account.schedulable) return false
+      if (account.status !== 'active' || isRateLimited || isTempUnschedulable || isOverloaded || isPaused) return false
     } else if (filters.status === 'rate_limited') {
       if (account.status !== 'active' || !isRateLimited || isTempUnschedulable) return false
     } else if (filters.status === 'temp_unschedulable') {
       if (account.status !== 'active' || !isTempUnschedulable) return false
     } else if (filters.status === 'unschedulable') {
-      if (account.status !== 'active' || account.schedulable || isRateLimited || isTempUnschedulable) return false
+      if (account.status !== 'active' || !isPaused || isRateLimited || isTempUnschedulable || isOverloaded) return false
     } else if (account.status !== filters.status) {
       return false
     }

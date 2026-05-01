@@ -76,7 +76,33 @@ const (
 	AccountModelCapabilityStrategyInheritDefault = "inherit_default"
 	AccountModelCapabilityStrategyWhitelist      = "whitelist"
 	AccountModelCapabilityStrategyMapping        = "mapping"
+
+	AccountEffectiveStatusActive              = "active"
+	AccountEffectiveStatusInactive            = "inactive"
+	AccountEffectiveStatusError               = "error"
+	AccountEffectiveStatusRateLimited         = "rate_limited"
+	AccountEffectiveStatusOverloaded          = "overloaded"
+	AccountEffectiveStatusTempUnschedulable   = "temp_unschedulable"
+	AccountEffectiveStatusQuotaExhausted      = "quota_exhausted"
+	AccountEffectiveStatusPaused              = "paused"
+	AccountEffectiveStatusReasonRateLimit     = "rate_limit"
+	AccountEffectiveStatusReasonCodex5h       = "codex_5h_exhausted"
+	AccountEffectiveStatusReasonCodex7d       = "codex_7d_exhausted"
+	AccountEffectiveStatusReasonOverload      = "overload"
+	AccountEffectiveStatusReasonTempUnsched   = "temp_unschedulable"
+	AccountEffectiveStatusReasonQuotaExceeded = "quota_exhausted"
+	AccountEffectiveStatusReasonManualPaused  = "manual_paused"
+	AccountEffectiveStatusReasonExpired       = "expired"
 )
+
+type AccountAvailabilityState struct {
+	Status                 string
+	Reason                 string
+	EffectiveRateLimitAt   *time.Time
+	OverloadUntil          *time.Time
+	TempUnschedulableUntil *time.Time
+	IsAvailable            bool
+}
 
 type TempUnschedulableRule struct {
 	ID              string   `json:"id,omitempty"`
@@ -137,10 +163,13 @@ func (a *Account) EffectiveLoadFactor() int {
 }
 
 func (a *Account) IsSchedulable() bool {
+	return a.IsSchedulableAt(time.Now())
+}
+
+func (a *Account) IsSchedulableAt(now time.Time) bool {
 	if !a.IsActive() || !a.Schedulable {
 		return false
 	}
-	now := time.Now()
 	if a.AutoPauseOnExpired && a.ExpiresAt != nil && !now.Before(*a.ExpiresAt) {
 		return false
 	}
@@ -162,6 +191,99 @@ func (a *Account) IsSchedulable() bool {
 		return false
 	}
 	return true
+}
+
+func (a *Account) EffectiveAvailability(now time.Time) AccountAvailabilityState {
+	state := AccountAvailabilityState{Status: AccountEffectiveStatusInactive}
+	if a == nil {
+		return state
+	}
+
+	switch a.Status {
+	case StatusError:
+		state.Status = AccountEffectiveStatusError
+		return state
+	case StatusActive:
+		state.Status = AccountEffectiveStatusActive
+	default:
+		state.Status = AccountEffectiveStatusInactive
+		return state
+	}
+
+	if a.OverloadUntil != nil && now.Before(*a.OverloadUntil) {
+		state.Status = AccountEffectiveStatusOverloaded
+		state.Reason = AccountEffectiveStatusReasonOverload
+		state.OverloadUntil = a.OverloadUntil
+		return state
+	}
+
+	if resetAt, reason := a.effectiveRateLimitResetAt(now); resetAt != nil {
+		state.Status = AccountEffectiveStatusRateLimited
+		state.Reason = reason
+		state.EffectiveRateLimitAt = resetAt
+		return state
+	}
+
+	if a.TempUnschedulableUntil != nil && now.Before(*a.TempUnschedulableUntil) {
+		state.Status = AccountEffectiveStatusTempUnschedulable
+		state.Reason = AccountEffectiveStatusReasonTempUnsched
+		state.TempUnschedulableUntil = a.TempUnschedulableUntil
+		return state
+	}
+
+	if a.IsAPIKeyOrBedrock() && a.IsQuotaExceeded() {
+		state.Status = AccountEffectiveStatusQuotaExhausted
+		state.Reason = AccountEffectiveStatusReasonQuotaExceeded
+		return state
+	}
+
+	if a.AutoPauseOnExpired && a.ExpiresAt != nil && !now.Before(*a.ExpiresAt) {
+		state.Status = AccountEffectiveStatusPaused
+		state.Reason = AccountEffectiveStatusReasonExpired
+		return state
+	}
+
+	if !a.Schedulable {
+		state.Status = AccountEffectiveStatusPaused
+		state.Reason = AccountEffectiveStatusReasonManualPaused
+		return state
+	}
+
+	state.IsAvailable = true
+	return state
+}
+
+func (a *Account) effectiveRateLimitResetAt(now time.Time) (*time.Time, string) {
+	var resetAt *time.Time
+	reason := ""
+	if a.RateLimitResetAt != nil && now.Before(*a.RateLimitResetAt) {
+		resetAt = a.RateLimitResetAt
+		reason = AccountEffectiveStatusReasonRateLimit
+	}
+	if a.IsOpenAI() {
+		if codexResetAt, codexReason := a.openAICodexRateLimitResetAt(now); codexResetAt != nil {
+			if resetAt == nil || resetAt.Before(*codexResetAt) {
+				resetAt = codexResetAt
+				reason = codexReason
+			}
+		}
+	}
+	return resetAt, reason
+}
+
+func (a *Account) openAICodexRateLimitResetAt(now time.Time) (*time.Time, string) {
+	if a == nil || !a.IsOpenAI() || len(a.Extra) == 0 {
+		return nil, ""
+	}
+	if progress := buildCodexUsageProgressFromExtra(a.Extra, "7d", now); progress != nil && codexUsagePercentExhausted(&progress.Utilization) && progress.ResetsAt != nil && now.Before(*progress.ResetsAt) {
+		resetAt := progress.ResetsAt.UTC()
+		return &resetAt, AccountEffectiveStatusReasonCodex7d
+	}
+	if progress := buildCodexUsageProgressFromExtra(a.Extra, "5h", now); progress != nil && codexUsagePercentExhausted(&progress.Utilization) && progress.ResetsAt != nil && now.Before(*progress.ResetsAt) {
+		resetAt := progress.ResetsAt.UTC()
+		return &resetAt, AccountEffectiveStatusReasonCodex5h
+	}
+	return nil, ""
 }
 
 func (a *Account) IsRateLimited() bool {

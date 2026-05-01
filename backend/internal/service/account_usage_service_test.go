@@ -92,10 +92,18 @@ func TestExtractOpenAICodexProbeUpdatesAccepts429WithCodexHeaders(t *testing.T) 
 	}
 }
 
-func TestAccountUsageService_PersistOpenAICodexProbeSnapshotOnlyUpdatesExtra(t *testing.T) {
+func TestAccountUsageService_PersistOpenAICodexProbeSnapshotSyncsRateLimit(t *testing.T) {
 	t.Parallel()
 
+	resetAt := time.Now().Add(2 * time.Hour).UTC().Truncate(time.Second)
 	repo := &accountUsageCodexProbeRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{accounts: []Account{{
+			ID:          321,
+			Platform:    PlatformOpenAI,
+			Type:        AccountTypeOAuth,
+			Status:      StatusActive,
+			Schedulable: true,
+		}}},
 		updateExtraCh: make(chan map[string]any, 1),
 		rateLimitCh:   make(chan time.Time, 1),
 	}
@@ -103,7 +111,7 @@ func TestAccountUsageService_PersistOpenAICodexProbeSnapshotOnlyUpdatesExtra(t *
 
 	svc.persistOpenAICodexProbeSnapshot(321, map[string]any{
 		"codex_7d_used_percent": 100.0,
-		"codex_7d_reset_at":     time.Now().Add(2 * time.Hour).UTC().Truncate(time.Second).Format(time.RFC3339),
+		"codex_7d_reset_at":     resetAt.Format(time.RFC3339),
 	})
 
 	select {
@@ -117,7 +125,43 @@ func TestAccountUsageService_PersistOpenAICodexProbeSnapshotOnlyUpdatesExtra(t *
 
 	select {
 	case got := <-repo.rateLimitCh:
-		t.Fatalf("不应将探测快照写入运行时限流状态: %v", got)
+		if !got.Equal(resetAt) {
+			t.Fatalf("rate limit reset = %v, want %v", got, resetAt)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("等待 codex 探测快照同步限流状态超时")
+	}
+}
+
+func TestSyncOpenAICodexRateLimitFromUpdatesKeepsLongerExistingReset(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC().Truncate(time.Second)
+	existingReset := now.Add(4 * time.Hour)
+	codexReset := now.Add(time.Hour)
+	repo := &accountUsageCodexProbeRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{accounts: []Account{{
+			ID:               654,
+			Platform:         PlatformOpenAI,
+			Type:             AccountTypeOAuth,
+			Status:           StatusActive,
+			Schedulable:      true,
+			RateLimitResetAt: &existingReset,
+		}}},
+		rateLimitCh: make(chan time.Time, 1),
+	}
+
+	got := syncOpenAICodexRateLimitFromUpdates(context.Background(), repo, 654, map[string]any{
+		"codex_5h_used_percent": 100.0,
+		"codex_5h_reset_at":     codexReset.Format(time.RFC3339),
+	}, now)
+
+	if got == nil || !got.Equal(existingReset) {
+		t.Fatalf("reset = %v, want existing %v", got, existingReset)
+	}
+	select {
+	case persisted := <-repo.rateLimitCh:
+		t.Fatalf("不应使用较短的 Codex reset 覆盖已有上游限流: %v", persisted)
 	case <-time.After(200 * time.Millisecond):
 	}
 }

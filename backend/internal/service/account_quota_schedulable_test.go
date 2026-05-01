@@ -74,6 +74,20 @@ func TestAccountIsSchedulable_QuotaExceededForAPIKeyOrBedrock(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "openai codex 5h exhausted from snapshot is not schedulable",
+			account: &Account{
+				Status:      StatusActive,
+				Platform:    PlatformOpenAI,
+				Type:        AccountTypeOAuth,
+				Schedulable: true,
+				Extra: map[string]any{
+					"codex_5h_used_percent": 100.0,
+					"codex_5h_reset_at":     future.UTC().Format(time.RFC3339),
+				},
+			},
+			want: false,
+		},
+		{
 			name: "openai codex 7d exhausted from snapshot is not schedulable",
 			account: &Account{
 				Status:      StatusActive,
@@ -86,6 +100,20 @@ func TestAccountIsSchedulable_QuotaExceededForAPIKeyOrBedrock(t *testing.T) {
 				},
 			},
 			want: false,
+		},
+		{
+			name: "non-openai account ignores codex exhausted snapshot",
+			account: &Account{
+				Status:      StatusActive,
+				Platform:    PlatformAnthropic,
+				Type:        AccountTypeOAuth,
+				Schedulable: true,
+				Extra: map[string]any{
+					"codex_7d_used_percent": 100.0,
+					"codex_7d_reset_at":     future.UTC().Format(time.RFC3339),
+				},
+			},
+			want: true,
 		},
 		{
 			name: "openai codex exhausted snapshot after reset stays schedulable",

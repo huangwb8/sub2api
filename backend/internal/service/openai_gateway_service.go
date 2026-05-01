@@ -4960,6 +4960,18 @@ func syncOpenAICodexRateLimitFromExtra(ctx context.Context, repo AccountReposito
 	return resetAt
 }
 
+func syncOpenAICodexRateLimitFromUpdates(ctx context.Context, repo AccountRepository, accountID int64, updates map[string]any, now time.Time) *time.Time {
+	if repo == nil || accountID <= 0 || len(updates) == 0 {
+		return nil
+	}
+	account, err := repo.GetByID(ctx, accountID)
+	if err != nil || account == nil {
+		return nil
+	}
+	mergeAccountExtra(account, updates)
+	return syncOpenAICodexRateLimitFromExtra(ctx, repo, account, now)
+}
+
 // updateCodexUsageSnapshot saves the Codex usage snapshot to account's Extra field
 func (s *OpenAIGatewayService) updateCodexUsageSnapshot(ctx context.Context, accountID int64, snapshot *OpenAICodexUsageSnapshot) {
 	if snapshot == nil {
@@ -4981,7 +4993,10 @@ func (s *OpenAIGatewayService) updateCodexUsageSnapshot(ctx context.Context, acc
 	go func() {
 		updateCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = s.accountRepo.UpdateExtra(updateCtx, accountID, updates)
+		if err := s.accountRepo.UpdateExtra(updateCtx, accountID, updates); err != nil {
+			return
+		}
+		syncOpenAICodexRateLimitFromUpdates(updateCtx, s.accountRepo, accountID, updates, now)
 	}()
 }
 
