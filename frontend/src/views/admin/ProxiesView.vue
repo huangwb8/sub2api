@@ -9,19 +9,33 @@
                 <div class="text-lg font-semibold text-gray-900 dark:text-white">
                   {{ t('admin.proxies.failoverTitle') }}
                 </div>
-                <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
+                <p v-if="isProxyFailoverPanelExpanded" class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
                   {{ t('admin.proxies.failoverDescription') }}
                 </p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <button class="btn btn-primary" :disabled="loadingFailoverSettings || savingFailoverSettings" @click="saveProxyFailoverSettings">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  :aria-expanded="isProxyFailoverPanelExpanded"
+                  aria-controls="proxy-failover-panel"
+                  @click="toggleProxyFailoverPanel"
+                >
+                  <Icon
+                    :name="isProxyFailoverPanelExpanded ? 'chevronDown' : 'chevronRight'"
+                    size="sm"
+                    class="mr-2"
+                  />
+                  {{ isProxyFailoverPanelExpanded ? t('nav.collapse') : t('nav.expand') }}
+                </button>
+                <button v-if="isProxyFailoverPanelExpanded" class="btn btn-primary" :disabled="loadingFailoverSettings || savingFailoverSettings" @click="saveProxyFailoverSettings">
                   <Icon v-if="savingFailoverSettings" name="refresh" size="sm" class="mr-2 animate-spin" />
                   {{ t('admin.proxies.saveFailoverSettings') }}
                 </button>
               </div>
             </div>
 
-            <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            <div v-if="isProxyFailoverPanelExpanded" id="proxy-failover-panel" class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
               <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
                 <span class="text-sm font-medium leading-5 text-gray-800 dark:text-gray-200">
                   {{ t('admin.proxies.failoverFields.enabled') }}
@@ -1201,6 +1215,7 @@ const deletingProxy = ref<Proxy | null>(null)
 const showQualityReportDialog = ref(false)
 const qualityReportProxy = ref<Proxy | null>(null)
 const qualityReport = ref<ProxyQualityCheckResult | null>(null)
+const isProxyFailoverPanelExpanded = ref(false)
 const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
   enabled: true,
   auto_test_enabled: true,
@@ -1217,6 +1232,10 @@ const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
   only_openai_oauth: false,
   temp_unsched_minutes: 10
 })
+
+function toggleProxyFailoverPanel() {
+  isProxyFailoverPanelExpanded.value = !isProxyFailoverPanelExpanded.value
+}
 
 const availableTransferTargets = computed(() => {
   const currentProxyID = accountsProxy.value?.id
