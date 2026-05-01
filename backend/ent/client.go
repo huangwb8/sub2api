@@ -29,6 +29,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/proxyprobelog"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -80,6 +81,8 @@ type Client struct {
 	PromoCodeUsage *PromoCodeUsageClient
 	// Proxy is the client for interacting with the Proxy builders.
 	Proxy *ProxyClient
+	// ProxyProbeLog is the client for interacting with the ProxyProbeLog builders.
+	ProxyProbeLog *ProxyProbeLogClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
@@ -133,6 +136,7 @@ func (c *Client) init() {
 	c.PromoCode = NewPromoCodeClient(c.config)
 	c.PromoCodeUsage = NewPromoCodeUsageClient(c.config)
 	c.Proxy = NewProxyClient(c.config)
+	c.ProxyProbeLog = NewProxyProbeLogClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
@@ -253,6 +257,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PromoCode:               NewPromoCodeClient(cfg),
 		PromoCodeUsage:          NewPromoCodeUsageClient(cfg),
 		Proxy:                   NewProxyClient(cfg),
+		ProxyProbeLog:           NewProxyProbeLogClient(cfg),
 		RedeemCode:              NewRedeemCodeClient(cfg),
 		SecuritySecret:          NewSecuritySecretClient(cfg),
 		Setting:                 NewSettingClient(cfg),
@@ -300,6 +305,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PromoCode:               NewPromoCodeClient(cfg),
 		PromoCodeUsage:          NewPromoCodeUsageClient(cfg),
 		Proxy:                   NewProxyClient(cfg),
+		ProxyProbeLog:           NewProxyProbeLogClient(cfg),
 		RedeemCode:              NewRedeemCodeClient(cfg),
 		SecuritySecret:          NewSecuritySecretClient(cfg),
 		Setting:                 NewSettingClient(cfg),
@@ -346,9 +352,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.Proxy, c.ProxyProbeLog, c.RedeemCode, c.SecuritySecret, c.Setting,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
+		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserRiskEvent, c.UserRiskProfile, c.UserSubscription,
 	} {
 		n.Use(hooks...)
@@ -362,9 +368,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.Proxy, c.ProxyProbeLog, c.RedeemCode, c.SecuritySecret, c.Setting,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
+		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserRiskEvent, c.UserRiskProfile, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
@@ -402,6 +408,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PromoCodeUsage.mutate(ctx, m)
 	case *ProxyMutation:
 		return c.Proxy.mutate(ctx, m)
+	case *ProxyProbeLogMutation:
+		return c.ProxyProbeLog.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
 	case *SecuritySecretMutation:
@@ -2653,6 +2661,139 @@ func (c *ProxyClient) mutate(ctx context.Context, m *ProxyMutation) (Value, erro
 		return (&ProxyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Proxy mutation op: %q", m.Op())
+	}
+}
+
+// ProxyProbeLogClient is a client for the ProxyProbeLog schema.
+type ProxyProbeLogClient struct {
+	config
+}
+
+// NewProxyProbeLogClient returns a client for the ProxyProbeLog from the given config.
+func NewProxyProbeLogClient(c config) *ProxyProbeLogClient {
+	return &ProxyProbeLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `proxyprobelog.Hooks(f(g(h())))`.
+func (c *ProxyProbeLogClient) Use(hooks ...Hook) {
+	c.hooks.ProxyProbeLog = append(c.hooks.ProxyProbeLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `proxyprobelog.Intercept(f(g(h())))`.
+func (c *ProxyProbeLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ProxyProbeLog = append(c.inters.ProxyProbeLog, interceptors...)
+}
+
+// Create returns a builder for creating a ProxyProbeLog entity.
+func (c *ProxyProbeLogClient) Create() *ProxyProbeLogCreate {
+	mutation := newProxyProbeLogMutation(c.config, OpCreate)
+	return &ProxyProbeLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ProxyProbeLog entities.
+func (c *ProxyProbeLogClient) CreateBulk(builders ...*ProxyProbeLogCreate) *ProxyProbeLogCreateBulk {
+	return &ProxyProbeLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProxyProbeLogClient) MapCreateBulk(slice any, setFunc func(*ProxyProbeLogCreate, int)) *ProxyProbeLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProxyProbeLogCreateBulk{err: fmt.Errorf("calling to ProxyProbeLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProxyProbeLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProxyProbeLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ProxyProbeLog.
+func (c *ProxyProbeLogClient) Update() *ProxyProbeLogUpdate {
+	mutation := newProxyProbeLogMutation(c.config, OpUpdate)
+	return &ProxyProbeLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProxyProbeLogClient) UpdateOne(_m *ProxyProbeLog) *ProxyProbeLogUpdateOne {
+	mutation := newProxyProbeLogMutation(c.config, OpUpdateOne, withProxyProbeLog(_m))
+	return &ProxyProbeLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProxyProbeLogClient) UpdateOneID(id int64) *ProxyProbeLogUpdateOne {
+	mutation := newProxyProbeLogMutation(c.config, OpUpdateOne, withProxyProbeLogID(id))
+	return &ProxyProbeLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ProxyProbeLog.
+func (c *ProxyProbeLogClient) Delete() *ProxyProbeLogDelete {
+	mutation := newProxyProbeLogMutation(c.config, OpDelete)
+	return &ProxyProbeLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProxyProbeLogClient) DeleteOne(_m *ProxyProbeLog) *ProxyProbeLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProxyProbeLogClient) DeleteOneID(id int64) *ProxyProbeLogDeleteOne {
+	builder := c.Delete().Where(proxyprobelog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProxyProbeLogDeleteOne{builder}
+}
+
+// Query returns a query builder for ProxyProbeLog.
+func (c *ProxyProbeLogClient) Query() *ProxyProbeLogQuery {
+	return &ProxyProbeLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProxyProbeLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ProxyProbeLog entity by its id.
+func (c *ProxyProbeLogClient) Get(ctx context.Context, id int64) (*ProxyProbeLog, error) {
+	return c.Query().Where(proxyprobelog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProxyProbeLogClient) GetX(ctx context.Context, id int64) *ProxyProbeLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ProxyProbeLogClient) Hooks() []Hook {
+	return c.hooks.ProxyProbeLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProxyProbeLogClient) Interceptors() []Interceptor {
+	return c.inters.ProxyProbeLog
+}
+
+func (c *ProxyProbeLogClient) mutate(ctx context.Context, m *ProxyProbeLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProxyProbeLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProxyProbeLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProxyProbeLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProxyProbeLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ProxyProbeLog mutation op: %q", m.Op())
 	}
 }
 
@@ -4976,16 +5117,16 @@ type (
 	hooks struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead,
 		ErrorPassthroughRule, Group, IdempotencyRecord, PaymentAuditLog, PaymentOrder,
-		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, ProxyProbeLog,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
 		UserAttributeValue, UserRiskEvent, UserRiskProfile, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead,
 		ErrorPassthroughRule, Group, IdempotencyRecord, PaymentAuditLog, PaymentOrder,
-		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		PaymentProviderInstance, PromoCode, PromoCodeUsage, Proxy, ProxyProbeLog,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
 		UserAttributeValue, UserRiskEvent, UserRiskProfile,
 		UserSubscription []ent.Interceptor

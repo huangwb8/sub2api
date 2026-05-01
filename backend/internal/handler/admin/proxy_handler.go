@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -15,6 +16,11 @@ import (
 // ProxyHandler handles admin proxy management
 type ProxyHandler struct {
 	adminService service.AdminService
+}
+
+type proxyObservabilityService interface {
+	ListProxyProbeLogs(ctx context.Context, proxyID int64, page, pageSize int, since time.Time) ([]service.ProxyProbeLog, int64, error)
+	GetProxyReliability(ctx context.Context, proxyID int64) (*service.ProxyReliabilityReport, error)
 }
 
 // NewProxyHandler creates a new admin proxy handler
@@ -122,6 +128,60 @@ func (h *ProxyHandler) GetByID(c *gin.Context) {
 	}
 
 	response.Success(c, dto.ProxyFromServiceAdmin(proxy))
+}
+
+// GetProbeLogs handles listing short-lived proxy probe history.
+// GET /api/v1/admin/proxies/:id/probe-logs
+func (h *ProxyHandler) GetProbeLogs(c *gin.Context) {
+	proxyID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid proxy ID")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	var since time.Time
+	if raw := strings.TrimSpace(c.Query("since")); raw != "" {
+		parsed, parseErr := time.Parse(time.RFC3339, raw)
+		if parseErr != nil {
+			response.BadRequest(c, "Invalid since, expected RFC3339")
+			return
+		}
+		since = parsed
+	} else {
+		since = time.Now().AddDate(0, 0, -14)
+	}
+	observability, ok := h.adminService.(proxyObservabilityService)
+	if !ok {
+		response.BadRequest(c, "Proxy observability is not available")
+		return
+	}
+	logs, total, err := observability.ListProxyProbeLogs(c.Request.Context(), proxyID, page, pageSize, since)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, logs, total, page, pageSize)
+}
+
+// GetReliability handles proxy probe/request correlation summary.
+// GET /api/v1/admin/proxies/:id/reliability
+func (h *ProxyHandler) GetReliability(c *gin.Context) {
+	proxyID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid proxy ID")
+		return
+	}
+	observability, ok := h.adminService.(proxyObservabilityService)
+	if !ok {
+		response.BadRequest(c, "Proxy observability is not available")
+		return
+	}
+	report, err := observability.GetProxyReliability(c.Request.Context(), proxyID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, report)
 }
 
 // Create handles creating a new proxy

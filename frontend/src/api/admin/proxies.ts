@@ -7,7 +7,9 @@ import { apiClient } from '../client'
 import type {
   Proxy,
   ProxyAccountSummary,
+  ProxyProbeLog,
   ProxyQualityCheckResult,
+  ProxyReliabilityReport,
   CreateProxyRequest,
   UpdateProxyRequest,
   PaginatedResponse,
@@ -156,6 +158,25 @@ export async function checkProxyQuality(id: number): Promise<ProxyQualityCheckRe
   return data
 }
 
+export async function getProbeLogs(
+  id: number,
+  options?: { page?: number; pageSize?: number; since?: string }
+): Promise<PaginatedResponse<ProxyProbeLog>> {
+  const { data } = await apiClient.get<PaginatedResponse<ProxyProbeLog>>(`/admin/proxies/${id}/probe-logs`, {
+    params: {
+      page: options?.page ?? 1,
+      page_size: options?.pageSize ?? 20,
+      since: options?.since
+    }
+  })
+  return data
+}
+
+export async function getReliability(id: number): Promise<ProxyReliabilityReport> {
+  const { data } = await apiClient.get<ProxyReliabilityReport>(`/admin/proxies/${id}/reliability`)
+  return data
+}
+
 /**
  * Get proxy usage statistics
  * @param id - Proxy ID
@@ -266,6 +287,8 @@ export const proxiesAPI = {
   toggleStatus,
   testProxy,
   checkProxyQuality,
+  getProbeLogs,
+  getReliability,
   getStats,
   getProxyAccounts,
   batchCreate,

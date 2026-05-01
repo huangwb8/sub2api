@@ -311,9 +311,13 @@ func (s *proxyFailoverProxyRepoStub) ListAccountSummariesByProxyID(ctx context.C
 
 type proxyFailoverProberStub struct {
 	exits map[string]*ProxyExitInfo
+	err   error
 }
 
 func (s *proxyFailoverProberStub) ProbeProxy(ctx context.Context, proxyURL string) (*ProxyExitInfo, int64, error) {
+	if s.err != nil {
+		return nil, 0, s.err
+	}
 	for marker, info := range s.exits {
 		if strings.Contains(proxyURL, marker) {
 			return info, 120, nil
@@ -326,6 +330,71 @@ func (s *proxyFailoverProberStub) ProbeProxy(ctx context.Context, proxyURL strin
 		Region:      "Tokyo",
 		City:        "Tokyo",
 	}, 120, nil
+}
+
+type proxyProbeLogRepoStub struct {
+	createErr error
+	inputs    []ProxyProbeLogInput
+}
+
+func (s *proxyProbeLogRepoStub) Create(ctx context.Context, input ProxyProbeLogInput) error {
+	s.inputs = append(s.inputs, NormalizeProxyProbeLogInput(input))
+	return s.createErr
+}
+
+func (s *proxyProbeLogRepoStub) List(ctx context.Context, query ProxyProbeLogQuery) ([]ProxyProbeLog, *pagination.PaginationResult, error) {
+	panic("unexpected List call")
+}
+
+func (s *proxyProbeLogRepoStub) GetLast(ctx context.Context, proxyID int64) (*ProxyProbeLog, error) {
+	panic("unexpected GetLast call")
+}
+
+func (s *proxyProbeLogRepoStub) GetReliability(ctx context.Context, proxyID int64, now time.Time) (*ProxyReliabilityReport, error) {
+	panic("unexpected GetReliability call")
+}
+
+func (s *proxyProbeLogRepoStub) DeleteBefore(ctx context.Context, cutoff time.Time, limit int) (int64, error) {
+	return 0, nil
+}
+
+func TestProxyFailoverService_RunSingleProxyProbe_RecordsProbeLog(t *testing.T) {
+	t.Parallel()
+
+	logRepo := &proxyProbeLogRepoStub{}
+	svc := NewProxyFailoverService(nil, nil, nil, &proxyFailoverProberStub{}, nil, nil, nil)
+	svc.SetProbeLogDeps(logRepo, nil)
+
+	proxy := &ProxyWithAccountCount{
+		Proxy: Proxy{ID: 11, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive},
+	}
+	svc.runSingleProxyProbe(context.Background(), proxy, ProxyFailoverSettings{})
+
+	require.Len(t, logRepo.inputs, 1)
+	require.Equal(t, int64(11), logRepo.inputs[0].ProxyID)
+	require.Equal(t, ProxyProbeSourceScheduled, logRepo.inputs[0].Source)
+	require.True(t, logRepo.inputs[0].Success)
+	require.NotNil(t, logRepo.inputs[0].LatencyMs)
+	require.NotNil(t, logRepo.inputs[0].ExitInfo)
+}
+
+func TestProxyFailoverService_RunSingleProxyProbe_ProbeLogFailureDoesNotBlock(t *testing.T) {
+	t.Parallel()
+
+	logRepo := &proxyProbeLogRepoStub{createErr: errors.New("db down")}
+	svc := NewProxyFailoverService(nil, nil, nil, &proxyFailoverProberStub{err: errors.New("probe failed")}, nil, nil, nil)
+	svc.SetProbeLogDeps(logRepo, nil)
+
+	proxy := &ProxyWithAccountCount{
+		Proxy: Proxy{ID: 12, Name: "source", Protocol: "http", Host: "source.example.com", Port: 8080, Status: StatusActive},
+	}
+	require.NotPanics(t, func() {
+		svc.runSingleProxyProbe(context.Background(), proxy, ProxyFailoverSettings{FailureThreshold: 1, FailureWindowMinutes: 10})
+	})
+
+	require.Len(t, logRepo.inputs, 1)
+	require.False(t, logRepo.inputs[0].Success)
+	require.Contains(t, logRepo.inputs[0].ErrorMessage, "probe failed")
 }
 
 func TestProxyFailoverService_IsolateProxyTempUnschedulesOnlyFailedAccounts(t *testing.T) {

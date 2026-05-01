@@ -34,7 +34,7 @@
 
 ```
 github项目：huangwb8/sub2api
-version=1.2.14
+version=1.2.15
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
 ```
 
@@ -98,6 +98,10 @@ PlanMarkdown = docs/plans/2026-04-27-upstream-c056db-to-c92b88-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+---
+
+请基于 docs/plans/2026-05-01-proxy-observability-analysis-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---
 

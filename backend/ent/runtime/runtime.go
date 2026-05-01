@@ -19,6 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/proxyprobelog"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/schema"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
@@ -829,6 +830,56 @@ func init() {
 	proxy.DefaultStatus = proxyDescStatus.Default.(string)
 	// proxy.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	proxy.StatusValidator = proxyDescStatus.Validators[0].(func(string) error)
+	proxyprobelogFields := schema.ProxyProbeLog{}.Fields()
+	_ = proxyprobelogFields
+	// proxyprobelogDescSource is the schema descriptor for source field.
+	proxyprobelogDescSource := proxyprobelogFields[1].Descriptor()
+	// proxyprobelog.DefaultSource holds the default value on creation for the source field.
+	proxyprobelog.DefaultSource = proxyprobelogDescSource.Default.(string)
+	// proxyprobelog.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	proxyprobelog.SourceValidator = proxyprobelogDescSource.Validators[0].(func(string) error)
+	// proxyprobelogDescTarget is the schema descriptor for target field.
+	proxyprobelogDescTarget := proxyprobelogFields[2].Descriptor()
+	// proxyprobelog.DefaultTarget holds the default value on creation for the target field.
+	proxyprobelog.DefaultTarget = proxyprobelogDescTarget.Default.(string)
+	// proxyprobelog.TargetValidator is a validator for the "target" field. It is called by the builders before save.
+	proxyprobelog.TargetValidator = proxyprobelogDescTarget.Validators[0].(func(string) error)
+	// proxyprobelogDescSuccess is the schema descriptor for success field.
+	proxyprobelogDescSuccess := proxyprobelogFields[3].Descriptor()
+	// proxyprobelog.DefaultSuccess holds the default value on creation for the success field.
+	proxyprobelog.DefaultSuccess = proxyprobelogDescSuccess.Default.(bool)
+	// proxyprobelogDescErrorMessage is the schema descriptor for error_message field.
+	proxyprobelogDescErrorMessage := proxyprobelogFields[5].Descriptor()
+	// proxyprobelog.ErrorMessageValidator is a validator for the "error_message" field. It is called by the builders before save.
+	proxyprobelog.ErrorMessageValidator = proxyprobelogDescErrorMessage.Validators[0].(func(string) error)
+	// proxyprobelogDescIPAddress is the schema descriptor for ip_address field.
+	proxyprobelogDescIPAddress := proxyprobelogFields[6].Descriptor()
+	// proxyprobelog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
+	proxyprobelog.IPAddressValidator = proxyprobelogDescIPAddress.Validators[0].(func(string) error)
+	// proxyprobelogDescCountryCode is the schema descriptor for country_code field.
+	proxyprobelogDescCountryCode := proxyprobelogFields[7].Descriptor()
+	// proxyprobelog.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	proxyprobelog.CountryCodeValidator = proxyprobelogDescCountryCode.Validators[0].(func(string) error)
+	// proxyprobelogDescCountry is the schema descriptor for country field.
+	proxyprobelogDescCountry := proxyprobelogFields[8].Descriptor()
+	// proxyprobelog.CountryValidator is a validator for the "country" field. It is called by the builders before save.
+	proxyprobelog.CountryValidator = proxyprobelogDescCountry.Validators[0].(func(string) error)
+	// proxyprobelogDescRegion is the schema descriptor for region field.
+	proxyprobelogDescRegion := proxyprobelogFields[9].Descriptor()
+	// proxyprobelog.RegionValidator is a validator for the "region" field. It is called by the builders before save.
+	proxyprobelog.RegionValidator = proxyprobelogDescRegion.Validators[0].(func(string) error)
+	// proxyprobelogDescCity is the schema descriptor for city field.
+	proxyprobelogDescCity := proxyprobelogFields[10].Descriptor()
+	// proxyprobelog.CityValidator is a validator for the "city" field. It is called by the builders before save.
+	proxyprobelog.CityValidator = proxyprobelogDescCity.Validators[0].(func(string) error)
+	// proxyprobelogDescCheckedAt is the schema descriptor for checked_at field.
+	proxyprobelogDescCheckedAt := proxyprobelogFields[11].Descriptor()
+	// proxyprobelog.DefaultCheckedAt holds the default value on creation for the checked_at field.
+	proxyprobelog.DefaultCheckedAt = proxyprobelogDescCheckedAt.Default.(func() time.Time)
+	// proxyprobelogDescCreatedAt is the schema descriptor for created_at field.
+	proxyprobelogDescCreatedAt := proxyprobelogFields[12].Descriptor()
+	// proxyprobelog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	proxyprobelog.DefaultCreatedAt = proxyprobelogDescCreatedAt.Default.(func() time.Time)
 	redeemcodeFields := schema.RedeemCode{}.Fields()
 	_ = redeemcodeFields
 	// redeemcodeDescCode is the schema descriptor for code field.

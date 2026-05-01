@@ -55,6 +55,49 @@ func ProvideSubscriptionService(
 	return svc
 }
 
+func ProvideAdminService(
+	userRepo UserRepository,
+	userRiskRepo UserRiskRepository,
+	groupRepo GroupRepository,
+	accountRepo AccountRepository,
+	proxyRepo ProxyRepository,
+	proxyProbeLogRepo ProxyProbeLogRepository,
+	apiKeyRepo APIKeyRepository,
+	redeemCodeRepo RedeemCodeRepository,
+	userGroupRateRepo UserGroupRateRepository,
+	billingCacheService *BillingCacheService,
+	proxyProber ProxyExitInfoProber,
+	proxyLatencyCache ProxyLatencyCache,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+	entClient *dbent.Client,
+	settingService *SettingService,
+	defaultSubAssigner DefaultSubscriptionAssigner,
+	userSubRepo UserSubscriptionRepository,
+	privacyClientFactory PrivacyClientFactory,
+) AdminService {
+	svc := NewAdminService(
+		userRepo,
+		userRiskRepo,
+		groupRepo,
+		accountRepo,
+		proxyRepo,
+		apiKeyRepo,
+		redeemCodeRepo,
+		userGroupRateRepo,
+		billingCacheService,
+		proxyProber,
+		proxyLatencyCache,
+		authCacheInvalidator,
+		entClient,
+		settingService,
+		defaultSubAssigner,
+		userSubRepo,
+		privacyClientFactory,
+	)
+	SetAdminProxyProbeLogRepository(svc, proxyProbeLogRepo)
+	return svc
+}
+
 // ProvideTokenRefreshService creates and starts TokenRefreshService
 func ProvideTokenRefreshService(
 	accountRepo AccountRepository,
@@ -245,9 +288,11 @@ func ProvideProxyFailoverService(
 	accountRepo AccountRepository,
 	proxyRepo ProxyRepository,
 	proxyProber ProxyExitInfoProber,
+	proxyProbeLogRepo ProxyProbeLogRepository,
 	proxyLatencyCache ProxyLatencyCache,
 	tempUnschedCache TempUnschedCache,
 	schedulerSnapshot *SchedulerSnapshotService,
+	cfg *config.Config,
 ) *ProxyFailoverService {
 	svc := NewProxyFailoverService(
 		settingService,
@@ -258,6 +303,7 @@ func ProvideProxyFailoverService(
 		tempUnschedCache,
 		schedulerSnapshot,
 	)
+	svc.SetProbeLogDeps(proxyProbeLogRepo, cfg)
 	svc.Start()
 	return svc
 }
@@ -575,7 +621,7 @@ var ProviderSet = wire.NewSet(
 	NewBillingService,
 	NewBillingCacheService,
 	NewAnnouncementService,
-	NewAdminService,
+	ProvideAdminService,
 	ProvideGatewayService,
 	ProvideOpenAIGatewayService,
 	NewOAuthService,

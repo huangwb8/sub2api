@@ -689,6 +689,51 @@ export interface ProxyQualityCheckResult {
   items: ProxyQualityCheckItem[]
 }
 
+export interface ProxyProbeLog {
+  id: number
+  proxy_id: number
+  source: 'scheduled_probe' | 'manual_test' | string
+  target: string
+  success: boolean
+  latency_ms?: number
+  error_message?: string
+  ip_address?: string
+  country_code?: string
+  country?: string
+  region?: string
+  city?: string
+  checked_at: string
+  created_at: string
+}
+
+export interface ProxyReliabilityWindow {
+  label: string
+  hours: number
+  probe_total: number
+  probe_success: number
+  probe_success_rate?: number
+  usage_success_count: number
+  proxy_error_count: number
+  last_probe_failure_at?: string
+}
+
+export interface ProxyReliabilityFollowup {
+  minutes: number
+  failed_probe_count: number
+  usage_success_count: number
+  proxy_error_count: number
+}
+
+export interface ProxyReliabilityReport {
+  proxy_id: number
+  generated_at: string
+  bound_account_count: number
+  last_probe?: ProxyProbeLog
+  windows: ProxyReliabilityWindow[]
+  failure_followups: ProxyReliabilityFollowup[]
+  interpretation_notes: string[]
+}
+
 // Gemini credentials structure for OAuth and API Key authentication
 export interface GeminiCredentials {
   // API Key authentication

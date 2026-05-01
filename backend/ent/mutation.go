@@ -27,6 +27,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/proxyprobelog"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -67,6 +68,7 @@ const (
 	TypePromoCode               = "PromoCode"
 	TypePromoCodeUsage          = "PromoCodeUsage"
 	TypeProxy                   = "Proxy"
+	TypeProxyProbeLog           = "ProxyProbeLog"
 	TypeRedeemCode              = "RedeemCode"
 	TypeSecuritySecret          = "SecuritySecret"
 	TypeSetting                 = "Setting"
@@ -20826,6 +20828,1186 @@ func (m *ProxyMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Proxy edge %s", name)
+}
+
+// ProxyProbeLogMutation represents an operation that mutates the ProxyProbeLog nodes in the graph.
+type ProxyProbeLogMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int64
+	proxy_id      *int64
+	addproxy_id   *int64
+	source        *string
+	target        *string
+	success       *bool
+	latency_ms    *int64
+	addlatency_ms *int64
+	error_message *string
+	ip_address    *string
+	country_code  *string
+	country       *string
+	region        *string
+	city          *string
+	checked_at    *time.Time
+	created_at    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*ProxyProbeLog, error)
+	predicates    []predicate.ProxyProbeLog
+}
+
+var _ ent.Mutation = (*ProxyProbeLogMutation)(nil)
+
+// proxyprobelogOption allows management of the mutation configuration using functional options.
+type proxyprobelogOption func(*ProxyProbeLogMutation)
+
+// newProxyProbeLogMutation creates new mutation for the ProxyProbeLog entity.
+func newProxyProbeLogMutation(c config, op Op, opts ...proxyprobelogOption) *ProxyProbeLogMutation {
+	m := &ProxyProbeLogMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProxyProbeLog,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withProxyProbeLogID sets the ID field of the mutation.
+func withProxyProbeLogID(id int64) proxyprobelogOption {
+	return func(m *ProxyProbeLogMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ProxyProbeLog
+		)
+		m.oldValue = func(ctx context.Context) (*ProxyProbeLog, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ProxyProbeLog.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withProxyProbeLog sets the old ProxyProbeLog of the mutation.
+func withProxyProbeLog(node *ProxyProbeLog) proxyprobelogOption {
+	return func(m *ProxyProbeLogMutation) {
+		m.oldValue = func(context.Context) (*ProxyProbeLog, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProxyProbeLogMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProxyProbeLogMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ProxyProbeLogMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ProxyProbeLogMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ProxyProbeLog.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetProxyID sets the "proxy_id" field.
+func (m *ProxyProbeLogMutation) SetProxyID(i int64) {
+	m.proxy_id = &i
+	m.addproxy_id = nil
+}
+
+// ProxyID returns the value of the "proxy_id" field in the mutation.
+func (m *ProxyProbeLogMutation) ProxyID() (r int64, exists bool) {
+	v := m.proxy_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProxyID returns the old "proxy_id" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldProxyID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProxyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProxyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProxyID: %w", err)
+	}
+	return oldValue.ProxyID, nil
+}
+
+// AddProxyID adds i to the "proxy_id" field.
+func (m *ProxyProbeLogMutation) AddProxyID(i int64) {
+	if m.addproxy_id != nil {
+		*m.addproxy_id += i
+	} else {
+		m.addproxy_id = &i
+	}
+}
+
+// AddedProxyID returns the value that was added to the "proxy_id" field in this mutation.
+func (m *ProxyProbeLogMutation) AddedProxyID() (r int64, exists bool) {
+	v := m.addproxy_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProxyID resets all changes to the "proxy_id" field.
+func (m *ProxyProbeLogMutation) ResetProxyID() {
+	m.proxy_id = nil
+	m.addproxy_id = nil
+}
+
+// SetSource sets the "source" field.
+func (m *ProxyProbeLogMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *ProxyProbeLogMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *ProxyProbeLogMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetTarget sets the "target" field.
+func (m *ProxyProbeLogMutation) SetTarget(s string) {
+	m.target = &s
+}
+
+// Target returns the value of the "target" field in the mutation.
+func (m *ProxyProbeLogMutation) Target() (r string, exists bool) {
+	v := m.target
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTarget returns the old "target" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldTarget(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTarget is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTarget requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTarget: %w", err)
+	}
+	return oldValue.Target, nil
+}
+
+// ResetTarget resets all changes to the "target" field.
+func (m *ProxyProbeLogMutation) ResetTarget() {
+	m.target = nil
+}
+
+// SetSuccess sets the "success" field.
+func (m *ProxyProbeLogMutation) SetSuccess(b bool) {
+	m.success = &b
+}
+
+// Success returns the value of the "success" field in the mutation.
+func (m *ProxyProbeLogMutation) Success() (r bool, exists bool) {
+	v := m.success
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuccess returns the old "success" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldSuccess(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuccess is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuccess requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuccess: %w", err)
+	}
+	return oldValue.Success, nil
+}
+
+// ResetSuccess resets all changes to the "success" field.
+func (m *ProxyProbeLogMutation) ResetSuccess() {
+	m.success = nil
+}
+
+// SetLatencyMs sets the "latency_ms" field.
+func (m *ProxyProbeLogMutation) SetLatencyMs(i int64) {
+	m.latency_ms = &i
+	m.addlatency_ms = nil
+}
+
+// LatencyMs returns the value of the "latency_ms" field in the mutation.
+func (m *ProxyProbeLogMutation) LatencyMs() (r int64, exists bool) {
+	v := m.latency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatencyMs returns the old "latency_ms" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldLatencyMs(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatencyMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatencyMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatencyMs: %w", err)
+	}
+	return oldValue.LatencyMs, nil
+}
+
+// AddLatencyMs adds i to the "latency_ms" field.
+func (m *ProxyProbeLogMutation) AddLatencyMs(i int64) {
+	if m.addlatency_ms != nil {
+		*m.addlatency_ms += i
+	} else {
+		m.addlatency_ms = &i
+	}
+}
+
+// AddedLatencyMs returns the value that was added to the "latency_ms" field in this mutation.
+func (m *ProxyProbeLogMutation) AddedLatencyMs() (r int64, exists bool) {
+	v := m.addlatency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLatencyMs clears the value of the "latency_ms" field.
+func (m *ProxyProbeLogMutation) ClearLatencyMs() {
+	m.latency_ms = nil
+	m.addlatency_ms = nil
+	m.clearedFields[proxyprobelog.FieldLatencyMs] = struct{}{}
+}
+
+// LatencyMsCleared returns if the "latency_ms" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) LatencyMsCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldLatencyMs]
+	return ok
+}
+
+// ResetLatencyMs resets all changes to the "latency_ms" field.
+func (m *ProxyProbeLogMutation) ResetLatencyMs() {
+	m.latency_ms = nil
+	m.addlatency_ms = nil
+	delete(m.clearedFields, proxyprobelog.FieldLatencyMs)
+}
+
+// SetErrorMessage sets the "error_message" field.
+func (m *ProxyProbeLogMutation) SetErrorMessage(s string) {
+	m.error_message = &s
+}
+
+// ErrorMessage returns the value of the "error_message" field in the mutation.
+func (m *ProxyProbeLogMutation) ErrorMessage() (r string, exists bool) {
+	v := m.error_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorMessage returns the old "error_message" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldErrorMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorMessage: %w", err)
+	}
+	return oldValue.ErrorMessage, nil
+}
+
+// ClearErrorMessage clears the value of the "error_message" field.
+func (m *ProxyProbeLogMutation) ClearErrorMessage() {
+	m.error_message = nil
+	m.clearedFields[proxyprobelog.FieldErrorMessage] = struct{}{}
+}
+
+// ErrorMessageCleared returns if the "error_message" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) ErrorMessageCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldErrorMessage]
+	return ok
+}
+
+// ResetErrorMessage resets all changes to the "error_message" field.
+func (m *ProxyProbeLogMutation) ResetErrorMessage() {
+	m.error_message = nil
+	delete(m.clearedFields, proxyprobelog.FieldErrorMessage)
+}
+
+// SetIPAddress sets the "ip_address" field.
+func (m *ProxyProbeLogMutation) SetIPAddress(s string) {
+	m.ip_address = &s
+}
+
+// IPAddress returns the value of the "ip_address" field in the mutation.
+func (m *ProxyProbeLogMutation) IPAddress() (r string, exists bool) {
+	v := m.ip_address
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIPAddress returns the old "ip_address" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldIPAddress(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIPAddress is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIPAddress requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIPAddress: %w", err)
+	}
+	return oldValue.IPAddress, nil
+}
+
+// ClearIPAddress clears the value of the "ip_address" field.
+func (m *ProxyProbeLogMutation) ClearIPAddress() {
+	m.ip_address = nil
+	m.clearedFields[proxyprobelog.FieldIPAddress] = struct{}{}
+}
+
+// IPAddressCleared returns if the "ip_address" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) IPAddressCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldIPAddress]
+	return ok
+}
+
+// ResetIPAddress resets all changes to the "ip_address" field.
+func (m *ProxyProbeLogMutation) ResetIPAddress() {
+	m.ip_address = nil
+	delete(m.clearedFields, proxyprobelog.FieldIPAddress)
+}
+
+// SetCountryCode sets the "country_code" field.
+func (m *ProxyProbeLogMutation) SetCountryCode(s string) {
+	m.country_code = &s
+}
+
+// CountryCode returns the value of the "country_code" field in the mutation.
+func (m *ProxyProbeLogMutation) CountryCode() (r string, exists bool) {
+	v := m.country_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryCode returns the old "country_code" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldCountryCode(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryCode: %w", err)
+	}
+	return oldValue.CountryCode, nil
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (m *ProxyProbeLogMutation) ClearCountryCode() {
+	m.country_code = nil
+	m.clearedFields[proxyprobelog.FieldCountryCode] = struct{}{}
+}
+
+// CountryCodeCleared returns if the "country_code" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) CountryCodeCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldCountryCode]
+	return ok
+}
+
+// ResetCountryCode resets all changes to the "country_code" field.
+func (m *ProxyProbeLogMutation) ResetCountryCode() {
+	m.country_code = nil
+	delete(m.clearedFields, proxyprobelog.FieldCountryCode)
+}
+
+// SetCountry sets the "country" field.
+func (m *ProxyProbeLogMutation) SetCountry(s string) {
+	m.country = &s
+}
+
+// Country returns the value of the "country" field in the mutation.
+func (m *ProxyProbeLogMutation) Country() (r string, exists bool) {
+	v := m.country
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountry returns the old "country" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldCountry(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountry is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountry requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountry: %w", err)
+	}
+	return oldValue.Country, nil
+}
+
+// ClearCountry clears the value of the "country" field.
+func (m *ProxyProbeLogMutation) ClearCountry() {
+	m.country = nil
+	m.clearedFields[proxyprobelog.FieldCountry] = struct{}{}
+}
+
+// CountryCleared returns if the "country" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) CountryCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldCountry]
+	return ok
+}
+
+// ResetCountry resets all changes to the "country" field.
+func (m *ProxyProbeLogMutation) ResetCountry() {
+	m.country = nil
+	delete(m.clearedFields, proxyprobelog.FieldCountry)
+}
+
+// SetRegion sets the "region" field.
+func (m *ProxyProbeLogMutation) SetRegion(s string) {
+	m.region = &s
+}
+
+// Region returns the value of the "region" field in the mutation.
+func (m *ProxyProbeLogMutation) Region() (r string, exists bool) {
+	v := m.region
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegion returns the old "region" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldRegion(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegion: %w", err)
+	}
+	return oldValue.Region, nil
+}
+
+// ClearRegion clears the value of the "region" field.
+func (m *ProxyProbeLogMutation) ClearRegion() {
+	m.region = nil
+	m.clearedFields[proxyprobelog.FieldRegion] = struct{}{}
+}
+
+// RegionCleared returns if the "region" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) RegionCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldRegion]
+	return ok
+}
+
+// ResetRegion resets all changes to the "region" field.
+func (m *ProxyProbeLogMutation) ResetRegion() {
+	m.region = nil
+	delete(m.clearedFields, proxyprobelog.FieldRegion)
+}
+
+// SetCity sets the "city" field.
+func (m *ProxyProbeLogMutation) SetCity(s string) {
+	m.city = &s
+}
+
+// City returns the value of the "city" field in the mutation.
+func (m *ProxyProbeLogMutation) City() (r string, exists bool) {
+	v := m.city
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCity returns the old "city" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldCity(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCity: %w", err)
+	}
+	return oldValue.City, nil
+}
+
+// ClearCity clears the value of the "city" field.
+func (m *ProxyProbeLogMutation) ClearCity() {
+	m.city = nil
+	m.clearedFields[proxyprobelog.FieldCity] = struct{}{}
+}
+
+// CityCleared returns if the "city" field was cleared in this mutation.
+func (m *ProxyProbeLogMutation) CityCleared() bool {
+	_, ok := m.clearedFields[proxyprobelog.FieldCity]
+	return ok
+}
+
+// ResetCity resets all changes to the "city" field.
+func (m *ProxyProbeLogMutation) ResetCity() {
+	m.city = nil
+	delete(m.clearedFields, proxyprobelog.FieldCity)
+}
+
+// SetCheckedAt sets the "checked_at" field.
+func (m *ProxyProbeLogMutation) SetCheckedAt(t time.Time) {
+	m.checked_at = &t
+}
+
+// CheckedAt returns the value of the "checked_at" field in the mutation.
+func (m *ProxyProbeLogMutation) CheckedAt() (r time.Time, exists bool) {
+	v := m.checked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCheckedAt returns the old "checked_at" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldCheckedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCheckedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCheckedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCheckedAt: %w", err)
+	}
+	return oldValue.CheckedAt, nil
+}
+
+// ResetCheckedAt resets all changes to the "checked_at" field.
+func (m *ProxyProbeLogMutation) ResetCheckedAt() {
+	m.checked_at = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ProxyProbeLogMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ProxyProbeLogMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ProxyProbeLog entity.
+// If the ProxyProbeLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProxyProbeLogMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ProxyProbeLogMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the ProxyProbeLogMutation builder.
+func (m *ProxyProbeLogMutation) Where(ps ...predicate.ProxyProbeLog) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ProxyProbeLogMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ProxyProbeLogMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ProxyProbeLog, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ProxyProbeLogMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ProxyProbeLogMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ProxyProbeLog).
+func (m *ProxyProbeLogMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ProxyProbeLogMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.proxy_id != nil {
+		fields = append(fields, proxyprobelog.FieldProxyID)
+	}
+	if m.source != nil {
+		fields = append(fields, proxyprobelog.FieldSource)
+	}
+	if m.target != nil {
+		fields = append(fields, proxyprobelog.FieldTarget)
+	}
+	if m.success != nil {
+		fields = append(fields, proxyprobelog.FieldSuccess)
+	}
+	if m.latency_ms != nil {
+		fields = append(fields, proxyprobelog.FieldLatencyMs)
+	}
+	if m.error_message != nil {
+		fields = append(fields, proxyprobelog.FieldErrorMessage)
+	}
+	if m.ip_address != nil {
+		fields = append(fields, proxyprobelog.FieldIPAddress)
+	}
+	if m.country_code != nil {
+		fields = append(fields, proxyprobelog.FieldCountryCode)
+	}
+	if m.country != nil {
+		fields = append(fields, proxyprobelog.FieldCountry)
+	}
+	if m.region != nil {
+		fields = append(fields, proxyprobelog.FieldRegion)
+	}
+	if m.city != nil {
+		fields = append(fields, proxyprobelog.FieldCity)
+	}
+	if m.checked_at != nil {
+		fields = append(fields, proxyprobelog.FieldCheckedAt)
+	}
+	if m.created_at != nil {
+		fields = append(fields, proxyprobelog.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ProxyProbeLogMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		return m.ProxyID()
+	case proxyprobelog.FieldSource:
+		return m.Source()
+	case proxyprobelog.FieldTarget:
+		return m.Target()
+	case proxyprobelog.FieldSuccess:
+		return m.Success()
+	case proxyprobelog.FieldLatencyMs:
+		return m.LatencyMs()
+	case proxyprobelog.FieldErrorMessage:
+		return m.ErrorMessage()
+	case proxyprobelog.FieldIPAddress:
+		return m.IPAddress()
+	case proxyprobelog.FieldCountryCode:
+		return m.CountryCode()
+	case proxyprobelog.FieldCountry:
+		return m.Country()
+	case proxyprobelog.FieldRegion:
+		return m.Region()
+	case proxyprobelog.FieldCity:
+		return m.City()
+	case proxyprobelog.FieldCheckedAt:
+		return m.CheckedAt()
+	case proxyprobelog.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ProxyProbeLogMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		return m.OldProxyID(ctx)
+	case proxyprobelog.FieldSource:
+		return m.OldSource(ctx)
+	case proxyprobelog.FieldTarget:
+		return m.OldTarget(ctx)
+	case proxyprobelog.FieldSuccess:
+		return m.OldSuccess(ctx)
+	case proxyprobelog.FieldLatencyMs:
+		return m.OldLatencyMs(ctx)
+	case proxyprobelog.FieldErrorMessage:
+		return m.OldErrorMessage(ctx)
+	case proxyprobelog.FieldIPAddress:
+		return m.OldIPAddress(ctx)
+	case proxyprobelog.FieldCountryCode:
+		return m.OldCountryCode(ctx)
+	case proxyprobelog.FieldCountry:
+		return m.OldCountry(ctx)
+	case proxyprobelog.FieldRegion:
+		return m.OldRegion(ctx)
+	case proxyprobelog.FieldCity:
+		return m.OldCity(ctx)
+	case proxyprobelog.FieldCheckedAt:
+		return m.OldCheckedAt(ctx)
+	case proxyprobelog.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ProxyProbeLog field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProxyProbeLogMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProxyID(v)
+		return nil
+	case proxyprobelog.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case proxyprobelog.FieldTarget:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTarget(v)
+		return nil
+	case proxyprobelog.FieldSuccess:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuccess(v)
+		return nil
+	case proxyprobelog.FieldLatencyMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatencyMs(v)
+		return nil
+	case proxyprobelog.FieldErrorMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorMessage(v)
+		return nil
+	case proxyprobelog.FieldIPAddress:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIPAddress(v)
+		return nil
+	case proxyprobelog.FieldCountryCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryCode(v)
+		return nil
+	case proxyprobelog.FieldCountry:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountry(v)
+		return nil
+	case proxyprobelog.FieldRegion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegion(v)
+		return nil
+	case proxyprobelog.FieldCity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCity(v)
+		return nil
+	case proxyprobelog.FieldCheckedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCheckedAt(v)
+		return nil
+	case proxyprobelog.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ProxyProbeLog field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ProxyProbeLogMutation) AddedFields() []string {
+	var fields []string
+	if m.addproxy_id != nil {
+		fields = append(fields, proxyprobelog.FieldProxyID)
+	}
+	if m.addlatency_ms != nil {
+		fields = append(fields, proxyprobelog.FieldLatencyMs)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ProxyProbeLogMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		return m.AddedProxyID()
+	case proxyprobelog.FieldLatencyMs:
+		return m.AddedLatencyMs()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProxyProbeLogMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProxyID(v)
+		return nil
+	case proxyprobelog.FieldLatencyMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatencyMs(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ProxyProbeLog numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ProxyProbeLogMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(proxyprobelog.FieldLatencyMs) {
+		fields = append(fields, proxyprobelog.FieldLatencyMs)
+	}
+	if m.FieldCleared(proxyprobelog.FieldErrorMessage) {
+		fields = append(fields, proxyprobelog.FieldErrorMessage)
+	}
+	if m.FieldCleared(proxyprobelog.FieldIPAddress) {
+		fields = append(fields, proxyprobelog.FieldIPAddress)
+	}
+	if m.FieldCleared(proxyprobelog.FieldCountryCode) {
+		fields = append(fields, proxyprobelog.FieldCountryCode)
+	}
+	if m.FieldCleared(proxyprobelog.FieldCountry) {
+		fields = append(fields, proxyprobelog.FieldCountry)
+	}
+	if m.FieldCleared(proxyprobelog.FieldRegion) {
+		fields = append(fields, proxyprobelog.FieldRegion)
+	}
+	if m.FieldCleared(proxyprobelog.FieldCity) {
+		fields = append(fields, proxyprobelog.FieldCity)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ProxyProbeLogMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProxyProbeLogMutation) ClearField(name string) error {
+	switch name {
+	case proxyprobelog.FieldLatencyMs:
+		m.ClearLatencyMs()
+		return nil
+	case proxyprobelog.FieldErrorMessage:
+		m.ClearErrorMessage()
+		return nil
+	case proxyprobelog.FieldIPAddress:
+		m.ClearIPAddress()
+		return nil
+	case proxyprobelog.FieldCountryCode:
+		m.ClearCountryCode()
+		return nil
+	case proxyprobelog.FieldCountry:
+		m.ClearCountry()
+		return nil
+	case proxyprobelog.FieldRegion:
+		m.ClearRegion()
+		return nil
+	case proxyprobelog.FieldCity:
+		m.ClearCity()
+		return nil
+	}
+	return fmt.Errorf("unknown ProxyProbeLog nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ProxyProbeLogMutation) ResetField(name string) error {
+	switch name {
+	case proxyprobelog.FieldProxyID:
+		m.ResetProxyID()
+		return nil
+	case proxyprobelog.FieldSource:
+		m.ResetSource()
+		return nil
+	case proxyprobelog.FieldTarget:
+		m.ResetTarget()
+		return nil
+	case proxyprobelog.FieldSuccess:
+		m.ResetSuccess()
+		return nil
+	case proxyprobelog.FieldLatencyMs:
+		m.ResetLatencyMs()
+		return nil
+	case proxyprobelog.FieldErrorMessage:
+		m.ResetErrorMessage()
+		return nil
+	case proxyprobelog.FieldIPAddress:
+		m.ResetIPAddress()
+		return nil
+	case proxyprobelog.FieldCountryCode:
+		m.ResetCountryCode()
+		return nil
+	case proxyprobelog.FieldCountry:
+		m.ResetCountry()
+		return nil
+	case proxyprobelog.FieldRegion:
+		m.ResetRegion()
+		return nil
+	case proxyprobelog.FieldCity:
+		m.ResetCity()
+		return nil
+	case proxyprobelog.FieldCheckedAt:
+		m.ResetCheckedAt()
+		return nil
+	case proxyprobelog.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ProxyProbeLog field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ProxyProbeLogMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ProxyProbeLogMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ProxyProbeLogMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ProxyProbeLogMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ProxyProbeLogMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ProxyProbeLogMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ProxyProbeLogMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ProxyProbeLog unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ProxyProbeLogMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ProxyProbeLog edge %s", name)
 }
 
 // RedeemCodeMutation represents an operation that mutates the RedeemCode nodes in the graph.

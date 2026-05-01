@@ -81,6 +81,7 @@ type Config struct {
 	Dashboard               DashboardCacheConfig          `mapstructure:"dashboard_cache"`
 	DashboardAgg            DashboardAggregationConfig    `mapstructure:"dashboard_aggregation"`
 	UsageCleanup            UsageCleanupConfig            `mapstructure:"usage_cleanup"`
+	ProxyProbeLogs          ProxyProbeLogsConfig          `mapstructure:"proxy_probe_logs"`
 	Concurrency             ConcurrencyConfig             `mapstructure:"concurrency"`
 	TokenRefresh            TokenRefreshConfig            `mapstructure:"token_refresh"`
 	RunMode                 string                        `mapstructure:"run_mode" yaml:"run_mode"`
@@ -954,6 +955,14 @@ type UsageCleanupConfig struct {
 	TaskTimeoutSeconds int `mapstructure:"task_timeout_seconds"`
 }
 
+// ProxyProbeLogsConfig configures short-lived proxy probe history.
+type ProxyProbeLogsConfig struct {
+	// RetentionDays: proxy probe logs older than this are deleted by maintenance jobs.
+	RetentionDays int `mapstructure:"retention_days"`
+	// CleanupBatchSize: max rows deleted in one cleanup batch.
+	CleanupBatchSize int `mapstructure:"cleanup_batch_size"`
+}
+
 func NormalizeRunMode(value string) string {
 	normalized := strings.ToLower(strings.TrimSpace(value))
 	switch normalized {
@@ -1369,6 +1378,8 @@ func setDefaults() {
 	viper.SetDefault("usage_cleanup.batch_size", 5000)
 	viper.SetDefault("usage_cleanup.worker_interval_seconds", 10)
 	viper.SetDefault("usage_cleanup.task_timeout_seconds", 1800)
+	viper.SetDefault("proxy_probe_logs.retention_days", 14)
+	viper.SetDefault("proxy_probe_logs.cleanup_batch_size", 5000)
 
 	// Idempotency
 	viper.SetDefault("idempotency.observe_only", true)
@@ -1947,6 +1958,12 @@ func (c *Config) Validate() error {
 		if c.UsageCleanup.TaskTimeoutSeconds < 0 {
 			return fmt.Errorf("usage_cleanup.task_timeout_seconds must be non-negative")
 		}
+	}
+	if c.ProxyProbeLogs.RetentionDays < 0 || (c.ProxyProbeLogs.RetentionDays > 0 && c.ProxyProbeLogs.RetentionDays < 7) || c.ProxyProbeLogs.RetentionDays > 30 {
+		return fmt.Errorf("proxy_probe_logs.retention_days must be 0 or between 7 and 30")
+	}
+	if c.ProxyProbeLogs.CleanupBatchSize < 0 {
+		return fmt.Errorf("proxy_probe_logs.cleanup_batch_size must be non-negative")
 	}
 	if c.Idempotency.DefaultTTLSeconds <= 0 {
 		return fmt.Errorf("idempotency.default_ttl_seconds must be positive")

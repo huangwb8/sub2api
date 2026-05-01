@@ -762,6 +762,46 @@ var (
 			},
 		},
 	}
+	// ProxyProbeLogsColumns holds the columns for the "proxy_probe_logs" table.
+	ProxyProbeLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "proxy_id", Type: field.TypeInt64},
+		{Name: "source", Type: field.TypeString, Size: 64, Default: "scheduled_probe"},
+		{Name: "target", Type: field.TypeString, Size: 64, Default: "probe_chain"},
+		{Name: "success", Type: field.TypeBool, Default: false},
+		{Name: "latency_ms", Type: field.TypeInt64, Nullable: true},
+		{Name: "error_message", Type: field.TypeString, Nullable: true, Size: 1024},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
+		{Name: "country_code", Type: field.TypeString, Nullable: true, Size: 16},
+		{Name: "country", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "region", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "city", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "checked_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// ProxyProbeLogsTable holds the schema information for the "proxy_probe_logs" table.
+	ProxyProbeLogsTable = &schema.Table{
+		Name:       "proxy_probe_logs",
+		Columns:    ProxyProbeLogsColumns,
+		PrimaryKey: []*schema.Column{ProxyProbeLogsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "proxyprobelog_proxy_id_checked_at",
+				Unique:  false,
+				Columns: []*schema.Column{ProxyProbeLogsColumns[1], ProxyProbeLogsColumns[12]},
+			},
+			{
+				Name:    "proxyprobelog_success_checked_at",
+				Unique:  false,
+				Columns: []*schema.Column{ProxyProbeLogsColumns[4], ProxyProbeLogsColumns[12]},
+			},
+			{
+				Name:    "proxyprobelog_source_checked_at",
+				Unique:  false,
+				Columns: []*schema.Column{ProxyProbeLogsColumns[2], ProxyProbeLogsColumns[12]},
+			},
+		},
+	}
 	// RedeemCodesColumns holds the columns for the "redeem_codes" table.
 	RedeemCodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1463,6 +1503,7 @@ var (
 		PromoCodesTable,
 		PromoCodeUsagesTable,
 		ProxiesTable,
+		ProxyProbeLogsTable,
 		RedeemCodesTable,
 		SecuritySecretsTable,
 		SettingsTable,
@@ -1532,6 +1573,9 @@ func init() {
 	}
 	ProxiesTable.Annotation = &entsql.Annotation{
 		Table: "proxies",
+	}
+	ProxyProbeLogsTable.Annotation = &entsql.Annotation{
+		Table: "proxy_probe_logs",
 	}
 	RedeemCodesTable.ForeignKeys[0].RefTable = GroupsTable
 	RedeemCodesTable.ForeignKeys[1].RefTable = UsersTable

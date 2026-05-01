@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
 const proxyFailoverLoopTick = time.Minute
@@ -53,16 +55,19 @@ type ProxyFailoverService struct {
 	accountRepo       AccountRepository
 	proxyRepo         ProxyRepository
 	proxyProber       ProxyExitInfoProber
+	proxyProbeLogRepo ProxyProbeLogRepository
 	proxyLatencyCache ProxyLatencyCache
 	tempUnschedCache  TempUnschedCache
 	schedulerSnapshot *SchedulerSnapshotService
+	cfg               *config.Config
 
 	stopCh chan struct{}
 	doneCh chan struct{}
 
-	mu           sync.Mutex
-	states       map[int64]*proxyFailureState
-	lastProbeRun time.Time
+	mu                  sync.Mutex
+	states              map[int64]*proxyFailureState
+	lastProbeRun        time.Time
+	lastProbeLogCleanup time.Time
 }
 
 func NewProxyFailoverService(
@@ -86,6 +91,14 @@ func NewProxyFailoverService(
 		doneCh:            make(chan struct{}),
 		states:            make(map[int64]*proxyFailureState),
 	}
+}
+
+func (s *ProxyFailoverService) SetProbeLogDeps(repo ProxyProbeLogRepository, cfg *config.Config) {
+	if s == nil {
+		return
+	}
+	s.proxyProbeLogRepo = repo
+	s.cfg = cfg
 }
 
 func (s *ProxyFailoverService) Start() {
@@ -240,6 +253,14 @@ func (s *ProxyFailoverService) runSingleProxyProbe(ctx context.Context, proxy *P
 	proxyURL := proxy.URL()
 	exitInfo, latencyMs, err := s.proxyProber.ProbeProxy(ctx, proxyURL)
 	if err != nil {
+		s.recordProbeLog(ctx, ProxyProbeLogInput{
+			ProxyID:      proxy.ID,
+			Source:       ProxyProbeSourceScheduled,
+			Target:       ProxyProbeTargetChain,
+			Success:      false,
+			ErrorMessage: err.Error(),
+			CheckedAt:    time.Now(),
+		})
 		s.storeProbeLatency(ctx, proxy.ID, &ProxyLatencyInfo{
 			Success:   false,
 			Message:   err.Error(),
@@ -252,6 +273,15 @@ func (s *ProxyFailoverService) runSingleProxyProbe(ctx context.Context, proxy *P
 	}
 
 	latency := latencyMs
+	s.recordProbeLog(ctx, ProxyProbeLogInput{
+		ProxyID:   proxy.ID,
+		Source:    ProxyProbeSourceScheduled,
+		Target:    ProxyProbeTargetChain,
+		Success:   true,
+		LatencyMs: &latency,
+		ExitInfo:  exitInfo,
+		CheckedAt: time.Now(),
+	})
 	s.storeProbeLatency(ctx, proxy.ID, &ProxyLatencyInfo{
 		Success:     true,
 		LatencyMs:   &latency,
@@ -281,6 +311,53 @@ func (s *ProxyFailoverService) runSingleProxyProbe(ctx context.Context, proxy *P
 	}
 
 	s.markProxyHealthy(proxy.ID)
+	s.cleanupProbeLogsIfDue(ctx)
+}
+
+func (s *ProxyFailoverService) recordProbeLog(ctx context.Context, input ProxyProbeLogInput) {
+	if s == nil || s.proxyProbeLogRepo == nil {
+		return
+	}
+	if err := s.proxyProbeLogRepo.Create(ctx, input); err != nil {
+		slog.Warn("proxy_failover.record_probe_log_failed", "proxy_id", input.ProxyID, "source", input.Source, "error", err)
+	}
+}
+
+func (s *ProxyFailoverService) cleanupProbeLogsIfDue(ctx context.Context) {
+	if s == nil || s.proxyProbeLogRepo == nil {
+		return
+	}
+	retentionDays := 14
+	batchSize := 5000
+	if s.cfg != nil {
+		retentionDays = s.cfg.ProxyProbeLogs.RetentionDays
+		if s.cfg.ProxyProbeLogs.CleanupBatchSize > 0 {
+			batchSize = s.cfg.ProxyProbeLogs.CleanupBatchSize
+		}
+	}
+	if retentionDays <= 0 {
+		return
+	}
+
+	now := time.Now()
+	s.mu.Lock()
+	if !s.lastProbeLogCleanup.IsZero() && now.Sub(s.lastProbeLogCleanup) < 24*time.Hour {
+		s.mu.Unlock()
+		return
+	}
+	s.lastProbeLogCleanup = now
+	s.mu.Unlock()
+
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	deleted, err := s.proxyProbeLogRepo.DeleteBefore(cleanupCtx, now.AddDate(0, 0, -retentionDays), batchSize)
+	if err != nil {
+		slog.Warn("proxy_failover.cleanup_probe_logs_failed", "error", err)
+		return
+	}
+	if deleted > 0 {
+		slog.Info("proxy_failover.cleanup_probe_logs_done", "deleted", deleted, "retention_days", retentionDays)
+	}
 }
 
 func (s *ProxyFailoverService) currentSettings(ctx context.Context) (*SchedulingMechanismSettings, error) {

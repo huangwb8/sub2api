@@ -907,6 +907,51 @@
           </div>
         </div>
 
+        <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-900">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.proxies.reliabilityTitle') }}
+            </h3>
+            <span v-if="proxyReliabilityLoading" class="text-xs text-gray-500 dark:text-gray-400">
+              {{ t('common.loading') }}
+            </span>
+          </div>
+          <div v-if="proxyReliability" class="mt-3 space-y-3">
+            <div class="grid gap-2 md:grid-cols-2">
+              <div
+                v-for="window in proxyReliability.windows"
+                :key="window.label"
+                class="rounded-md border border-gray-200 p-3 text-sm dark:border-dark-700"
+              >
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ window.label }}</div>
+                <div class="mt-1 font-medium text-gray-900 dark:text-white">
+                  {{ t('admin.proxies.probeSuccessRate') }}:
+                  {{ formatPercent(window.probe_success_rate) }}
+                </div>
+                <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                  {{ t('admin.proxies.realSuccessCount') }}: {{ window.usage_success_count }}
+                </div>
+              </div>
+            </div>
+            <div class="grid gap-2 md:grid-cols-3">
+              <div
+                v-for="followup in proxyReliability.failure_followups"
+                :key="followup.minutes"
+                class="rounded-md bg-gray-50 p-3 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300"
+              >
+                {{ t('admin.proxies.afterFailureWindow', { minutes: followup.minutes }) }}:
+                <span class="font-medium text-gray-900 dark:text-white">{{ followup.usage_success_count }}</span>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              {{ proxyReliability.interpretation_notes?.[0] || t('admin.proxies.reliabilityHint') }}
+            </div>
+          </div>
+          <div v-else-if="!proxyReliabilityLoading" class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            {{ t('admin.proxies.noReliabilityData') }}
+          </div>
+        </div>
+
         <div class="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-dark-600">
           <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
             <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-dark-800 dark:text-dark-400">
@@ -1026,7 +1071,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import type { Proxy, ProxyAccountSummary, ProxyProtocol, ProxyQualityCheckResult } from '@/types'
+import type { Proxy, ProxyAccountSummary, ProxyProtocol, ProxyQualityCheckResult, ProxyReliabilityReport } from '@/types'
 import type { ProxyFailoverSettings } from '@/api/admin/settings'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -1215,6 +1260,8 @@ const deletingProxy = ref<Proxy | null>(null)
 const showQualityReportDialog = ref(false)
 const qualityReportProxy = ref<Proxy | null>(null)
 const qualityReport = ref<ProxyQualityCheckResult | null>(null)
+const proxyReliability = ref<ProxyReliabilityReport | null>(null)
+const proxyReliabilityLoading = ref(false)
 const isProxyFailoverPanelExpanded = ref(false)
 const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
   enabled: true,
@@ -1738,33 +1785,42 @@ const handleTestConnection = async (proxy: Proxy) => {
 
 const handleQualityCheck = async (proxy: Proxy) => {
   startQualityCheckingProxy(proxy.id)
+  proxyReliabilityLoading.value = true
   try {
-    const result = await adminAPI.proxies.checkProxyQuality(proxy.id)
+    const [result, reliabilityResult] = await Promise.allSettled([
+      adminAPI.proxies.checkProxyQuality(proxy.id),
+      adminAPI.proxies.getReliability(proxy.id)
+    ])
+    if (result.status === 'rejected') {
+      throw result.reason
+    }
     qualityReportProxy.value = proxy
-    qualityReport.value = result
+    qualityReport.value = result.value
+    proxyReliability.value = reliabilityResult.status === 'fulfilled' ? reliabilityResult.value : null
     showQualityReportDialog.value = true
 
-    const baseStep = result.items.find((item) => item.target === 'base_connectivity')
+    const baseStep = result.value.items.find((item) => item.target === 'base_connectivity')
     if (baseStep && baseStep.status === 'pass') {
       applyLatencyResult(proxy.id, {
         success: true,
-        latency_ms: result.base_latency_ms,
-        message: result.summary,
-        ip_address: result.exit_ip,
-        country: result.country,
-        country_code: result.country_code
+        latency_ms: result.value.base_latency_ms,
+        message: result.value.summary,
+        ip_address: result.value.exit_ip,
+        country: result.value.country,
+        country_code: result.value.country_code
       })
     }
-    applyQualityResult(proxy.id, result)
+    applyQualityResult(proxy.id, result.value)
 
     appStore.showSuccess(
-      t('admin.proxies.qualityCheckDone', { score: result.score, grade: result.grade })
+      t('admin.proxies.qualityCheckDone', { score: result.value.score, grade: result.value.grade })
     )
   } catch (error: any) {
     const message = error.response?.data?.detail || t('admin.proxies.qualityCheckFailed')
     appStore.showError(message)
     console.error('Error checking proxy quality:', error)
   } finally {
+    proxyReliabilityLoading.value = false
     stopQualityCheckingProxy(proxy.id)
   }
 }
@@ -1833,6 +1889,13 @@ const closeQualityReportDialog = () => {
   showQualityReportDialog.value = false
   qualityReportProxy.value = null
   qualityReport.value = null
+  proxyReliability.value = null
+  proxyReliabilityLoading.value = false
+}
+
+const formatPercent = (value?: number) => {
+  if (typeof value !== 'number') return '-'
+  return `${Math.round(value * 100)}%`
 }
 
 const qualityStatusClass = (status: string) => {

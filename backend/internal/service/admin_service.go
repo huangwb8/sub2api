@@ -457,6 +457,7 @@ type adminServiceImpl struct {
 	groupRepo            GroupRepository
 	accountRepo          AccountRepository
 	proxyRepo            ProxyRepository
+	proxyProbeLogRepo    ProxyProbeLogRepository
 	apiKeyRepo           APIKeyRepository
 	redeemCodeRepo       RedeemCodeRepository
 	userGroupRateRepo    UserGroupRateRepository
@@ -517,6 +518,12 @@ func NewAdminService(
 		defaultSubAssigner:   defaultSubAssigner,
 		userSubRepo:          userSubRepo,
 		privacyClientFactory: privacyClientFactory,
+	}
+}
+
+func SetAdminProxyProbeLogRepository(adminService AdminService, repo ProxyProbeLogRepository) {
+	if svc, ok := adminService.(*adminServiceImpl); ok && svc != nil {
+		svc.proxyProbeLogRepo = repo
 	}
 }
 
@@ -2379,6 +2386,7 @@ func (s *adminServiceImpl) TestProxy(ctx context.Context, id int64) (*ProxyTestR
 	proxyURL := proxy.URL()
 	exitInfo, latencyMs, err := s.proxyProber.ProbeProxy(ctx, proxyURL)
 	if err != nil {
+		s.recordManualProxyProbeLog(ctx, id, false, nil, err.Error(), nil)
 		s.saveProxyLatency(ctx, id, &ProxyLatencyInfo{
 			Success:   false,
 			Message:   err.Error(),
@@ -2391,6 +2399,7 @@ func (s *adminServiceImpl) TestProxy(ctx context.Context, id int64) (*ProxyTestR
 	}
 
 	latency := latencyMs
+	s.recordManualProxyProbeLog(ctx, id, true, &latency, "", exitInfo)
 	s.saveProxyLatency(ctx, id, &ProxyLatencyInfo{
 		Success:     true,
 		LatencyMs:   &latency,
@@ -2412,6 +2421,81 @@ func (s *adminServiceImpl) TestProxy(ctx context.Context, id int64) (*ProxyTestR
 		Country:     exitInfo.Country,
 		CountryCode: exitInfo.CountryCode,
 	}, nil
+}
+
+func (s *adminServiceImpl) ListProxyProbeLogs(ctx context.Context, proxyID int64, page, pageSize int, since time.Time) ([]ProxyProbeLog, int64, error) {
+	if proxyID <= 0 {
+		return nil, 0, errors.New("invalid proxy id")
+	}
+	if s.proxyProbeLogRepo == nil {
+		return []ProxyProbeLog{}, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	logs, result, err := s.proxyProbeLogRepo.List(ctx, ProxyProbeLogQuery{
+		ProxyID: proxyID,
+		Since:   since,
+		Limit:   pageSize,
+		Offset:  (page - 1) * pageSize,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	total := int64(0)
+	if result != nil {
+		total = result.Total
+	}
+	return logs, total, nil
+}
+
+func (s *adminServiceImpl) GetProxyReliability(ctx context.Context, proxyID int64) (*ProxyReliabilityReport, error) {
+	if proxyID <= 0 {
+		return nil, errors.New("invalid proxy id")
+	}
+	if s.proxyProbeLogRepo == nil {
+		return &ProxyReliabilityReport{
+			ProxyID:     proxyID,
+			GeneratedAt: time.Now().UTC(),
+			InterpretationNotes: []string{
+				"代理巡检历史仓储未配置，暂时无法计算可靠性。",
+			},
+		}, nil
+	}
+	report, err := s.proxyProbeLogRepo.GetReliability(ctx, proxyID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	if s.proxyRepo != nil {
+		if count, countErr := s.proxyRepo.CountAccountsByProxyID(ctx, proxyID); countErr == nil {
+			report.BoundAccountCount = count
+		}
+	}
+	return report, nil
+}
+
+func (s *adminServiceImpl) recordManualProxyProbeLog(ctx context.Context, proxyID int64, success bool, latencyMs *int64, message string, exitInfo *ProxyExitInfo) {
+	if s == nil || s.proxyProbeLogRepo == nil {
+		return
+	}
+	if err := s.proxyProbeLogRepo.Create(ctx, ProxyProbeLogInput{
+		ProxyID:      proxyID,
+		Source:       ProxyProbeSourceManual,
+		Target:       ProxyProbeTargetChain,
+		Success:      success,
+		LatencyMs:    latencyMs,
+		ErrorMessage: message,
+		ExitInfo:     exitInfo,
+		CheckedAt:    time.Now(),
+	}); err != nil {
+		slog.Warn("admin.record_manual_proxy_probe_log_failed", "proxy_id", proxyID, "error", err)
+	}
 }
 
 func (s *adminServiceImpl) CheckProxyQuality(ctx context.Context, id int64) (*ProxyQualityCheckResult, error) {
