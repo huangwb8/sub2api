@@ -953,6 +953,7 @@
               <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountName') }}</th>
               <th class="px-4 py-2 text-left">{{ t('admin.accounts.columns.platformType') }}</th>
               <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountNotes') }}</th>
+              <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountTransferTarget') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
@@ -963,6 +964,33 @@
               </td>
               <td class="px-4 py-2 text-gray-600 dark:text-gray-300">
                 {{ account.notes || '-' }}
+              </td>
+              <td class="px-4 py-2">
+                <div class="flex min-w-[17rem] items-center gap-2">
+                  <Select
+                    :model-value="accountTransferSelections[account.id] ?? ''"
+                    :options="accountTransferOptions"
+                    :disabled="switchingAccountIds.has(account.id) || accountTransferOptions.length <= 1"
+                    :data-testid="`proxy-transfer-select-${account.id}`"
+                    class="min-w-0 flex-1"
+                    @update:model-value="setAccountTransferSelection(account.id, $event)"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-secondary shrink-0"
+                    :disabled="!canTransferAccount(account.id)"
+                    :data-testid="`proxy-transfer-submit-${account.id}`"
+                    @click="transferAccountToProxy(account)"
+                  >
+                    <Icon
+                      v-if="switchingAccountIds.has(account.id)"
+                      name="refresh"
+                      size="sm"
+                      class="mr-2 animate-spin"
+                    />
+                    {{ t('admin.proxies.accountTransferAction') }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -1048,6 +1076,22 @@ const editStatusOptions = computed(() => [
   { value: 'inactive', label: t('admin.accounts.status.inactive') }
 ])
 
+const isTransferTargetAvailable = (proxy: Proxy) => {
+  if (proxy.status !== 'active') return false
+  if (proxy.latency_status === 'failed') return false
+  if (proxy.quality_status === 'failed' || proxy.quality_status === 'challenge') return false
+  return true
+}
+
+const buildTransferTargetLabel = (proxy: Proxy) => {
+  const parts = [proxy.name, `${proxy.host}:${proxy.port}`]
+  const location = formatLocation(proxy)
+  if (location) {
+    parts.push(location)
+  }
+  return parts.join(' · ')
+}
+
 const proxies = ref<Proxy[]>([])
 const visiblePasswordIds = reactive(new Set<number>())
 const copyMenuProxyId = ref<number | null>(null)
@@ -1109,6 +1153,9 @@ useSwipeSelect(proxyTableRef, {
 const accountsProxy = ref<Proxy | null>(null)
 const proxyAccounts = ref<ProxyAccountSummary[]>([])
 const accountsLoading = ref(false)
+const accountTransferSelections = reactive<Record<number, number | ''>>({})
+const accountTransferCandidateProxies = ref<Proxy[]>([])
+const switchingAccountIds = ref<Set<number>>(new Set())
 const editingProxy = ref<Proxy | null>(null)
 const deletingProxy = ref<Proxy | null>(null)
 const showQualityReportDialog = ref(false)
@@ -1130,6 +1177,28 @@ const proxyFailoverSettings = reactive<ProxyFailoverSettings>({
   only_openai_oauth: false,
   temp_unsched_minutes: 10
 })
+
+const availableTransferTargets = computed(() => {
+  const currentProxyID = accountsProxy.value?.id
+  return accountTransferCandidateProxies.value.filter(
+    (proxy) => proxy.id !== currentProxyID && isTransferTargetAvailable(proxy)
+  )
+})
+
+const accountTransferOptions = computed(() => [
+  {
+    value: '',
+    label:
+      availableTransferTargets.value.length > 0
+        ? t('admin.proxies.accountTransferPlaceholder')
+        : t('admin.proxies.accountTransferUnavailable'),
+    disabled: true
+  },
+  ...availableTransferTargets.value.map((proxy) => ({
+    value: proxy.id,
+    label: buildTransferTargetLabel(proxy)
+  }))
+])
 
 // Batch import state
 const createMode = ref<'standard' | 'batch'>('standard')
@@ -1909,6 +1978,74 @@ const openBatchDelete = () => {
   showBatchDeleteDialog.value = true
 }
 
+const clearAccountTransferState = () => {
+  for (const key of Object.keys(accountTransferSelections)) {
+    delete accountTransferSelections[Number(key)]
+  }
+  accountTransferCandidateProxies.value = []
+  switchingAccountIds.value = new Set()
+}
+
+const setAccountTransferSelection = (accountID: number, value: string | number | boolean | null) => {
+  accountTransferSelections[accountID] = typeof value === 'number' ? value : ''
+}
+
+const canTransferAccount = (accountID: number) => {
+  return typeof accountTransferSelections[accountID] === 'number' && !switchingAccountIds.value.has(accountID)
+}
+
+const startSwitchingAccount = (accountID: number) => {
+  switchingAccountIds.value = new Set([...switchingAccountIds.value, accountID])
+}
+
+const stopSwitchingAccount = (accountID: number) => {
+  const next = new Set(switchingAccountIds.value)
+  next.delete(accountID)
+  switchingAccountIds.value = next
+}
+
+const transferAccountToProxy = async (account: ProxyAccountSummary) => {
+  const targetProxyID = accountTransferSelections[account.id]
+  if (typeof targetProxyID !== 'number') {
+    return
+  }
+
+  startSwitchingAccount(account.id)
+  try {
+    await adminAPI.accounts.update(account.id, { proxy_id: targetProxyID })
+    proxyAccounts.value = proxyAccounts.value.filter((item) => item.id !== account.id)
+    delete accountTransferSelections[account.id]
+
+    const currentProxy = proxies.value.find((proxy) => proxy.id === accountsProxy.value?.id)
+    if (currentProxy && typeof currentProxy.account_count === 'number') {
+      currentProxy.account_count = Math.max(0, currentProxy.account_count - 1)
+    }
+
+    const targetProxy = accountTransferCandidateProxies.value.find((proxy) => proxy.id === targetProxyID)
+    if (targetProxy && typeof targetProxy.account_count === 'number') {
+      targetProxy.account_count += 1
+    }
+
+    const visibleTargetProxy = proxies.value.find((proxy) => proxy.id === targetProxyID)
+    if (visibleTargetProxy && typeof visibleTargetProxy.account_count === 'number') {
+      visibleTargetProxy.account_count += 1
+    }
+
+    appStore.showSuccess(
+      t('admin.proxies.accountTransferSuccess', {
+        account: account.name,
+        proxy: targetProxy?.name || targetProxyID
+      })
+    )
+    loadProxies()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.proxies.accountTransferFailed'))
+    console.error('Error transferring account proxy:', error)
+  } finally {
+    stopSwitchingAccount(account.id)
+  }
+}
+
 const confirmDelete = async () => {
   if (!deletingProxy.value) return
 
@@ -1955,23 +2092,40 @@ const confirmBatchDelete = async () => {
 const openAccountsModal = async (proxy: Proxy) => {
   accountsProxy.value = proxy
   proxyAccounts.value = []
+  clearAccountTransferState()
   accountsLoading.value = true
   showAccountsModal.value = true
 
-  try {
-    proxyAccounts.value = await adminAPI.proxies.getProxyAccounts(proxy.id)
-  } catch (error: any) {
-    appStore.showError(error.response?.data?.detail || t('admin.proxies.accountsFailed'))
+  const [accountsResult, candidateProxiesResult] = await Promise.allSettled([
+    adminAPI.proxies.getProxyAccounts(proxy.id),
+    adminAPI.proxies.getAllWithCount()
+  ])
+
+  if (accountsResult.status === 'fulfilled') {
+    proxyAccounts.value = accountsResult.value
+  } else {
+    const error: any = accountsResult.reason
+    appStore.showError(error?.response?.data?.detail || t('admin.proxies.accountsFailed'))
     console.error('Error loading proxy accounts:', error)
-  } finally {
-    accountsLoading.value = false
   }
+
+  if (candidateProxiesResult.status === 'fulfilled') {
+    accountTransferCandidateProxies.value = candidateProxiesResult.value
+  } else {
+    const error: any = candidateProxiesResult.reason
+    accountTransferCandidateProxies.value = proxies.value.filter((item) => item.status === 'active')
+    appStore.showError(error?.response?.data?.detail || t('admin.proxies.accountTransferOptionsFailed'))
+    console.error('Error loading proxy transfer candidates:', error)
+  }
+
+  accountsLoading.value = false
 }
 
 const closeAccountsModal = () => {
   showAccountsModal.value = false
   accountsProxy.value = null
   proxyAccounts.value = []
+  clearAccountTransferState()
 }
 
 // ── Proxy URL copy ──

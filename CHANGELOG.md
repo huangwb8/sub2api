@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了代理 IP 管理页的账号就地切换能力：管理员现在可直接在“使用该 IP 的账号”弹窗内为单个账号选择并切换到其它可用代理，无需回到账号管理页；候选列表会过滤掉 inactive、连通性失败以及质量检测失败/挑战态的代理，并在切换成功后即时收敛当前 IP 的账号列表。
 - 新增了 OpenAI OAuth 实验性图片生成最小闭环：后端为 `/v1/images/generations` 增加了受全局开关、账号级开关与 capability probe 结果共同控制的 OAuth 实验分支，默认仍优先使用 API Key，`/v1/images/edits` 与 `stream=true` 继续明确拒绝，并补充对应运维说明文档。
 - 新增了 OpenAI Images API 网关支持：OpenAI 平台分组现在可通过 `/v1/images/generations`、`/v1/images/edits` 及无 `/v1` 别名转发图片生成/编辑请求，并抽取 Images usage 用于 token 级计费记录。
 - 新增了用户转售风控最小可用闭环：后端引入 `user_risk_profiles` / `user_risk_events` 数据模型、风控配置读写、可信 IP/UA/API Key 证据采集、每日评估器、锁定拦截、管理员风险接口，以及前端系统设置与用户管理中的风险控制入口。

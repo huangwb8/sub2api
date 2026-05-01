@@ -3545,6 +3545,13 @@ export default {
       accountName: '账号名称',
       accountPlatform: '所属平台',
       accountNotes: '备注',
+      accountTransferTarget: '转至IP',
+      accountTransferPlaceholder: '选择目标代理',
+      accountTransferUnavailable: '暂无可用代理',
+      accountTransferAction: '切换',
+      accountTransferSuccess: '账号 {account} 已切换至 {proxy}',
+      accountTransferFailed: '切换账号代理失败',
+      accountTransferOptionsFailed: '获取可切换代理列表失败',
       // Batch import
       standardAdd: '标准添加',
       batchAdd: '快捷添加',

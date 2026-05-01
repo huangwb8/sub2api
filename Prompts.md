@@ -30,12 +30,20 @@
 使用 auto-test-code skill 对本项目进行2次优化。每次优化都要主动做跨模块、全维度审查，而不是只追一个故障点。
 ```
 
-- 发布新的release
+- 发布新的release（快速版）
 
 ```
-github项目： huangwb8/sub2api
-version=1.2.7
-新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api 。然后，触发自动推送docker镜像的流程。
+github项目：huangwb8/sub2api
+version=1.2.9
+新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
+```
+
+- 发布新的release（完全版）
+
+```
+github项目：huangwb8/sub2api
+version=1.2.xxx
+新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用完整发布，即：除了 Docker Hub 的 x86/amd64 镜像外，还要把当前仓库完整发布流程中必要的其它产物也一并完成，包括 GitHub Release，以及必要时的 GHCR、arm64、多架构和补发流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
 ```
 
 - 结合布署项目进行优化
