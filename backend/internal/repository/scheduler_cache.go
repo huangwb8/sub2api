@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -24,6 +25,42 @@ const (
 
 	defaultSchedulerSnapshotMGetChunkSize  = 128
 	defaultSchedulerSnapshotWriteChunkSize = 256
+	snapshotGraceTTLSeconds                = 60
+)
+
+var (
+	activateSnapshotScript = redis.NewScript(`
+local currentActive = redis.call('GET', KEYS[1])
+local newVersion = tonumber(ARGV[1])
+
+if currentActive ~= false then
+	local curVersion = tonumber(currentActive)
+	if curVersion and newVersion < curVersion then
+		redis.call('DEL', KEYS[4])
+		return 0
+	end
+end
+
+redis.call('SET', KEYS[1], ARGV[1])
+redis.call('SET', KEYS[2], '1')
+redis.call('SADD', KEYS[3], ARGV[2])
+
+if currentActive ~= false and currentActive ~= ARGV[1] then
+	redis.call('EXPIRE', KEYS[5] .. currentActive, tonumber(ARGV[3]))
+end
+
+return 1
+`)
+	unlockBucketScript = redis.NewScript(`
+local current = redis.call('GET', KEYS[1])
+if current == false then
+	return 0
+end
+if current ~= ARGV[1] then
+	return 0
+end
+return redis.call('DEL', KEYS[1])
+`)
 )
 
 type schedulerCache struct {
@@ -108,9 +145,6 @@ func (c *schedulerCache) GetSnapshot(ctx context.Context, bucket service.Schedul
 }
 
 func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.SchedulerBucket, accounts []service.Account) error {
-	activeKey := schedulerBucketKey(schedulerActivePrefix, bucket)
-	oldActive, _ := c.rdb.Get(ctx, activeKey).Result()
-
 	versionKey := schedulerBucketKey(schedulerVersionPrefix, bucket)
 	version, err := c.rdb.Incr(ctx, versionKey).Result()
 	if err != nil {
@@ -124,7 +158,6 @@ func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.Schedul
 		return err
 	}
 
-	pipe := c.rdb.Pipeline()
 	if len(accounts) > 0 {
 		// 使用序号作为 score，保持数据库返回的排序语义。
 		members := make([]redis.Z, 0, len(accounts))
@@ -134,6 +167,7 @@ func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.Schedul
 				Member: strconv.FormatInt(account.ID, 10),
 			})
 		}
+		pipe := c.rdb.Pipeline()
 		for start := 0; start < len(members); start += c.writeChunkSize {
 			end := start + c.writeChunkSize
 			if end > len(members) {
@@ -141,20 +175,19 @@ func (c *schedulerCache) SetSnapshot(ctx context.Context, bucket service.Schedul
 			}
 			pipe.ZAdd(ctx, snapshotKey, members[start:end]...)
 		}
-	} else {
-		pipe.Del(ctx, snapshotKey)
+		if _, err := pipe.Exec(ctx); err != nil {
+			return err
+		}
 	}
-	pipe.Set(ctx, activeKey, versionStr, 0)
-	pipe.Set(ctx, schedulerBucketKey(schedulerReadyPrefix, bucket), "1", 0)
-	pipe.SAdd(ctx, schedulerBucketSetKey, bucket.String())
-	if _, err := pipe.Exec(ctx); err != nil {
+
+	activeKey := schedulerBucketKey(schedulerActivePrefix, bucket)
+	readyKey := schedulerBucketKey(schedulerReadyPrefix, bucket)
+	snapshotKeyPrefix := fmt.Sprintf("%s%d:%s:%s:v", schedulerSnapshotPrefix, bucket.GroupID, bucket.Platform, bucket.Mode)
+	keys := []string{activeKey, readyKey, schedulerBucketSetKey, snapshotKey, snapshotKeyPrefix}
+	args := []any{versionStr, bucket.String(), snapshotGraceTTLSeconds}
+	if _, err := activateSnapshotScript.Run(ctx, c.rdb, keys, args...).Result(); err != nil {
 		return err
 	}
-
-	if oldActive != "" && oldActive != versionStr {
-		_ = c.rdb.Del(ctx, schedulerSnapshotKey(bucket, oldActive)).Err()
-	}
-
 	return nil
 }
 
@@ -227,9 +260,23 @@ func (c *schedulerCache) UpdateLastUsed(ctx context.Context, updates map[int64]t
 	return err
 }
 
-func (c *schedulerCache) TryLockBucket(ctx context.Context, bucket service.SchedulerBucket, ttl time.Duration) (bool, error) {
+func (c *schedulerCache) TryLockBucket(ctx context.Context, bucket service.SchedulerBucket, ttl time.Duration) (string, bool, error) {
 	key := schedulerBucketKey(schedulerLockPrefix, bucket)
-	return c.rdb.SetNX(ctx, key, time.Now().UnixNano(), ttl).Result()
+	token := uuid.NewString()
+	ok, err := c.rdb.SetNX(ctx, key, token, ttl).Result()
+	if err != nil || !ok {
+		return "", ok, err
+	}
+	return token, true, nil
+}
+
+func (c *schedulerCache) UnlockBucket(ctx context.Context, bucket service.SchedulerBucket, token string) error {
+	if token == "" {
+		return nil
+	}
+	key := schedulerBucketKey(schedulerLockPrefix, bucket)
+	_, err := unlockBucketScript.Run(ctx, c.rdb, []string{key}, token).Result()
+	return err
 }
 
 func (c *schedulerCache) ListBuckets(ctx context.Context) ([]service.SchedulerBucket, error) {
@@ -394,9 +441,67 @@ func buildSchedulerMetadataAccount(account service.Account) service.Account {
 		SessionWindowStart:      account.SessionWindowStart,
 		SessionWindowEnd:        account.SessionWindowEnd,
 		SessionWindowStatus:     account.SessionWindowStatus,
+		AccountGroups:           filterSchedulerAccountGroups(account.AccountGroups),
+		GroupIDs:                filterSchedulerGroupIDs(account.GroupIDs, account.AccountGroups),
 		Credentials:             filterSchedulerCredentials(account.Credentials),
 		Extra:                   filterSchedulerExtra(account.Extra),
 	}
+}
+
+func filterSchedulerAccountGroups(accountGroups []service.AccountGroup) []service.AccountGroup {
+	if len(accountGroups) == 0 {
+		return nil
+	}
+
+	filtered := make([]service.AccountGroup, 0, len(accountGroups))
+	for _, ag := range accountGroups {
+		if ag.GroupID <= 0 {
+			continue
+		}
+		filtered = append(filtered, service.AccountGroup{
+			AccountID: ag.AccountID,
+			GroupID:   ag.GroupID,
+			Priority:  ag.Priority,
+			CreatedAt: ag.CreatedAt,
+		})
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
+}
+
+func filterSchedulerGroupIDs(groupIDs []int64, accountGroups []service.AccountGroup) []int64 {
+	if len(groupIDs) == 0 && len(accountGroups) == 0 {
+		return nil
+	}
+
+	seen := make(map[int64]struct{}, len(groupIDs)+len(accountGroups))
+	filtered := make([]int64, 0, len(groupIDs)+len(accountGroups))
+	for _, id := range groupIDs {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		filtered = append(filtered, id)
+	}
+	for _, ag := range accountGroups {
+		if ag.GroupID <= 0 {
+			continue
+		}
+		if _, ok := seen[ag.GroupID]; ok {
+			continue
+		}
+		seen[ag.GroupID] = struct{}{}
+		filtered = append(filtered, ag.GroupID)
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
 }
 
 func filterSchedulerCredentials(credentials map[string]any) map[string]any {

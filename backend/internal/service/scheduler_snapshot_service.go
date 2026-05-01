@@ -533,13 +533,20 @@ func (s *SchedulerSnapshotService) rebuildBucket(ctx context.Context, bucket Sch
 	if s.cache == nil {
 		return ErrSchedulerCacheNotReady
 	}
-	ok, err := s.cache.TryLockBucket(ctx, bucket, 30*time.Second)
+	lockToken, ok, err := s.cache.TryLockBucket(ctx, bucket, 30*time.Second)
 	if err != nil {
 		return err
 	}
 	if !ok {
 		return nil
 	}
+	defer func() {
+		unlockCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if unlockErr := s.cache.UnlockBucket(unlockCtx, bucket, lockToken); unlockErr != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] unlock failed: bucket=%s reason=%s err=%v", bucket.String(), reason, unlockErr)
+		}
+	}()
 
 	rebuildCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()

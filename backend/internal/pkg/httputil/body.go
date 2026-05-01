@@ -2,13 +2,21 @@ package httputil
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 const (
 	requestBodyReadInitCap    = 512
 	requestBodyReadMaxInitCap = 1 << 20
+	maxDecompressedBodySize   = 64 << 20
 )
 
 // ReadRequestBodyWithPrealloc reads request body with preallocated buffer based on content length.
@@ -33,5 +41,63 @@ func ReadRequestBodyWithPrealloc(req *http.Request) ([]byte, error) {
 	if _, err := io.Copy(buf, req.Body); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	raw := buf.Bytes()
+
+	enc := strings.ToLower(strings.TrimSpace(req.Header.Get("Content-Encoding")))
+	if enc == "" || enc == "identity" {
+		return raw, nil
+	}
+
+	decoded, err := decompressRequestBody(enc, raw)
+	if err != nil {
+		return nil, fmt.Errorf("decode Content-Encoding %q: %w", enc, err)
+	}
+
+	req.Header.Del("Content-Encoding")
+	req.Header.Del("Content-Length")
+	req.ContentLength = int64(len(decoded))
+
+	return decoded, nil
+}
+
+var errDecompressedBodyTooLarge = errors.New("decompressed request body exceeds limit")
+
+func decompressRequestBody(encoding string, raw []byte) ([]byte, error) {
+	switch encoding {
+	case "zstd":
+		dec, err := zstd.NewReader(bytes.NewReader(raw))
+		if err != nil {
+			return nil, err
+		}
+		defer dec.Close()
+		return readAllWithLimit(dec, maxDecompressedBodySize)
+	case "gzip", "x-gzip":
+		gr, err := gzip.NewReader(bytes.NewReader(raw))
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = gr.Close() }()
+		return readAllWithLimit(gr, maxDecompressedBodySize)
+	case "deflate":
+		zr, err := zlib.NewReader(bytes.NewReader(raw))
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = zr.Close() }()
+		return readAllWithLimit(zr, maxDecompressedBodySize)
+	default:
+		return nil, errors.New("unsupported Content-Encoding")
+	}
+}
+
+func readAllWithLimit(reader io.Reader, limit int64) ([]byte, error) {
+	limited := &io.LimitedReader{R: reader, N: limit + 1}
+	body, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > limit {
+		return nil, errDecompressedBodyTooLarge
+	}
+	return body, nil
 }

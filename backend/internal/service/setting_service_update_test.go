@@ -170,6 +170,17 @@ func TestSettingService_UpdateSettings_StoresBillingFXCacheTTLSeconds(t *testing
 	require.Equal(t, "86400", repo.updates[SettingKeyBillingFXCacheTTLSeconds])
 }
 
+func TestSettingService_UpdateSettings_StoresAnthropicCacheTTL1hInjection(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		EnableAnthropicCacheTTL1hInjection: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "true", repo.updates[SettingKeyEnableAnthropicCacheTTL1hInjection])
+}
+
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	groupReader := &defaultSubGroupReaderStub{

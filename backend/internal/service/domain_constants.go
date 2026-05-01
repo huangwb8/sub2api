@@ -271,6 +271,8 @@ const (
 	SettingKeyEnableMetadataPassthrough = "enable_metadata_passthrough"
 	// SettingKeyEnableCCHSigning 是否对 billing header 中的 cch 进行 xxHash64 签名（默认 false）
 	SettingKeyEnableCCHSigning = "enable_cch_signing"
+	// SettingKeyEnableAnthropicCacheTTL1hInjection 是否对 Anthropic OAuth/SetupToken 请求体里已有的 ephemeral cache_control 注入 1h TTL（默认 false）
+	SettingKeyEnableAnthropicCacheTTL1hInjection = "enable_anthropic_cache_ttl_1h_injection"
 
 	// SettingKeyWebSearchEmulationConfig stores JSON config for Anthropic API Key web search emulation.
 	SettingKeyWebSearchEmulationConfig = "web_search_emulation_config"

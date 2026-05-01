@@ -8,13 +8,19 @@
 
 ### Added（新增）
 - 新增了计费限额保护配置：`billing.limit_guard.min_remaining_usd`、`billing.limit_guard.percent` 和 `billing.balance.max_overdraft_cny`，用于在订阅/API Key 限额接近耗尽时提前保护，并为余额扣费提供最大透支下限。
+- 新增了 `docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan.md`：基于上游 `55a7fa1e..48912014` 的提交区间，沉淀当前 fork 对压缩请求体解码、调度快照并发安全、粘性会话分组元数据、Anthropic TTL 注入开关和分页大小偏好策略的选择性吸收计划，并确认该区间无 license 变更需要同步。
+- 新增了 Anthropic 全局 `1h TTL` 注入开关：管理员现在可在“请求转发行为”中按站点维度开启对 OAuth/Setup Token 请求体内既有 `ephemeral cache_control` 的 `ttl: 1h` 注入，默认关闭且不新增新的缓存断点。
 
 ### Changed（变更）
 - 优化了网关计费准确性：Anthropic/OpenAI 流式响应在缺少终止事件但已解析到非零 usage 时，会保留 partial usage 继续进入计费链路，减少客户端断开或上游读错误导致的完全漏计。
 - 优化了订阅和 API Key 限额检查：请求前检查从“已用量达到限额才拒绝”调整为“剩余额度低于保护垫即拒绝”，并在触发时记录窗口、限额、已用量和保护垫信息。
+- 吸收了上游 `55a7fa1e..48912014` 的调度正确性改进：调度快照改为版本化写入后再 CAS 激活，旧快照保留 60 秒宽限期，分桶重建锁升级为 owner-token compare-delete 解锁，并在快照元数据中补齐 `AccountGroups/GroupIDs` 以恢复粘性会话的分组命中能力。
+- 吸收了上游压缩请求体兼容能力：网关入口现在统一支持 `zstd`、`gzip/x-gzip` 和 `deflate` 请求体解码，并在全局 `1h TTL` 注入开启时把 Anthropic usage 默认回写到 `5m` 计费口径，同时继续让账号级 TTL 覆盖规则优先。
 
 ### Fixed（修复）
 - 修复了余额模式扣费可能在成功请求后把用户余额打到无限负数的问题：事务扣费现在会受 `billing.balance.max_overdraft_cny` 下限约束，越过下限时返回余额不足并回滚本次计费副作用。
+- 修复了压缩请求体会被直接按原始二进制 JSON 解析的问题：Claude/OpenAI/Responses 等网关入口现在会在读取请求体时透明解压，并在解压后清理 `Content-Encoding`/`Content-Length`。
+- 修复了调度快照切换的并发竞态与粘性失配问题：晚到的旧快照不会再覆盖新 active 版本，重建结束后不再被动等待锁 TTL，自 Redis 恢复出来的缓存账号也会保留正确的分组元数据用于粘性命中判断。
 
 ## [1.2.15] - 2026-05-01
 

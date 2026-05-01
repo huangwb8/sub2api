@@ -4852,6 +4852,8 @@ export default {
         metadataPassthroughHint: 'Pass through client\'s original metadata.user_id without rewriting. May improve upstream cache hit rates.',
         cchSigning: 'CCH Signing',
         cchSigningHint: 'Sign the billing header in forwarded requests with CCH hash. When disabled, the placeholder is preserved.',
+        anthropicCacheTTL1hInjection: 'Anthropic Cache TTL Injection',
+        anthropicCacheTTL1hInjectionHint: 'When enabled, force `ttl: 1h` onto existing ephemeral cache blocks for Anthropic OAuth/Setup Token requests. Usage is still normalized back to 5m by default unless the account-level TTL billing override says otherwise.',
       },
       webSearchEmulation: {
         title: 'WebSearch Emulation',
