@@ -34,7 +34,7 @@
 
 ```
 github项目：huangwb8/sub2api
-version=1.2.10
+version=1.2.11
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
 ```
 
