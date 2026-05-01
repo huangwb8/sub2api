@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [1.2.15] - 2026-05-01
+
 ### Added（新增）
 - 新增了代理巡检观测闭环：后端新增 `proxy_probe_logs` 短期历史表、自动/手动巡检旁路写入、保留期配置与 `/api/v1/admin/proxies/:id/probe-logs`、`/api/v1/admin/proxies/:id/reliability` 只读接口，管理端质量弹窗同步展示巡检成功率与巡检失败后真实请求成功数，并更新 `skills/sub2api-summary` 源码地图。
 - 新增了 `skills/sub2api-summary` Agent Skill：用于在用户提供真实站点鉴权后，只读采集指定时间段的 sub2api 运营数据，生成分析摘要与 `plan.md` 优化计划，并包含 `auto-test-skill` 一轮 A/B 自检产物。
