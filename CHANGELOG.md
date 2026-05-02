@@ -7,6 +7,9 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了插件系统与首个 `api-prompt` 插件：管理员可在系统设置中创建并管理保存在 `./plugins/{插件名}` 的插件实例，配置 `base_url` / `api_key`、执行连通性测试、启停插件，并为 `api-prompt` 维护内置/自定义 prompt 模板，供用户在创建 API Key 时选择“通用”或绑定模板。
+- 新增了 API Key 插件绑定能力：`api_keys` 现支持持久化插件配置，网关会在 Anthropic Messages、OpenAI Chat Completions / Responses 与 Gemini Native 请求中按绑定模板注入额外系统指令，同时提供用户侧可见的 `api-prompt` 模板目录接口。
+- 新增了 `docs/plans/2026-05-02-plugin-system-api-prompt-plan.md`：记录插件实例目录结构、后端驱动边界、API Key 绑定策略、前端设置页落点与验证方案，作为本轮插件系统改造的实施计划。
 - 新增了站点公开法律文档草案：`docs/服务条款.md` 与 `docs/隐私政策.md`，补齐 `/legal/terms` 与 `/legal/privacy` 可发布的中文基础文案，并明确“仅限自用、禁止转售”“管理员可按市场成本调整额度或价格”以及“通常不退款、停服时按未使用量优先退站内余额”的规则边界。
 - 新增了计费限额保护配置：`billing.limit_guard.min_remaining_usd`、`billing.limit_guard.percent` 和 `billing.balance.max_overdraft_cny`，用于在订阅/API Key 限额接近耗尽时提前保护，并为余额扣费提供最大透支下限。
 - 新增了 `docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan.md`：基于上游 `55a7fa1e..48912014` 的提交区间，沉淀当前 fork 对压缩请求体解码、调度快照并发安全、粘性会话分组元数据、Anthropic TTL 注入开关和分页大小偏好策略的选择性吸收计划，并确认该区间无 license 变更需要同步。
@@ -14,6 +17,8 @@
 - 新增了 `邀请码（临时）` 兑换码类型：用户使用该邀请码注册后会进入 24 小时充值观察期，若累计充值未超过 30 元则自动禁用，禁用持续超过 7 天后由后台任务彻底删除；管理员重新启用时会重置这 24 小时观察期。
 
 ### Changed（变更）
+- 更新了 `AGENTS.md` 的插件约束：明确所有插件实例都必须保存在项目根目录 `./plugins/{插件名}`，以便后续 AI 与人工协作时对插件目录结构保持统一认知。
+- 同步了 `CLAUDE.md` 与 `skills/sub2api-summary` 源码地图：补充插件实例目录约定、管理员插件接口以及 `api_keys.plugin_settings` 字段在前后端链路中的核对入口，避免后续排障或运营分析仍按旧源码认知执行。
 - 优化了网关计费准确性：Anthropic/OpenAI 流式响应在缺少终止事件但已解析到非零 usage 时，会保留 partial usage 继续进入计费链路，减少客户端断开或上游读错误导致的完全漏计。
 - 优化了订阅和 API Key 限额检查：请求前检查从“已用量达到限额才拒绝”调整为“剩余额度低于保护垫即拒绝”，并在触发时记录窗口、限额、已用量和保护垫信息。
 - 吸收了上游 `55a7fa1e..48912014` 的调度正确性改进：调度快照改为版本化写入后再 CAS 激活，旧快照保留 60 秒宽限期，分桶重建锁升级为 owner-token compare-delete 解锁，并在快照元数据中补齐 `AccountGroups/GroupIDs` 以恢复粘性会话的分组命中能力。
