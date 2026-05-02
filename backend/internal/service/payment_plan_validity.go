@@ -13,15 +13,15 @@ const (
 )
 
 var planValidityUnitAliases = map[string]string{
-	"":        planValidityUnitDay,
-	"day":     planValidityUnitDay,
-	"days":    planValidityUnitDay,
-	"week":    planValidityUnitWeek,
-	"weeks":   planValidityUnitWeek,
-	"month":   planValidityUnitMonth,
-	"months":  planValidityUnitMonth,
-	"year":    planValidityUnitYear,
-	"years":   planValidityUnitYear,
+	"":       planValidityUnitDay,
+	"day":    planValidityUnitDay,
+	"days":   planValidityUnitDay,
+	"week":   planValidityUnitWeek,
+	"weeks":  planValidityUnitWeek,
+	"month":  planValidityUnitMonth,
+	"months": planValidityUnitMonth,
+	"year":   planValidityUnitYear,
+	"years":  planValidityUnitYear,
 }
 
 func normalizePlanValidityUnit(unit string) (string, error) {
@@ -31,4 +31,3 @@ func normalizePlanValidityUnit(unit string) (string, error) {
 	}
 	return "", fmt.Errorf("unsupported validity unit %q (allowed: day/week/month/year)", unit)
 }
-

@@ -243,7 +243,7 @@ ORDER BY sp.sort_order ASC, sp.id ASC
 	if err != nil {
 		return nil, fmt.Errorf("query dashboard oversell plans: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	plans := make([]dashboardOversellPlanSnapshot, 0)
 	for rows.Next() {

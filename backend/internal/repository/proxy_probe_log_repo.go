@@ -99,7 +99,7 @@ func (r *proxyProbeLogRepository) List(ctx context.Context, query service.ProxyP
 	if err != nil {
 		return nil, nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	logs := make([]service.ProxyProbeLog, 0, limit)
 	for rows.Next() {

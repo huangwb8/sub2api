@@ -8,7 +8,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9" //nolint:depguard // user risk signals are ephemeral Redis-backed evidence.
 )
 
 type UserRiskSignalService struct {

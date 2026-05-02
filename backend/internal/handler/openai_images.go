@@ -254,13 +254,13 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 			if channelMapping.Mapped {
 				forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
 			}
-			result, forwardErr = h.gatewayService.ForwardAsImageGeneration(c.Request.Context(), c, account, forwardBody, reqModel, "", "")
+			result, forwardErr = h.gatewayService.ForwardAsImageGeneration(c.Request.Context(), c, account, forwardBody, reqModel)
 		case "edits":
 			upstreamModel := reqModel
 			if channelMapping.Mapped {
 				upstreamModel = channelMapping.MappedModel
 			}
-			result, forwardErr = h.gatewayService.ForwardAsImageEdit(c.Request.Context(), c, account, reqModel, "", upstreamModel)
+			result, forwardErr = h.gatewayService.ForwardAsImageEdit(c.Request.Context(), c, account, reqModel, upstreamModel)
 		}
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {

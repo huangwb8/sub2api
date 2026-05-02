@@ -1,13 +1,14 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"math"
 	"testing"
 )
 
 func TestLoadDashboardOversellDefaults_UsesStoredResidentialIPPrice(t *testing.T) {
-	repo := newMockSettingRepo()
+	repo := newDashboardOversellSettingRepo()
 	if err := repo.Set(t.Context(), SettingKeyDashboardResidentialIPPrice, "12.34"); err != nil {
 		t.Fatalf("seed setting: %v", err)
 	}
@@ -27,7 +28,7 @@ func TestLoadDashboardOversellDefaults_UsesStoredResidentialIPPrice(t *testing.T
 }
 
 func TestPersistDashboardOversellDefaults_RemembersLatestResidentialIPPrice(t *testing.T) {
-	repo := newMockSettingRepo()
+	repo := newDashboardOversellSettingRepo()
 	svc := &DashboardRecommendationService{settingRepo: repo}
 
 	svc.persistDashboardOversellDefaults(t.Context(), DashboardOversellCalculatorRequest{
@@ -41,6 +42,65 @@ func TestPersistDashboardOversellDefaults_RemembersLatestResidentialIPPrice(t *t
 	if value != "15.75000000" {
 		t.Fatalf("persisted price = %q, want 15.75000000", value)
 	}
+}
+
+type dashboardOversellSettingRepo struct {
+	data map[string]string
+}
+
+func newDashboardOversellSettingRepo() *dashboardOversellSettingRepo {
+	return &dashboardOversellSettingRepo{data: make(map[string]string)}
+}
+
+func (r *dashboardOversellSettingRepo) Get(_ context.Context, key string) (*Setting, error) {
+	value, ok := r.data[key]
+	if !ok {
+		return nil, ErrSettingNotFound
+	}
+	return &Setting{Key: key, Value: value}, nil
+}
+
+func (r *dashboardOversellSettingRepo) GetValue(_ context.Context, key string) (string, error) {
+	value, ok := r.data[key]
+	if !ok {
+		return "", nil
+	}
+	return value, nil
+}
+
+func (r *dashboardOversellSettingRepo) Set(_ context.Context, key, value string) error {
+	r.data[key] = value
+	return nil
+}
+
+func (r *dashboardOversellSettingRepo) GetMultiple(_ context.Context, keys []string) (map[string]string, error) {
+	values := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if value, ok := r.data[key]; ok {
+			values[key] = value
+		}
+	}
+	return values, nil
+}
+
+func (r *dashboardOversellSettingRepo) SetMultiple(_ context.Context, settings map[string]string) error {
+	for key, value := range settings {
+		r.data[key] = value
+	}
+	return nil
+}
+
+func (r *dashboardOversellSettingRepo) GetAll(_ context.Context) (map[string]string, error) {
+	values := make(map[string]string, len(r.data))
+	for key, value := range r.data {
+		values[key] = value
+	}
+	return values, nil
+}
+
+func (r *dashboardOversellSettingRepo) Delete(_ context.Context, key string) error {
+	delete(r.data, key)
+	return nil
 }
 
 func TestDashboardOversellPriceMultiplier(t *testing.T) {

@@ -357,7 +357,7 @@ func (c *refreshTokenCache) getTokenHashesDB(ctx context.Context, query string, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var hashes []string
 	for rows.Next() {

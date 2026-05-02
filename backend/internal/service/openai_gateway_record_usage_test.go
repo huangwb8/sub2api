@@ -257,7 +257,7 @@ func TestOpenAIGatewayServiceRecordUsage_PersistsResidentialProxyAttribution(t *
 			ProxyResponseBytes: 2048,
 			Duration:           time.Second,
 		},
-		APIKey:    &APIKey{ID: 1, GroupID: ptr(int64(10)), Group: &Group{ID: 10, RateMultiplier: 1}},
+		APIKey:    &APIKey{ID: 1, GroupID: i64p(10), Group: &Group{ID: 10, RateMultiplier: 1}},
 		User:      &User{ID: 1},
 		Account:   &Account{ID: 2, ProxyID: &proxyID},
 		UserAgent: "codex",

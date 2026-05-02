@@ -141,7 +141,8 @@ func TestOpenAIGatewayService_ValidateOpenAIImagesAccount(t *testing.T) {
 
 		cachedAny, ok := svc.openaiOAuthImagesCapabilities.Load(account.ID)
 		require.True(t, ok)
-		cached := cachedAny.(OpenAIOAuthImagesCapability)
+		cached, ok := cachedAny.(OpenAIOAuthImagesCapability)
+		require.True(t, ok)
 		require.True(t, time.Since(cached.CheckedAt) < time.Minute)
 		require.Equal(t, 10*time.Minute, cached.TTL)
 	})

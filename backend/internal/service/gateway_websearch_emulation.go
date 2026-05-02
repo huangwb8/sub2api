@@ -328,11 +328,11 @@ func buildTextSummary(query string, results []websearch.SearchResult) string {
 		return "未检索到可用的网页结果。"
 	}
 	var sb strings.Builder
-	sb.WriteString("以下是关于“")
-	sb.WriteString(query)
-	sb.WriteString("”的网页搜索结果摘要：\n")
+	_, _ = sb.WriteString("以下是关于“")
+	_, _ = sb.WriteString(query)
+	_, _ = sb.WriteString("”的网页搜索结果摘要：\n")
 	for i, result := range results {
-		sb.WriteString(fmt.Sprintf("%d. %s\n%s\n%s\n", i+1, strings.TrimSpace(result.Title), strings.TrimSpace(result.Snippet), strings.TrimSpace(result.URL)))
+		_, _ = sb.WriteString(fmt.Sprintf("%d. %s\n%s\n%s\n", i+1, strings.TrimSpace(result.Title), strings.TrimSpace(result.Snippet), strings.TrimSpace(result.URL)))
 	}
 	return strings.TrimSpace(sb.String())
 }

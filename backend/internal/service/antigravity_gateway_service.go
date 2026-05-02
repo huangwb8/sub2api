@@ -2509,12 +2509,6 @@ func tempUnscheduleGoogleConfigError(ctx context.Context, repo AccountRepository
 // emptyResponseCooldown 空流式响应的临时封禁时长
 const emptyResponseCooldown = 1 * time.Minute
 
-// tempUnscheduleEmptyResponse 对空流式响应触发临时封禁，
-// 避免短时间内反复调度到同一个返回空响应的账号。
-func tempUnscheduleEmptyResponse(ctx context.Context, repo AccountRepository, accountID int64, logPrefix string) {
-	tempUnscheduleWithBadGatewayCooldown(ctx, repo, accountID, logPrefix, "empty stream response (auto temp-unschedule 1m)")
-}
-
 func tempUnscheduleBadGateway(ctx context.Context, repo AccountRepository, accountID int64, logPrefix string) {
 	tempUnscheduleWithBadGatewayCooldown(ctx, repo, accountID, logPrefix, "502: upstream connection/request error (auto temp-unschedule 1m)")
 }

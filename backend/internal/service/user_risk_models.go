@@ -45,21 +45,21 @@ var ErrUserRiskLocked = infraerrors.Forbidden(
 )
 
 type UserRiskControlConfig struct {
-	Enabled                            bool    `json:"enabled"`
-	Mode                               string  `json:"mode"`
-	WarningThreshold                   float64 `json:"warning_threshold"`
-	LockThreshold                      float64 `json:"lock_threshold"`
-	AutoLockAfterConsecutiveBadDays    int     `json:"auto_lock_after_consecutive_bad_days"`
-	OverlapWindowSeconds               int     `json:"overlap_window_seconds"`
-	MaxDistinctPublicIPsPerDay         int     `json:"max_distinct_public_ips_per_day"`
-	HighRiskActiveHoursPerDay          int     `json:"high_risk_active_hours_per_day"`
-	WarningEmailEnabled                bool    `json:"warning_email_enabled"`
-	WarningEmailSubjectTemplate        string  `json:"warning_email_subject_template"`
-	LockMessage                        string  `json:"lock_message"`
-	RequireTrustedProxyForAutoLock     bool    `json:"require_trusted_proxy_for_auto_lock"`
-	DailyScorePenaltyCap               float64 `json:"daily_score_penalty_cap"`
-	DailyScoreRecovery                 float64 `json:"daily_score_recovery"`
-	RedisEvidenceRetentionDays         int     `json:"redis_evidence_retention_days"`
+	Enabled                         bool    `json:"enabled"`
+	Mode                            string  `json:"mode"`
+	WarningThreshold                float64 `json:"warning_threshold"`
+	LockThreshold                   float64 `json:"lock_threshold"`
+	AutoLockAfterConsecutiveBadDays int     `json:"auto_lock_after_consecutive_bad_days"`
+	OverlapWindowSeconds            int     `json:"overlap_window_seconds"`
+	MaxDistinctPublicIPsPerDay      int     `json:"max_distinct_public_ips_per_day"`
+	HighRiskActiveHoursPerDay       int     `json:"high_risk_active_hours_per_day"`
+	WarningEmailEnabled             bool    `json:"warning_email_enabled"`
+	WarningEmailSubjectTemplate     string  `json:"warning_email_subject_template"`
+	LockMessage                     string  `json:"lock_message"`
+	RequireTrustedProxyForAutoLock  bool    `json:"require_trusted_proxy_for_auto_lock"`
+	DailyScorePenaltyCap            float64 `json:"daily_score_penalty_cap"`
+	DailyScoreRecovery              float64 `json:"daily_score_recovery"`
+	RedisEvidenceRetentionDays      int     `json:"redis_evidence_retention_days"`
 }
 
 func DefaultUserRiskControlConfig() *UserRiskControlConfig {
@@ -170,27 +170,27 @@ func ValidateUserRiskControlConfig(config *UserRiskControlConfig) error {
 }
 
 type UserRiskProfile struct {
-	ID                  int64                  `json:"id"`
-	UserID              int64                  `json:"user_id"`
-	Score               float64                `json:"score"`
-	Status              string                 `json:"status"`
-	ConsecutiveBadDays  int                    `json:"consecutive_bad_days"`
-	LastEvaluatedAt     *time.Time             `json:"last_evaluated_at,omitempty"`
-	LastWarnedAt        *time.Time             `json:"last_warned_at,omitempty"`
-	GracePeriodStartedAt *time.Time            `json:"grace_period_started_at,omitempty"`
-	LockedAt            *time.Time             `json:"locked_at,omitempty"`
-	LockReason          string                 `json:"lock_reason,omitempty"`
-	LastEvaluationSummary string               `json:"last_evaluation_summary,omitempty"`
-	Exempted            bool                   `json:"exempted"`
-	ExemptedAt          *time.Time             `json:"exempted_at,omitempty"`
-	ExemptedBy          *int64                 `json:"exempted_by,omitempty"`
-	ExemptionReason     string                 `json:"exemption_reason,omitempty"`
-	UnlockedAt          *time.Time             `json:"unlocked_at,omitempty"`
-	UnlockedBy          *int64                 `json:"unlocked_by,omitempty"`
-	UnlockReason        string                 `json:"unlock_reason,omitempty"`
-	CreatedAt           time.Time              `json:"created_at"`
-	UpdatedAt           time.Time              `json:"updated_at"`
-	SignalSnapshot      *UserRiskSignalSnapshot `json:"signal_snapshot,omitempty"`
+	ID                    int64                   `json:"id"`
+	UserID                int64                   `json:"user_id"`
+	Score                 float64                 `json:"score"`
+	Status                string                  `json:"status"`
+	ConsecutiveBadDays    int                     `json:"consecutive_bad_days"`
+	LastEvaluatedAt       *time.Time              `json:"last_evaluated_at,omitempty"`
+	LastWarnedAt          *time.Time              `json:"last_warned_at,omitempty"`
+	GracePeriodStartedAt  *time.Time              `json:"grace_period_started_at,omitempty"`
+	LockedAt              *time.Time              `json:"locked_at,omitempty"`
+	LockReason            string                  `json:"lock_reason,omitempty"`
+	LastEvaluationSummary string                  `json:"last_evaluation_summary,omitempty"`
+	Exempted              bool                    `json:"exempted"`
+	ExemptedAt            *time.Time              `json:"exempted_at,omitempty"`
+	ExemptedBy            *int64                  `json:"exempted_by,omitempty"`
+	ExemptionReason       string                  `json:"exemption_reason,omitempty"`
+	UnlockedAt            *time.Time              `json:"unlocked_at,omitempty"`
+	UnlockedBy            *int64                  `json:"unlocked_by,omitempty"`
+	UnlockReason          string                  `json:"unlock_reason,omitempty"`
+	CreatedAt             time.Time               `json:"created_at"`
+	UpdatedAt             time.Time               `json:"updated_at"`
+	SignalSnapshot        *UserRiskSignalSnapshot `json:"signal_snapshot,omitempty"`
 }
 
 func DefaultUserRiskProfile(userID int64) *UserRiskProfile {
@@ -210,35 +210,35 @@ func (p *UserRiskProfile) IsExempted() bool {
 }
 
 type UserRiskEvent struct {
-	ID         int64             `json:"id"`
-	UserID     int64             `json:"user_id"`
-	EventType  string            `json:"event_type"`
-	Severity   string            `json:"severity"`
-	ScoreDelta float64           `json:"score_delta"`
-	ScoreAfter float64           `json:"score_after"`
-	Summary    string            `json:"summary"`
-	Metadata   map[string]any    `json:"metadata,omitempty"`
-	WindowStart *time.Time       `json:"window_start,omitempty"`
-	WindowEnd   *time.Time       `json:"window_end,omitempty"`
-	CreatedAt  time.Time         `json:"created_at"`
+	ID          int64          `json:"id"`
+	UserID      int64          `json:"user_id"`
+	EventType   string         `json:"event_type"`
+	Severity    string         `json:"severity"`
+	ScoreDelta  float64        `json:"score_delta"`
+	ScoreAfter  float64        `json:"score_after"`
+	Summary     string         `json:"summary"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	WindowStart *time.Time     `json:"window_start,omitempty"`
+	WindowEnd   *time.Time     `json:"window_end,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type UserRiskSignalSnapshot struct {
-	DateKey                string   `json:"date_key"`
-	DistinctPublicIPs      int      `json:"distinct_public_ips"`
-	DistinctUserAgents     int      `json:"distinct_user_agents"`
-	DistinctAPIKeys        int      `json:"distinct_api_keys"`
-	OverlapEvents          int      `json:"overlap_events"`
-	RecentPublicIPs        []string `json:"recent_public_ips,omitempty"`
+	DateKey                 string   `json:"date_key"`
+	DistinctPublicIPs       int      `json:"distinct_public_ips"`
+	DistinctUserAgents      int      `json:"distinct_user_agents"`
+	DistinctAPIKeys         int      `json:"distinct_api_keys"`
+	OverlapEvents           int      `json:"overlap_events"`
+	RecentPublicIPs         []string `json:"recent_public_ips,omitempty"`
 	RecentUserAgentFamilies []string `json:"recent_user_agent_families,omitempty"`
 }
 
 type UserRiskUsageSummary struct {
-	UserID           int64
-	DistinctAPIKeys  int
-	ActiveHours      int
-	TotalActualCost  float64
-	TotalRequests    int64
+	UserID          int64
+	DistinctAPIKeys int
+	ActiveHours     int
+	TotalActualCost float64
+	TotalRequests   int64
 }
 
 type UserRiskRepository interface {

@@ -738,7 +738,7 @@ func (d *apiPromptDriver) checkRemoteHealth(ctx context.Context, record *pluginD
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
@@ -834,7 +834,7 @@ func (d *apiPromptDriver) doRemoteJSON(req *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, err
@@ -995,10 +995,6 @@ func normalizePluginBaseURL(baseURL string) string {
 	return strings.TrimRight(strings.TrimSpace(baseURL), "/")
 }
 
-func normalizeAPIPromptConfig(cfg *APIPromptPluginConfig, useDefaults bool) (*APIPromptPluginConfig, error) {
-	return normalizeAPIPromptConfigWithPromptRequirement(cfg, useDefaults, true)
-}
-
 func normalizeAPIPromptConfigWithPromptRequirement(cfg *APIPromptPluginConfig, useDefaults bool, requirePrompt bool) (*APIPromptPluginConfig, error) {
 	if cfg == nil {
 		if useDefaults {
@@ -1113,11 +1109,11 @@ func slugifyPromptTemplateID(name string) string {
 	for _, r := range name {
 		switch {
 		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			b.WriteRune(r)
+			_, _ = b.WriteRune(r)
 			lastDash = false
 		case r == '-' || r == '_' || r == ' ':
 			if !lastDash && b.Len() > 0 {
-				b.WriteByte('-')
+				_ = b.WriteByte('-')
 				lastDash = true
 			}
 		}
@@ -1193,8 +1189,4 @@ func prependGeminiSystemInstruction(body []byte, prompt string) ([]byte, error) 
 	}
 	payload["systemInstruction"] = map[string]any{"parts": parts}
 	return json.Marshal(payload)
-}
-
-func jsonEqualBytes(a, b []byte) bool {
-	return bytes.Equal(bytes.TrimSpace(a), bytes.TrimSpace(b))
 }

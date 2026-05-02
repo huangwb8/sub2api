@@ -247,9 +247,9 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	const updateSQL = `
 		UPDATE user_subscriptions us
 		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
+			daily_usage_usd = us.daily_usage_usd + $1::numeric,
+			weekly_usage_usd = us.weekly_usage_usd + $1::numeric,
+			monthly_usage_usd = us.monthly_usage_usd + $1::numeric,
 			updated_at = NOW()
 		FROM groups g
 		WHERE us.id = $2
@@ -277,11 +277,11 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 	}
 	res, err := tx.ExecContext(ctx, `
 		UPDATE users
-		SET balance = balance - $1,
+		SET balance = balance - $1::numeric,
 			updated_at = NOW()
 		WHERE id = $2
 			AND deleted_at IS NULL
-			AND balance - $1 >= -$3
+			AND balance - $1::numeric >= -$3::numeric
 	`, amount, userID, maxOverdraftCNY)
 	if err != nil {
 		return err
@@ -312,18 +312,18 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 	var exhausted bool
 	err := tx.QueryRowContext(ctx, `
 		UPDATE api_keys
-		SET quota_used = quota_used + $1,
+		SET quota_used = quota_used + $1::numeric,
 			status = CASE
 				WHEN quota > 0
 					AND status = $3
 					AND quota_used < quota
-					AND quota_used + $1 >= quota
+					AND quota_used + $1::numeric >= quota
 				THEN $4
 				ELSE status
 			END,
 			updated_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING quota > 0 AND quota_used >= quota AND quota_used - $1 < quota
+		RETURNING quota > 0 AND quota_used >= quota AND quota_used - $1::numeric < quota
 	`, amount, apiKeyID, service.StatusAPIKeyActive, service.StatusAPIKeyQuotaExhausted).Scan(&exhausted)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, service.ErrAPIKeyNotFound
@@ -337,9 +337,9 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKeyID int64, cost float64) error {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE api_keys SET
-			usage_5h = CASE WHEN window_5h_start IS NOT NULL AND window_5h_start + INTERVAL '5 hours' <= NOW() THEN $1 ELSE usage_5h + $1 END,
-			usage_1d = CASE WHEN window_1d_start IS NOT NULL AND window_1d_start + INTERVAL '24 hours' <= NOW() THEN $1 ELSE usage_1d + $1 END,
-			usage_7d = CASE WHEN window_7d_start IS NOT NULL AND window_7d_start + INTERVAL '7 days' <= NOW() THEN $1 ELSE usage_7d + $1 END,
+			usage_5h = CASE WHEN window_5h_start IS NOT NULL AND window_5h_start + INTERVAL '5 hours' <= NOW() THEN $1::numeric ELSE usage_5h + $1::numeric END,
+			usage_1d = CASE WHEN window_1d_start IS NOT NULL AND window_1d_start + INTERVAL '24 hours' <= NOW() THEN $1::numeric ELSE usage_1d + $1::numeric END,
+			usage_7d = CASE WHEN window_7d_start IS NOT NULL AND window_7d_start + INTERVAL '7 days' <= NOW() THEN $1::numeric ELSE usage_7d + $1::numeric END,
 			window_5h_start = CASE WHEN window_5h_start IS NULL OR window_5h_start + INTERVAL '5 hours' <= NOW() THEN NOW() ELSE window_5h_start END,
 			window_1d_start = CASE WHEN window_1d_start IS NULL OR window_1d_start + INTERVAL '24 hours' <= NOW() THEN date_trunc('day', NOW()) ELSE window_1d_start END,
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL '7 days' <= NOW() THEN date_trunc('day', NOW()) ELSE window_7d_start END,
@@ -363,14 +363,14 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 	rows, err := tx.QueryContext(ctx,
 		`UPDATE accounts SET extra = (
 			COALESCE(extra, '{}'::jsonb)
-			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1)
+			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1::numeric)
 			|| CASE WHEN COALESCE((extra->>'quota_daily_limit')::numeric, 0) > 0 THEN
 				jsonb_build_object(
 					'quota_daily_used',
 					CASE WHEN COALESCE((extra->>'quota_daily_start')::timestamptz, '1970-01-01'::timestamptz)
 						+ '24 hours'::interval <= NOW()
-					THEN $1
-					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + $1 END,
+					THEN $1::numeric
+					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + $1::numeric END,
 					'quota_daily_start',
 					CASE WHEN COALESCE((extra->>'quota_daily_start')::timestamptz, '1970-01-01'::timestamptz)
 						+ '24 hours'::interval <= NOW()
@@ -383,8 +383,8 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 					'quota_weekly_used',
 					CASE WHEN COALESCE((extra->>'quota_weekly_start')::timestamptz, '1970-01-01'::timestamptz)
 						+ '168 hours'::interval <= NOW()
-					THEN $1
-					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + $1 END,
+					THEN $1::numeric
+					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + $1::numeric END,
 					'quota_weekly_start',
 					CASE WHEN COALESCE((extra->>'quota_weekly_start')::timestamptz, '1970-01-01'::timestamptz)
 						+ '168 hours'::interval <= NOW()

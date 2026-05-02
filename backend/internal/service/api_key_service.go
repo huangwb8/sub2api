@@ -412,18 +412,18 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 
 	// 创建API Key记录
 	apiKey := &APIKey{
-		UserID:      userID,
-		Key:         key,
-		Name:        req.Name,
-		GroupID:     req.GroupID,
-		Status:      StatusActive,
-		IPWhitelist: req.IPWhitelist,
-		IPBlacklist: req.IPBlacklist,
-		Quota:       req.Quota,
-		QuotaUsed:   0,
-		RateLimit5h: req.RateLimit5h,
-		RateLimit1d: req.RateLimit1d,
-		RateLimit7d: req.RateLimit7d,
+		UserID:         userID,
+		Key:            key,
+		Name:           req.Name,
+		GroupID:        req.GroupID,
+		Status:         StatusActive,
+		IPWhitelist:    req.IPWhitelist,
+		IPBlacklist:    req.IPBlacklist,
+		Quota:          req.Quota,
+		QuotaUsed:      0,
+		RateLimit5h:    req.RateLimit5h,
+		RateLimit1d:    req.RateLimit1d,
+		RateLimit7d:    req.RateLimit7d,
 		PluginSettings: pluginSettings,
 	}
 

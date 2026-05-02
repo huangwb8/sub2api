@@ -92,8 +92,6 @@ func TestOpenAIGatewayService_ForwardAsImageGeneration_NonStream(t *testing.T) {
 		account,
 		[]byte(`{"model":"gpt-image-2","prompt":"draw a cat","n":1}`),
 		"gpt-image-2",
-		"",
-		"",
 	)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)

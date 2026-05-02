@@ -815,7 +815,7 @@ func isLegacyDefaultModelSnapshot(platform string, rawMapping map[string]any) bo
 		return false
 	}
 	minSize := 0
-	prefixes := []string{}
+	var prefixes []string
 	switch platform {
 	case PlatformOpenAI:
 		minSize = 12

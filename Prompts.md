@@ -101,6 +101,10 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 
 ---
 
+请基于 docs/plans/2026-05-02-plugin-system-local-first-simplification-plan.md  这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
 基于 docs/plans/2026-05-02-v1.2.17-ci-test-fix-plan.md ，你：
 
 - 评估一下相关的问题是否还存在，有没有必要修复； 

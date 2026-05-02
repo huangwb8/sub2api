@@ -35,8 +35,6 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	account *Account,
 	body []byte,
 	originalModel string,
-	billingModel string,
-	upstreamModel string,
 ) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
 	capability, err := s.ValidateOpenAIImagesAccount(ctx, account, "generations", gjson.GetBytes(body, "stream").Bool())
@@ -54,8 +52,8 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	if mappedModel != requestModel {
 		body = s.ReplaceModelInBody(body, mappedModel)
 	}
-	billingModel = mappedModel
-	upstreamModel = mappedModel
+	billingModel := mappedModel
+	upstreamModel := mappedModel
 
 	token, _, err := s.GetAccessToken(ctx, account)
 	if err != nil {
@@ -78,7 +76,6 @@ func (s *OpenAIGatewayService) ForwardAsImageEdit(
 	c *gin.Context,
 	account *Account,
 	originalModel string,
-	billingModel string,
 	upstreamModel string,
 ) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
@@ -106,7 +103,7 @@ func (s *OpenAIGatewayService) ForwardAsImageEdit(
 	if mappedModel == "" {
 		mappedModel = requestModel
 	}
-	billingModel = mappedModel
+	billingModel := mappedModel
 	upstreamModel = mappedModel
 	if err := overwriteMultipartField(writer, "model", mappedModel); err != nil {
 		_ = writer.Close()

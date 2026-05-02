@@ -258,7 +258,7 @@ func (r *usageLogRepository) ListUserIDsWithUsageBetween(ctx context.Context, st
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	userIDs := make([]int64, 0, 64)
 	for rows.Next() {

@@ -30,7 +30,7 @@ type APIKeyAuthSnapshot struct {
 	RateLimit1d float64 `json:"rate_limit_1d"`
 	RateLimit7d float64 `json:"rate_limit_7d"`
 
-	UserGroupRPMLimit *int `json:"user_group_rpm_limit,omitempty"`
+	UserGroupRPMLimit *int                        `json:"user_group_rpm_limit,omitempty"`
 	PluginSettings    domain.APIKeyPluginSettings `json:"plugin_settings,omitempty"`
 }
 

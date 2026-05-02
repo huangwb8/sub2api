@@ -44,12 +44,6 @@ func codexRateLimitedSQL(platformColumn, typeColumn, extraColumn, nowExpr string
 	)
 }
 
-func codexRateLimitedPredicate(nowExpr string) dbpredicate.Account {
-	return dbpredicate.Account(func(s *entsql.Selector) {
-		s.Where(entsql.ExprP(codexRateLimitedSQL(s.C("platform"), s.C("type"), s.C("extra"), nowExpr)))
-	})
-}
-
 func notCodexRateLimitedPredicate(nowExpr string) dbpredicate.Account {
 	return dbpredicate.Account(func(s *entsql.Selector) {
 		s.Where(entsql.Not(entsql.ExprP(codexRateLimitedSQL(s.C("platform"), s.C("type"), s.C("extra"), nowExpr))))

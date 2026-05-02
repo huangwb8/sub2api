@@ -154,18 +154,18 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 
 	// 创建账号
 	account := &Account{
-		Name:        req.Name,
-		Notes:       normalizeAccountNotes(req.Notes),
-		Platform:    req.Platform,
-		Type:        req.Type,
-		Credentials: req.Credentials,
-		Extra:       req.Extra,
-		ProxyID:     req.ProxyID,
-		Concurrency: req.Concurrency,
-		Priority:    req.Priority,
+		Name:          req.Name,
+		Notes:         normalizeAccountNotes(req.Notes),
+		Platform:      req.Platform,
+		Type:          req.Type,
+		Credentials:   req.Credentials,
+		Extra:         req.Extra,
+		ProxyID:       req.ProxyID,
+		Concurrency:   req.Concurrency,
+		Priority:      req.Priority,
 		ActualCostCNY: req.ActualCostCNY,
-		Status:      StatusActive,
-		ExpiresAt:   req.ExpiresAt,
+		Status:        StatusActive,
+		ExpiresAt:     req.ExpiresAt,
 	}
 	if account.ActualCostCNY != nil && *account.ActualCostCNY > 0 {
 		zero := 0.0

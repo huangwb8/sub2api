@@ -115,8 +115,11 @@ func NewExchangeRateService(store *SettingService, cfg *config.Config) ExchangeR
 }
 
 func (s *exchangeRateService) ResolveUSDCNYRate(ctx context.Context) (*ResolvedExchangeRate, error) {
+	if s == nil {
+		return resolveFallbackExchangeRate(defaultBillingFXSettingsFromConfig(nil), "fallback_floor"), nil
+	}
 	settings := defaultBillingFXSettingsFromConfig(s.cfg)
-	if s != nil && s.store != nil {
+	if s.store != nil {
 		settings = mergeBillingFXSettings(settings, s.store.GetBillingFXSettings(ctx))
 	}
 	if !settings.Enabled {
