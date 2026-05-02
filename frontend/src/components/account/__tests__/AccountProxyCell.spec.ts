@@ -188,7 +188,7 @@ describe('AccountProxyCell', () => {
             latency_status: 'failed'
           })
         }),
-        proxies: [buildProxy()]
+        proxies: [buildProxy({ latency_status: 'failed' })]
       },
       global: {
         stubs: {
@@ -200,6 +200,38 @@ describe('AccountProxyCell', () => {
     })
 
     expect(failedWrapper.text()).toContain('链接失败')
+  })
+
+  it('prefers enriched proxy list health over account proxy snapshot', () => {
+    const accountProxy = buildProxy({
+      id: 1,
+      status: 'active'
+    })
+    const enrichedProxy = buildProxy({
+      id: 1,
+      status: 'active',
+      latency_status: 'failed',
+      latency_message: 'connect timeout'
+    })
+
+    const wrapper = mount(AccountProxyCell, {
+      props: {
+        account: buildAccount({
+          proxy_id: 1,
+          proxy: accountProxy
+        }),
+        proxies: [enrichedProxy]
+      },
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          ProxySelector: ProxySelectorStub,
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('链接失败')
   })
 
   it('switches account proxy from the quick dialog and emits the updated account', async () => {

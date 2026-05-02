@@ -137,9 +137,10 @@ const switching = ref(false)
 const selectedProxyID = ref<number | null>(null)
 
 const currentProxy = computed(() => {
-  if (props.account.proxy) return props.account.proxy
-  if (props.account.proxy_id == null) return null
-  return props.proxies.find((proxy) => proxy.id === props.account.proxy_id) ?? null
+  const proxyID = props.account.proxy_id ?? props.account.proxy?.id ?? null
+  if (proxyID == null) return null
+
+  return props.proxies.find((proxy) => proxy.id === proxyID) ?? props.account.proxy ?? null
 })
 
 const availabilityState = computed(() => getProxyAvailabilityState(currentProxy.value))
