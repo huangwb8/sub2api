@@ -801,7 +801,10 @@ func (s *defaultOpenAIAccountScheduler) isAccountAPIFormatCompatible(account *Ac
 	if account == nil {
 		return false
 	}
-	return account.OpenAIAPIFormat() == requiredFormat
+	if account.OpenAIAPIFormat() == requiredFormat {
+		return true
+	}
+	return requiredFormat == OpenAIAPIFormatResponses && account.IsChatAPIResponsesEnabled()
 }
 
 func (s *defaultOpenAIAccountScheduler) ReportResult(accountID int64, success bool, firstTokenMs *int) {

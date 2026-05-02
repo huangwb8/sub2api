@@ -302,6 +302,56 @@ func TestOpenAIGatewayService_SelectAccountWithSchedulerForFormat_FiltersByAPIFo
 	}
 }
 
+func TestOpenAIGatewayService_SelectAccountWithSchedulerForFormat_AllowsChatAPIResponsesOptIn(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(13)
+	chatDefault := Account{
+		ID:          2201,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeChatAPI,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    5,
+	}
+	chatResponses := Account{
+		ID:          2202,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeChatAPI,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    20,
+		Extra: map[string]any{
+			"chatapi_responses_enabled": true,
+		},
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{chatDefault, chatResponses}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	responsesSelection, _, err := svc.SelectAccountWithSchedulerForFormat(
+		ctx,
+		&groupID,
+		"",
+		"",
+		"gpt-5.1",
+		nil,
+		OpenAIAPIFormatResponses,
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, responsesSelection)
+	require.NotNil(t, responsesSelection.Account)
+	require.Equal(t, chatResponses.ID, responsesSelection.Account.ID)
+	if responsesSelection.ReleaseFunc != nil {
+		responsesSelection.ReleaseFunc()
+	}
+}
+
 func TestDefaultOpenAIAccountScheduler_SelectPrefersHigherCodexHeadroom(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(12)

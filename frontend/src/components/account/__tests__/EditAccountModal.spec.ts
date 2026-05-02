@@ -7,12 +7,26 @@ const {
   checkMixedChannelRiskMock,
   getSchedulingMechanismSettingsMock,
   showErrorMock
-} = vi.hoisted(() => ({
-  updateAccountMock: vi.fn(),
-  checkMixedChannelRiskMock: vi.fn(),
-  getSchedulingMechanismSettingsMock: vi.fn(),
-  showErrorMock: vi.fn()
-}))
+} = vi.hoisted(() => {
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(() => null),
+      length: 0
+    }
+  })
+
+  return {
+    updateAccountMock: vi.fn(),
+    checkMixedChannelRiskMock: vi.fn(),
+    getSchedulingMechanismSettingsMock: vi.fn(),
+    showErrorMock: vi.fn()
+  }
+})
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
@@ -209,7 +223,7 @@ describe('EditAccountModal', () => {
     expect((wsModeSelect!.element as HTMLSelectElement).value).toBe('ctx_pool')
   })
 
-  it('ChatAPI 账号编辑时应保留 API Key 表单，但不展示 OpenAI passthrough 与 WS mode', async () => {
+  it('ChatAPI 账号编辑时应保留 API Key 表单，展示 Responses 开关，但不展示 OpenAI passthrough 与 WS mode', async () => {
     const wrapper = mountModal({
       ...buildAccount(),
       type: 'chatapi'
@@ -218,8 +232,28 @@ describe('EditAccountModal', () => {
     await flushPromises()
 
     expect(wrapper.find('input[type="password"].font-mono').exists()).toBe(true)
+    expect(wrapper.text()).toContain('admin.accounts.openai.chatAPIResponsesEnabled')
     expect(wrapper.text()).not.toContain('admin.accounts.openai.oauthPassthrough')
     expect(wrapper.findAll('select').some((select) => select.find('option[value="ctx_pool"]').exists())).toBe(false)
+  })
+
+  it('ChatAPI 账号编辑时应回写 Responses 开关到 extra', async () => {
+    const account = {
+      ...buildAccount(),
+      type: 'chatapi',
+      extra: {
+        chatapi_responses_enabled: true
+      }
+    }
+    updateAccountMock.mockResolvedValue(account)
+
+    const wrapper = mountModal(account)
+    await flushPromises()
+
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.chatapi_responses_enabled).toBe(true)
   })
 
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {

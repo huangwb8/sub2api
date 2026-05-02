@@ -1373,6 +1373,20 @@ func (a *Account) IsOpenAIPassthroughEnabled() bool {
 	return false
 }
 
+// IsChatAPIResponsesEnabled 返回 ChatAPI 账号是否允许参与 Responses API 调度。
+//
+// 新字段：accounts.extra.chatapi_responses_enabled。
+// 仅对 OpenAI ChatAPI 账号生效；字段缺失或类型不正确时按 false 处理。
+func (a *Account) IsChatAPIResponsesEnabled() bool {
+	if a == nil || a.Type != AccountTypeChatAPI || a.Extra == nil {
+		return false
+	}
+	if enabled, ok := a.Extra["chatapi_responses_enabled"].(bool); ok {
+		return enabled
+	}
+	return false
+}
+
 // IsOpenAIResponsesWebSocketV2Enabled 返回 OpenAI 账号是否开启 Responses WebSocket v2。
 //
 // 分类型新字段：

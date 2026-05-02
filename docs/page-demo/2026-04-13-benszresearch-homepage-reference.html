@@ -282,12 +282,195 @@
     max-width: 54ch;
   }
 
+  .bensz-home__signal-band {
+    position: relative;
+    margin-top: 28px;
+    padding: 18px 18px 20px;
+    border: 1px solid rgba(15, 118, 110, 0.12);
+    border-radius: 20px;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 250, 0.82)),
+      radial-gradient(circle at 88% 18%, rgba(229, 160, 75, 0.12), transparent 28%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), 0 16px 36px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+
+  .bensz-home__signal-band::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(15, 118, 110, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 118, 110, 0.05) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 90%);
+    pointer-events: none;
+  }
+
+  .bensz-home__signal-band::after {
+    content: "";
+    position: absolute;
+    inset: auto -10% -56% 45%;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.16), transparent 68%);
+    pointer-events: none;
+  }
+
+  .bensz-home__signal-head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .bensz-home__signal-kicker {
+    color: var(--teal-700);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .bensz-home__signal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .bensz-home__signal-status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold-400);
+    box-shadow: 0 0 0 0 rgba(229, 160, 75, 0.2);
+    animation: benszBeacon 2.2s ease-in-out infinite;
+  }
+
+  .bensz-home__signal-track {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+  }
+
+  .bensz-home__signal-line {
+    position: absolute;
+    left: 34px;
+    right: 34px;
+    top: 22px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(20, 184, 166, 0.18), rgba(229, 160, 75, 0.24));
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bensz-home__signal-line::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal-600), var(--gold-400));
+    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.08), 0 0 12px rgba(20, 184, 166, 0.3);
+    animation: benszSignalTravel 3.8s ease-in-out infinite alternate;
+  }
+
+  .bensz-home__signal-line::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 84px;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(20, 184, 166, 0), rgba(20, 184, 166, 0.28), rgba(229, 160, 75, 0));
+    filter: blur(5px);
+    animation: benszSignalSweep 3.8s ease-in-out infinite alternate;
+  }
+
+  .bensz-home__signal-stage {
+    position: relative;
+    min-height: 88px;
+    padding: 18px 14px 14px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(8px);
+  }
+
+  .bensz-home__signal-stage::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .bensz-home__signal-stage--source::before {
+    background: var(--teal-500);
+    box-shadow: 0 0 8px rgba(20, 184, 166, 0.38);
+  }
+
+  .bensz-home__signal-stage--draft {
+    transform: translateY(16px);
+  }
+
+  .bensz-home__signal-stage--draft::before {
+    background: var(--gold-500);
+    box-shadow: 0 0 8px rgba(229, 160, 75, 0.34);
+  }
+
+  .bensz-home__signal-stage--ready {
+    transform: translateY(6px);
+  }
+
+  .bensz-home__signal-stage--ready::before {
+    background: var(--teal-700);
+    box-shadow: 0 0 8px rgba(15, 118, 110, 0.34);
+  }
+
+  .bensz-home__signal-stage-label {
+    display: block;
+    color: var(--slate-900);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+
+  .bensz-home__signal-stage-meta {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-3);
+    font-size: 11px;
+    line-height: 1.55;
+    letter-spacing: 0.03em;
+  }
+
   .bensz-home__actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 12px;
-    margin-top: 32px;
+    margin-top: 26px;
   }
 
   .bensz-home__cta {
@@ -339,49 +522,6 @@
     font-weight: 400;
     letter-spacing: 0.01em;
     margin-top: 4px;
-  }
-
-  .bensz-home__micro-strip {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    width: 100%;
-    margin-top: 16px;
-  }
-
-  .bensz-home__micro-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 42px;
-    padding: 0 14px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.76);
-    box-shadow: 0 10px 24px rgba(148, 163, 184, 0.08);
-    color: var(--text-3);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
-
-  .bensz-home__micro-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--teal-600), var(--teal-400));
-    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.08);
-  }
-
-  .bensz-home__micro-item:nth-child(2) .bensz-home__micro-dot {
-    background: linear-gradient(135deg, var(--gold-500), var(--gold-400));
-    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08);
-  }
-
-  .bensz-home__micro-item:nth-child(3) .bensz-home__micro-dot {
-    background: linear-gradient(135deg, #7c3aed, #a78bfa);
-    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
   }
 
   .bensz-home__side-head {
@@ -955,6 +1095,56 @@
     }
   }
 
+  @keyframes benszBeacon {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(229, 160, 75, 0.2);
+      opacity: 0.95;
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(229, 160, 75, 0.05);
+      opacity: 0.55;
+    }
+  }
+
+  @keyframes benszSignalTravel {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(100% - 12px));
+    }
+  }
+
+  @keyframes benszSignalSweep {
+    from {
+      transform: translateX(0);
+      opacity: 0.2;
+    }
+    to {
+      transform: translateX(calc(100% - 84px));
+      opacity: 0.9;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bensz-home__nav-btn,
+    .bensz-home__cta,
+    .bensz-home__feat,
+    .bensz-home__pricing-buy,
+    .bensz-home__pricing-retry,
+    .bensz-home__orbit-ring--inner,
+    .bensz-home__orbit-ring--mid,
+    .bensz-home__orbit-dot--a,
+    .bensz-home__orbit-dot--b,
+    .bensz-home__signal-status::before,
+    .bensz-home__signal-line::before,
+    .bensz-home__signal-line::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
   @media (max-width: 1080px) {
     .bensz-home__hero,
     .bensz-home__pricing-grid {
@@ -1007,6 +1197,21 @@
       min-height: 220px;
     }
 
+    .bensz-home__signal-track {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding-top: 0;
+    }
+
+    .bensz-home__signal-line {
+      display: none;
+    }
+
+    .bensz-home__signal-stage--draft,
+    .bensz-home__signal-stage--ready {
+      transform: none;
+    }
+
     .bensz-home__node--grant {
       top: 14px;
       left: 10px;
@@ -1027,8 +1232,19 @@
       align-items: stretch;
     }
 
-    .bensz-home__micro-strip {
-      grid-template-columns: 1fr;
+    .bensz-home__signal-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .bensz-home__signal-band {
+      padding: 16px 14px 16px;
+      margin-top: 24px;
+    }
+
+    .bensz-home__signal-stage {
+      min-height: auto;
+      padding: 16px 12px 12px;
     }
 
     .bensz-home__cta,
@@ -1091,6 +1307,28 @@
             专为科研人员设计的 AI API 服务平台，让学术写作更高效，经费报销更顺畅。
           </p>
 
+          <div class="bensz-home__signal-band" aria-hidden="true">
+            <div class="bensz-home__signal-head">
+              <span class="bensz-home__signal-kicker">Research Flow</span>
+              <span class="bensz-home__signal-status">workflow live</span>
+            </div>
+            <div class="bensz-home__signal-track">
+              <div class="bensz-home__signal-line"></div>
+              <div class="bensz-home__signal-stage bensz-home__signal-stage--source">
+                <span class="bensz-home__signal-stage-label">检索线索</span>
+                <span class="bensz-home__signal-stage-meta">文献检索、提纲线索与资料入口先汇成一条路。</span>
+              </div>
+              <div class="bensz-home__signal-stage bensz-home__signal-stage--draft">
+                <span class="bensz-home__signal-stage-label">写作成稿</span>
+                <span class="bensz-home__signal-stage-meta">提示词、模型调用与学术表达在同一工作流里推进。</span>
+              </div>
+              <div class="bensz-home__signal-stage bensz-home__signal-stage--ready">
+                <span class="bensz-home__signal-stage-label">归档交付</span>
+                <span class="bensz-home__signal-stage-meta">从结果沉淀到经费归档，保持科研节奏连续不中断。</span>
+              </div>
+            </div>
+          </div>
+
           <div class="bensz-home__actions">
             <a class="bensz-home__cta bensz-home__cta--primary" href="/dashboard">
               进入控制台 &rarr;
@@ -1100,20 +1338,6 @@
             </a>
             <div class="bensz-home__microcopy">
               未登录时点击控制台，平台将自动引导完成认证流程
-            </div>
-            <div class="bensz-home__micro-strip" aria-label="平台优势摘要">
-              <div class="bensz-home__micro-item">
-                <span class="bensz-home__micro-dot" aria-hidden="true"></span>
-                <span>认证引导顺滑</span>
-              </div>
-              <div class="bensz-home__micro-item">
-                <span class="bensz-home__micro-dot" aria-hidden="true"></span>
-                <span>按量开通更灵活</span>
-              </div>
-              <div class="bensz-home__micro-item">
-                <span class="bensz-home__micro-dot" aria-hidden="true"></span>
-                <span>报销流程更友好</span>
-              </div>
             </div>
           </div>
 

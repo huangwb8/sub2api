@@ -71,6 +71,41 @@ func TestAccount_IsOpenAIOAuthPassthroughEnabled(t *testing.T) {
 	})
 }
 
+func TestAccount_IsChatAPIResponsesEnabled(t *testing.T) {
+	t.Run("ChatAPI 账号开启新字段时返回 true", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeChatAPI,
+			Extra: map[string]any{
+				"chatapi_responses_enabled": true,
+			},
+		}
+		require.True(t, account.IsChatAPIResponsesEnabled())
+	})
+
+	t.Run("非 ChatAPI 账号始终关闭", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeAPIKey,
+			Extra: map[string]any{
+				"chatapi_responses_enabled": true,
+			},
+		}
+		require.False(t, account.IsChatAPIResponsesEnabled())
+	})
+
+	t.Run("字段缺失或类型错误默认关闭", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeChatAPI,
+			Extra: map[string]any{
+				"chatapi_responses_enabled": "true",
+			},
+		}
+		require.False(t, account.IsChatAPIResponsesEnabled())
+	})
+}
+
 func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 	t.Run("OpenAI OAuth 开启", func(t *testing.T) {
 		account := &Account{
