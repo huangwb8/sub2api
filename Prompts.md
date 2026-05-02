@@ -1,4 +1,22 @@
-# General
+# 发布新版本
+
+- 发布新的release（快速版）
+
+```
+github项目：huangwb8/sub2api
+version=1.3.2
+新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
+```
+
+- 发布新的release（完全版）
+
+```
+github项目：huangwb8/sub2api
+version=1.2.xxx
+新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用完整发布，即：除了 Docker Hub 的 x86/amd64 镜像外，还要把当前仓库完整发布流程中必要的其它产物也一并完成，包括 GitHub Release，以及必要时的 GHCR、arm64、多架构和补发流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
+```
+
+# 一般
 
 - 开放式对话
 
@@ -30,22 +48,6 @@
 使用 auto-test-code skill 对本项目进行2次优化。每次优化都要主动做跨模块、全维度审查，而不是只追一个故障点。
 ```
 
-- 发布新的release（快速版）
-
-```
-github项目：huangwb8/sub2api
-version=1.3.1
-新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
-```
-
-- 发布新的release（完全版）
-
-```
-github项目：huangwb8/sub2api
-version=1.2.xxx
-新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用完整发布，即：除了 Docker Hub 的 x86/amd64 镜像外，还要把当前仓库完整发布流程中必要的其它产物也一并完成，包括 GitHub Release，以及必要时的 GHCR、arm64、多架构和补发流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
-```
-
 - 结合布署项目进行优化
 
 ```
@@ -58,15 +60,15 @@ version=1.2.xxx
 目前是否存在一些重大的支付/额度错误并严重影响业务（特别是用户充值、用户购买订阅套餐）的正常运行？不要修改源代码；而是彻底调研源代码后回答问题。
 ```
 
-# 基于实际运营情况优化代码逻辑
-
-- 调查
+- 基于实际运营情况优化代码逻辑调查
 
 ```
-基于 remote.env ，你调查一下今天站点的工作情况，看看有哪些是sub2api设计缺陷所致的。并且提出修改建议，保存在 docs/plans 里。
+基于 ./skills/sub2api-summary skill 调研我的sub2api站点的工作情况
+- 鉴权：./remote.env
+- 时间段： 最近48h
 ```
 
-- 优化
+- 基于调查进行优化
 
 ```
 docs/plans/xxx.md 暴露了一些实际运营时出现的问题，它们很多与sub2api的设计缺陷有关。 请判断哪些问题值得解决，然后优化。 注意，不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
@@ -98,6 +100,35 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 - `huangwb8/sub2api`比如稳定的版本有：`v1.2.4`
 
 # 日常
+
+---
+
+在 ./skills 里开发一个agent skill，名为`sub2api-add-users`。它的用途是：收集某个时间段某个实际在运营的sub2api站点，通过分析实际的运营数据为管理员提供一个建议：（如果目前站点算力有冗余，适合加多少用户）。 具体大致是这样工作的：
+
+工作目录：./tmp/sub2api-add-users/run-{时间戳}
+
+输入：
+
+- 实际站点的鉴权信息：用户必须提供； 否则将中止工作
+- 时间段的定义：用户可选提供。如果没说，默认是最近7d
+
+
+工作过程：
+
+- 通过鉴权信息获得访问权限
+- 只读必要的数据； 必要时可以下载数据，保存在 ./tmp/sub2api-add-users/run-{时间戳}/data 里
+- 分析数据。分析代码可以保存在 保存在 ./tmp/sub2api-add-users/run-{时间戳}/analysis 里
+- 结合源代码，彻底了解数据的情况
+- 写一个report，保存在 ./tmp/sub2api-add-users/run-{时间戳}/report.md，表明
+  - 适合添加多少个用户（可以是正值； 也可以是负值。负值就代表算力有缺口； 正值就代表算力有冗余）
+
+  - 原因是什么？
+
+
+注意：
+
+- 开发时应该符合 /Volumes/2T01/winE/PythonCloud/Agents/pipelines/skills/AGENTS.md 的基本规范
+- 你先把demo做出来； 然后使用 auto-test-skill skill 对该skill进行1次迭代优化。
 
 ---
 

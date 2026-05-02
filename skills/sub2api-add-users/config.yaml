@@ -1,0 +1,41 @@
+# sub2api-add-users 技能配置文件
+
+skill_info:
+  name: sub2api-add-users
+  version: 0.1.0
+  description: 基于真实 sub2api 运营数据评估当前站点适合新增多少用户
+  author: "Bensz Conan"
+  category: 运维容量分析
+
+directories:
+  work_root: "tmp/sub2api-add-users"
+  data: "data"
+  analysis: "analysis"
+  plans: "plans"
+  tests: "tests"
+
+defaults:
+  timezone: "Asia/Shanghai"
+  lookback_days: 7
+  user_limit: 80
+  request_timeout_seconds: 30
+
+collection:
+  auth_modes:
+    - "admin-api-key"
+    - "bearer"
+  preferred_auth_header: "x-api-key"
+  required_core_files:
+    - "recommendations.json"
+    - "usage_stats.json"
+  optional_endpoints_continue_on_error: true
+  read_only_methods:
+    - "GET"
+
+analysis_thresholds:
+  reserve_account_ratio: 0.15
+  min_account_reserve: 1
+  max_redundant_utilization: 0.75
+  high_utilization: 0.85
+  low_confidence_score: 0.45
+  medium_confidence_score: 0.70
