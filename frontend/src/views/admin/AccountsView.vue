@@ -233,13 +233,7 @@
             />
           </template>
           <template #cell-proxy="{ row }">
-            <div v-if="row.proxy" class="flex items-center gap-2">
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{ row.proxy.name }}</span>
-              <span v-if="row.proxy.country_code" class="text-xs text-gray-500 dark:text-gray-400">
-                ({{ row.proxy.country_code }})
-              </span>
-            </div>
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <AccountProxyCell :account="row" :proxies="proxies" @updated="handleAccountUpdated" />
           </template>
           <template #cell-rate_multiplier="{ row }">
             <span class="text-sm font-mono text-gray-700 dark:text-gray-300">
@@ -365,6 +359,7 @@ import AccountUsageCell from '@/components/account/AccountUsageCell.vue'
 import AccountTodayStatsCell from '@/components/account/AccountTodayStatsCell.vue'
 import AccountGroupsCell from '@/components/account/AccountGroupsCell.vue'
 import AccountCapacityCell from '@/components/account/AccountCapacityCell.vue'
+import AccountProxyCell from '@/components/account/AccountProxyCell.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ErrorPassthroughRulesModal from '@/components/admin/ErrorPassthroughRulesModal.vue'
@@ -450,8 +445,11 @@ const exportingData = ref(false)
 const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
 const hiddenColumns = reactive<Set<string>>(new Set())
-const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
+const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
+const LEGACY_DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
+const HIDDEN_COLUMNS_VERSION_KEY = 'account-hidden-columns-version'
+const ACCOUNT_COLUMNS_VERSION = 2
 
 // Sorting settings
 const ACCOUNT_SORT_STORAGE_KEY = 'account-table-sort'
@@ -575,6 +573,13 @@ const loadSavedColumns = () => {
       parsed.forEach(key => {
         hiddenColumns.add(key)
       })
+      const version = Number(localStorage.getItem(HIDDEN_COLUMNS_VERSION_KEY) || '0')
+      const matchesLegacyDefault =
+        parsed.length === LEGACY_DEFAULT_HIDDEN_COLUMNS.length &&
+        LEGACY_DEFAULT_HIDDEN_COLUMNS.every((key) => parsed.includes(key))
+      if (version < ACCOUNT_COLUMNS_VERSION && matchesLegacyDefault) {
+        hiddenColumns.delete('proxy')
+      }
     } else {
       DEFAULT_HIDDEN_COLUMNS.forEach(key => {
         hiddenColumns.add(key)
@@ -585,12 +590,19 @@ const loadSavedColumns = () => {
     DEFAULT_HIDDEN_COLUMNS.forEach(key => {
       hiddenColumns.add(key)
     })
+  } finally {
+    try {
+      localStorage.setItem(HIDDEN_COLUMNS_VERSION_KEY, String(ACCOUNT_COLUMNS_VERSION))
+    } catch (e) {
+      console.error('Failed to save column preferences version:', e)
+    }
   }
 }
 
 const saveColumnsToStorage = () => {
   try {
     localStorage.setItem(HIDDEN_COLUMNS_KEY, JSON.stringify([...hiddenColumns]))
+    localStorage.setItem(HIDDEN_COLUMNS_VERSION_KEY, String(ACCOUNT_COLUMNS_VERSION))
   } catch (e) {
     console.error('Failed to save columns:', e)
   }

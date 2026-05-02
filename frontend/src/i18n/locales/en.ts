@@ -2846,6 +2846,22 @@ export default {
       expired: 'Expired',
       proxy: 'Proxy',
       noProxy: 'No Proxy',
+      proxyAvailability: {
+        available: 'Available',
+        failed: 'Link Failed'
+      },
+      proxySwitchDialog: {
+        title: 'Switch Proxy: {name}',
+        action: 'Switch',
+        unassigned: 'No proxy assigned',
+        noProxySummary: 'This account is not currently bound to a proxy.',
+        targetLabel: 'Target Proxy',
+        hint: 'The list keeps the current proxy and shows alternative candidates using the same availability rules as the IP management page.',
+        noAlternative: 'No other available proxy can be switched to right now.',
+        confirm: 'Switch Proxy'
+      },
+      proxySwitchSuccess: 'Switched {account} to proxy {proxy}',
+      proxySwitchFailed: 'Failed to switch proxy',
       concurrency: 'Concurrency',
       loadFactor: 'Load Factor',
       loadFactorHint: 'Higher load factor increases scheduling frequency',

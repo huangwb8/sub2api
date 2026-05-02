@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了账号管理里的代理可用性与快速切换入口：账号列表默认显示“代理”列，单元格会按 IP 管理页同口径展示“正常 / 链接失败”，并支持管理员直接点击后为单个账号切换到当前可用的其它代理。
 - 新增了 `docs/plans/2026-05-02-plugin-system-local-first-simplification-plan.md`：重新审视插件系统复杂度后，规划将 `api-prompt` 从远端外挂方向收敛为 Sub2API 本地内置扩展，移除 `base_url`、`api_key`、远端协议与缓存降级语义，同时保留插件目录、模板管理、API Key 绑定和请求注入能力。
 - 新增了 `api-prompt` 本地插件说明文档：`docs/api-prompt-插件协议.md` 改为说明 `./plugins/{插件名}` 下 `manifest.json`、`config.json` 的本地配置结构、API Key 绑定格式和请求注入行为。
 - 新增了插件系统与首个 `api-prompt` 插件：管理员可在系统设置中创建并管理保存在 `./plugins/{插件名}` 的本地插件实例，执行配置检查、启停插件，并为 `api-prompt` 维护内置/自定义 prompt 模板，供用户在创建 API Key 时选择“通用”或绑定模板。

@@ -1091,6 +1091,12 @@ import { useClipboard } from '@/composables/useClipboard'
 import { useSwipeSelect } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
+import {
+  buildProxyTransferTargetLabel,
+  compareProxyTransferTargets,
+  formatProxyLocation,
+  isProxyAvailable
+} from '@/utils/proxyAvailability'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -1136,62 +1142,6 @@ const editStatusOptions = computed(() => [
   { value: 'active', label: t('admin.accounts.status.active') },
   { value: 'inactive', label: t('admin.accounts.status.inactive') }
 ])
-
-const isTransferTargetAvailable = (proxy: Proxy) => {
-  if (proxy.status !== 'active') return false
-  if (proxy.latency_status === 'failed') return false
-  if (proxy.quality_status === 'failed' || proxy.quality_status === 'challenge') return false
-  return true
-}
-
-const transferTargetQualityRank = (status?: Proxy['quality_status']) => {
-  switch (status) {
-    case 'healthy':
-      return 0
-    case 'warn':
-      return 1
-    default:
-      return 2
-  }
-}
-
-const transferTargetLatencyRank = (proxy: Proxy) => {
-  if (proxy.latency_status === 'success' && typeof proxy.latency_ms === 'number') {
-    return proxy.latency_ms
-  }
-  return Number.MAX_SAFE_INTEGER
-}
-
-const compareTransferTargets = (left: Proxy, right: Proxy) => {
-  const qualityRankDiff = transferTargetQualityRank(left.quality_status) - transferTargetQualityRank(right.quality_status)
-  if (qualityRankDiff !== 0) return qualityRankDiff
-
-  const latencyDiff = transferTargetLatencyRank(left) - transferTargetLatencyRank(right)
-  if (latencyDiff !== 0) return latencyDiff
-
-  const qualityScoreDiff = (right.quality_score ?? -1) - (left.quality_score ?? -1)
-  if (qualityScoreDiff !== 0) return qualityScoreDiff
-
-  const accountCountDiff = (left.account_count ?? 0) - (right.account_count ?? 0)
-  if (accountCountDiff !== 0) return accountCountDiff
-
-  return left.name.localeCompare(right.name, 'zh-CN')
-}
-
-const buildTransferTargetLabel = (proxy: Proxy) => {
-  const parts = [proxy.name, `${proxy.host}:${proxy.port}`]
-  const location = formatLocation(proxy)
-  if (location) {
-    parts.push(location)
-  }
-  if (typeof proxy.latency_ms === 'number' && proxy.latency_status === 'success') {
-    parts.push(`${proxy.latency_ms}ms`)
-  }
-  if (proxy.quality_grade) {
-    parts.push(`Q${proxy.quality_grade}`)
-  }
-  return parts.join(' · ')
-}
 
 const proxies = ref<Proxy[]>([])
 const visiblePasswordIds = reactive(new Set<number>())
@@ -1289,9 +1239,9 @@ function toggleProxyFailoverPanel() {
 const availableTransferTargets = computed(() => {
   const currentProxyID = accountsProxy.value?.id
   return accountTransferCandidateProxies.value
-    .filter((proxy) => proxy.id !== currentProxyID && isTransferTargetAvailable(proxy))
+    .filter((proxy) => proxy.id !== currentProxyID && isProxyAvailable(proxy))
     .slice()
-    .sort(compareTransferTargets)
+    .sort(compareProxyTransferTargets)
 })
 
 const accountTransferOptions = computed(() => [
@@ -1305,7 +1255,7 @@ const accountTransferOptions = computed(() => [
   },
   ...availableTransferTargets.value.map((proxy) => ({
     value: proxy.id,
-    label: buildTransferTargetLabel(proxy)
+    label: buildProxyTransferTargetLabel(proxy)
   }))
 ])
 
@@ -1724,10 +1674,7 @@ const applyQualityResult = (proxyId: number, result: ProxyQualityCheckResult) =>
   target.quality_checked = result.checked_at
 }
 
-const formatLocation = (proxy: Proxy) => {
-  const parts = [proxy.country, proxy.city].filter(Boolean) as string[]
-  return parts.join(' · ')
-}
+const formatLocation = (proxy: Proxy) => formatProxyLocation(proxy)
 
 const flagUrl = (code: string) =>
   `https://unpkg.com/flag-icons/flags/4x3/${code.toLowerCase()}.svg`

@@ -2989,6 +2989,22 @@ export default {
       expired: '已过期',
       proxy: '代理',
       noProxy: '无代理',
+      proxyAvailability: {
+        available: '正常',
+        failed: '链接失败'
+      },
+      proxySwitchDialog: {
+        title: '切换代理：{name}',
+        action: '切换',
+        unassigned: '未配置代理',
+        noProxySummary: '当前账号未绑定代理。',
+        targetLabel: '目标代理',
+        hint: '列表会保留当前代理，并按 IP 管理页的同一口径优先展示当前可用的候选代理。',
+        noAlternative: '暂无其它可用代理可切换。',
+        confirm: '切换代理'
+      },
+      proxySwitchSuccess: '已为 {account} 切换到代理 {proxy}',
+      proxySwitchFailed: '切换代理失败',
       concurrency: '并发数',
       loadFactor: '负载因子',
       loadFactorHint: '提高负载因子可以提高对账号的调度频率',
