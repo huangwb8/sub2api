@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/enttest"
+	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"
@@ -184,6 +186,64 @@ func TestPaymentConfigService_UpdatePlan_RejectsInvalidGroupTransitions(t *testi
 	require.NoError(t, err)
 	require.Equal(t, newName, updated.Name)
 	require.Equal(t, activeSubGroup.ID, updated.GroupID)
+}
+
+func TestPaymentConfigService_UpdatePlan_SyncsExistingSubscriptionPlanNames(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentConfigServiceSQLite(t)
+	ctx := context.Background()
+
+	activeSubGroup := mustCreatePlanGroup(t, ctx, client, "active-sub", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, activeSubGroup.ID, "starter-plan", true)
+	otherPlan := mustCreateSubscriptionPlan(t, ctx, client, activeSubGroup.ID, "other-plan", true)
+
+	user, err := client.User.Create().
+		SetEmail("plan-sync@example.com").
+		SetPasswordHash("hash").
+		Save(ctx)
+	require.NoError(t, err)
+
+	now := time.Now()
+	_, err = client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(activeSubGroup.ID).
+		SetCurrentPlanID(plan.ID).
+		SetCurrentPlanName(plan.Name).
+		SetStartsAt(now.Add(-time.Hour)).
+		SetExpiresAt(now.Add(24 * time.Hour)).
+		SetStatus(SubscriptionStatusActive).
+		SetAssignedAt(now).
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(activeSubGroup.ID).
+		SetCurrentPlanID(otherPlan.ID).
+		SetCurrentPlanName(otherPlan.Name).
+		SetStartsAt(now.Add(-time.Hour)).
+		SetExpiresAt(now.Add(24 * time.Hour)).
+		SetStatus(SubscriptionStatusActive).
+		SetAssignedAt(now).
+		Save(ctx)
+	require.NoError(t, err)
+
+	newName := "starter-plan-v2"
+	_, err = svc.UpdatePlan(ctx, plan.ID, UpdatePlanRequest{Name: &newName})
+	require.NoError(t, err)
+
+	syncedSub, err := client.UserSubscription.Query().
+		Where(usersubscription.CurrentPlanIDEQ(plan.ID)).
+		Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, newName, syncedSub.CurrentPlanName)
+
+	untouchedSub, err := client.UserSubscription.Query().
+		Where(usersubscription.CurrentPlanIDEQ(otherPlan.ID)).
+		Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, otherPlan.Name, untouchedSub.CurrentPlanName)
 }
 
 func TestPaymentConfigService_UpdatePlan_NormalizesPluralValidityUnit(t *testing.T) {

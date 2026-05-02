@@ -8,6 +8,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
@@ -165,7 +166,19 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	if err != nil {
 		return nil, err
 	}
-	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
+
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin plan update transaction: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	u := tx.SubscriptionPlan.UpdateOneID(id)
 	if req.GroupID != nil {
 		u.SetGroupID(*req.GroupID)
 	}
@@ -203,7 +216,27 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	if req.SortOrder != nil {
 		u.SetSortOrder(*req.SortOrder)
 	}
-	return u.Save(ctx)
+
+	updated, err := u.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Name != nil {
+		if _, err := tx.UserSubscription.Update().
+			Where(usersubscription.CurrentPlanIDEQ(id)).
+			SetCurrentPlanName(updated.Name).
+			Save(ctx); err != nil {
+			return nil, fmt.Errorf("sync subscription plan names: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit plan update transaction: %w", err)
+	}
+	committed = true
+
+	return updated, nil
 }
 
 func (s *PaymentConfigService) DeletePlan(ctx context.Context, id int64) error {

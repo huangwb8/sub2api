@@ -101,6 +101,12 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 
 ---
 
+docs/page-demo/2026-04-13-benszresearch-homepage-reference.html 优化
+
+- 请在首页去除openai
+
+---
+
 请基于 docs/plans/2026-05-02-openai-chatapi-account-type-plan.md 这个计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---

@@ -9,10 +9,11 @@
       ]"
     >
       <div v-if="isEmbedded" class="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div class="inline-flex items-center gap-1.5">
           <h2 class="text-base font-semibold text-gray-900 dark:text-white">
             {{ t('nav.paymentPlans') }}
           </h2>
+          <HelpTooltip :content="t('payment.admin.planManagementHint')" />
         </div>
         <button
           type="button"
@@ -28,23 +29,13 @@
           {{ isPlanPanelExpanded ? t('nav.collapse') : t('nav.expand') }}
         </button>
       </div>
-      <div
-        v-if="isEmbedded && !isPlanPanelExpanded"
-        class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-dark-900/60 dark:text-gray-300"
-      >
-        {{ t('payment.admin.planManagementHint') }}
-      </div>
-      <template v-else>
+      <template v-if="!isEmbedded || isPlanPanelExpanded">
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
         <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
           <Icon name="refresh" size="md" :class="plansLoading ? 'animate-spin' : ''" />
         </button>
         <button @click="openPlanEdit(null)" class="btn btn-primary">{{ t('payment.admin.createPlan') }}</button>
-      </div>
-
-      <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100">
-        {{ t('payment.admin.planManagementHint') }}
       </div>
 
       <!-- Plans Table -->
@@ -209,6 +200,7 @@ import DataTable from '@/components/common/DataTable.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
+import HelpTooltip from '@/components/common/HelpTooltip.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import { platformTextClass } from '@/utils/platformColors'
