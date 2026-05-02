@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,7 +58,11 @@ type APIPromptTemplate struct {
 }
 
 type APIPromptPluginConfig struct {
-	Templates []APIPromptTemplate `json:"templates"`
+	Templates           []APIPromptTemplate `json:"templates"`
+	Source              string              `json:"source,omitempty"`
+	LastSyncedAt        *time.Time          `json:"last_synced_at,omitempty"`
+	LastSyncError       string              `json:"last_sync_error,omitempty"`
+	RemoteTemplateCount int                 `json:"remote_template_count,omitempty"`
 }
 
 type Plugin struct {
@@ -91,19 +96,31 @@ type UpdatePluginRequest struct {
 }
 
 type PluginTestResult struct {
-	OK       bool   `json:"ok"`
-	Message  string `json:"message"`
+	OK        bool   `json:"ok"`
+	Message   string `json:"message"`
 	CheckedAt string `json:"checked_at"`
 }
 
 type APIPromptTemplateOption struct {
-	PluginName  string `json:"plugin_name"`
-	TemplateID  string `json:"template_id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Prompt      string `json:"prompt"`
-	Builtin     bool   `json:"builtin"`
-	SortOrder   int    `json:"sort_order"`
+	PluginName    string     `json:"plugin_name"`
+	TemplateID    string     `json:"template_id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description,omitempty"`
+	Prompt        string     `json:"prompt"`
+	Builtin       bool       `json:"builtin"`
+	SortOrder     int        `json:"sort_order"`
+	Source        string     `json:"source,omitempty"`
+	Status        string     `json:"status,omitempty"`
+	LastSyncedAt  *time.Time `json:"last_synced_at,omitempty"`
+	LastSyncError string     `json:"last_sync_error,omitempty"`
+}
+
+type PluginDriver interface {
+	Type() PluginType
+	Test(ctx context.Context, record *pluginDiskRecord) (*PluginTestResult, error)
+	ListAPIPromptTemplateOptions(ctx context.Context, record *pluginDiskRecord) ([]APIPromptTemplateOption, error)
+	ValidateAPIPromptBinding(ctx context.Context, record *pluginDiskRecord, templateID string) error
+	RenderAPIPrompt(ctx context.Context, record *pluginDiskRecord, templateID string, target PluginPromptTarget) (*APIPromptTemplateOption, error)
 }
 
 type pluginManifest struct {
@@ -125,6 +142,7 @@ type pluginDiskRecord struct {
 type PluginService struct {
 	rootDir    string
 	httpClient *http.Client
+	drivers    map[PluginType]PluginDriver
 
 	mu      sync.RWMutex
 	plugins map[string]*pluginDiskRecord
@@ -144,6 +162,9 @@ func NewPluginService(rootDir string) (*PluginService, error) {
 			Timeout: defaultPluginHTTPTimeout,
 		},
 		plugins: make(map[string]*pluginDiskRecord),
+	}
+	svc.drivers = map[PluginType]PluginDriver{
+		PluginTypeAPIPrompt: &apiPromptDriver{service: svc},
 	}
 	if err := svc.reloadFromDisk(); err != nil {
 		return nil, err
@@ -285,82 +306,36 @@ func (s *PluginService) TestPlugin(ctx context.Context, name string) (*PluginTes
 	if !ok {
 		return nil, ErrPluginNotFound
 	}
+	record = clonePluginRecord(record)
 
-	result := &PluginTestResult{
-		CheckedAt: time.Now().Format(time.RFC3339),
-	}
-
-	if strings.TrimSpace(record.Manifest.BaseURL) != "" {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(record.Manifest.BaseURL, "/")+"/health", nil)
-		if err != nil {
-			return nil, fmt.Errorf("build plugin health request: %w", err)
-		}
-		if apiKey := strings.TrimSpace(record.Manifest.APIKey); apiKey != "" {
-			req.Header.Set("Authorization", "Bearer "+apiKey)
-			req.Header.Set("x-api-key", apiKey)
-		}
-		resp, err := s.httpClient.Do(req)
-		if err != nil {
-			result.OK = false
-			result.Message = "External plugin health check failed: " + err.Error()
-			return result, nil
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			result.OK = false
-			result.Message = fmt.Sprintf("External plugin health check returned HTTP %d", resp.StatusCode)
-			return result, nil
-		}
-		result.OK = true
-		result.Message = "External plugin health check passed"
-		return result, nil
-	}
-
-	switch record.Manifest.Type {
-	case PluginTypeAPIPrompt:
-		templateCount := 0
-		for _, tpl := range record.Config.Templates {
-			if tpl.Enabled && strings.TrimSpace(tpl.Prompt) != "" {
-				templateCount++
-			}
-		}
-		if templateCount == 0 {
-			result.OK = false
-			result.Message = "api-prompt has no enabled templates"
-			return result, nil
-		}
-		result.OK = true
-		result.Message = fmt.Sprintf("api-prompt is ready with %d enabled templates", templateCount)
-		return result, nil
-	default:
+	driver, ok := s.drivers[record.Manifest.Type]
+	if !ok {
 		return nil, ErrInvalidPluginType
 	}
+	return driver.Test(ctx, record)
 }
 
 func (s *PluginService) ListAPIPromptTemplateOptions(ctx context.Context) ([]APIPromptTemplateOption, error) {
-	_ = ctx
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	records := make([]*pluginDiskRecord, 0, len(s.plugins))
+	for _, record := range s.plugins {
+		if record.Manifest.Type == PluginTypeAPIPrompt && record.Manifest.Enabled && record.Config != nil {
+			records = append(records, clonePluginRecord(record))
+		}
+	}
+	s.mu.RUnlock()
 
 	options := make([]APIPromptTemplateOption, 0)
-	for _, record := range s.plugins {
-		if record.Manifest.Type != PluginTypeAPIPrompt || !record.Manifest.Enabled || record.Config == nil {
+	driver, ok := s.drivers[PluginTypeAPIPrompt]
+	if !ok {
+		return nil, ErrInvalidPluginType
+	}
+	for _, record := range records {
+		recordOptions, err := driver.ListAPIPromptTemplateOptions(ctx, record)
+		if err != nil {
 			continue
 		}
-		for _, tpl := range record.Config.Templates {
-			if !tpl.Enabled || strings.TrimSpace(tpl.Prompt) == "" {
-				continue
-			}
-			options = append(options, APIPromptTemplateOption{
-				PluginName:  record.Manifest.Name,
-				TemplateID:  tpl.ID,
-				Name:        tpl.Name,
-				Description: tpl.Description,
-				Prompt:      tpl.Prompt,
-				Builtin:     tpl.Builtin,
-				SortOrder:   tpl.SortOrder,
-			})
-		}
+		options = append(options, recordOptions...)
 	}
 
 	sort.Slice(options, func(i, j int) bool {
@@ -394,31 +369,35 @@ func (s *PluginService) ValidateAPIKeyPluginSettings(ctx context.Context, settin
 	}
 
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	record, ok := s.plugins[pluginName]
 	if !ok || !record.Manifest.Enabled || record.Manifest.Type != PluginTypeAPIPrompt || record.Config == nil {
+		s.mu.RUnlock()
 		return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
 	}
-	for _, tpl := range record.Config.Templates {
-		if tpl.ID == templateID && tpl.Enabled && strings.TrimSpace(tpl.Prompt) != "" {
-			return domain.APIKeyPluginSettings{
-				APIPrompt: &domain.APIPromptKeyBinding{
-					PluginName: pluginName,
-					TemplateID: templateID,
-				},
-			}, nil
-		}
+	record = clonePluginRecord(record)
+	s.mu.RUnlock()
+
+	driver, ok := s.drivers[PluginTypeAPIPrompt]
+	if !ok {
+		return domain.APIKeyPluginSettings{}, ErrInvalidPluginType
 	}
-	return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
+	if err := driver.ValidateAPIPromptBinding(ctx, record, templateID); err != nil {
+		return domain.APIKeyPluginSettings{}, err
+	}
+	return domain.APIKeyPluginSettings{
+		APIPrompt: &domain.APIPromptKeyBinding{
+			PluginName: pluginName,
+			TemplateID: templateID,
+		},
+	}, nil
 }
 
 func (s *PluginService) ApplyBoundPromptTemplate(ctx context.Context, body []byte, target PluginPromptTarget, settings domain.APIKeyPluginSettings) ([]byte, *APIPromptTemplateOption, error) {
-	_ = ctx
 	if len(body) == 0 || settings.APIPrompt == nil {
 		return body, nil, nil
 	}
 
-	resolved := s.resolvePromptTemplate(settings)
+	resolved := s.resolvePromptTemplate(ctx, settings, target)
 	if resolved == nil {
 		return body, nil, nil
 	}
@@ -441,7 +420,7 @@ func (s *PluginService) ApplyBoundPromptTemplate(ctx context.Context, body []byt
 	}
 }
 
-func (s *PluginService) resolvePromptTemplate(settings domain.APIKeyPluginSettings) *APIPromptTemplateOption {
+func (s *PluginService) resolvePromptTemplate(ctx context.Context, settings domain.APIKeyPluginSettings, target PluginPromptTarget) *APIPromptTemplateOption {
 	if settings.APIPrompt == nil {
 		return nil
 	}
@@ -455,25 +434,23 @@ func (s *PluginService) resolvePromptTemplate(settings domain.APIKeyPluginSettin
 	}
 
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	record, ok := s.plugins[pluginName]
 	if !ok || !record.Manifest.Enabled || record.Manifest.Type != PluginTypeAPIPrompt || record.Config == nil {
+		s.mu.RUnlock()
 		return nil
 	}
-	for _, tpl := range record.Config.Templates {
-		if tpl.ID == templateID && tpl.Enabled && strings.TrimSpace(tpl.Prompt) != "" {
-			return &APIPromptTemplateOption{
-				PluginName:  pluginName,
-				TemplateID:  templateID,
-				Name:        tpl.Name,
-				Description: tpl.Description,
-				Prompt:      tpl.Prompt,
-				Builtin:     tpl.Builtin,
-				SortOrder:   tpl.SortOrder,
-			}
-		}
+	record = clonePluginRecord(record)
+	s.mu.RUnlock()
+
+	driver, ok := s.drivers[PluginTypeAPIPrompt]
+	if !ok {
+		return nil
 	}
-	return nil
+	resolved, err := driver.RenderAPIPrompt(ctx, record, templateID, target)
+	if err != nil {
+		return nil
+	}
+	return resolved
 }
 
 func (s *PluginService) reloadFromDisk() error {
@@ -532,7 +509,7 @@ func (s *PluginService) readRecord(pluginDir string) (*pluginDiskRecord, error) 
 		if err := json.Unmarshal(data, &config); err != nil {
 			return nil, fmt.Errorf("decode plugin config %q: %w", configPath, err)
 		}
-		normalizedConfig, err := normalizeAPIPromptConfig(&config, false)
+		normalizedConfig, err := normalizeAPIPromptConfigWithPromptRequirement(&config, false, !hasRemoteManifestEndpoint(manifest))
 		if err != nil {
 			return nil, err
 		}
@@ -580,7 +557,7 @@ func (s *PluginService) buildRecord(name string, pluginType PluginType, manifest
 		if cfg == nil {
 			cfg = currentConfig
 		}
-		normalizedConfig, err := normalizeAPIPromptConfig(cfg, currentConfig == nil)
+		normalizedConfig, err := normalizeAPIPromptConfigWithPromptRequirement(cfg, currentConfig == nil, !hasRemoteManifestEndpoint(manifest))
 		if err != nil {
 			return nil, err
 		}
@@ -610,6 +587,393 @@ func (s *PluginService) toPublicPlugin(record *pluginDiskRecord) Plugin {
 	return plugin
 }
 
+type apiPromptDriver struct {
+	service *PluginService
+}
+
+func (d *apiPromptDriver) Type() PluginType {
+	return PluginTypeAPIPrompt
+}
+
+func (d *apiPromptDriver) Test(ctx context.Context, record *pluginDiskRecord) (*PluginTestResult, error) {
+	result := &PluginTestResult{
+		CheckedAt: time.Now().Format(time.RFC3339),
+	}
+
+	if hasRemotePluginEndpoint(record) {
+		if err := d.checkRemoteHealth(ctx, record); err != nil {
+			result.OK = false
+			result.Message = "External api-prompt health check failed: " + err.Error()
+			return result, nil
+		}
+		templates, err := d.fetchRemoteTemplates(ctx, record)
+		if err != nil {
+			_ = d.service.markAPIPromptSyncError(record.Manifest.Name, err)
+			result.OK = false
+			result.Message = "External api-prompt template sync failed: " + err.Error()
+			return result, nil
+		}
+		cfg := remoteAPIPromptConfig(templates, time.Now(), "")
+		_ = d.service.saveAPIPromptConfig(record.Manifest.Name, cfg)
+		templateCount := countEnabledAPIPromptTemplates(templates, false)
+		if templateCount == 0 {
+			result.OK = false
+			result.Message = "External api-prompt has no enabled templates"
+			return result, nil
+		}
+		result.OK = true
+		result.Message = fmt.Sprintf("External api-prompt is ready with %d remote templates", templateCount)
+		return result, nil
+	}
+
+	templateCount := countEnabledAPIPromptTemplates(record.Config.Templates, true)
+	if templateCount == 0 {
+		result.OK = false
+		result.Message = "api-prompt has no enabled templates"
+		return result, nil
+	}
+	result.OK = true
+	result.Message = fmt.Sprintf("api-prompt is ready with %d enabled templates", templateCount)
+	return result, nil
+}
+
+func (d *apiPromptDriver) ListAPIPromptTemplateOptions(ctx context.Context, record *pluginDiskRecord) ([]APIPromptTemplateOption, error) {
+	if hasRemotePluginEndpoint(record) {
+		templates, err := d.fetchRemoteTemplates(ctx, record)
+		if err == nil {
+			now := time.Now()
+			cfg := remoteAPIPromptConfig(templates, now, "")
+			_ = d.service.saveAPIPromptConfig(record.Manifest.Name, cfg)
+			return buildAPIPromptTemplateOptions(record.Manifest.Name, cfg, "remote", "available", false), nil
+		}
+		_ = d.service.markAPIPromptSyncError(record.Manifest.Name, err)
+		cfg := cloneAPIPromptConfig(record.Config)
+		cfg.Source = "cache"
+		cfg.LastSyncError = err.Error()
+		return buildAPIPromptTemplateOptions(record.Manifest.Name, cfg, "cache", "degraded", false), nil
+	}
+
+	cfg := cloneAPIPromptConfig(record.Config)
+	cfg.Source = "local"
+	return buildAPIPromptTemplateOptions(record.Manifest.Name, cfg, "local", "available", true), nil
+}
+
+func (d *apiPromptDriver) ValidateAPIPromptBinding(ctx context.Context, record *pluginDiskRecord, templateID string) error {
+	if hasRemotePluginEndpoint(record) {
+		templates, err := d.fetchRemoteTemplates(ctx, record)
+		if err != nil {
+			_ = d.service.markAPIPromptSyncError(record.Manifest.Name, err)
+			return ErrInvalidPluginBinding
+		}
+		cfg := remoteAPIPromptConfig(templates, time.Now(), "")
+		_ = d.service.saveAPIPromptConfig(record.Manifest.Name, cfg)
+		if findAPIPromptTemplate(cfg.Templates, templateID, false) != nil {
+			return nil
+		}
+		return ErrInvalidPluginBinding
+	}
+
+	if findAPIPromptTemplate(record.Config.Templates, templateID, true) == nil {
+		return ErrInvalidPluginBinding
+	}
+	return nil
+}
+
+func (d *apiPromptDriver) RenderAPIPrompt(ctx context.Context, record *pluginDiskRecord, templateID string, target PluginPromptTarget) (*APIPromptTemplateOption, error) {
+	if hasRemotePluginEndpoint(record) {
+		rendered, err := d.renderRemotePrompt(ctx, record, templateID, target)
+		if err == nil {
+			cached := findAPIPromptTemplate(record.Config.Templates, templateID, false)
+			option := APIPromptTemplateOption{
+				PluginName: record.Manifest.Name,
+				TemplateID: templateID,
+				Name:       templateID,
+				Prompt:     rendered,
+				Source:     "remote",
+				Status:     "available",
+			}
+			if cached != nil {
+				option.Name = cached.Name
+				option.Description = cached.Description
+				option.Builtin = cached.Builtin
+				option.SortOrder = cached.SortOrder
+			}
+			return &option, nil
+		}
+		_ = d.service.markAPIPromptSyncError(record.Manifest.Name, err)
+	}
+
+	tpl := findAPIPromptTemplate(record.Config.Templates, templateID, true)
+	if tpl == nil {
+		return nil, ErrInvalidPluginBinding
+	}
+	source := strings.TrimSpace(record.Config.Source)
+	if source == "" {
+		source = "local"
+	}
+	if hasRemotePluginEndpoint(record) {
+		source = "cache"
+	}
+	return &APIPromptTemplateOption{
+		PluginName:    record.Manifest.Name,
+		TemplateID:    templateID,
+		Name:          tpl.Name,
+		Description:   tpl.Description,
+		Prompt:        tpl.Prompt,
+		Builtin:       tpl.Builtin,
+		SortOrder:     tpl.SortOrder,
+		Source:        source,
+		Status:        "available",
+		LastSyncedAt:  record.Config.LastSyncedAt,
+		LastSyncError: record.Config.LastSyncError,
+	}, nil
+}
+
+func (d *apiPromptDriver) checkRemoteHealth(ctx context.Context, record *pluginDiskRecord) error {
+	req, err := d.newRemoteRequest(ctx, record, http.MethodGet, "/health", nil)
+	if err != nil {
+		return fmt.Errorf("build plugin health request: %w", err)
+	}
+	resp, err := d.service.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (d *apiPromptDriver) fetchRemoteTemplates(ctx context.Context, record *pluginDiskRecord) ([]APIPromptTemplate, error) {
+	req, err := d.newRemoteRequest(ctx, record, http.MethodGet, "/v1/templates", nil)
+	if err != nil {
+		return nil, fmt.Errorf("build api-prompt templates request: %w", err)
+	}
+	data, err := d.doRemoteJSON(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var envelope struct {
+		Templates []APIPromptTemplate `json:"templates"`
+	}
+	if err := json.Unmarshal(data, &envelope); err == nil && envelope.Templates != nil {
+		cfg, err := normalizeAPIPromptConfigWithPromptRequirement(&APIPromptPluginConfig{Templates: envelope.Templates}, false, false)
+		if err != nil {
+			return nil, err
+		}
+		return cfg.Templates, nil
+	}
+
+	var templates []APIPromptTemplate
+	if err := json.Unmarshal(data, &templates); err != nil {
+		return nil, fmt.Errorf("decode api-prompt templates response: %w", err)
+	}
+	cfg, err := normalizeAPIPromptConfigWithPromptRequirement(&APIPromptPluginConfig{Templates: templates}, false, false)
+	if err != nil {
+		return nil, err
+	}
+	return cfg.Templates, nil
+}
+
+func (d *apiPromptDriver) renderRemotePrompt(ctx context.Context, record *pluginDiskRecord, templateID string, target PluginPromptTarget) (string, error) {
+	payload := map[string]any{
+		"plugin_name": record.Manifest.Name,
+		"template_id": templateID,
+		"target":      target,
+		"context": map[string]any{
+			"plugin_type": record.Manifest.Type,
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	req, err := d.newRemoteRequest(ctx, record, http.MethodPost, "/v1/render", bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("build api-prompt render request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	data, err := d.doRemoteJSON(req)
+	if err != nil {
+		return "", err
+	}
+	var resp struct {
+		Prompt            string `json:"prompt"`
+		SystemInstruction string `json:"system_instruction"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return "", fmt.Errorf("decode api-prompt render response: %w", err)
+	}
+	prompt := strings.TrimSpace(resp.Prompt)
+	if prompt == "" {
+		prompt = strings.TrimSpace(resp.SystemInstruction)
+	}
+	if prompt == "" {
+		return "", fmt.Errorf("api-prompt render response has no prompt")
+	}
+	return prompt, nil
+}
+
+func (d *apiPromptDriver) newRemoteRequest(ctx context.Context, record *pluginDiskRecord, method string, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(record.Manifest.BaseURL, "/")+path, body)
+	if err != nil {
+		return nil, err
+	}
+	if apiKey := strings.TrimSpace(record.Manifest.APIKey); apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("x-api-key", apiKey)
+	}
+	return req, nil
+}
+
+func (d *apiPromptDriver) doRemoteJSON(req *http.Request) ([]byte, error) {
+	resp, err := d.service.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+	}
+	return data, nil
+}
+
+func (s *PluginService) saveAPIPromptConfig(name string, cfg *APIPromptPluginConfig) error {
+	name, err := normalizePluginName(name)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	record, ok := s.plugins[name]
+	if !ok || record.Manifest.Type != PluginTypeAPIPrompt {
+		return ErrPluginNotFound
+	}
+	nextRecord := clonePluginRecord(record)
+	nextRecord.Config = cloneAPIPromptConfig(cfg)
+	if err := s.writeRecord(nextRecord); err != nil {
+		return err
+	}
+	s.plugins[name] = nextRecord
+	return nil
+}
+
+func (s *PluginService) markAPIPromptSyncError(name string, syncErr error) error {
+	name, err := normalizePluginName(name)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	record, ok := s.plugins[name]
+	if !ok || record.Manifest.Type != PluginTypeAPIPrompt || record.Config == nil {
+		return ErrPluginNotFound
+	}
+	nextRecord := clonePluginRecord(record)
+	nextRecord.Config.Source = "cache"
+	if syncErr != nil {
+		nextRecord.Config.LastSyncError = syncErr.Error()
+	}
+	if err := s.writeRecord(nextRecord); err != nil {
+		return err
+	}
+	s.plugins[name] = nextRecord
+	return nil
+}
+
+func hasRemotePluginEndpoint(record *pluginDiskRecord) bool {
+	return record != nil && strings.TrimSpace(record.Manifest.BaseURL) != ""
+}
+
+func hasRemoteManifestEndpoint(manifest pluginManifest) bool {
+	return strings.TrimSpace(manifest.BaseURL) != ""
+}
+
+func remoteAPIPromptConfig(templates []APIPromptTemplate, syncedAt time.Time, syncErr string) *APIPromptPluginConfig {
+	return &APIPromptPluginConfig{
+		Templates:           templates,
+		Source:              "remote",
+		LastSyncedAt:        &syncedAt,
+		LastSyncError:       strings.TrimSpace(syncErr),
+		RemoteTemplateCount: len(templates),
+	}
+}
+
+func buildAPIPromptTemplateOptions(pluginName string, cfg *APIPromptPluginConfig, source string, status string, requirePrompt bool) []APIPromptTemplateOption {
+	if cfg == nil {
+		return nil
+	}
+	options := make([]APIPromptTemplateOption, 0, len(cfg.Templates))
+	for _, tpl := range cfg.Templates {
+		if !tpl.Enabled {
+			continue
+		}
+		if requirePrompt && strings.TrimSpace(tpl.Prompt) == "" {
+			continue
+		}
+		options = append(options, APIPromptTemplateOption{
+			PluginName:    pluginName,
+			TemplateID:    tpl.ID,
+			Name:          tpl.Name,
+			Description:   tpl.Description,
+			Prompt:        tpl.Prompt,
+			Builtin:       tpl.Builtin,
+			SortOrder:     tpl.SortOrder,
+			Source:        source,
+			Status:        status,
+			LastSyncedAt:  cfg.LastSyncedAt,
+			LastSyncError: cfg.LastSyncError,
+		})
+	}
+	return options
+}
+
+func countEnabledAPIPromptTemplates(templates []APIPromptTemplate, requirePrompt bool) int {
+	count := 0
+	for _, tpl := range templates {
+		if !tpl.Enabled {
+			continue
+		}
+		if requirePrompt && strings.TrimSpace(tpl.Prompt) == "" {
+			continue
+		}
+		count++
+	}
+	return count
+}
+
+func findAPIPromptTemplate(templates []APIPromptTemplate, templateID string, requirePrompt bool) *APIPromptTemplate {
+	templateID = strings.TrimSpace(templateID)
+	for idx := range templates {
+		tpl := &templates[idx]
+		if tpl.ID != templateID || !tpl.Enabled {
+			continue
+		}
+		if requirePrompt && strings.TrimSpace(tpl.Prompt) == "" {
+			continue
+		}
+		return tpl
+	}
+	return nil
+}
+
+func clonePluginRecord(record *pluginDiskRecord) *pluginDiskRecord {
+	if record == nil {
+		return nil
+	}
+	return &pluginDiskRecord{
+		Manifest: record.Manifest,
+		Config:   cloneAPIPromptConfig(record.Config),
+	}
+}
+
 func normalizePluginName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || !pluginNamePattern.MatchString(name) {
@@ -632,6 +996,10 @@ func normalizePluginBaseURL(baseURL string) string {
 }
 
 func normalizeAPIPromptConfig(cfg *APIPromptPluginConfig, useDefaults bool) (*APIPromptPluginConfig, error) {
+	return normalizeAPIPromptConfigWithPromptRequirement(cfg, useDefaults, true)
+}
+
+func normalizeAPIPromptConfigWithPromptRequirement(cfg *APIPromptPluginConfig, useDefaults bool, requirePrompt bool) (*APIPromptPluginConfig, error) {
 	if cfg == nil {
 		if useDefaults {
 			return &APIPromptPluginConfig{Templates: defaultAPIPromptTemplates()}, nil
@@ -650,7 +1018,7 @@ func normalizeAPIPromptConfig(cfg *APIPromptPluginConfig, useDefaults bool) (*AP
 		tpl.Name = strings.TrimSpace(tpl.Name)
 		tpl.Description = strings.TrimSpace(tpl.Description)
 		tpl.Prompt = strings.TrimSpace(tpl.Prompt)
-		if tpl.Name == "" || tpl.Prompt == "" {
+		if tpl.Name == "" || (requirePrompt && tpl.Prompt == "") {
 			return nil, ErrInvalidPluginTemplate
 		}
 		tpl.ID = strings.TrimSpace(tpl.ID)
@@ -679,7 +1047,13 @@ func normalizeAPIPromptConfig(cfg *APIPromptPluginConfig, useDefaults bool) (*AP
 		}
 		return normalized[i].ID < normalized[j].ID
 	})
-	return &APIPromptPluginConfig{Templates: normalized}, nil
+	return &APIPromptPluginConfig{
+		Templates:           normalized,
+		Source:              strings.TrimSpace(cfg.Source),
+		LastSyncedAt:        cfg.LastSyncedAt,
+		LastSyncError:       strings.TrimSpace(cfg.LastSyncError),
+		RemoteTemplateCount: cfg.RemoteTemplateCount,
+	}, nil
 }
 
 func defaultAPIPromptTemplates() []APIPromptTemplate {
@@ -720,7 +1094,13 @@ func cloneAPIPromptConfig(cfg *APIPromptPluginConfig) *APIPromptPluginConfig {
 	}
 	templates := make([]APIPromptTemplate, len(cfg.Templates))
 	copy(templates, cfg.Templates)
-	return &APIPromptPluginConfig{Templates: templates}
+	return &APIPromptPluginConfig{
+		Templates:           templates,
+		Source:              cfg.Source,
+		LastSyncedAt:        cfg.LastSyncedAt,
+		LastSyncError:       cfg.LastSyncError,
+		RemoteTemplateCount: cfg.RemoteTemplateCount,
+	}
 }
 
 func slugifyPromptTemplateID(name string) string {

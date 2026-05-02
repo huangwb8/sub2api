@@ -581,6 +581,10 @@ export interface APIPromptTemplate {
 
 export interface APIPromptPluginConfig {
   templates: APIPromptTemplate[]
+  source?: 'local' | 'remote' | 'cache' | string
+  last_synced_at?: string | null
+  last_sync_error?: string
+  remote_template_count?: number
 }
 
 export interface Plugin {
@@ -603,6 +607,10 @@ export interface APIPromptTemplateOption {
   prompt: string
   builtin: boolean
   sort_order: number
+  source?: 'local' | 'remote' | 'cache' | string
+  status?: 'available' | 'degraded' | string
+  last_synced_at?: string | null
+  last_sync_error?: string
 }
 
 export interface CreateGroupRequest {

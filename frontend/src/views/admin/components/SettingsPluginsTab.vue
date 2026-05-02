@@ -163,6 +163,14 @@
                 >
                   {{ plugin.enabled ? t('common.enabled') : t('common.disabled') }}
                 </span>
+                <span
+                  :class="isRemotePlugin(plugin)
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200'
+                    : 'bg-slate-200 text-slate-600 dark:bg-dark-700 dark:text-slate-300'"
+                  class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                >
+                  {{ isRemotePlugin(plugin) ? t('admin.settings.plugins.labels.remoteMode') : t('admin.settings.plugins.labels.localMode') }}
+                </span>
               </div>
               <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 {{ plugin.description || t('admin.settings.plugins.labels.noDescription') }}
@@ -215,6 +223,9 @@
               <div>
                 <label class="input-label">{{ t('admin.settings.plugins.fields.baseUrl') }}</label>
                 <input v-model.trim="plugin.base_url" class="input" placeholder="https://plugin.example.com" />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ plugin.base_url ? t('admin.settings.plugins.hints.remoteMode') : t('admin.settings.plugins.hints.localMode') }}
+                </p>
               </div>
               <div>
                 <label class="input-label">{{ t('admin.settings.plugins.fields.apiKey') }}</label>
@@ -240,16 +251,49 @@
                   {{ t('admin.settings.plugins.templates.title') }}
                 </h4>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {{ t('admin.settings.plugins.templates.description') }}
+                  {{ isRemotePlugin(plugin)
+                    ? t('admin.settings.plugins.templates.remoteDescription')
+                    : t('admin.settings.plugins.templates.description') }}
+                </p>
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span
+                    :class="plugin.api_prompt?.last_sync_error
+                      ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200'
+                      : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/10 dark:text-emerald-200'"
+                    class="rounded-full border px-2.5 py-1 font-medium"
+                  >
+                    {{ syncStatusLabel(plugin) }}
+                  </span>
+                  <span
+                    v-if="plugin.api_prompt?.last_synced_at"
+                    class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600 dark:border-dark-600 dark:bg-dark-900 dark:text-slate-300"
+                  >
+                    {{ t('admin.settings.plugins.templates.lastSyncedAt', { time: formatSyncTime(plugin.api_prompt.last_synced_at) }) }}
+                  </span>
+                  <span
+                    v-if="isRemotePlugin(plugin)"
+                    class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600 dark:border-dark-600 dark:bg-dark-900 dark:text-slate-300"
+                  >
+                    {{ t('admin.settings.plugins.templates.remoteCount', { count: plugin.api_prompt?.remote_template_count ?? plugin.api_prompt?.templates.length ?? 0 }) }}
+                  </span>
+                </div>
+                <p v-if="plugin.api_prompt?.last_sync_error" class="mt-2 text-xs text-amber-700 dark:text-amber-200">
+                  {{ plugin.api_prompt.last_sync_error }}
                 </p>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" @click="addTemplate(plugin)">
+              <button v-if="!isRemotePlugin(plugin)" type="button" class="btn btn-secondary btn-sm" @click="addTemplate(plugin)">
                 <Icon name="plus" size="sm" class="mr-1.5" />
                 {{ t('admin.settings.plugins.templates.add') }}
               </button>
             </div>
 
             <div class="mt-4 space-y-4">
+              <div
+                v-if="(plugin.api_prompt?.templates.length ?? 0) === 0"
+                class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-sm text-slate-500 dark:border-dark-600 dark:bg-dark-900/60 dark:text-slate-400"
+              >
+                {{ isRemotePlugin(plugin) ? t('admin.settings.plugins.templates.emptyRemote') : t('admin.settings.plugins.templates.emptyLocal') }}
+              </div>
               <div
                 v-for="(template, index) in plugin.api_prompt?.templates ?? []"
                 :key="template.id"
@@ -259,15 +303,15 @@
                   <div class="grid flex-1 gap-4 lg:grid-cols-2">
                     <div>
                       <label class="input-label">{{ t('admin.settings.plugins.templates.fields.name') }}</label>
-                      <input v-model.trim="template.name" class="input" :placeholder="t('admin.settings.plugins.templates.placeholders.name')" />
+                      <input v-model.trim="template.name" class="input" :disabled="isRemotePlugin(plugin)" :placeholder="t('admin.settings.plugins.templates.placeholders.name')" />
                     </div>
                     <div>
                       <label class="input-label">{{ t('admin.settings.plugins.templates.fields.id') }}</label>
-                      <input v-model.trim="template.id" class="input font-mono text-sm" :placeholder="t('admin.settings.plugins.templates.placeholders.id')" />
+                      <input v-model.trim="template.id" class="input font-mono text-sm" :disabled="isRemotePlugin(plugin)" :placeholder="t('admin.settings.plugins.templates.placeholders.id')" />
                     </div>
                     <div class="lg:col-span-2">
                       <label class="input-label">{{ t('admin.settings.plugins.templates.fields.description') }}</label>
-                      <input v-model.trim="template.description" class="input" :placeholder="t('admin.settings.plugins.templates.placeholders.description')" />
+                      <input v-model.trim="template.description" class="input" :disabled="isRemotePlugin(plugin)" :placeholder="t('admin.settings.plugins.templates.placeholders.description')" />
                     </div>
                     <div class="lg:col-span-2">
                       <label class="input-label">{{ t('admin.settings.plugins.templates.fields.prompt') }}</label>
@@ -275,6 +319,7 @@
                         v-model="template.prompt"
                         rows="5"
                         class="input min-h-[140px] font-mono text-sm leading-6"
+                        :disabled="isRemotePlugin(plugin)"
                         :placeholder="t('admin.settings.plugins.templates.placeholders.prompt')"
                       />
                     </div>
@@ -286,17 +331,26 @@
                         <span v-if="template.builtin" class="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-200">
                           {{ t('admin.settings.plugins.labels.builtin') }}
                         </span>
+                        <span
+                          v-if="isRemotePlugin(plugin)"
+                          class="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200"
+                        >
+                          {{ t('admin.settings.plugins.labels.remoteCatalog') }}
+                        </span>
                         <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-dark-700 dark:text-slate-300">
                           #{{ index + 1 }}
                         </span>
                       </div>
                       <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ t('admin.settings.plugins.templates.hints.injection') }}
+                        {{ isRemotePlugin(plugin)
+                          ? t('admin.settings.plugins.templates.hints.remoteInjection')
+                          : t('admin.settings.plugins.templates.hints.injection') }}
                       </p>
                     </div>
                     <div class="flex items-center gap-3">
-                      <Toggle v-model="template.enabled" />
+                      <Toggle v-model="template.enabled" :disabled="isRemotePlugin(plugin)" />
                       <button
+                        v-if="!isRemotePlugin(plugin)"
                         type="button"
                         class="rounded-full p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-300"
                         @click="removeTemplate(plugin, index)"
@@ -367,12 +421,19 @@ const defaultTemplatePreview = computed(() => [
 
 const enabledCount = computed(() => plugins.value.filter((plugin) => plugin.enabled).length)
 const templateCount = computed(() =>
-  plugins.value.reduce((total, plugin) => total + (plugin.api_prompt?.templates.length ?? 0), 0)
+  plugins.value.reduce((total, plugin) => {
+    const remoteCount = plugin.api_prompt?.remote_template_count
+    return total + (typeof remoteCount === 'number' && remoteCount > 0 ? remoteCount : (plugin.api_prompt?.templates.length ?? 0))
+  }, 0)
 )
 
 function cloneTemplates(config?: APIPromptPluginConfig): APIPromptPluginConfig {
   return {
-    templates: (config?.templates ?? []).map((template) => ({ ...template }))
+    templates: (config?.templates ?? []).map((template) => ({ ...template })),
+    source: config?.source,
+    last_synced_at: config?.last_synced_at,
+    last_sync_error: config?.last_sync_error,
+    remote_template_count: config?.remote_template_count
   }
 }
 
@@ -382,6 +443,30 @@ function hydratePlugin(plugin: Plugin): PluginFormState {
     api_prompt: cloneTemplates(plugin.api_prompt),
     api_key_input: ''
   }
+}
+
+function isRemotePlugin(plugin: PluginFormState) {
+  return Boolean(plugin.base_url?.trim())
+}
+
+function syncStatusLabel(plugin: PluginFormState) {
+  if (!isRemotePlugin(plugin)) {
+    return t('admin.settings.plugins.templates.statusLocal')
+  }
+  if (plugin.api_prompt?.last_sync_error) {
+    return t('admin.settings.plugins.templates.statusCache')
+  }
+  if (plugin.api_prompt?.last_synced_at) {
+    return t('admin.settings.plugins.templates.statusRemote')
+  }
+  return t('admin.settings.plugins.templates.statusPending')
+}
+
+function formatSyncTime(value?: string | null) {
+  if (!value) return t('common.never')
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
 }
 
 function makeTemplate(): APIPromptTemplate {
@@ -418,6 +503,7 @@ function validateCreateForm() {
 }
 
 function validatePlugin(plugin: PluginFormState) {
+  if (isRemotePlugin(plugin)) return true
   for (const template of plugin.api_prompt?.templates ?? []) {
     if (!template.name.trim() || !template.id.trim() || !template.prompt.trim()) {
       appStore.showError(t('admin.settings.plugins.messages.templateInvalid'))
@@ -464,7 +550,7 @@ async function handleSave(plugin: PluginFormState) {
       base_url: plugin.base_url?.trim() || '',
       api_key: plugin.api_key_input.trim() || undefined,
       enabled: plugin.enabled,
-      api_prompt: cloneTemplates(plugin.api_prompt)
+      api_prompt: isRemotePlugin(plugin) ? undefined : cloneTemplates(plugin.api_prompt)
     })
     const next = hydratePlugin(updated)
     plugins.value = plugins.value.map((item) => (item.name === plugin.name ? next : item))

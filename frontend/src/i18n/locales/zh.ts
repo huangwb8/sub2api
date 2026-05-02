@@ -642,8 +642,13 @@ export default {
       general: '通用（不注入额外 Prompt）',
       generalDescription: '按普通 API Key 工作，只传递用户自己的上下文。',
       builtin: '内置模板',
+      sourceRemote: '远端模板',
+      sourceCache: '缓存回退',
+      sourceLocal: '本地模板',
       unavailable: '当前不可用',
       unavailableHint: '此模板当前不可用，可能是对应插件已停用、模板被删除或已被禁用。',
+      cacheFallbackHint: '外挂插件暂时不可用，请求期会使用最近一次有效缓存。',
+      lastSyncedAt: '最近同步：{time}',
       unavailableTemplateName: '历史模板 · {templateId}',
       unavailableTemplateDescription: '原绑定来自插件 {pluginName}，但该模板目前不在可选列表中。',
       unavailableTemplateOption: '当前绑定 · {pluginName} / {templateId}',
@@ -4887,6 +4892,9 @@ export default {
         },
         labels: {
           builtin: '内置',
+          remoteMode: '外挂驱动',
+          localMode: '本地回退',
+          remoteCatalog: '远端目录',
           noDescription: '暂无描述'
         },
         fields: {
@@ -4905,7 +4913,9 @@ export default {
         hints: {
           directoryRule: '创建后会固定保存到 ./plugins/{插件名}/ 下。',
           apiKeyConfigured: '已存在插件 API Key，留空将继续沿用当前值。',
-          apiKeyOptional: '如果外挂服务无需鉴权，可保持为空。'
+          apiKeyOptional: '如果外挂服务无需鉴权，可保持为空。',
+          remoteMode: '填写后模板目录与请求注入优先由外挂 api-prompt API 驱动。',
+          localMode: '未填写时使用本地 config.json 模板作为可编辑来源。'
         },
         actions: {
           test: '测试连接',
@@ -4926,7 +4936,16 @@ export default {
         templates: {
           title: 'Prompt 模板',
           description: '为这个插件维护可绑定给 API Key 的模板。启用的模板会出现在用户侧密钥创建表单中。',
+          remoteDescription: '外挂模式下模板目录由远端 /v1/templates 同步，本地列表仅作为只读缓存与降级回退。',
           add: '新增模板',
+          statusLocal: '本地配置',
+          statusRemote: '远端已同步',
+          statusCache: '使用缓存回退',
+          statusPending: '等待同步',
+          lastSyncedAt: '最近同步：{time}',
+          remoteCount: '远端模板：{count}',
+          emptyRemote: '尚未同步到远端模板。请先测试连接，或确认外挂服务已实现 /v1/templates。',
+          emptyLocal: '尚未配置模板。',
           fields: {
             name: '模板名称',
             id: '模板 ID',
@@ -4940,7 +4959,8 @@ export default {
             prompt: '这里填写会被注入到请求中的系统指令模板'
           },
           hints: {
-            injection: '启用后，绑定该模板的 API Key 会在用户上下文之外附加这段系统指令。'
+            injection: '启用后，绑定该模板的 API Key 会在用户上下文之外附加这段系统指令。',
+            remoteInjection: '请求期会优先调用远端 /v1/render；失败时使用最近一次带 Prompt 内容的本地缓存。'
           }
         },
         defaults: {

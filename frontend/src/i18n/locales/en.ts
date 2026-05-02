@@ -643,8 +643,13 @@ export default {
       general: 'General (no extra prompt)',
       generalDescription: 'Works like a normal API key and only sends the user context.',
       builtin: 'Built-in',
+      sourceRemote: 'Remote template',
+      sourceCache: 'Cache fallback',
+      sourceLocal: 'Local template',
       unavailable: 'Unavailable',
       unavailableHint: 'This template is currently unavailable. The plugin may be disabled, or the template may have been removed or turned off.',
+      cacheFallbackHint: 'The external plugin is temporarily unavailable. Requests will use the latest valid cache.',
+      lastSyncedAt: 'Last synced: {time}',
       unavailableTemplateName: 'Historical Template · {templateId}',
       unavailableTemplateDescription: 'The original binding came from plugin {pluginName}, but it is no longer available in the current option list.',
       unavailableTemplateOption: 'Current Binding · {pluginName} / {templateId}',
@@ -4720,6 +4725,9 @@ export default {
         },
         labels: {
           builtin: 'Built-in',
+          remoteMode: 'External driver',
+          localMode: 'Local fallback',
+          remoteCatalog: 'Remote catalog',
           noDescription: 'No description'
         },
         fields: {
@@ -4738,7 +4746,9 @@ export default {
         hints: {
           directoryRule: 'After creation, this plugin instance will always live under ./plugins/{plugin-name}/.',
           apiKeyConfigured: 'A plugin API key already exists. Leaving this blank keeps the current value.',
-          apiKeyOptional: 'Leave empty if the external plugin endpoint does not require authentication.'
+          apiKeyOptional: 'Leave empty if the external plugin endpoint does not require authentication.',
+          remoteMode: 'When set, template catalog and request injection prefer the external api-prompt API.',
+          localMode: 'When empty, editable templates come from the local config.json file.'
         },
         actions: {
           test: 'Test',
@@ -4759,7 +4769,16 @@ export default {
         templates: {
           title: 'Prompt Templates',
           description: 'Manage the templates that can be bound to API keys. Enabled templates appear in the user-facing API key form.',
+          remoteDescription: 'In external mode, the catalog is synced from remote /v1/templates. The local list is a read-only cache and fallback.',
           add: 'Add Template',
+          statusLocal: 'Local config',
+          statusRemote: 'Remote synced',
+          statusCache: 'Using cache fallback',
+          statusPending: 'Awaiting sync',
+          lastSyncedAt: 'Last synced: {time}',
+          remoteCount: 'Remote templates: {count}',
+          emptyRemote: 'No remote templates have been synced yet. Test the connection or confirm that /v1/templates is implemented.',
+          emptyLocal: 'No templates configured yet.',
           fields: {
             name: 'Template Name',
             id: 'Template ID',
@@ -4773,7 +4792,8 @@ export default {
             prompt: 'This content will be injected into requests as a system instruction'
           },
           hints: {
-            injection: 'When enabled, API keys bound to this template will receive this system instruction in addition to the user context.'
+            injection: 'When enabled, API keys bound to this template will receive this system instruction in addition to the user context.',
+            remoteInjection: 'Requests call remote /v1/render first. If it fails, the latest local cache with prompt content is used.'
           }
         },
         defaults: {

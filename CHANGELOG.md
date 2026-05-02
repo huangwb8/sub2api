@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 `api-prompt` 外挂插件协议文档：`docs/api-prompt-插件协议.md` 说明 `GET /health`、`GET /v1/templates`、`POST /v1/render` 的请求响应格式、鉴权头与缓存回退策略，方便外部插件服务按稳定协议对接。
 - 新增了插件系统与首个 `api-prompt` 插件：管理员可在系统设置中创建并管理保存在 `./plugins/{插件名}` 的插件实例，配置 `base_url` / `api_key`、执行连通性测试、启停插件，并为 `api-prompt` 维护内置/自定义 prompt 模板，供用户在创建 API Key 时选择“通用”或绑定模板。
 - 新增了 API Key 插件绑定能力：`api_keys` 现支持持久化插件配置，网关会在 Anthropic Messages、OpenAI Chat Completions / Responses 与 Gemini Native 请求中按绑定模板注入额外系统指令，同时提供用户侧可见的 `api-prompt` 模板目录接口。
 - 新增了 `docs/plans/2026-05-02-plugin-system-api-prompt-plan.md`：记录插件实例目录结构、后端驱动边界、API Key 绑定策略、前端设置页落点与验证方案，作为本轮插件系统改造的实施计划。
@@ -17,6 +18,8 @@
 - 新增了 `邀请码（临时）` 兑换码类型：用户使用该邀请码注册后会进入 24 小时充值观察期，若累计充值未超过 30 元则自动禁用，禁用持续超过 7 天后由后台任务彻底删除；管理员重新启用时会重置这 24 小时观察期。
 
 ### Changed（变更）
+- 优化了 `api-prompt` 插件系统：配置 `base_url` 后模板目录优先同步外挂 `/v1/templates`，请求注入优先调用 `/v1/render`，远端失败时回退最近一次有效缓存；插件服务内部同步收敛为 driver 边界，前端插件页展示远端/缓存状态并将远端目录设为只读。
+- 同步了 `skills/sub2api-summary` 源码地图：补充 `api-prompt` 外挂协议、远端模板校验、请求期渲染与缓存回退的核对入口，避免运营排障仍按纯本地模板配置理解插件行为。
 - 更新了 `AGENTS.md` 的插件约束：明确所有插件实例都必须保存在项目根目录 `./plugins/{插件名}`，以便后续 AI 与人工协作时对插件目录结构保持统一认知。
 - 同步了 `CLAUDE.md` 与 `skills/sub2api-summary` 源码地图：补充插件实例目录约定、管理员插件接口以及 `api_keys.plugin_settings` 字段在前后端链路中的核对入口，避免后续排障或运营分析仍按旧源码认知执行。
 - 优化了网关计费准确性：Anthropic/OpenAI 流式响应在缺少终止事件但已解析到非零 usage 时，会保留 partial usage 继续进入计费链路，减少客户端断开或上游读错误导致的完全漏计。
@@ -26,6 +29,7 @@
 - 调整了邀请码注册与管理员用户管理语义：公开邀请码校验、普通注册、OAuth 首次注册、管理员兑换码生成页和用户列表现在都能识别并展示“临时邀请”监管状态，管理员重新启用被该规则禁用的用户时会按规则重开新的 24 小时窗口。
 
 ### Fixed（修复）
+- 修复了仓库内缺少默认 `api-prompt` 插件实例的问题：现在直接提交 `plugins/api-prompt/manifest.json` 与 `plugins/api-prompt/config.json`，保证按项目约定开箱即可在 `./plugins/{插件名}` 下看到首个插件实例，而不是只有代码支持但没有实际目录。
 - 修复了余额模式扣费可能在成功请求后把用户余额打到无限负数的问题：事务扣费现在会受 `billing.balance.max_overdraft_cny` 下限约束，越过下限时返回余额不足并回滚本次计费副作用。
 - 修复了压缩请求体会被直接按原始二进制 JSON 解析的问题：Claude/OpenAI/Responses 等网关入口现在会在读取请求体时透明解压，并在解压后清理 `Content-Encoding`/`Content-Length`。
 - 修复了调度快照切换的并发竞态与粘性失配问题：晚到的旧快照不会再覆盖新 active 版本，重建结束后不再被动等待锁 TTL，自 Redis 恢复出来的缓存账号也会保留正确的分组元数据用于粘性命中判断。

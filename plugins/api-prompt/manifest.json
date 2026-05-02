@@ -1,0 +1,8 @@
+{
+  "name": "api-prompt",
+  "type": "api-prompt",
+  "description": "仓库内默认 api-prompt 插件实例",
+  "enabled": true,
+  "created_at": "2026-05-02T05:20:07Z",
+  "updated_at": "2026-05-02T05:20:07Z"
+}
