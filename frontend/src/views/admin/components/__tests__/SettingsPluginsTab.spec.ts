@@ -107,4 +107,31 @@ describe('SettingsPluginsTab', () => {
       })
     )
   })
+
+  it('renders a retryable error state when loading plugins fails', async () => {
+    apiMocks.list.mockRejectedValueOnce({
+      response: {
+        data: {
+          detail: 'backend plugins endpoint unavailable',
+        },
+      },
+    })
+
+    const wrapper = mount(SettingsPluginsTab, {
+      global: {
+        stubs: {
+          Icon: true,
+          Toggle: {
+            props: ['modelValue'],
+            template: '<button class="toggle" :disabled="$attrs.disabled" />',
+          },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('backend plugins endpoint unavailable')
+    expect(wrapper.findAll('button').some((button) => button.text() === 'common.retry')).toBe(true)
+  })
 })

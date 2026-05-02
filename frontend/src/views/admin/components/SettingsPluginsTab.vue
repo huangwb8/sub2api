@@ -116,6 +116,27 @@
       {{ t('common.loading') }}
     </section>
 
+    <section
+      v-else-if="loadError"
+      class="rounded-3xl border border-amber-200 bg-amber-50/80 px-6 py-12 text-center dark:border-amber-900/40 dark:bg-amber-900/10"
+    >
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-dark-700">
+        <Icon name="exclamationTriangle" size="lg" class="text-amber-500 dark:text-amber-300" />
+      </div>
+      <h3 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+        {{ t('admin.settings.plugins.messages.loadFailed') }}
+      </h3>
+      <p class="mt-2 text-sm text-amber-700 dark:text-amber-200">
+        {{ loadError }}
+      </p>
+      <div class="mt-5 flex justify-center">
+        <button type="button" class="btn btn-secondary btn-sm" @click="loadPlugins">
+          <Icon name="refresh" size="sm" class="mr-1.5" />
+          {{ t('common.retry') }}
+        </button>
+      </div>
+    </section>
+
     <section v-else-if="plugins.length === 0" class="rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-12 text-center dark:border-dark-600 dark:bg-dark-800/40">
       <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-dark-700">
         <Icon name="cube" size="lg" class="text-sky-600 dark:text-sky-300" />
@@ -318,6 +339,7 @@ const creating = ref(false)
 const savingName = ref('')
 const testingName = ref('')
 const togglingName = ref('')
+const loadError = ref('')
 const plugins = ref<PluginFormState[]>([])
 const testResults = ref<Record<string, PluginTestResult>>({})
 
@@ -379,11 +401,13 @@ function makeTemplate(): APIPromptTemplate {
 
 async function loadPlugins() {
   loading.value = true
+  loadError.value = ''
   try {
     const data = await adminPluginsAPI.list()
     plugins.value = data.map(hydratePlugin)
-  } catch (error) {
-    appStore.showError(t('admin.settings.plugins.messages.loadFailed'))
+  } catch (error: any) {
+    loadError.value = error?.response?.data?.detail || t('admin.settings.plugins.messages.loadFailed')
+    appStore.showError(loadError.value)
   } finally {
     loading.value = false
   }

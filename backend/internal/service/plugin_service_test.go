@@ -18,26 +18,46 @@ func TestPluginService_CreatePlugin_PersistsAPIPromptInstance(t *testing.T) {
 	require.NoError(t, err)
 
 	plugin, err := svc.CreatePlugin(context.Background(), CreatePluginRequest{
-		Name:        "api-prompt",
+		Name:        "api-prompt-custom",
 		Type:        PluginTypeAPIPrompt,
 		Description: "Prompt templates for focused API keys",
 		Enabled:     true,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "api-prompt", plugin.Name)
+	require.Equal(t, "api-prompt-custom", plugin.Name)
 	require.Equal(t, PluginTypeAPIPrompt, plugin.Type)
 	require.True(t, plugin.Enabled)
 	require.NotEmpty(t, plugin.APIPrompt)
 	require.NotEmpty(t, plugin.APIPrompt.Templates)
 
-	require.DirExists(t, rootDir+"/api-prompt")
-	require.FileExists(t, rootDir+"/api-prompt/manifest.json")
-	require.FileExists(t, rootDir+"/api-prompt/config.json")
+	require.DirExists(t, rootDir+"/api-prompt-custom")
+	require.FileExists(t, rootDir+"/api-prompt-custom/manifest.json")
+	require.FileExists(t, rootDir+"/api-prompt-custom/config.json")
 
-	manifestData, err := os.ReadFile(filepath.Join(rootDir, "api-prompt", "manifest.json"))
+	manifestData, err := os.ReadFile(filepath.Join(rootDir, "api-prompt-custom", "manifest.json"))
 	require.NoError(t, err)
 	require.NotContains(t, string(manifestData), "base_url")
 	require.NotContains(t, string(manifestData), "api_key")
+}
+
+func TestPluginService_NewPluginService_BootstrapsDefaultPluginWhenRootDirEmpty(t *testing.T) {
+	t.Parallel()
+
+	rootDir := t.TempDir()
+	svc, err := NewPluginService(rootDir)
+	require.NoError(t, err)
+
+	plugins, err := svc.ListPlugins(context.Background())
+	require.NoError(t, err)
+	require.Len(t, plugins, 1)
+	require.Equal(t, "api-prompt", plugins[0].Name)
+	require.Equal(t, PluginTypeAPIPrompt, plugins[0].Type)
+	require.True(t, plugins[0].Enabled)
+	require.NotNil(t, plugins[0].APIPrompt)
+	require.NotEmpty(t, plugins[0].APIPrompt.Templates)
+
+	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "manifest.json"))
+	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "config.json"))
 }
 
 func TestPluginService_ListAPIPromptTemplateOptions_OnlyEnabledPlugins(t *testing.T) {
@@ -156,7 +176,7 @@ func TestPluginService_LegacyRemoteManifestFieldsIgnoredAndCleanedOnSave(t *test
 	require.Equal(t, "api-prompt", plugin.Name)
 	require.Equal(t, "local", plugin.APIPrompt.Source)
 
-	_, err = svc.UpdatePlugin(context.Background(), "api-prompt", UpdatePluginRequest{Description: ptrString("local only")})
+	_, err = svc.UpdatePlugin(context.Background(), "api-prompt", UpdatePluginRequest{Description: ptrStringPlugin("local only")})
 	require.NoError(t, err)
 	manifestData, err := os.ReadFile(filepath.Join(pluginDir, "manifest.json"))
 	require.NoError(t, err)
@@ -229,6 +249,6 @@ func TestResolveDefaultPluginRootDirFrom_FallsBackToCurrentWorkingDirPluginsOuts
 	require.Equal(t, filepath.Join(startDir, "plugins"), resolveDefaultPluginRootDirFrom(startDir))
 }
 
-func ptrString(value string) *string {
+func ptrStringPlugin(value string) *string {
 	return &value
 }

@@ -149,6 +149,9 @@ func NewPluginService(rootDir string) (*PluginService, error) {
 	if err := svc.reloadFromDisk(); err != nil {
 		return nil, err
 	}
+	if err := svc.ensureDefaultPlugins(); err != nil {
+		return nil, err
+	}
 	return svc, nil
 }
 
@@ -493,6 +496,36 @@ func (s *PluginService) reloadFromDisk() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.plugins = plugins
+	return nil
+}
+
+func (s *PluginService) ensureDefaultPlugins() error {
+	s.mu.RLock()
+	hasPlugins := len(s.plugins) > 0
+	s.mu.RUnlock()
+	if hasPlugins {
+		return nil
+	}
+
+	now := time.Now()
+	record, err := s.buildRecord("api-prompt", PluginTypeAPIPrompt, pluginManifest{
+		Name:        "api-prompt",
+		Type:        PluginTypeAPIPrompt,
+		Description: "默认 api-prompt 插件实例",
+		Enabled:     true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}, nil, nil)
+	if err != nil {
+		return err
+	}
+	if err := s.writeRecord(record); err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.plugins[record.Manifest.Name] = record
 	return nil
 }
 
