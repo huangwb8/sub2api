@@ -141,4 +141,23 @@ describe('HomeView custom home content CSP handling', () => {
       ])
     )
   })
+
+  it('does not render upstream vendor or product names on the default homepage', async () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          Icon: true,
+          LocaleSwitcher: true,
+          'router-link': {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to?.path"><slot /></a>'
+          },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).not.toMatch(/GPT|Claude|Gemini|OpenAI|Anthropic|Codex/)
+  })
 })
