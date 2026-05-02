@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Fixed（修复）
+- 修复了 `collect_sub2api_data.py` 在 Cloudflare 浏览器签名校验下可能被 1010 拦截的问题：默认请求现在会带上浏览器风格的 `Accept`、`Accept-Language`、`User-Agent`、`Origin` 和 `Referer`，同时保留原有 `x-api-key` / `Authorization: Bearer` 鉴权。
+
 ### Added（新增）
 - 新增 `sub2api-summary` 技能初版：支持真实 sub2api 站点只读运营数据采集、确定性分析和 `plan.md` 优化计划输出。
 - 新增 `collect_sub2api_data.py`：通过 `x-api-key` 只读调用管理端 dashboard、usage、model、group、user 与 ops 相关 GET 接口。

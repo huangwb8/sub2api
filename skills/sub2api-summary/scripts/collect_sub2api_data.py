@@ -100,6 +100,23 @@ def auth_headers(auth_mode: str, token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def request_headers(base_url: str, auth_mode: str, token: str) -> dict[str, str]:
+    parsed = urllib.parse.urlparse(base_url)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    headers = {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Origin": origin,
+        "Referer": origin + "/",
+    }
+    headers.update(auth_headers(auth_mode, token))
+    return headers
+
+
 def request_json(
     api_base: str,
     headers: dict[str, str],
@@ -149,7 +166,7 @@ def collect() -> int:
         return 2
 
     api_base = ensure_api_base(args.base_url)
-    headers = auth_headers(args.auth_mode, token)
+    headers = request_headers(args.base_url, args.auth_mode, token)
     out_dir = Path(args.out_dir).resolve()
     work_root = Path(args.work_root).resolve()
     try:
