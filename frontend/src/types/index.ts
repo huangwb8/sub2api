@@ -527,6 +527,16 @@ export interface ApiKey {
   reset_5h_at: string | null
   reset_1d_at: string | null
   reset_7d_at: string | null
+  plugin_settings: APIKeyPluginSettings
+}
+
+export interface APIPromptKeyBinding {
+  plugin_name: string
+  template_id: string
+}
+
+export interface APIKeyPluginSettings {
+  api_prompt?: APIPromptKeyBinding | null
 }
 
 export interface CreateApiKeyRequest {
@@ -540,6 +550,7 @@ export interface CreateApiKeyRequest {
   rate_limit_5h?: number
   rate_limit_1d?: number
   rate_limit_7d?: number
+  plugin_settings?: APIKeyPluginSettings
 }
 
 export interface UpdateApiKeyRequest {
@@ -555,6 +566,43 @@ export interface UpdateApiKeyRequest {
   rate_limit_1d?: number
   rate_limit_7d?: number
   reset_rate_limit_usage?: boolean
+  plugin_settings?: APIKeyPluginSettings
+}
+
+export interface APIPromptTemplate {
+  id: string
+  name: string
+  description?: string
+  prompt: string
+  enabled: boolean
+  builtin: boolean
+  sort_order: number
+}
+
+export interface APIPromptPluginConfig {
+  templates: APIPromptTemplate[]
+}
+
+export interface Plugin {
+  name: string
+  type: 'api-prompt'
+  description?: string
+  base_url?: string
+  enabled: boolean
+  api_key_configured: boolean
+  created_at: string
+  updated_at: string
+  api_prompt?: APIPromptPluginConfig
+}
+
+export interface APIPromptTemplateOption {
+  plugin_name: string
+  template_id: string
+  name: string
+  description?: string
+  prompt: string
+  builtin: boolean
+  sort_order: number
 }
 
 export interface CreateGroupRequest {

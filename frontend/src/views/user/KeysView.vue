@@ -34,7 +34,7 @@
       <template #actions>
         <div class="flex justify-end gap-3">
         <button
-          @click="loadApiKeys"
+          @click="handleRefresh"
           :disabled="loading"
           class="btn btn-secondary"
           :title="t('common.refresh')"
@@ -85,15 +85,24 @@
           </template>
 
           <template #cell-name="{ value, row }">
-            <div class="flex items-center gap-1.5">
-              <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
-              <Icon
-                v-if="row.ip_whitelist?.length > 0 || row.ip_blacklist?.length > 0"
-                name="shield"
-                size="sm"
-                class="text-blue-500"
-                :title="t('keys.ipRestrictionEnabled')"
-              />
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+                <Icon
+                  v-if="row.ip_whitelist?.length > 0 || row.ip_blacklist?.length > 0"
+                  name="shield"
+                  size="sm"
+                  class="text-blue-500"
+                  :title="t('keys.ipRestrictionEnabled')"
+                />
+              </div>
+              <div
+                v-if="row.plugin_settings?.api_prompt"
+                class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/20 dark:text-sky-200"
+              >
+                <Icon name="sparkles" size="xs" />
+                <span>{{ resolvePromptBindingLabel(row.plugin_settings) }}</span>
+              </div>
             </div>
           </template>
 
@@ -437,6 +446,69 @@
               />
             </template>
           </Select>
+        </div>
+
+        <div class="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-dark-700 dark:bg-dark-800/50">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <label class="input-label mb-0">{{ t('keys.promptMode.label') }}</label>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t('keys.promptMode.hint') }}
+              </p>
+            </div>
+            <span
+              v-if="selectedPromptTemplate"
+              class="inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-200"
+            >
+              {{ t('keys.promptMode.badge') }}
+            </span>
+          </div>
+
+          <Select
+            v-model="formData.plugin_binding_value"
+            :options="promptTemplateSelectOptions"
+            :placeholder="t('keys.promptMode.general')"
+            :disabled="promptTemplatesLoading"
+          />
+
+          <div
+            v-if="selectedPromptTemplate"
+            :class="selectedPromptTemplate.unavailable
+              ? 'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-900/10'
+              : 'border-slate-200 bg-white dark:border-dark-600 dark:bg-dark-900/70'"
+            class="rounded-2xl border p-4"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ selectedPromptTemplate.name }}
+              </h4>
+              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-dark-700 dark:text-slate-300">
+                {{ selectedPromptTemplate.plugin_name }}
+              </span>
+              <span
+                v-if="selectedPromptTemplate.builtin"
+                class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+              >
+                {{ t('keys.promptMode.builtin') }}
+              </span>
+              <span
+                v-if="selectedPromptTemplate.unavailable"
+                class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
+              >
+                {{ t('keys.promptMode.unavailable') }}
+              </span>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {{ selectedPromptTemplate.description || t('keys.promptMode.noDescription') }}
+            </p>
+            <pre
+              v-if="selectedPromptTemplate.prompt"
+              class="mt-3 max-h-44 overflow-auto rounded-xl bg-slate-950/95 p-3 font-mono text-xs leading-5 text-slate-100"
+            >{{ selectedPromptTemplate.prompt }}</pre>
+            <p v-else class="mt-3 text-xs text-amber-700 dark:text-amber-200">
+              {{ t('keys.promptMode.unavailableHint') }}
+            </p>
+          </div>
         </div>
 
         <!-- Custom Key Section (only for create) -->
@@ -1054,6 +1126,7 @@ import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 
 const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI } from '@/api'
+import { pluginsAPI } from '@/api/plugins'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
@@ -1068,7 +1141,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import EndpointPopover from '@/components/keys/EndpointPopover.vue'
 	import GroupBadge from '@/components/common/GroupBadge.vue'
 	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
-	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
+	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform, APIKeyPluginSettings, APIPromptTemplateOption, SelectOption } from '@/types'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime, formatUsageCost, getCurrencySymbol } from '@/utils/format'
@@ -1091,6 +1164,16 @@ interface GroupOption {
   userRate: number | null
   subscriptionType: SubscriptionType
   platform: GroupPlatform
+}
+
+interface PromptTemplateSelectOption extends SelectOption {
+  value: string
+  label: string
+  description?: string
+}
+
+type PromptTemplateView = APIPromptTemplateOption & {
+  unavailable?: boolean
 }
 
 const appStore = useAppStore()
@@ -1147,6 +1230,8 @@ const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
+const promptTemplates = ref<APIPromptTemplateOption[]>([])
+const promptTemplatesLoading = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
@@ -1169,6 +1254,7 @@ const setGroupButtonRef = (keyId: number, el: Element | ComponentPublicInstance 
 const formData = ref({
   name: '',
   group_id: null as number | null,
+  plugin_binding_value: '',
   status: 'active' as 'active' | 'inactive',
   use_custom_key: false,
   custom_key: '',
@@ -1208,6 +1294,99 @@ const statusOptions = computed(() => [
   { value: 'active', label: t('common.active') },
   { value: 'inactive', label: t('common.inactive') }
 ])
+
+const parsePromptBindingValue = (value: string): APIKeyPluginSettings['api_prompt'] | null => {
+  if (!value) return null
+  try {
+    const parsed = JSON.parse(value) as { plugin_name?: string; template_id?: string }
+    if (!parsed.plugin_name || !parsed.template_id) {
+      return null
+    }
+    return {
+      plugin_name: parsed.plugin_name,
+      template_id: parsed.template_id
+    }
+  } catch {
+    return null
+  }
+}
+
+const encodePromptBindingValue = (settings?: APIKeyPluginSettings | null): string => {
+  if (!settings?.api_prompt?.plugin_name || !settings.api_prompt.template_id) {
+    return ''
+  }
+  return JSON.stringify({
+    plugin_name: settings.api_prompt.plugin_name,
+    template_id: settings.api_prompt.template_id
+  })
+}
+
+const promptTemplateMap = computed(() => {
+  const map = new Map<string, APIPromptTemplateOption>()
+  for (const template of promptTemplates.value) {
+    map.set(`${template.plugin_name}::${template.template_id}`, template)
+  }
+  return map
+})
+
+const currentUnavailablePromptTemplate = computed<PromptTemplateView | null>(() => {
+  const binding = parsePromptBindingValue(formData.value.plugin_binding_value)
+  if (!binding) return null
+  const existing = promptTemplateMap.value.get(`${binding.plugin_name}::${binding.template_id}`)
+  if (existing) return null
+  return {
+    plugin_name: binding.plugin_name,
+    template_id: binding.template_id,
+    name: t('keys.promptMode.unavailableTemplateName', { templateId: binding.template_id }),
+    description: t('keys.promptMode.unavailableTemplateDescription', { pluginName: binding.plugin_name }),
+    prompt: '',
+    builtin: false,
+    sort_order: -1,
+    unavailable: true
+  }
+})
+
+const promptTemplateSelectOptions = computed<PromptTemplateSelectOption[]>(() => {
+  const options: PromptTemplateSelectOption[] = [
+    {
+      value: '',
+      label: t('keys.promptMode.general'),
+      description: t('keys.promptMode.generalDescription')
+    }
+  ]
+
+  if (currentUnavailablePromptTemplate.value) {
+    options.push({
+      value: formData.value.plugin_binding_value,
+      label: t('keys.promptMode.unavailableTemplateOption', {
+        pluginName: currentUnavailablePromptTemplate.value.plugin_name,
+        templateId: currentUnavailablePromptTemplate.value.template_id
+      }),
+      description: t('keys.promptMode.unavailableHint')
+    })
+  }
+
+  options.push(
+    ...promptTemplates.value.map((template) => ({
+      value: JSON.stringify({
+        plugin_name: template.plugin_name,
+        template_id: template.template_id
+      }),
+      label: `${template.name} · ${template.plugin_name}`,
+      description: template.description
+    }))
+  )
+
+  return options
+})
+
+const selectedPromptTemplate = computed<PromptTemplateView | null>(() => {
+  const binding = parsePromptBindingValue(formData.value.plugin_binding_value)
+  if (!binding) return null
+  const existing = promptTemplateMap.value.get(`${binding.plugin_name}::${binding.template_id}`)
+  if (existing) return existing
+  return currentUnavailablePromptTemplate.value
+})
 
 // Filter dropdown options
 const groupFilterOptions = computed(() => [
@@ -1360,6 +1539,50 @@ const loadPublicSettings = async () => {
   }
 }
 
+const loadPromptTemplates = async () => {
+  promptTemplatesLoading.value = true
+  try {
+    promptTemplates.value = await pluginsAPI.listAPIPromptTemplates()
+  } catch (error) {
+    console.error('Failed to load prompt templates:', error)
+    appStore.showError(t('keys.promptMode.loadFailed'))
+  } finally {
+    promptTemplatesLoading.value = false
+  }
+}
+
+const buildPluginSettings = (
+  bindingValue: string,
+  includeEmpty: boolean
+): APIKeyPluginSettings | undefined => {
+  const binding = parsePromptBindingValue(bindingValue)
+  if (!binding) {
+    return includeEmpty ? {} : undefined
+  }
+  return { api_prompt: binding }
+}
+
+const resolvePromptBindingLabel = (settings?: APIKeyPluginSettings | null): string => {
+  if (!settings?.api_prompt) {
+    return t('keys.promptMode.general')
+  }
+  const match = promptTemplateMap.value.get(
+    `${settings.api_prompt.plugin_name}::${settings.api_prompt.template_id}`
+  )
+  if (match) {
+    return match.name
+  }
+  return t('keys.promptMode.bindingFallback', {
+    pluginName: settings.api_prompt.plugin_name,
+    templateId: settings.api_prompt.template_id
+  })
+}
+
+const handleRefresh = () => {
+  loadApiKeys()
+  loadPromptTemplates()
+}
+
 const openUseKeyModal = (key: ApiKey) => {
   selectedKey.value = key
   showUseKeyModal.value = true
@@ -1395,6 +1618,7 @@ const editKey = (key: ApiKey) => {
   formData.value = {
     name: key.name,
     group_id: key.group_id,
+    plugin_binding_value: encodePromptBindingValue(key.plugin_settings),
     status: key.status === 'quota_exhausted' || key.status === 'expired' ? 'inactive' : key.status,
     use_custom_key: false,
     custom_key: '',
@@ -1539,6 +1763,10 @@ const handleSubmit = async () => {
     rate_limit_1d: formData.value.rate_limit_1d && formData.value.rate_limit_1d > 0 ? formData.value.rate_limit_1d : 0,
     rate_limit_7d: formData.value.rate_limit_7d && formData.value.rate_limit_7d > 0 ? formData.value.rate_limit_7d : 0,
   } : { rate_limit_5h: 0, rate_limit_1d: 0, rate_limit_7d: 0 }
+  const pluginSettings = buildPluginSettings(
+    formData.value.plugin_binding_value,
+    showEditModal.value
+  )
 
   submitting.value = true
   try {
@@ -1554,6 +1782,7 @@ const handleSubmit = async () => {
         rate_limit_5h: rateLimitData.rate_limit_5h,
         rate_limit_1d: rateLimitData.rate_limit_1d,
         rate_limit_7d: rateLimitData.rate_limit_7d,
+        plugin_settings: pluginSettings,
       })
       appStore.showSuccess(t('keys.keyUpdatedSuccess'))
     } else {
@@ -1566,7 +1795,8 @@ const handleSubmit = async () => {
         ipBlacklist,
         quota,
         expiresInDays,
-        rateLimitData
+        rateLimitData,
+        pluginSettings
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
@@ -1612,6 +1842,7 @@ const closeModals = () => {
   formData.value = {
     name: '',
     group_id: null,
+    plugin_binding_value: '',
     status: 'active',
     use_custom_key: false,
     custom_key: '',
@@ -1810,6 +2041,7 @@ onMounted(() => {
   loadGroups()
   loadUserGroupRates()
   loadPublicSettings()
+  loadPromptTemplates()
   document.addEventListener('click', closeGroupSelector)
   resetTimer = setInterval(() => { now.value = new Date() }, 60000)
 })

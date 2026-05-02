@@ -141,10 +141,14 @@ const BaseDialogStub = defineComponent({
     title: {
       type: String,
       default: ''
+    },
+    width: {
+      type: String,
+      default: 'normal'
     }
   },
   template: `
-    <div v-if="show">
+    <div v-if="show" class="base-dialog-stub" :data-width="width">
       <div class="dialog-title">{{ title }}</div>
       <slot />
       <slot name="footer" />
@@ -431,5 +435,49 @@ describe('ProxiesView', () => {
     expect(updateAccountMock).toHaveBeenCalledWith(101, { proxy_id: 2 })
     expect(wrapper.text()).not.toContain('OpenAI-1')
     expect(showSuccessMock).toHaveBeenCalled()
+  })
+
+  it('代理账号弹窗使用更宽的布局，并为长文本与切换控件保留空间', async () => {
+    getProxyAccountsMock.mockResolvedValue([
+      {
+        id: 101,
+        name: 'kxsw2-team-20260425-03-super-long-account-name',
+        platform: 'openai',
+        type: 'oauth',
+        notes: 'kxsw2-team-20260425-03-super-long-note'
+      }
+    ])
+    getAllWithCountMock.mockResolvedValue([
+      buildProxy(),
+      buildProxy({
+        id: 2,
+        name: '健康代理',
+        host: '2.2.2.2',
+        account_count: 0,
+        latency_status: 'success',
+        latency_ms: 90,
+        quality_status: 'healthy'
+      })
+    ])
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const accountCountButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('admin.groups.accountsCount:1'))
+
+    expect(accountCountButton).toBeTruthy()
+
+    await accountCountButton!.trigger('click')
+    await flushPromises()
+
+    const accountsDialog = wrapper.get('.base-dialog-stub')
+    expect(accountsDialog.attributes('data-width')).toBe('wide')
+
+    expect(wrapper.get('[data-testid="proxy-transfer-select-101"]').attributes('class')).toContain('w-full')
+    expect(wrapper.get('[data-testid="proxy-transfer-submit-101"]').attributes('class')).toContain('w-full')
+    expect(wrapper.text()).toContain('kxsw2-team-20260425-03-super-long-account-name')
+    expect(wrapper.text()).toContain('kxsw2-team-20260425-03-super-long-note')
   })
 })

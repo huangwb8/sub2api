@@ -3053,8 +3053,13 @@
           <BackupSettings />
         </div>
 
+        <!-- Tab: Plugin -->
+        <div v-show="activeTab === 'plugin'" class="space-y-6">
+          <SettingsPluginsTab />
+        </div>
+
         <!-- Save Button -->
-        <div v-show="activeTab !== 'backup'" class="flex justify-end">
+        <div v-show="activeTab !== 'backup' && activeTab !== 'plugin'" class="flex justify-end">
           <button type="submit" :disabled="saving || loadFailed" class="btn btn-primary">
             <svg v-if="saving" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle
@@ -3118,6 +3123,7 @@ import Toggle from '@/components/common/Toggle.vue'
 import WebSearchEmulationCard from '@/components/admin/settings/WebSearchEmulationCard.vue'
 import ImageUpload from '@/components/common/ImageUpload.vue'
 import BackupSettings from '@/views/admin/BackupView.vue'
+import SettingsPluginsTab from '@/views/admin/components/SettingsPluginsTab.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
@@ -3142,7 +3148,7 @@ const { t, locale } = useI18n()
 const appStore = useAppStore()
 const adminSettingsStore = useAdminSettingsStore()
 
-type SettingsTab = 'general' | 'security' | 'users' | 'gateway' | 'payment' | 'email' | 'backup'
+type SettingsTab = 'general' | 'security' | 'users' | 'gateway' | 'payment' | 'backup' | 'plugin' | 'email'
 const activeTab = ref<SettingsTab>('general')
 const settingsTabs = [
   { key: 'general'  as SettingsTab, icon: 'home'   as const },
@@ -3150,8 +3156,9 @@ const settingsTabs = [
   { key: 'users'    as SettingsTab, icon: 'user'   as const },
   { key: 'gateway'  as SettingsTab, icon: 'server' as const },
   { key: 'payment'  as SettingsTab, icon: 'creditCard' as const },
-  { key: 'email'    as SettingsTab, icon: 'mail'   as const },
   { key: 'backup'   as SettingsTab, icon: 'database' as const },
+  { key: 'plugin'   as SettingsTab, icon: 'cube'   as const },
+  { key: 'email'    as SettingsTab, icon: 'mail'   as const },
 ]
 const { copyToClipboard } = useClipboard()
 

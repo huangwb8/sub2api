@@ -291,6 +291,7 @@ export default {
     delete: 'Delete',
     edit: 'Edit',
     create: 'Create',
+    creating: 'Creating...',
     update: 'Update',
     confirm: 'Confirm',
     reset: 'Reset',
@@ -635,6 +636,22 @@ export default {
     namePlaceholder: 'My API Key',
     groupLabel: 'Group',
     selectGroup: 'Select a group',
+    promptMode: {
+      label: 'Prompt Template',
+      hint: 'Keep the key in general mode, or bind a plugin template to inject an extra system instruction into requests.',
+      badge: 'Prompt Injected',
+      general: 'General (no extra prompt)',
+      generalDescription: 'Works like a normal API key and only sends the user context.',
+      builtin: 'Built-in',
+      unavailable: 'Unavailable',
+      unavailableHint: 'This template is currently unavailable. The plugin may be disabled, or the template may have been removed or turned off.',
+      unavailableTemplateName: 'Historical Template · {templateId}',
+      unavailableTemplateDescription: 'The original binding came from plugin {pluginName}, but it is no longer available in the current option list.',
+      unavailableTemplateOption: 'Current Binding · {pluginName} / {templateId}',
+      bindingFallback: '{pluginName} / {templateId}',
+      noDescription: 'No template description provided',
+      loadFailed: 'Failed to load prompt templates'
+    },
     statusLabel: 'Status',
     selectStatus: 'Select status',
     saving: 'Saving...',
@@ -4684,9 +4701,111 @@ export default {
         security: 'Security',
         users: 'Users',
         gateway: 'Gateway',
-        email: 'Email',
         backup: 'Backup',
+        plugin: 'Plugins',
+        email: 'Email',
         payment: 'Payment',
+      },
+      plugins: {
+        eyebrow: 'PLUGIN RUNTIME',
+        title: 'External Plugin Center',
+        description: 'Manage external plugin instances stored under ./plugins/{plugin-name}. We start with api-prompt, and future plugins will reuse the same directory rule, enable/disable flow, and health check model.',
+        metrics: {
+          instances: 'Instances',
+          enabled: 'Enabled',
+          templates: 'Templates'
+        },
+        typeLabels: {
+          apiPrompt: 'API Prompt'
+        },
+        labels: {
+          builtin: 'Built-in',
+          noDescription: 'No description'
+        },
+        fields: {
+          name: 'Plugin Name',
+          type: 'Plugin Type',
+          description: 'Description',
+          baseUrl: 'Plugin Base URL',
+          apiKey: 'Plugin API Key'
+        },
+        placeholders: {
+          name: 'For example: api-prompt-main',
+          description: 'Describe the prompt scenario or upstream purpose of this plugin',
+          apiKey: 'Leave blank if the plugin does not require an API key',
+          keepExistingApiKey: 'Leave blank to keep the current API key'
+        },
+        hints: {
+          directoryRule: 'After creation, this plugin instance will always live under ./plugins/{plugin-name}/.',
+          apiKeyConfigured: 'A plugin API key already exists. Leaving this blank keeps the current value.',
+          apiKeyOptional: 'Leave empty if the external plugin endpoint does not require authentication.'
+        },
+        actions: {
+          test: 'Test',
+          enable: 'Enable',
+          disable: 'Stop'
+        },
+        create: {
+          title: 'Create Plugin Instance',
+          description: 'Each instance has its own directory, lifecycle state, and prompt templates, so multiple business scenarios can run side by side.',
+          defaultTemplates: 'Default Template Preview',
+          defaultTemplatesHint: 'A new api-prompt plugin starts with built-in templates, and admins can keep adding their own.',
+          submit: 'Create Plugin'
+        },
+        empty: {
+          title: 'No plugin instances yet',
+          description: 'Create an api-prompt plugin first to bring prompt binding into the API key workflow.'
+        },
+        templates: {
+          title: 'Prompt Templates',
+          description: 'Manage the templates that can be bound to API keys. Enabled templates appear in the user-facing API key form.',
+          add: 'Add Template',
+          fields: {
+            name: 'Template Name',
+            id: 'Template ID',
+            description: 'Description',
+            prompt: 'Prompt Content'
+          },
+          placeholders: {
+            name: 'For example: Code Review Assistant',
+            id: 'For example: engineering-review',
+            description: 'A one-line summary of when this template should be used',
+            prompt: 'This content will be injected into requests as a system instruction'
+          },
+          hints: {
+            injection: 'When enabled, API keys bound to this template will receive this system instruction in addition to the user context.'
+          }
+        },
+        defaults: {
+          generalWriting: {
+            name: 'General Writing',
+            description: 'Helps users get cleaner, more structured writing results for daily work.'
+          },
+          engineeringReview: {
+            name: 'Engineering Review',
+            description: 'Focuses on correctness, edge cases, and maintainability for code and design reviews.'
+          },
+          productOps: {
+            name: 'Product Ops',
+            description: 'Highlights action items, prioritization, and execution paths for ops and growth analysis.'
+          }
+        },
+        messages: {
+          loadFailed: 'Failed to load plugins',
+          nameRequired: 'Please enter a plugin name',
+          templateInvalid: 'Template name, template ID, and prompt content are all required',
+          createSuccess: 'Plugin created successfully',
+          createFailed: 'Failed to create plugin',
+          saveSuccess: 'Plugin saved successfully',
+          saveFailed: 'Failed to save plugin',
+          testSuccess: 'Plugin test passed',
+          testWarning: 'Plugin responded, but returned a warning result',
+          testFailed: 'Plugin test failed',
+          enableSuccess: 'Plugin enabled successfully',
+          disableSuccess: 'Plugin stopped successfully',
+          toggleFailed: 'Failed to change plugin status',
+          keepOneTemplate: 'Keep at least one template so the plugin always remains usable'
+        }
       },
       emailTabDisabledTitle: 'Email Verification Not Enabled',
       emailTabDisabledHint: 'Enable email verification in the Security tab to configure SMTP settings.',

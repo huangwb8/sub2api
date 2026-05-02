@@ -291,6 +291,7 @@ export default {
     delete: '删除',
     edit: '编辑',
     create: '创建',
+    creating: '创建中...',
     update: '更新',
     confirm: '确认',
     reset: '重置',
@@ -634,6 +635,22 @@ export default {
     namePlaceholder: '我的 API 密钥',
     groupLabel: '分组',
     selectGroup: '选择分组',
+    promptMode: {
+      label: 'Prompt 模板',
+      hint: '可将此 API 密钥设为通用模式，或绑定某个插件模板作为额外系统指令注入到请求中。',
+      badge: 'Prompt 注入',
+      general: '通用（不注入额外 Prompt）',
+      generalDescription: '按普通 API Key 工作，只传递用户自己的上下文。',
+      builtin: '内置模板',
+      unavailable: '当前不可用',
+      unavailableHint: '此模板当前不可用，可能是对应插件已停用、模板被删除或已被禁用。',
+      unavailableTemplateName: '历史模板 · {templateId}',
+      unavailableTemplateDescription: '原绑定来自插件 {pluginName}，但该模板目前不在可选列表中。',
+      unavailableTemplateOption: '当前绑定 · {pluginName} / {templateId}',
+      bindingFallback: '{pluginName} / {templateId}',
+      noDescription: '未填写模板说明',
+      loadFailed: '加载 Prompt 模板失败'
+    },
     statusLabel: '状态',
     selectStatus: '选择状态',
     saving: '保存中...',
@@ -4851,9 +4868,111 @@ export default {
         security: '安全与认证',
         users: '用户默认值',
         gateway: '网关服务',
-        email: '邮件设置',
         backup: '数据备份',
+        plugin: '插件',
+        email: '邮件设置',
         payment: '支付设置',
+      },
+      plugins: {
+        eyebrow: 'PLUGIN RUNTIME',
+        title: '外挂插件中心',
+        description: '集中管理保存在 ./plugins/{插件名} 的外挂插件实例。当前先支持 api-prompt，后续新插件也会沿用同一目录约定、启停能力与测试流程。',
+        metrics: {
+          instances: '插件实例',
+          enabled: '已启用',
+          templates: '模板总数'
+        },
+        typeLabels: {
+          apiPrompt: 'API Prompt'
+        },
+        labels: {
+          builtin: '内置',
+          noDescription: '暂无描述'
+        },
+        fields: {
+          name: '插件名',
+          type: '插件类型',
+          description: '插件描述',
+          baseUrl: '插件 Base URL',
+          apiKey: '插件 API Key'
+        },
+        placeholders: {
+          name: '例如：api-prompt-main',
+          description: '说明该插件负责的提示词场景或上游用途',
+          apiKey: '留空表示无需 API Key',
+          keepExistingApiKey: '留空表示保留当前 API Key'
+        },
+        hints: {
+          directoryRule: '创建后会固定保存到 ./plugins/{插件名}/ 下。',
+          apiKeyConfigured: '已存在插件 API Key，留空将继续沿用当前值。',
+          apiKeyOptional: '如果外挂服务无需鉴权，可保持为空。'
+        },
+        actions: {
+          test: '测试连接',
+          enable: '启用',
+          disable: '停止'
+        },
+        create: {
+          title: '新建插件实例',
+          description: '每个插件实例都拥有独立目录、启停状态与模板配置，可并行服务不同业务场景。',
+          defaultTemplates: '默认模板预览',
+          defaultTemplatesHint: '创建 api-prompt 插件后会自动带上内置模板，管理员也可以继续追加自己的模板。',
+          submit: '创建插件'
+        },
+        empty: {
+          title: '还没有插件实例',
+          description: '先创建一个 api-prompt 插件，把通用 Prompt 能力接入到 API Key 工作流里。'
+        },
+        templates: {
+          title: 'Prompt 模板',
+          description: '为这个插件维护可绑定给 API Key 的模板。启用的模板会出现在用户侧密钥创建表单中。',
+          add: '新增模板',
+          fields: {
+            name: '模板名称',
+            id: '模板 ID',
+            description: '模板说明',
+            prompt: 'Prompt 内容'
+          },
+          placeholders: {
+            name: '例如：代码评审助手',
+            id: '例如：engineering-review',
+            description: '一句话说明模板适合的工作场景',
+            prompt: '这里填写会被注入到请求中的系统指令模板'
+          },
+          hints: {
+            injection: '启用后，绑定该模板的 API Key 会在用户上下文之外附加这段系统指令。'
+          }
+        },
+        defaults: {
+          generalWriting: {
+            name: '通用写作',
+            description: '帮助用户获得更清晰、结构化的日常写作结果。'
+          },
+          engineeringReview: {
+            name: '工程评审',
+            description: '强调正确性、边界条件与可维护性，适合代码和方案评审。'
+          },
+          productOps: {
+            name: '产品运营',
+            description: '突出行动建议、优先级与落地路径，适合运营与增长分析。'
+          }
+        },
+        messages: {
+          loadFailed: '加载插件列表失败',
+          nameRequired: '请输入插件名',
+          templateInvalid: '模板名称、模板 ID 和 Prompt 内容都不能为空',
+          createSuccess: '插件创建成功',
+          createFailed: '插件创建失败',
+          saveSuccess: '插件保存成功',
+          saveFailed: '插件保存失败',
+          testSuccess: '插件测试通过',
+          testWarning: '插件已响应，但返回了告警结果',
+          testFailed: '插件测试失败',
+          enableSuccess: '插件已启用',
+          disableSuccess: '插件已停止',
+          toggleFailed: '切换插件状态失败',
+          keepOneTemplate: '至少保留一个模板，避免插件失去可用 Prompt'
+        }
       },
       emailTabDisabledTitle: '邮箱验证未启用',
       emailTabDisabledHint: '请在「安全与认证」选项卡中启用邮箱验证后，再配置 SMTP 设置。',

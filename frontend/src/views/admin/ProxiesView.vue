@@ -995,7 +995,7 @@
     <BaseDialog
       :show="showAccountsModal"
       :title="t('admin.proxies.accountsTitle', { name: accountsProxy?.name || '' })"
-      width="normal"
+      width="wide"
       @close="closeAccountsModal"
     >
       <div v-if="accountsLoading" class="flex items-center justify-center py-8 text-sm text-gray-500">
@@ -1005,38 +1005,40 @@
       <div v-else-if="proxyAccounts.length === 0" class="py-6 text-center text-sm text-gray-500">
         {{ t('admin.proxies.accountsEmpty') }}
       </div>
-      <div v-else class="max-h-80 overflow-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
+      <div v-else class="max-h-80 overflow-x-auto overflow-y-auto">
+        <table class="min-w-full table-fixed divide-y divide-gray-200 text-sm dark:divide-dark-700">
           <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-dark-800 dark:text-dark-400">
             <tr>
-              <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountName') }}</th>
-              <th class="px-4 py-2 text-left">{{ t('admin.accounts.columns.platformType') }}</th>
-              <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountNotes') }}</th>
-              <th class="px-4 py-2 text-left">{{ t('admin.proxies.accountTransferTarget') }}</th>
+              <th class="w-[28%] px-4 py-2 text-left">{{ t('admin.proxies.accountName') }}</th>
+              <th class="w-[20%] px-4 py-2 text-left">{{ t('admin.accounts.columns.platformType') }}</th>
+              <th class="w-[22%] px-4 py-2 text-left">{{ t('admin.proxies.accountNotes') }}</th>
+              <th class="w-[30%] min-w-[18rem] px-4 py-2 text-left">{{ t('admin.proxies.accountTransferTarget') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
             <tr v-for="account in proxyAccounts" :key="account.id">
-              <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ account.name }}</td>
-              <td class="px-4 py-2">
+              <td class="px-4 py-3 align-top font-medium leading-6 text-gray-900 dark:text-white">
+                <span class="block break-all whitespace-normal">{{ account.name }}</span>
+              </td>
+              <td class="px-4 py-3 align-top">
                 <PlatformTypeBadge :platform="account.platform" :type="account.type" />
               </td>
-              <td class="px-4 py-2 text-gray-600 dark:text-gray-300">
-                {{ account.notes || '-' }}
+              <td class="px-4 py-3 align-top text-gray-600 dark:text-gray-300">
+                <span class="block break-all whitespace-normal leading-6">{{ account.notes || '-' }}</span>
               </td>
-              <td class="px-4 py-2">
-                <div class="flex min-w-[17rem] items-center gap-2">
+              <td class="px-4 py-3 align-top">
+                <div class="grid min-w-[16rem] gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <Select
                     :model-value="accountTransferSelections[account.id] ?? ''"
                     :options="accountTransferOptions"
                     :disabled="switchingAccountIds.has(account.id) || accountTransferOptions.length <= 1"
                     :data-testid="`proxy-transfer-select-${account.id}`"
-                    class="min-w-0 flex-1"
+                    class="min-w-0 w-full"
                     @update:model-value="setAccountTransferSelection(account.id, $event)"
                   />
                   <button
                     type="button"
-                    class="btn btn-secondary shrink-0"
+                    class="btn btn-secondary w-full shrink-0 sm:w-auto"
                     :disabled="!canTransferAccount(account.id)"
                     :data-testid="`proxy-transfer-submit-${account.id}`"
                     @click="transferAccountToProxy(account)"
