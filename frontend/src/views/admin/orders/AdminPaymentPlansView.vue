@@ -15,23 +15,31 @@
           </h2>
           <HelpTooltip :content="t('payment.admin.planManagementHint')" />
         </div>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          :aria-expanded="isPlanPanelExpanded"
-          @click="togglePlanPanel"
-        >
-          <Icon
-            :name="isPlanPanelExpanded ? 'chevronDown' : 'chevronRight'"
-            size="sm"
-            class="mr-2"
-          />
-          {{ isPlanPanelExpanded ? t('nav.collapse') : t('nav.expand') }}
-        </button>
+        <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <template v-if="isPlanPanelExpanded">
+            <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
+              <Icon name="refresh" size="md" :class="plansLoading ? 'animate-spin' : ''" />
+            </button>
+            <button @click="openPlanEdit(null)" class="btn btn-primary">{{ t('payment.admin.createPlan') }}</button>
+          </template>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            :aria-expanded="isPlanPanelExpanded"
+            @click="togglePlanPanel"
+          >
+            <Icon
+              :name="isPlanPanelExpanded ? 'chevronDown' : 'chevronRight'"
+              size="sm"
+              class="mr-2"
+            />
+            {{ isPlanPanelExpanded ? t('nav.collapse') : t('nav.expand') }}
+          </button>
+        </div>
       </div>
       <template v-if="!isEmbedded || isPlanPanelExpanded">
       <!-- Actions -->
-      <div class="flex items-center justify-end gap-2">
+      <div v-if="!isEmbedded" class="flex items-center justify-end gap-2">
         <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
           <Icon name="refresh" size="md" :class="plansLoading ? 'animate-spin' : ''" />
         </button>
