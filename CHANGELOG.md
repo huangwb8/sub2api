@@ -8,8 +8,10 @@
 
 ### Added（新增）
 - 新增了 `skills/sub2api-add-users` Agent Skill：用于在用户提供真实站点鉴权后，只读采集 sub2api 容量与聚合用量数据，评估当前站点适合新增多少同类订阅用户，并包含 `auto-test-skill` 一轮 A/B 自检产物。
+- 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 优化了 `skills/sub2api-add-users/README.md`：按 `write-skill-readme` 流程重写为用户指南，补充推荐 Prompt、结果解读、配置项、安全边界和脚本备选流程。
 - 优化了 OpenAI `chatapi` 账号的 Responses 兼容能力：管理员现在可在账号 `extra.chatapi_responses_enabled` 中按账号开启 Responses API 调度，网关会把启用该开关的 `chatapi` 账号视为 Responses 兼容线路，并在前端编辑弹窗提供对应开关与文案。
 - 调整了插件系统的 Docker 运行目录解析：源码仓库运行仍优先使用项目根 `./plugins/{插件名}`，但 Docker 镜像、安装脚本或其它非完整仓库运行环境会回退到可写持久化数据目录的 `plugins/{插件名}`，避免把插件实例写到不可写或不可持久化的容器工作目录。
 - 调整了插件系统的部署自举行为：后端 `PluginService` 在运行时插件目录为空时，会自动写入默认启用的 `api-prompt` 本地插件实例及内置模板，避免 Docker 镜像、安装脚本或非仓库目录启动后“系统设置 → 插件”页没有任何可配置项。
