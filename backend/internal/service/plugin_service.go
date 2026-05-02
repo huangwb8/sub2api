@@ -133,8 +133,9 @@ type PluginService struct {
 func NewPluginService(rootDir string) (*PluginService, error) {
 	rootDir = strings.TrimSpace(rootDir)
 	if rootDir == "" {
-		rootDir = filepath.Join(".", "plugins")
+		rootDir = resolveDefaultPluginRootDir()
 	}
+	rootDir = filepath.Clean(rootDir)
 	if err := os.MkdirAll(rootDir, defaultPluginDirectoryPerm); err != nil {
 		return nil, fmt.Errorf("create plugin root dir: %w", err)
 	}
@@ -152,7 +153,54 @@ func NewPluginService(rootDir string) (*PluginService, error) {
 }
 
 func ProvidePluginService() (*PluginService, error) {
-	return NewPluginService(filepath.Join(".", "plugins"))
+	return NewPluginService("")
+}
+
+func resolveDefaultPluginRootDir() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return filepath.Join(".", "plugins")
+	}
+	return resolveDefaultPluginRootDirFrom(wd)
+}
+
+func resolveDefaultPluginRootDirFrom(startDir string) string {
+	projectRoot := findSub2APIProjectRoot(startDir)
+	if projectRoot != "" {
+		return filepath.Join(projectRoot, "plugins")
+	}
+	return filepath.Join(startDir, "plugins")
+}
+
+func findSub2APIProjectRoot(startDir string) string {
+	dir := filepath.Clean(startDir)
+	for {
+		if looksLikeSub2APIProjectRoot(dir) {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
+}
+
+func looksLikeSub2APIProjectRoot(dir string) bool {
+	return isDir(filepath.Join(dir, "backend")) &&
+		isDir(filepath.Join(dir, "frontend")) &&
+		isFile(filepath.Join(dir, "backend", "go.mod")) &&
+		isFile(filepath.Join(dir, "frontend", "package.json"))
+}
+
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
 
 func (s *PluginService) ListPlugins(ctx context.Context) ([]Plugin, error) {

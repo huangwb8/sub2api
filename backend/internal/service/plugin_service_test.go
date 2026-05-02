@@ -212,6 +212,23 @@ func TestPluginService_CreatePlugin_RejectsInvalidLocalTemplateFields(t *testing
 	require.ErrorIs(t, err, ErrInvalidPluginTemplate)
 }
 
+func TestResolveDefaultPluginRootDirFrom_PrefersRepoRootPluginsWhenStartedInBackend(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, "backend"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, "frontend"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, "plugins"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repoRoot, "backend", "go.mod"), []byte("module example.com/sub2api\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repoRoot, "frontend", "package.json"), []byte("{\"name\":\"frontend\"}\n"), 0o644))
+
+	resolved := resolveDefaultPluginRootDirFrom(filepath.Join(repoRoot, "backend"))
+	require.Equal(t, filepath.Join(repoRoot, "plugins"), resolved)
+}
+
+func TestResolveDefaultPluginRootDirFrom_FallsBackToCurrentWorkingDirPluginsOutsideRepo(t *testing.T) {
+	startDir := t.TempDir()
+	require.Equal(t, filepath.Join(startDir, "plugins"), resolveDefaultPluginRootDirFrom(startDir))
+}
+
 func ptrString(value string) *string {
 	return &value
 }
