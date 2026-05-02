@@ -102,6 +102,8 @@ docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
 # http://localhost:8080
 ```
 
+Plugin instances are stored with the application data. For `docker-compose.local.yml`, the default `api-prompt` plugin is bootstrapped under `deploy/data/plugins/api-prompt`; for the named-volume compose file, it is stored inside the `sub2api_data` volume at `/app/data/plugins/api-prompt`.
+
 ### Method 2: Manual Deployment
 
 If you prefer manual control:

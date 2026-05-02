@@ -1,11 +1,11 @@
 # api-prompt 本地插件说明
 
-`api-prompt` 是 Sub2API 内置的本地插件类型，用于为 API Key 绑定可复用的 Prompt 模板。插件实例固定保存在 `./plugins/{插件名}`，运行时由 Sub2API 直接读取和执行，不依赖外部 HTTP 插件服务。
+`api-prompt` 是 Sub2API 内置的本地插件类型，用于为 API Key 绑定可复用的 Prompt 模板。源码仓库运行时，插件实例固定保存在项目根目录 `./plugins/{插件名}`；Docker 镜像、安装脚本或其它非完整仓库运行环境会回退到可写数据目录下的 `plugins/{插件名}`，例如 `/app/data/plugins/{插件名}` 或 `${DATA_DIR}/plugins/{插件名}`。运行时由 Sub2API 直接读取和执行，不依赖外部 HTTP 插件服务。
 
 ## 文件结构
 
 ```text
-./plugins/{插件名}/
+plugins/{插件名}/
 ├── manifest.json
 └── config.json
 ```
@@ -44,7 +44,8 @@
 
 ## 管理行为
 
-- 启动时会优先从当前工作目录向上识别 Sub2API 项目根目录，并扫描项目根下的 `./plugins/*/manifest.json`；如果当前运行环境不是完整仓库结构，则回退到当前工作目录下的 `./plugins/*/manifest.json`。
+- 启动时会优先从当前工作目录向上识别 Sub2API 项目根目录，并扫描项目根下的 `./plugins/*/manifest.json`。
+- 如果当前运行环境不是完整仓库结构，则优先回退到运行时数据目录下的 `plugins/*/manifest.json`；Docker 默认是 `/app/data/plugins`，设置了 `DATA_DIR` 时是 `${DATA_DIR}/plugins`，最后才回退到当前工作目录下的 `./plugins`。
 - 如果运行时插件目录为空，后端会自动初始化一个默认启用的 `api-prompt` 本地插件实例，并写入内置模板，确保 Docker / 安装脚本部署后的“系统设置 → 插件”页首次打开时就有可编辑项。
 - 当前只加载 `type=api-prompt` 的本地插件实例。
 - 管理端插件页可创建、启停、编辑描述、维护模板并检查本地配置。

@@ -60,6 +60,24 @@ func TestPluginService_NewPluginService_BootstrapsDefaultPluginWhenRootDirEmpty(
 	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "config.json"))
 }
 
+func TestPluginService_NewPluginService_BootstrapsDefaultPluginInDataDirOutsideRepo(t *testing.T) {
+	startDir := t.TempDir()
+	dataDir := t.TempDir()
+	t.Setenv("DATA_DIR", dataDir)
+	t.Chdir(startDir)
+
+	svc, err := NewPluginService("")
+	require.NoError(t, err)
+
+	plugins, err := svc.ListPlugins(context.Background())
+	require.NoError(t, err)
+	require.Len(t, plugins, 1)
+	require.Equal(t, "api-prompt", plugins[0].Name)
+	require.FileExists(t, filepath.Join(dataDir, "plugins", "api-prompt", "manifest.json"))
+	require.FileExists(t, filepath.Join(dataDir, "plugins", "api-prompt", "config.json"))
+	require.NoDirExists(t, filepath.Join(startDir, "plugins"))
+}
+
 func TestPluginService_ListAPIPromptTemplateOptions_OnlyEnabledPlugins(t *testing.T) {
 	t.Parallel()
 
@@ -240,13 +258,20 @@ func TestResolveDefaultPluginRootDirFrom_PrefersRepoRootPluginsWhenStartedInBack
 	require.NoError(t, os.WriteFile(filepath.Join(repoRoot, "backend", "go.mod"), []byte("module example.com/sub2api\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(repoRoot, "frontend", "package.json"), []byte("{\"name\":\"frontend\"}\n"), 0o644))
 
-	resolved := resolveDefaultPluginRootDirFrom(filepath.Join(repoRoot, "backend"))
+	resolved := resolveDefaultPluginRootDirFromWithDataDir(filepath.Join(repoRoot, "backend"), filepath.Join(t.TempDir(), "data"))
 	require.Equal(t, filepath.Join(repoRoot, "plugins"), resolved)
 }
 
 func TestResolveDefaultPluginRootDirFrom_FallsBackToCurrentWorkingDirPluginsOutsideRepo(t *testing.T) {
 	startDir := t.TempDir()
-	require.Equal(t, filepath.Join(startDir, "plugins"), resolveDefaultPluginRootDirFrom(startDir))
+	require.Equal(t, filepath.Join(startDir, "plugins"), resolveDefaultPluginRootDirFromWithDataDir(startDir, "."))
+}
+
+func TestResolveDefaultPluginRootDirFrom_UsesDataDirPluginsOutsideRepo(t *testing.T) {
+	startDir := t.TempDir()
+	dataDir := t.TempDir()
+
+	require.Equal(t, filepath.Join(dataDir, "plugins"), resolveDefaultPluginRootDirFromWithDataDir(startDir, dataDir))
 }
 
 func ptrStringPlugin(value string) *string {

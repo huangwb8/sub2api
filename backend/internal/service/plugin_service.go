@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/domain"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/datadir"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
@@ -162,15 +163,23 @@ func ProvidePluginService() (*PluginService, error) {
 func resolveDefaultPluginRootDir() string {
 	wd, err := os.Getwd()
 	if err != nil {
-		return filepath.Join(".", "plugins")
+		return resolveDefaultPluginRootDirFromWithDataDir(".", datadir.Get())
 	}
 	return resolveDefaultPluginRootDirFrom(wd)
 }
 
 func resolveDefaultPluginRootDirFrom(startDir string) string {
+	return resolveDefaultPluginRootDirFromWithDataDir(startDir, datadir.Get())
+}
+
+func resolveDefaultPluginRootDirFromWithDataDir(startDir string, dataDir string) string {
 	projectRoot := findSub2APIProjectRoot(startDir)
 	if projectRoot != "" {
 		return filepath.Join(projectRoot, "plugins")
+	}
+	dataDir = strings.TrimSpace(dataDir)
+	if dataDir != "" && dataDir != "." {
+		return filepath.Join(filepath.Clean(dataDir), "plugins")
 	}
 	return filepath.Join(startDir, "plugins")
 }
