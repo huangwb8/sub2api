@@ -115,6 +115,8 @@ var dateFormatWhitelist = map[string]string{
 
 const profitabilityNumericPattern = `^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$`
 
+const activeUserUsageFilter = "user_id IN (SELECT id FROM users WHERE status = 'active' AND deleted_at IS NULL)"
+
 // safeDateFormat 根据白名单获取 dateFormat，未匹配时返回默认值
 func safeDateFormat(granularity string) string {
 	if f, ok := dateFormatWhitelist[granularity]; ok {
@@ -1642,13 +1644,13 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 			COUNT(*) as total_users,
 			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users
 		FROM users
-		WHERE deleted_at IS NULL
+		WHERE deleted_at IS NULL AND status = $2
 	`
 	if err := scanSingleRow(
 		ctx,
 		r.sql,
 		userStatsQuery,
-		[]any{todayUTC},
+		[]any{todayUTC, service.StatusActive},
 		&stats.TotalUsers,
 		&stats.TodayNewUsers,
 	); err != nil {
@@ -1810,6 +1812,7 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 			LEFT JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= LEAST($1::timestamptz, $3::timestamptz)
 				AND ul.created_at < GREATEST($2::timestamptz, $4::timestamptz)
+				AND COALESCE(u.status, '') = 'active'
 		)
 		SELECT
 			COUNT(*) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz) AS total_requests,
@@ -1864,10 +1867,12 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 	hourEnd := hourStart.Add(time.Hour)
 	activeUsersQuery := `
 		WITH scoped AS (
-			SELECT user_id, created_at
-			FROM usage_logs
-			WHERE created_at >= LEAST($1::timestamptz, $3::timestamptz)
-				AND created_at < GREATEST($2::timestamptz, $4::timestamptz)
+			SELECT ul.user_id, ul.created_at
+			FROM usage_logs ul
+			LEFT JOIN users u ON u.id = ul.user_id
+			WHERE ul.created_at >= LEAST($1::timestamptz, $3::timestamptz)
+				AND ul.created_at < GREATEST($2::timestamptz, $4::timestamptz)
+				AND COALESCE(u.status, '') = 'active'
 		)
 		SELECT
 			COUNT(DISTINCT CASE WHEN created_at >= $1::timestamptz AND created_at < $2::timestamptz THEN user_id END) AS active_users,
@@ -2401,10 +2406,12 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 
 	query := fmt.Sprintf(`
 		WITH top_users AS (
-			SELECT user_id
-			FROM usage_logs
-			WHERE created_at >= $1 AND created_at < $2
-			GROUP BY user_id
+			SELECT u.user_id
+			FROM usage_logs u
+			LEFT JOIN users us ON u.user_id = us.id
+			WHERE u.created_at >= $1 AND u.created_at < $2
+			  AND COALESCE(us.status, '') = 'active'
+			GROUP BY u.user_id
 			ORDER BY SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens) DESC
 			LIMIT $3
 		)
@@ -2421,6 +2428,7 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 		LEFT JOIN users us ON u.user_id = us.id
 		WHERE u.user_id IN (SELECT user_id FROM top_users)
 		  AND u.created_at >= $4 AND u.created_at < $5
+		  AND COALESCE(us.status, '') = 'active'
 		GROUP BY date, u.user_id, us.email, us.username
 		ORDER BY date ASC, tokens DESC
 	`, dateFormat)
@@ -2470,6 +2478,7 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 			FROM usage_logs u
 			LEFT JOIN users us ON u.user_id = us.id
 			WHERE u.created_at >= $1 AND u.created_at < $2
+				AND COALESCE(us.status, '') = 'active'
 				AND COALESCE(us.role, '') <> 'admin'
 			GROUP BY u.user_id, us.email
 		),
@@ -3083,6 +3092,7 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 		query += fmt.Sprintf(" AND billing_type = $%d", len(args)+1)
 		args = append(args, int16(*billingType))
 	}
+	query += " AND " + activeUserUsageFilter
 	query += " GROUP BY date ORDER BY date ASC"
 
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -3141,6 +3151,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 			WHERE ul.created_at >= $1
 				AND ul.created_at < $2
 				AND ul.account_id IS NOT NULL
+				AND COALESCE(u.status, '') = 'active'
 				AND COALESCE(u.role, '') <> 'admin'
 			GROUP BY ul.account_id
 		),
@@ -3155,6 +3166,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 			INNER JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1
 				AND ul.created_at < $2
+				AND COALESCE(u.status, '') = 'active'
 				AND COALESCE(u.role, '') <> 'admin'
 		),
 		subscription_orders AS (
@@ -3167,6 +3179,7 @@ func (r *usageLogRepository) GetProfitabilityTrend(ctx context.Context, startTim
 			INNER JOIN users u ON u.id = po.user_id
 			WHERE COALESCE(po.completed_at, po.paid_at, po.created_at) >= $1
 				AND COALESCE(po.completed_at, po.paid_at, po.created_at) < $2
+				AND COALESCE(u.status, '') = 'active'
 				AND COALESCE(u.role, '') <> 'admin'
 				AND po.order_type = $3
 				AND po.status IN ($4, $5, $6)
@@ -3234,14 +3247,16 @@ func (r *usageLogRepository) GetProfitabilityBounds(ctx context.Context) (*usage
 			SELECT MIN(ul.created_at) AS bucket_at
 			FROM usage_logs ul
 			INNER JOIN users u ON u.id = ul.user_id
-			WHERE COALESCE(u.role, '') <> 'admin'
+			WHERE COALESCE(u.status, '') = 'active'
+				AND COALESCE(u.role, '') <> 'admin'
 
 			UNION ALL
 
 			SELECT MIN(COALESCE(po.completed_at, po.paid_at, po.created_at)) AS bucket_at
 			FROM payment_orders po
 			INNER JOIN users u ON u.id = po.user_id
-			WHERE COALESCE(u.role, '') <> 'admin'
+			WHERE COALESCE(u.status, '') = 'active'
+				AND COALESCE(u.role, '') <> 'admin'
 				AND po.order_type = $1
 				AND po.status IN ($2, $3, $4)
 		) candidates
@@ -3387,6 +3402,7 @@ func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Contex
 			%s
 		FROM usage_logs
 		WHERE created_at >= $1 AND created_at < $2
+		  AND user_id IN (SELECT id FROM users WHERE status = 'active' AND deleted_at IS NULL)
 	`, modelExpr, actualCostExpr)
 
 	args := []any{startTime, endTime}
@@ -3445,7 +3461,9 @@ func (r *usageLogRepository) GetGroupStatsWithFilters(ctx context.Context, start
 			COALESCE(SUM(ul.actual_cost), 0) as actual_cost
 		FROM usage_logs ul
 		LEFT JOIN groups g ON g.id = ul.group_id
+		LEFT JOIN users u ON u.id = ul.user_id
 		WHERE ul.created_at >= $1 AND ul.created_at < $2
+		  AND COALESCE(u.status, '') = 'active'
 	`
 
 	args := []any{startTime, endTime}
@@ -3517,6 +3535,7 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 		FROM usage_logs ul
 		LEFT JOIN users u ON u.id = ul.user_id
 		WHERE ul.created_at >= $1 AND ul.created_at < $2
+		  AND COALESCE(u.status, '') = 'active'
 	`
 	args := []any{startTime, endTime}
 
@@ -3604,8 +3623,8 @@ func (r *usageLogRepository) GetAllGroupUsageSummary(ctx context.Context, todayS
 	query := `
 		SELECT
 			g.id AS group_id,
-			COALESCE(SUM(CASE WHEN COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS total_cost,
-			COALESCE(SUM(CASE WHEN ul.created_at >= $1 AND COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS today_cost
+			COALESCE(SUM(CASE WHEN COALESCE(u.status, '') = 'active' AND COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS total_cost,
+			COALESCE(SUM(CASE WHEN ul.created_at >= $1 AND COALESCE(u.status, '') = 'active' AND COALESCE(u.role, '') <> 'admin' THEN ul.actual_cost ELSE 0 END), 0) AS today_cost
 		FROM groups g
 		LEFT JOIN usage_logs ul ON ul.group_id = g.id
 		LEFT JOIN users u ON u.id = ul.user_id
@@ -3730,6 +3749,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 		conditions = append(conditions, fmt.Sprintf("created_at < $%d", len(args)+1))
 		args = append(args, *filters.EndTime)
 	}
+	conditions = append(conditions, activeUserUsageFilter)
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -3831,6 +3851,7 @@ func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Con
 			%s
 		FROM usage_logs
 		WHERE created_at >= $1 AND created_at < $2
+		  AND user_id IN (SELECT id FROM users WHERE status = 'active' AND deleted_at IS NULL)
 	`, endpointColumn, actualCostExpr)
 
 	args := []any{startTime, endTime}
@@ -3902,6 +3923,7 @@ func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context
 			%s
 		FROM usage_logs
 		WHERE created_at >= $1 AND created_at < $2
+		  AND user_id IN (SELECT id FROM users WHERE status = 'active' AND deleted_at IS NULL)
 	`, actualCostExpr)
 
 	args := []any{startTime, endTime}

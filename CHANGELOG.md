@@ -8,8 +8,8 @@
 
 ### Added（新增）
 - 新增了 `docs/plans/2026-05-02-plugin-system-local-first-simplification-plan.md`：重新审视插件系统复杂度后，规划将 `api-prompt` 从远端外挂方向收敛为 Sub2API 本地内置扩展，移除 `base_url`、`api_key`、远端协议与缓存降级语义，同时保留插件目录、模板管理、API Key 绑定和请求注入能力。
-- 新增了 `api-prompt` 外挂插件协议文档：`docs/api-prompt-插件协议.md` 说明 `GET /health`、`GET /v1/templates`、`POST /v1/render` 的请求响应格式、鉴权头与缓存回退策略，方便外部插件服务按稳定协议对接。
-- 新增了插件系统与首个 `api-prompt` 插件：管理员可在系统设置中创建并管理保存在 `./plugins/{插件名}` 的插件实例，配置 `base_url` / `api_key`、执行连通性测试、启停插件，并为 `api-prompt` 维护内置/自定义 prompt 模板，供用户在创建 API Key 时选择“通用”或绑定模板。
+- 新增了 `api-prompt` 本地插件说明文档：`docs/api-prompt-插件协议.md` 改为说明 `./plugins/{插件名}` 下 `manifest.json`、`config.json` 的本地配置结构、API Key 绑定格式和请求注入行为。
+- 新增了插件系统与首个 `api-prompt` 插件：管理员可在系统设置中创建并管理保存在 `./plugins/{插件名}` 的本地插件实例，执行配置检查、启停插件，并为 `api-prompt` 维护内置/自定义 prompt 模板，供用户在创建 API Key 时选择“通用”或绑定模板。
 - 新增了 API Key 插件绑定能力：`api_keys` 现支持持久化插件配置，网关会在 Anthropic Messages、OpenAI Chat Completions / Responses 与 Gemini Native 请求中按绑定模板注入额外系统指令，同时提供用户侧可见的 `api-prompt` 模板目录接口。
 - 新增了 `docs/plans/2026-05-02-plugin-system-api-prompt-plan.md`：记录插件实例目录结构、后端驱动边界、API Key 绑定策略、前端设置页落点与验证方案，作为本轮插件系统改造的实施计划。
 - 新增了站点公开法律文档草案：`docs/服务条款.md` 与 `docs/隐私政策.md`，补齐 `/legal/terms` 与 `/legal/privacy` 可发布的中文基础文案，并明确“仅限自用、禁止转售”“管理员可按市场成本调整额度或价格”以及“通常不退款、停服时按未使用量优先退站内余额”的规则边界。
@@ -19,8 +19,9 @@
 - 新增了 `邀请码（临时）` 兑换码类型：用户使用该邀请码注册后会进入 24 小时充值观察期，若累计充值未超过 30 元则自动禁用，禁用持续超过 7 天后由后台任务彻底删除；管理员重新启用时会重置这 24 小时观察期。
 
 ### Changed（变更）
-- 优化了 `api-prompt` 插件系统：配置 `base_url` 后模板目录优先同步外挂 `/v1/templates`，请求注入优先调用 `/v1/render`，远端失败时回退最近一次有效缓存；插件服务内部同步收敛为 driver 边界，前端插件页展示远端/缓存状态并将远端目录设为只读。
-- 同步了 `skills/sub2api-summary` 源码地图：补充 `api-prompt` 外挂协议、远端模板校验、请求期渲染与缓存回退的核对入口，避免运营排障仍按纯本地模板配置理解插件行为。
+- 调整了管理端运营统计口径：Dashboard、用量统计、模型/分组/用户排行、盈利趋势、容量建议与预聚合任务默认只纳入 `active` 用户，自动禁用的临时邀请用户不再进入正式用户、成本与盈利统计。
+- 优化了 `api-prompt` 插件系统：从远端外挂 API 模式收敛为 Sub2API 本地内置扩展，移除 `base_url`、`api_key`、远端健康检查、远端模板同步、远端渲染和缓存回退语义；管理端插件页同步改为本地配置检查与可编辑模板目录。
+- 同步了 `skills/sub2api-summary` 源码地图：将插件核对入口从远端协议、远端模板校验、请求期渲染与缓存回退，改为本地插件配置、API Key 绑定校验与请求期不可用时保持原请求体不变。
 - 更新了 `AGENTS.md` 的插件约束：明确所有插件实例都必须保存在项目根目录 `./plugins/{插件名}`，以便后续 AI 与人工协作时对插件目录结构保持统一认知。
 - 同步了 `CLAUDE.md` 与 `skills/sub2api-summary` 源码地图：补充插件实例目录约定、管理员插件接口以及 `api_keys.plugin_settings` 字段在前后端链路中的核对入口，避免后续排障或运营分析仍按旧源码认知执行。
 - 优化了网关计费准确性：Anthropic/OpenAI 流式响应在缺少终止事件但已解析到非零 usage 时，会保留 partial usage 继续进入计费链路，减少客户端断开或上游读错误导致的完全漏计。

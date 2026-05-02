@@ -5,16 +5,12 @@ export interface CreatePluginRequest {
   name: string
   type: 'api-prompt'
   description?: string
-  base_url?: string
-  api_key?: string
   enabled: boolean
   api_prompt?: APIPromptPluginConfig
 }
 
 export interface UpdatePluginRequest {
   description?: string
-  base_url?: string
-  api_key?: string
   enabled?: boolean
   api_prompt?: APIPromptPluginConfig
 }

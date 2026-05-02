@@ -7,11 +7,11 @@
 | 管理员鉴权 | `backend/internal/server/middleware/admin_auth.go` | Admin API Key 使用 `x-api-key`，管理员 JWT 使用 `Authorization: Bearer` |
 | 管理端用量列表与统计 | `backend/internal/handler/admin/usage_handler.go` | `start_date/end_date/timezone`、分页、过滤与 `exact_total` 语义 |
 | Dashboard 汇总 | `backend/internal/handler/admin/dashboard_handler.go` | 统计、趋势、模型、分组、用户排行、snapshot-v2 的接口口径 |
-| 管理端插件设置 | `backend/internal/handler/admin/plugin_handler.go`、`backend/internal/server/routes/admin.go`、`backend/internal/service/plugin_service.go` | `/api/v1/admin/settings/plugins` 列表/创建/更新/启停/测试接口、插件实例目录规则 `./plugins/{插件名}`，以及 `api-prompt` 外挂 `base_url` 的健康检查、模板同步与缓存回退 |
-| 用户 API Key 插件绑定 | `backend/ent/schema/api_key.go`、`backend/internal/service/api_key_service.go`、`backend/internal/service/plugin_service.go`、`backend/internal/handler/api_key_handler.go` | `api_keys.plugin_settings` 字段结构、校验逻辑；远端 `api-prompt` 新建/改绑要求 `/v1/templates` 当前可用，已有绑定请求期可在 `/v1/render` 失败时回退缓存 |
-| `api-prompt` 外挂协议 | `docs/api-prompt-插件协议.md`、`plugins/api-prompt/manifest.json`、`plugins/api-prompt/config.json` | 外挂插件需要实现 `GET /health`、`GET /v1/templates`、`POST /v1/render`；本地 `config.json` 保存最近一次模板缓存与降级 Prompt |
+| 管理端插件设置 | `backend/internal/handler/admin/plugin_handler.go`、`backend/internal/server/routes/admin.go`、`backend/internal/service/plugin_service.go` | `/api/v1/admin/settings/plugins` 列表/创建/更新/启停/检查配置接口、插件实例目录规则 `./plugins/{插件名}`，以及 `api-prompt` 本地模板读写与字段校验 |
+| 用户 API Key 插件绑定 | `backend/ent/schema/api_key.go`、`backend/internal/service/api_key_service.go`、`backend/internal/service/plugin_service.go`、`backend/internal/handler/api_key_handler.go` | `api_keys.plugin_settings` 字段结构、校验逻辑；`api-prompt` 绑定要求本地插件和模板均启用，请求期模板不可用时保持原请求体不变 |
+| `api-prompt` 本地插件说明 | `docs/api-prompt-插件协议.md`、`plugins/api-prompt/manifest.json`、`plugins/api-prompt/config.json` | 本地插件实例元数据和模板配置；`config.json` 保存可绑定 Prompt 模板，`source` 固定为 `local` |
 | 用量日志结构 | `backend/ent/schema/usage_log.go` | token、成本、耗时、账号、分组、模型、请求类型、`proxy_id`、住宅代理流量字段 |
-| 用量查询实现 | `backend/internal/repository/usage_log_repo.go` | 聚合 SQL、分页性能、统计字段来源 |
+| 用量查询实现 | `backend/internal/repository/usage_log_repo.go`、`backend/internal/repository/dashboard_aggregation_repo.go`、`backend/internal/service/dashboard_recommendation_service.go` | 聚合 SQL、分页性能、统计字段来源；管理端运营统计默认只纳入 `active` 用户，自动禁用用户不进入成本、盈利、排行和容量建议口径 |
 | 代理巡检历史结构 | `backend/ent/schema/proxy_probe_log.go` | `proxy_probe_logs` 短期历史、巡检来源、出口信息与错误截断字段 |
 | 代理巡检写入 | `backend/internal/service/proxy_failover_service.go`、`backend/internal/service/admin_service.go` | 自动巡检与手动测试旁路写入，不改变迁移和探测主流程 |
 | 代理可靠性分析 | `backend/internal/repository/proxy_probe_log_repo.go`、`backend/internal/handler/admin/proxy_handler.go` | `/admin/proxies/:id/probe-logs` 与 `/admin/proxies/:id/reliability` 的只读分析口径 |

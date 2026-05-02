@@ -322,10 +322,12 @@ func (r *dashboardAggregationRepository) insertHourlyActiveUsers(ctx context.Con
 	query := `
 		INSERT INTO usage_dashboard_hourly_users (bucket_start, user_id)
 		SELECT DISTINCT
-			date_trunc('hour', created_at AT TIME ZONE $3) AT TIME ZONE $3 AS bucket_start,
-			user_id
-		FROM usage_logs
-		WHERE created_at >= $1 AND created_at < $2
+			date_trunc('hour', ul.created_at AT TIME ZONE $3) AT TIME ZONE $3 AS bucket_start,
+			ul.user_id
+		FROM usage_logs ul
+		LEFT JOIN users u ON u.id = ul.user_id
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+			AND COALESCE(u.status, '') = 'active'
 		ON CONFLICT DO NOTHING
 	`
 	_, err := r.sql.ExecContext(ctx, query, start, end, tzName)
@@ -364,6 +366,7 @@ func (r *dashboardAggregationRepository) upsertHourlyAggregates(ctx context.Cont
 			FROM usage_logs ul
 			LEFT JOIN users u ON u.id = ul.user_id
 			WHERE ul.created_at >= $1 AND ul.created_at < $2
+				AND COALESCE(u.status, '') = 'active'
 			GROUP BY 1
 		),
 		user_counts AS (

@@ -7,23 +7,18 @@ const pluginFixtures = [
   {
     name: 'api-prompt',
     type: 'api-prompt',
-    description: 'Remote prompt plugin',
-    base_url: 'https://plugin.example.com',
+    description: 'Local prompt plugin',
     enabled: true,
-    api_key_configured: true,
     created_at: '2026-05-02T00:00:00Z',
     updated_at: '2026-05-02T00:00:00Z',
     api_prompt: {
-      source: 'cache',
-      last_synced_at: '2026-05-02T01:00:00Z',
-      last_sync_error: 'HTTP 503',
-      remote_template_count: 1,
+      source: 'local',
       templates: [
         {
-          id: 'remote-focus',
-          name: 'Remote Focus',
-          description: 'Remote synced template',
-          prompt: '',
+          id: 'local-focus',
+          name: 'Local Focus',
+          description: 'Local template',
+          prompt: 'Use local config.',
           enabled: true,
           builtin: false,
           sort_order: 10,
@@ -70,12 +65,12 @@ describe('SettingsPluginsTab', () => {
     apiMocks.update.mockImplementation(async (_name, payload) => ({
       ...pluginFixtures[0],
       description: payload.description,
-      base_url: payload.base_url,
       enabled: payload.enabled,
+      api_prompt: payload.api_prompt,
     }))
   })
 
-  it('renders remote api-prompt instances as cached read-only catalogs', async () => {
+  it('renders local api-prompt instances as editable catalogs', async () => {
     const wrapper = mount(SettingsPluginsTab, {
       global: {
         stubs: {
@@ -90,10 +85,10 @@ describe('SettingsPluginsTab', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('admin.settings.plugins.labels.remoteMode')
-    expect(wrapper.text()).toContain('admin.settings.plugins.templates.statusCache')
-    expect(wrapper.text()).toContain('HTTP 503')
-    expect(wrapper.findAll('button').some((button) => button.text() === 'admin.settings.plugins.templates.add')).toBe(false)
+    expect(wrapper.text()).toContain('admin.settings.plugins.labels.localMode')
+    expect(wrapper.text()).toContain('admin.settings.plugins.templates.statusLocal')
+    expect(wrapper.findAll('input').some((input) => (input.element as HTMLInputElement).value === 'Local Focus')).toBe(true)
+    expect(wrapper.findAll('button').some((button) => button.text() === 'admin.settings.plugins.templates.add')).toBe(true)
 
     const save = wrapper.findAll('button').find((button) => button.text().includes('common.save'))
     expect(save).toBeTruthy()
@@ -103,7 +98,12 @@ describe('SettingsPluginsTab', () => {
     expect(apiMocks.update).toHaveBeenCalledWith(
       'api-prompt',
       expect.objectContaining({
-        api_prompt: undefined,
+        api_prompt: expect.objectContaining({
+          source: 'local',
+          templates: expect.arrayContaining([
+            expect.objectContaining({ id: 'local-focus', prompt: 'Use local config.' }),
+          ]),
+        }),
       })
     )
   })

@@ -336,34 +336,40 @@ WITH active_subscriptions AS (
 ),
 usage_30d AS (
 	SELECT
-		group_id,
-		COUNT(DISTINCT user_id) AS active_users_30d,
-		COALESCE(SUM(actual_cost), 0) AS total_actual_cost_30d
-	FROM usage_logs
-	WHERE group_id IS NOT NULL
-		AND created_at >= $3
-		AND created_at < $2
-	GROUP BY group_id
+		ul.group_id,
+		COUNT(DISTINCT ul.user_id) AS active_users_30d,
+		COALESCE(SUM(ul.actual_cost), 0) AS total_actual_cost_30d
+	FROM usage_logs ul
+	JOIN users u ON u.id = ul.user_id
+	WHERE ul.group_id IS NOT NULL
+		AND ul.created_at >= $3
+		AND ul.created_at < $2
+		AND u.status = $6
+	GROUP BY ul.group_id
 ),
 usage_7d AS (
 	SELECT
-		group_id,
-		COALESCE(SUM(actual_cost), 0) AS total_actual_cost_7d
-	FROM usage_logs
-	WHERE group_id IS NOT NULL
-		AND created_at >= $4
-		AND created_at < $2
-	GROUP BY group_id
+		ul.group_id,
+		COALESCE(SUM(ul.actual_cost), 0) AS total_actual_cost_7d
+	FROM usage_logs ul
+	JOIN users u ON u.id = ul.user_id
+	WHERE ul.group_id IS NOT NULL
+		AND ul.created_at >= $4
+		AND ul.created_at < $2
+		AND u.status = $6
+	GROUP BY ul.group_id
 ),
 usage_prev_7d AS (
 	SELECT
-		group_id,
-		COALESCE(SUM(actual_cost), 0) AS total_actual_cost_prev_7d
-	FROM usage_logs
-	WHERE group_id IS NOT NULL
-		AND created_at >= $5
-		AND created_at < $4
-	GROUP BY group_id
+		ul.group_id,
+		COALESCE(SUM(ul.actual_cost), 0) AS total_actual_cost_prev_7d
+	FROM usage_logs ul
+	JOIN users u ON u.id = ul.user_id
+	WHERE ul.group_id IS NOT NULL
+		AND ul.created_at >= $5
+		AND ul.created_at < $4
+		AND u.status = $6
+	GROUP BY ul.group_id
 ),
 group_accounts AS (
 	SELECT

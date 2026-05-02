@@ -129,7 +129,7 @@ func TestUsageLogRepositoryGetProfitabilityTrend_FallsBackSubscriptionCostFromAc
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestUsageLogRepositoryGetProfitabilityTrend_ExcludesAdminUsersFromRevenueAndCost(t *testing.T) {
+func TestUsageLogRepositoryGetProfitabilityTrend_ExcludesInactiveAndAdminUsersFromRevenueAndCost(t *testing.T) {
 	db, mock := newSQLMock(t)
 	repo := &usageLogRepository{sql: db}
 
@@ -139,10 +139,13 @@ func TestUsageLogRepositoryGetProfitabilityTrend_ExcludesAdminUsersFromRevenueAn
 	mock.ExpectQuery(
 		"WITH\\s+account_cost_allocation AS[\\s\\S]*"+
 			"INNER JOIN users u ON u\\.id = ul\\.user_id[\\s\\S]*"+
+			"COALESCE\\(u\\.status, ''\\) = 'active'[\\s\\S]*"+
 			"COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*"+
 			"balance_usage AS[\\s\\S]*"+
+			"COALESCE\\(u\\.status, ''\\) = 'active'[\\s\\S]*"+
 			"COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*"+
 			"subscription_orders AS[\\s\\S]*"+
+			"COALESCE\\(u\\.status, ''\\) = 'active'[\\s\\S]*"+
 			"COALESCE\\(u\\.role, ''\\) <> 'admin'",
 	).
 		WithArgs(

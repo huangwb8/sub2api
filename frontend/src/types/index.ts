@@ -581,19 +581,14 @@ export interface APIPromptTemplate {
 
 export interface APIPromptPluginConfig {
   templates: APIPromptTemplate[]
-  source?: 'local' | 'remote' | 'cache' | string
-  last_synced_at?: string | null
-  last_sync_error?: string
-  remote_template_count?: number
+  source?: 'local' | string
 }
 
 export interface Plugin {
   name: string
   type: 'api-prompt'
   description?: string
-  base_url?: string
   enabled: boolean
-  api_key_configured: boolean
   created_at: string
   updated_at: string
   api_prompt?: APIPromptPluginConfig
@@ -607,10 +602,8 @@ export interface APIPromptTemplateOption {
   prompt: string
   builtin: boolean
   sort_order: number
-  source?: 'local' | 'remote' | 'cache' | string
-  status?: 'available' | 'degraded' | string
-  last_synced_at?: string | null
-  last_sync_error?: string
+  source?: 'local' | string
+  status?: 'available' | string
 }
 
 export interface CreateGroupRequest {

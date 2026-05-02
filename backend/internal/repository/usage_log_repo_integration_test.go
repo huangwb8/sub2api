@@ -681,11 +681,18 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 		CreatedAt: todayStart.Add(-24 * time.Hour),
 		UpdatedAt: todayStart.Add(-24 * time.Hour),
 	})
+	disabledUser := mustCreateUser(s.T(), s.client, &service.User{
+		Email:     "disabled-dashboard@example.com",
+		Status:    service.StatusDisabled,
+		CreatedAt: testMaxTime(todayStart.Add(20*time.Second), now.Add(-10*time.Second)),
+		UpdatedAt: now,
+	})
 
 	group := mustCreateGroup(s.T(), s.client, &service.Group{Name: "g-ul"})
 	apiKey1 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: userToday.ID, Key: "sk-ul-1", Name: "ul1"})
 	mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: userOld.ID, Key: "sk-ul-2", Name: "ul2", Status: service.StatusDisabled})
 	adminKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: adminUser.ID, Key: "sk-ul-admin", Name: "admin"})
+	disabledKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: disabledUser.ID, Key: "sk-ul-disabled", Name: "disabled"})
 
 	resetAt := now.Add(10 * time.Minute)
 	accNormal := mustCreateAccount(s.T(), s.client, &service.Account{Name: "a-normal", Schedulable: true})
@@ -768,6 +775,21 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	_, err = s.repo.Create(s.ctx, adminLog)
 	s.Require().NoError(err, "Create adminLog")
 
+	disabledLog := &service.UsageLog{
+		UserID:       disabledUser.ID,
+		APIKeyID:     disabledKey.ID,
+		AccountID:    accNormal.ID,
+		Model:        "claude-3",
+		InputTokens:  1000,
+		OutputTokens: 2000,
+		TotalCost:    999,
+		ActualCost:   888,
+		DurationMs:   &d3,
+		CreatedAt:    testMaxTime(todayStart.Add(3*time.Minute), now.Add(-time.Minute)),
+	}
+	_, err = s.repo.Create(s.ctx, disabledLog)
+	s.Require().NoError(err, "Create disabledLog")
+
 	aggRepo := newDashboardAggregationRepositoryWithSQL(s.tx)
 	aggStart := todayStart.Add(-2 * time.Hour)
 	aggEnd := now.Add(2 * time.Minute)
@@ -779,8 +801,8 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.TotalUsers+3, stats.TotalUsers, "TotalUsers mismatch")
 	s.Require().Equal(baseStats.TodayNewUsers+1, stats.TodayNewUsers, "TodayNewUsers mismatch")
 	s.Require().Equal(baseStats.ActiveUsers+2, stats.ActiveUsers, "ActiveUsers mismatch")
-	s.Require().Equal(baseStats.TotalAPIKeys+3, stats.TotalAPIKeys, "TotalAPIKeys mismatch")
-	s.Require().Equal(baseStats.ActiveAPIKeys+2, stats.ActiveAPIKeys, "ActiveAPIKeys mismatch")
+	s.Require().Equal(baseStats.TotalAPIKeys+4, stats.TotalAPIKeys, "TotalAPIKeys mismatch")
+	s.Require().Equal(baseStats.ActiveAPIKeys+3, stats.ActiveAPIKeys, "ActiveAPIKeys mismatch")
 	s.Require().Equal(baseStats.TotalAccounts+5, stats.TotalAccounts, "TotalAccounts mismatch")
 	s.Require().Equal(baseStats.NormalAccounts+1, stats.NormalAccounts, "NormalAccounts mismatch")
 	s.Require().Equal(baseStats.ErrorAccounts+1, stats.ErrorAccounts, "ErrorAccounts mismatch")
@@ -813,9 +835,11 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	user1 := mustCreateUser(s.T(), s.client, &service.User{Email: "range-u1@test.com"})
 	user2 := mustCreateUser(s.T(), s.client, &service.User{Email: "range-u2@test.com"})
 	adminUser := mustCreateUser(s.T(), s.client, &service.User{Email: "range-admin@test.com", Role: service.RoleAdmin})
+	disabledUser := mustCreateUser(s.T(), s.client, &service.User{Email: "range-disabled@test.com", Status: service.StatusDisabled})
 	apiKey1 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user1.ID, Key: "sk-range-1", Name: "k1"})
 	apiKey2 := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: user2.ID, Key: "sk-range-2", Name: "k2"})
 	adminKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: adminUser.ID, Key: "sk-range-admin", Name: "admin"})
+	disabledKey := mustCreateApiKey(s.T(), s.client, &service.APIKey{UserID: disabledUser.ID, Key: "sk-range-disabled", Name: "disabled"})
 	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-range"})
 
 	d1, d2, d3 := 100, 200, 300
@@ -880,6 +904,21 @@ func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 		CreatedAt:    rangeStart.Add(3 * time.Hour),
 	}
 	_, err = s.repo.Create(s.ctx, adminLog)
+	s.Require().NoError(err)
+
+	disabledLog := &service.UsageLog{
+		UserID:       disabledUser.ID,
+		APIKeyID:     disabledKey.ID,
+		AccountID:    account.ID,
+		Model:        "claude-3",
+		InputTokens:  1000,
+		OutputTokens: 1000,
+		TotalCost:    999,
+		ActualCost:   888,
+		DurationMs:   &d3,
+		CreatedAt:    rangeStart.Add(4 * time.Hour),
+	}
+	_, err = s.repo.Create(s.ctx, disabledLog)
 	s.Require().NoError(err)
 
 	stats, err := s.repo.GetDashboardStatsWithRange(s.ctx, rangeStart, rangeEnd)

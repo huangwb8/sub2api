@@ -228,7 +228,7 @@ func TestUsageLogRepositoryGetStatsWithFiltersRequestTypePriority(t *testing.T) 
 		Stream:      &stream,
 	}
 
-	mock.ExpectQuery("FROM usage_logs\\s+WHERE \\(request_type = \\$1 OR \\(request_type = 0 AND stream = FALSE AND openai_ws_mode = FALSE\\)\\)").
+	mock.ExpectQuery("FROM usage_logs\\s+WHERE \\(request_type = \\$1 OR \\(request_type = 0 AND stream = FALSE AND openai_ws_mode = FALSE\\)\\)[\\s\\S]*status = 'active'").
 		WithArgs(requestType).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"total_requests",
@@ -269,7 +269,7 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 		AddRow(int64(1), "alpha@example.com", 12.5, int64(8), int64(800), 40.0, int64(30), int64(2600)).
 		AddRow(int64(3), "gamma@example.com", 4.25, int64(5), int64(300), 40.0, int64(30), int64(2600))
 
-	mock.ExpectQuery("WITH user_spend AS \\([\\s\\S]*COALESCE\\(us\\.role, ''\\) <> 'admin'").
+	mock.ExpectQuery("WITH user_spend AS \\([\\s\\S]*COALESCE\\(us\\.status, ''\\) = 'active'[\\s\\S]*COALESCE\\(us\\.role, ''\\) <> 'admin'").
 		WithArgs(start, end, 12).
 		WillReturnRows(rows)
 
@@ -296,7 +296,7 @@ func TestUsageLogRepositoryGetAllGroupUsageSummary_ExcludesAdminCosts(t *testing
 	rows := sqlmock.NewRows([]string{"group_id", "total_cost", "today_cost"}).
 		AddRow(int64(7), 12.5, 4.5)
 
-	mock.ExpectQuery("COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*LEFT JOIN users u ON u\\.id = ul\\.user_id").
+	mock.ExpectQuery("COALESCE\\(u\\.status, ''\\) = 'active'[\\s\\S]*COALESCE\\(u\\.role, ''\\) <> 'admin'[\\s\\S]*LEFT JOIN users u ON u\\.id = ul\\.user_id").
 		WithArgs(today).
 		WillReturnRows(rows)
 

@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/domain"
@@ -34,6 +33,11 @@ func TestPluginService_CreatePlugin_PersistsAPIPromptInstance(t *testing.T) {
 	require.DirExists(t, rootDir+"/api-prompt")
 	require.FileExists(t, rootDir+"/api-prompt/manifest.json")
 	require.FileExists(t, rootDir+"/api-prompt/config.json")
+
+	manifestData, err := os.ReadFile(filepath.Join(rootDir, "api-prompt", "manifest.json"))
+	require.NoError(t, err)
+	require.NotContains(t, string(manifestData), "base_url")
+	require.NotContains(t, string(manifestData), "api_key")
 }
 
 func TestPluginService_ListAPIPromptTemplateOptions_OnlyEnabledPlugins(t *testing.T) {
@@ -96,92 +100,118 @@ func TestPluginService_ListAPIPromptTemplateOptions_OnlyEnabledPlugins(t *testin
 	require.True(t, found, "expected enabled prompt template to be listed")
 }
 
-func TestPluginService_ListAPIPromptTemplateOptions_RemoteSyncsAndCachesTemplates(t *testing.T) {
+func TestPluginService_TestPlugin_ValidatesLocalEnabledTemplates(t *testing.T) {
 	t.Parallel()
-
-	var sawAuth bool
-	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") == "Bearer secret" && r.Header.Get("x-api-key") == "secret" {
-			sawAuth = true
-		}
-		require.Equal(t, "/v1/templates", r.URL.Path)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"templates": []map[string]any{
-				{
-					"id":          "remote-focus",
-					"name":        "Remote Focus",
-					"description": "Remote directory template",
-					"enabled":     true,
-					"sort_order":  5,
-				},
-			},
-		})
-	}))
-	defer remote.Close()
 
 	svc, err := NewPluginService(t.TempDir())
 	require.NoError(t, err)
 	_, err = svc.CreatePlugin(context.Background(), CreatePluginRequest{
-		Name:    "prompt-remote",
+		Name:    "prompt-local",
 		Type:    PluginTypeAPIPrompt,
-		BaseURL: remote.URL,
-		APIKey:  "secret",
 		Enabled: true,
+		APIPrompt: &APIPromptPluginConfig{
+			Templates: []APIPromptTemplate{
+				{ID: "local-focus", Name: "Local Focus", Prompt: "Use local config.", Enabled: true},
+			},
+		},
 	})
 	require.NoError(t, err)
 
-	options, err := svc.ListAPIPromptTemplateOptions(context.Background())
+	result, err := svc.TestPlugin(context.Background(), "prompt-local")
 	require.NoError(t, err)
-	require.Len(t, options, 1)
-	require.True(t, sawAuth)
-	require.Equal(t, "remote-focus", options[0].TemplateID)
-	require.Equal(t, "remote", options[0].Source)
-	require.Equal(t, "available", options[0].Status)
-	require.NotNil(t, options[0].LastSyncedAt)
-	require.Empty(t, options[0].Prompt)
-
-	plugin, err := svc.GetPlugin(context.Background(), "prompt-remote")
-	require.NoError(t, err)
-	require.Equal(t, "remote", plugin.APIPrompt.Source)
-	require.Equal(t, 1, plugin.APIPrompt.RemoteTemplateCount)
-	require.NotNil(t, plugin.APIPrompt.LastSyncedAt)
+	require.True(t, result.OK)
+	require.Contains(t, result.Message, "local configuration")
 }
 
-func TestPluginService_ValidateAPIKeyPluginSettings_RemoteRequiresFreshTemplates(t *testing.T) {
+func TestPluginService_LegacyRemoteManifestFieldsIgnoredAndCleanedOnSave(t *testing.T) {
 	t.Parallel()
 
-	remoteOK := true
-	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !remoteOK {
-			http.Error(w, "down", http.StatusServiceUnavailable)
-			return
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"templates": []map[string]any{
-				{"id": "remote-focus", "name": "Remote Focus", "enabled": true},
-			},
-		})
-	}))
-	defer remote.Close()
+	rootDir := t.TempDir()
+	pluginDir := filepath.Join(rootDir, "api-prompt")
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "manifest.json"), []byte(`{
+  "name": "api-prompt",
+  "type": "api-prompt",
+  "description": "legacy remote fields",
+  "base_url": "https://plugin.example.com",
+  "api_key": "secret",
+  "enabled": true,
+  "created_at": "2026-05-02T05:20:07Z",
+  "updated_at": "2026-05-02T05:20:07Z"
+}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "config.json"), []byte(`{
+  "templates": [
+    {"id": "focus", "name": "Focus", "prompt": "Use local prompt.", "enabled": true}
+  ],
+  "source": "remote",
+  "last_synced_at": "2026-05-02T05:20:07Z",
+  "last_sync_error": "legacy",
+  "remote_template_count": 1
+}`), 0o644))
+
+	svc, err := NewPluginService(rootDir)
+	require.NoError(t, err)
+	plugin, err := svc.GetPlugin(context.Background(), "api-prompt")
+	require.NoError(t, err)
+	require.Equal(t, "api-prompt", plugin.Name)
+	require.Equal(t, "local", plugin.APIPrompt.Source)
+
+	_, err = svc.UpdatePlugin(context.Background(), "api-prompt", UpdatePluginRequest{Description: ptrString("local only")})
+	require.NoError(t, err)
+	manifestData, err := os.ReadFile(filepath.Join(pluginDir, "manifest.json"))
+	require.NoError(t, err)
+	require.NotContains(t, string(manifestData), "base_url")
+	require.NotContains(t, string(manifestData), "api_key")
+}
+
+func TestPluginService_ValidateAPIKeyPluginSettings_LocalTemplateRequired(t *testing.T) {
+	t.Parallel()
 
 	svc, err := NewPluginService(t.TempDir())
 	require.NoError(t, err)
 	_, err = svc.CreatePlugin(context.Background(), CreatePluginRequest{
-		Name:    "prompt-remote",
+		Name:    "prompt-local",
 		Type:    PluginTypeAPIPrompt,
-		BaseURL: remote.URL,
 		Enabled: true,
+		APIPrompt: &APIPromptPluginConfig{
+			Templates: []APIPromptTemplate{
+				{ID: "local-focus", Name: "Local Focus", Prompt: "Use local prompt.", Enabled: true},
+			},
+		},
 	})
 	require.NoError(t, err)
 
 	binding := domain.APIKeyPluginSettings{
-		APIPrompt: &domain.APIPromptKeyBinding{PluginName: "prompt-remote", TemplateID: "remote-focus"},
+		APIPrompt: &domain.APIPromptKeyBinding{PluginName: "prompt-local", TemplateID: "local-focus"},
 	}
 	validated, err := svc.ValidateAPIKeyPluginSettings(context.Background(), binding)
 	require.NoError(t, err)
-	require.Equal(t, "remote-focus", validated.APIPrompt.TemplateID)
+	require.Equal(t, "local-focus", validated.APIPrompt.TemplateID)
 
-	remoteOK = false
+	binding.APIPrompt.TemplateID = "missing"
 	_, err = svc.ValidateAPIKeyPluginSettings(context.Background(), binding)
 	require.ErrorIs(t, err, ErrInvalidPluginBinding)
+}
+
+func TestPluginService_CreatePlugin_RejectsInvalidLocalTemplateFields(t *testing.T) {
+	t.Parallel()
+
+	svc, err := NewPluginService(t.TempDir())
+	require.NoError(t, err)
+
+	_, err = svc.CreatePlugin(context.Background(), CreatePluginRequest{
+		Name:    "bad-template",
+		Type:    PluginTypeAPIPrompt,
+		Enabled: true,
+		APIPrompt: &APIPromptPluginConfig{
+			Templates: []APIPromptTemplate{
+				{ID: "", Name: "Missing ID", Prompt: "Prompt", Enabled: true},
+			},
+		},
+	})
+	require.ErrorIs(t, err, ErrInvalidPluginTemplate)
+}
+
+func ptrString(value string) *string {
+	return &value
 }

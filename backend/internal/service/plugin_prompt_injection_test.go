@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/domain"
@@ -121,60 +118,36 @@ func TestPluginService_ApplyBoundPromptTemplate_DisabledPluginReturnsOriginalBod
 	require.JSONEq(t, string(body), string(updated))
 }
 
-func TestPluginService_ApplyBoundPromptTemplate_RemoteRenderTakesPrecedence(t *testing.T) {
+func TestPluginService_ApplyBoundPromptTemplate_MissingTemplateReturnsOriginalBody(t *testing.T) {
 	t.Parallel()
 
-	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "/v1/render", r.URL.Path)
-		var payload map[string]any
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
-		require.Equal(t, "prompt-a", payload["plugin_name"])
-		require.Equal(t, "focus", payload["template_id"])
-		require.Equal(t, string(PluginPromptTargetOpenAIChatCompletions), payload["target"])
-		_ = json.NewEncoder(w).Encode(map[string]string{"prompt": "Remote rendered prompt."})
-	}))
-	defer remote.Close()
-
-	svc, err := NewPluginService(t.TempDir())
-	require.NoError(t, err)
-	_, err = svc.CreatePlugin(context.Background(), CreatePluginRequest{
-		Name:    "prompt-a",
-		Type:    PluginTypeAPIPrompt,
-		BaseURL: remote.URL,
-		Enabled: true,
-		APIPrompt: &APIPromptPluginConfig{
-			Templates: []APIPromptTemplate{
-				{ID: "focus", Name: "Focus", Prompt: "Cached prompt.", Enabled: true},
-			},
-		},
-	})
-	require.NoError(t, err)
+	svc := newPromptTestService(t)
 
 	body := []byte(`{"model":"gpt-5","messages":[{"role":"user","content":"hello"}]}`)
-	updated, resolved, err := svc.ApplyBoundPromptTemplate(context.Background(), body, PluginPromptTargetOpenAIChatCompletions, testPromptBinding())
+	binding := domain.APIKeyPluginSettings{
+		APIPrompt: &domain.APIPromptKeyBinding{
+			PluginName: "prompt-a",
+			TemplateID: "missing",
+		},
+	}
+	updated, resolved, err := svc.ApplyBoundPromptTemplate(context.Background(), body, PluginPromptTargetOpenAIChatCompletions, binding)
 	require.NoError(t, err)
-	require.Equal(t, "remote", resolved.Source)
-	require.Equal(t, "Remote rendered prompt.", gjson.GetBytes(updated, "messages.0.content").String())
+	require.Nil(t, resolved)
+	require.JSONEq(t, string(body), string(updated))
 }
 
-func TestPluginService_ApplyBoundPromptTemplate_RemoteRenderFallsBackToCachedPrompt(t *testing.T) {
+func TestPluginService_ApplyBoundPromptTemplate_DisabledTemplateReturnsOriginalBody(t *testing.T) {
 	t.Parallel()
-
-	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "render down", http.StatusServiceUnavailable)
-	}))
-	defer remote.Close()
 
 	svc, err := NewPluginService(t.TempDir())
 	require.NoError(t, err)
 	_, err = svc.CreatePlugin(context.Background(), CreatePluginRequest{
 		Name:    "prompt-a",
 		Type:    PluginTypeAPIPrompt,
-		BaseURL: remote.URL,
 		Enabled: true,
 		APIPrompt: &APIPromptPluginConfig{
 			Templates: []APIPromptTemplate{
-				{ID: "focus", Name: "Focus", Prompt: "Cached prompt.", Enabled: true},
+				{ID: "focus", Name: "Focus", Prompt: "Disabled prompt.", Enabled: false},
 			},
 		},
 	})
@@ -183,6 +156,6 @@ func TestPluginService_ApplyBoundPromptTemplate_RemoteRenderFallsBackToCachedPro
 	body := []byte(`{"model":"gpt-5","messages":[{"role":"user","content":"hello"}]}`)
 	updated, resolved, err := svc.ApplyBoundPromptTemplate(context.Background(), body, PluginPromptTargetOpenAIChatCompletions, testPromptBinding())
 	require.NoError(t, err)
-	require.Equal(t, "cache", resolved.Source)
-	require.Equal(t, "Cached prompt.", gjson.GetBytes(updated, "messages.0.content").String())
+	require.Nil(t, resolved)
+	require.JSONEq(t, string(body), string(updated))
 }

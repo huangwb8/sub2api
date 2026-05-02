@@ -18,16 +18,12 @@ type createPluginRequest struct {
 	Name        string                         `json:"name" binding:"required"`
 	Type        service.PluginType             `json:"type" binding:"required"`
 	Description string                         `json:"description"`
-	BaseURL     string                         `json:"base_url"`
-	APIKey      string                         `json:"api_key"`
 	Enabled     bool                           `json:"enabled"`
 	APIPrompt   *service.APIPromptPluginConfig `json:"api_prompt,omitempty"`
 }
 
 type updatePluginRequest struct {
 	Description *string                        `json:"description,omitempty"`
-	BaseURL     *string                        `json:"base_url,omitempty"`
-	APIKey      *string                        `json:"api_key,omitempty"`
 	Enabled     *bool                          `json:"enabled,omitempty"`
 	APIPrompt   *service.APIPromptPluginConfig `json:"api_prompt,omitempty"`
 }
@@ -56,8 +52,6 @@ func (h *PluginHandler) Create(c *gin.Context) {
 		Name:        req.Name,
 		Type:        req.Type,
 		Description: req.Description,
-		BaseURL:     req.BaseURL,
-		APIKey:      req.APIKey,
 		Enabled:     req.Enabled,
 		APIPrompt:   req.APIPrompt,
 	})
@@ -77,8 +71,6 @@ func (h *PluginHandler) Update(c *gin.Context) {
 
 	plugin, err := h.pluginService.UpdatePlugin(c.Request.Context(), c.Param("name"), service.UpdatePluginRequest{
 		Description: req.Description,
-		BaseURL:     req.BaseURL,
-		APIKey:      req.APIKey,
 		Enabled:     req.Enabled,
 		APIPrompt:   req.APIPrompt,
 	})

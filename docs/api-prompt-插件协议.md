@@ -1,33 +1,29 @@
-# api-prompt 插件协议
+# api-prompt 本地插件说明
 
-`api-prompt` 插件实例仍保存在 `./plugins/{插件名}`，其中 `manifest.json` 负责通用元数据，`config.json` 保存最近一次可用的模板缓存与本地回退模板。
+`api-prompt` 是 Sub2API 内置的本地插件类型，用于为 API Key 绑定可复用的 Prompt 模板。插件实例固定保存在 `./plugins/{插件名}`，运行时由 Sub2API 直接读取和执行，不依赖外部 HTTP 插件服务。
 
-当插件 `manifest.json` 配置了 `base_url` 后，后端会优先按外挂 API 模式工作；未配置 `base_url` 时继续使用本地 `config.json` 模板。
+## 文件结构
 
-## 认证
-
-如果插件实例配置了 `api_key`，平台调用外挂服务时会同时发送：
-
-- `Authorization: Bearer <api_key>`
-- `x-api-key: <api_key>`
-
-外挂服务可任选其一校验。
-
-## 健康检查
-
-```http
-GET /health
+```text
+./plugins/{插件名}/
+├── manifest.json
+└── config.json
 ```
 
-用于管理端“测试连接”。返回任意 `2xx` 状态码即视为健康。
+`manifest.json` 保存通用元数据：
 
-## 模板目录
-
-```http
-GET /v1/templates
+```json
+{
+  "name": "api-prompt",
+  "type": "api-prompt",
+  "description": "默认 api-prompt 插件实例",
+  "enabled": true,
+  "created_at": "2026-05-02T05:20:07Z",
+  "updated_at": "2026-05-02T05:20:07Z"
+}
 ```
 
-返回格式支持对象包裹或数组：
+`config.json` 保存模板列表：
 
 ```json
 {
@@ -35,51 +31,47 @@ GET /v1/templates
     {
       "id": "engineering-review",
       "name": "工程审查助手",
-      "description": "强调正确性、边界条件与风险识别",
-      "prompt": "可选；如提供，会作为远端失败时的缓存回退内容",
+      "description": "更强调正确性、边界条件与风险识别。",
+      "prompt": "你是一位严谨的工程审查助手...",
       "enabled": true,
-      "builtin": false,
-      "sort_order": 10
+      "builtin": true,
+      "sort_order": 20
     }
-  ]
+  ],
+  "source": "local"
 }
 ```
 
-`prompt` 在远端目录中是可选字段。新建或改绑 API Key 模板时，平台要求远端目录当前可访问且目标模板为 `enabled=true`。
+## 管理行为
 
-## 渲染注入
+- 启动时扫描 `./plugins/*/manifest.json`。
+- 当前只加载 `type=api-prompt` 的本地插件实例。
+- 管理端插件页可创建、启停、编辑描述、维护模板并检查本地配置。
+- 检查配置只校验本地模板是否存在启用项，以及模板字段是否有效。
+- 遗留 `manifest.json` 中的 `base_url` 或 `api_key` 字段会被读取时忽略；管理员保存插件后，这些字段不会再写回。
 
-```http
-POST /v1/render
-Content-Type: application/json
-```
+## API Key 绑定
 
-请求体：
+API Key 的 `plugin_settings` 结构保持稳定：
 
 ```json
 {
-  "plugin_name": "api-prompt",
-  "template_id": "engineering-review",
-  "target": "openai_chat_completions",
-  "context": {
-    "plugin_type": "api-prompt"
+  "api_prompt": {
+    "plugin_name": "api-prompt",
+    "template_id": "engineering-review"
   }
 }
 ```
 
-`target` 取值包括：
+创建或更新 API Key 时，后端要求绑定的插件已启用，且模板存在、启用并包含非空 `prompt`。用户侧模板列表只返回本地已启用插件中的已启用模板。
 
-- `anthropic_messages`
-- `openai_chat_completions`
-- `openai_responses`
-- `gemini_generate_content`
+## 请求注入
 
-响应体：
+绑定模板后，网关会把模板 `prompt` 注入到请求系统指令中，覆盖入口包括：
 
-```json
-{
-  "prompt": "最终要注入的系统指令"
-}
-```
+- Anthropic Messages
+- OpenAI Chat Completions
+- OpenAI Responses
+- Gemini Generate Content
 
-也兼容 `system_instruction` 字段。远端渲染失败时，平台会尝试使用最近一次缓存中带 `prompt` 内容的模板继续注入；如果没有可用缓存，则本次请求保持原始请求体不变。
+如果请求期插件被停用、模板被删除或模板不可用，本次请求保持原始请求体不变，避免插件配置漂移影响主链路可用性。

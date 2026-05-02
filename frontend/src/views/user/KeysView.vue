@@ -508,18 +508,6 @@
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
               {{ selectedPromptTemplate.description || t('keys.promptMode.noDescription') }}
             </p>
-            <p
-              v-if="selectedPromptTemplate.last_sync_error"
-              class="mt-2 text-xs text-amber-700 dark:text-amber-200"
-            >
-              {{ t('keys.promptMode.cacheFallbackHint') }}
-            </p>
-            <p
-              v-else-if="selectedPromptTemplate.last_synced_at"
-              class="mt-2 text-xs text-slate-500 dark:text-slate-400"
-            >
-              {{ t('keys.promptMode.lastSyncedAt', { time: formatPromptSyncTime(selectedPromptTemplate.last_synced_at) }) }}
-            </p>
             <pre
               v-if="selectedPromptTemplate.prompt"
               class="mt-3 max-h-44 overflow-auto rounded-xl bg-slate-950/95 p-3 font-mono text-xs leading-5 text-slate-100"
@@ -1408,30 +1396,15 @@ const selectedPromptTemplate = computed<PromptTemplateView | null>(() => {
 })
 
 const promptSourceLabel = (source?: string, status?: string): string => {
-  if (status === 'degraded' || source === 'cache') {
-    return t('keys.promptMode.sourceCache')
-  }
-  if (source === 'remote') {
-    return t('keys.promptMode.sourceRemote')
-  }
+  void source
+  void status
   return t('keys.promptMode.sourceLocal')
 }
 
 const promptSourceBadgeClass = (source?: string, status?: string): string => {
-  if (status === 'degraded' || source === 'cache') {
-    return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200'
-  }
-  if (source === 'remote') {
-    return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200'
-  }
+  void source
+  void status
   return 'bg-slate-100 text-slate-600 dark:bg-dark-700 dark:text-slate-300'
-}
-
-const formatPromptSyncTime = (value?: string | null): string => {
-  if (!value) return t('common.never')
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
 }
 
 // Filter dropdown options
