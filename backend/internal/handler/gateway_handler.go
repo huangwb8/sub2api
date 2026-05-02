@@ -51,6 +51,7 @@ type GatewayHandler struct {
 	maxAccountSwitchesGemini  int
 	cfg                       *config.Config
 	settingService            *service.SettingService
+	pluginService             *service.PluginService
 }
 
 // NewGatewayHandler creates a new GatewayHandler
@@ -68,6 +69,7 @@ func NewGatewayHandler(
 	userMsgQueueService *service.UserMessageQueueService,
 	cfg *config.Config,
 	settingService *service.SettingService,
+	pluginService *service.PluginService,
 ) *GatewayHandler {
 	pingInterval := time.Duration(0)
 	maxAccountSwitches := 10
@@ -104,6 +106,7 @@ func NewGatewayHandler(
 		maxAccountSwitchesGemini:  maxAccountSwitchesGemini,
 		cfg:                       cfg,
 		settingService:            settingService,
+		pluginService:             pluginService,
 	}
 }
 
@@ -144,6 +147,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 
 	if len(body) == 0 {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
+		return
+	}
+	body, err = applyPluginPromptTemplate(c.Request.Context(), h.pluginService, apiKey, body, service.PluginPromptTargetAnthropicMessages)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to apply prompt template")
 		return
 	}
 

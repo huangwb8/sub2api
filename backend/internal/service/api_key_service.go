@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -163,6 +164,8 @@ type CreateAPIKeyRequest struct {
 	RateLimit5h float64 `json:"rate_limit_5h"`
 	RateLimit1d float64 `json:"rate_limit_1d"`
 	RateLimit7d float64 `json:"rate_limit_7d"`
+
+	PluginSettings domain.APIKeyPluginSettings `json:"plugin_settings"`
 }
 
 // UpdateAPIKeyRequest 更新API Key请求
@@ -184,6 +187,8 @@ type UpdateAPIKeyRequest struct {
 	RateLimit1d         *float64 `json:"rate_limit_1d"`
 	RateLimit7d         *float64 `json:"rate_limit_7d"`
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // Reset all usage counters to 0
+
+	PluginSettings *domain.APIKeyPluginSettings `json:"plugin_settings"`
 }
 
 // APIKeyService API Key服务
@@ -201,6 +206,7 @@ type APIKeyService struct {
 	cache                 APIKeyCache
 	rateLimitCacheInvalid RateLimitCacheInvalidator // optional: invalidate Redis rate limit cache
 	cfg                   *config.Config
+	pluginService         *PluginService
 	authCacheL1           *ristretto.Cache
 	authCfg               apiKeyAuthCacheConfig
 	authGroup             singleflight.Group
@@ -235,6 +241,10 @@ func NewAPIKeyService(
 // Called after construction (e.g. in wire) to avoid circular dependencies.
 func (s *APIKeyService) SetRateLimitCacheInvalidator(inv RateLimitCacheInvalidator) {
 	s.rateLimitCacheInvalid = inv
+}
+
+func (s *APIKeyService) SetPluginService(pluginService *PluginService) {
+	s.pluginService = pluginService
 }
 
 func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {
@@ -360,6 +370,11 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		}
 	}
 
+	pluginSettings, err := s.validatePluginSettings(ctx, req.PluginSettings)
+	if err != nil {
+		return nil, err
+	}
+
 	var key string
 
 	// 判断是否使用自定义Key
@@ -409,6 +424,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		RateLimit5h: req.RateLimit5h,
 		RateLimit1d: req.RateLimit1d,
 		RateLimit7d: req.RateLimit7d,
+		PluginSettings: pluginSettings,
 	}
 
 	// Set expiration time if specified
@@ -620,6 +636,13 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 		apiKey.Window1dStart = nil
 		apiKey.Window7dStart = nil
 	}
+	if req.PluginSettings != nil {
+		pluginSettings, err := s.validatePluginSettings(ctx, *req.PluginSettings)
+		if err != nil {
+			return nil, err
+		}
+		apiKey.PluginSettings = pluginSettings
+	}
 
 	if err := s.apiKeyRepo.Update(ctx, apiKey); err != nil {
 		return nil, fmt.Errorf("update api key: %w", err)
@@ -634,6 +657,16 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	}
 
 	return apiKey, nil
+}
+
+func (s *APIKeyService) validatePluginSettings(ctx context.Context, settings domain.APIKeyPluginSettings) (domain.APIKeyPluginSettings, error) {
+	if settings.APIPrompt == nil {
+		return domain.APIKeyPluginSettings{}, nil
+	}
+	if s.pluginService == nil {
+		return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
+	}
+	return s.pluginService.ValidateAPIKeyPluginSettings(ctx, settings)
 }
 
 // Delete 删除API Key

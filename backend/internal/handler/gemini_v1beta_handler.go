@@ -180,6 +180,11 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		googleError(c, http.StatusBadRequest, "Request body is empty")
 		return
 	}
+	body, err = applyPluginPromptTemplate(c.Request.Context(), h.pluginService, apiKey, body, service.PluginPromptTargetGeminiGenerateContent)
+	if err != nil {
+		googleError(c, http.StatusBadRequest, "Failed to apply prompt template")
+		return
+	}
 
 	setOpsRequestContext(c, modelName, stream, body)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(stream, false)))

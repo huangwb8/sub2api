@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // APIKeyUpdate is the builder for updating APIKey entities.
@@ -187,6 +188,20 @@ func (_u *APIKeyUpdate) AppendIPBlacklist(v []string) *APIKeyUpdate {
 // ClearIPBlacklist clears the value of the "ip_blacklist" field.
 func (_u *APIKeyUpdate) ClearIPBlacklist() *APIKeyUpdate {
 	_u.mutation.ClearIPBlacklist()
+	return _u
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (_u *APIKeyUpdate) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyUpdate {
+	_u.mutation.SetPluginSettings(v)
+	return _u
+}
+
+// SetNillablePluginSettings sets the "plugin_settings" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillablePluginSettings(v *domain.APIKeyPluginSettings) *APIKeyUpdate {
+	if v != nil {
+		_u.SetPluginSettings(*v)
+	}
 	return _u
 }
 
@@ -624,6 +639,9 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.IPBlacklistCleared() {
 		_spec.ClearField(apikey.FieldIPBlacklist, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.PluginSettings(); ok {
+		_spec.SetField(apikey.FieldPluginSettings, field.TypeJSON, value)
+	}
 	if value, ok := _u.mutation.Quota(); ok {
 		_spec.SetField(apikey.FieldQuota, field.TypeFloat64, value)
 	}
@@ -974,6 +992,20 @@ func (_u *APIKeyUpdateOne) AppendIPBlacklist(v []string) *APIKeyUpdateOne {
 // ClearIPBlacklist clears the value of the "ip_blacklist" field.
 func (_u *APIKeyUpdateOne) ClearIPBlacklist() *APIKeyUpdateOne {
 	_u.mutation.ClearIPBlacklist()
+	return _u
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (_u *APIKeyUpdateOne) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyUpdateOne {
+	_u.mutation.SetPluginSettings(v)
+	return _u
+}
+
+// SetNillablePluginSettings sets the "plugin_settings" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillablePluginSettings(v *domain.APIKeyPluginSettings) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetPluginSettings(*v)
+	}
 	return _u
 }
 
@@ -1440,6 +1472,9 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	}
 	if _u.mutation.IPBlacklistCleared() {
 		_spec.ClearField(apikey.FieldIPBlacklist, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.PluginSettings(); ok {
+		_spec.SetField(apikey.FieldPluginSettings, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.Quota(); ok {
 		_spec.SetField(apikey.FieldQuota, field.TypeFloat64, value)

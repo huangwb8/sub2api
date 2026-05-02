@@ -119,6 +119,7 @@ type APIKey struct {
 	Reset5hAt     *time.Time `json:"reset_5h_at,omitempty"`
 	Reset1dAt     *time.Time `json:"reset_1d_at,omitempty"`
 	Reset7dAt     *time.Time `json:"reset_7d_at,omitempty"`
+	PluginSettings domain.APIKeyPluginSettings `json:"plugin_settings,omitempty"`
 
 	User  *User  `json:"user,omitempty"`
 	Group *Group `json:"group,omitempty"`

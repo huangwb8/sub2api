@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
@@ -240,6 +241,12 @@ func TestAPIKeyService_SnapshotRoundTrip_PreservesMessagesDispatchModelConfig(t 
 		GroupID: &groupID,
 		Key:     "k-roundtrip",
 		Status:  StatusActive,
+		PluginSettings: domain.APIKeyPluginSettings{
+			APIPrompt: &domain.APIPromptKeyBinding{
+				PluginName: "prompt-a",
+				TemplateID: "focus",
+			},
+		},
 		User: &User{
 			ID:          2,
 			Status:      StatusActive,
@@ -276,6 +283,7 @@ func TestAPIKeyService_SnapshotRoundTrip_PreservesMessagesDispatchModelConfig(t 
 
 	require.NotNil(t, roundTrip)
 	require.NotNil(t, roundTrip.Group)
+	require.Equal(t, apiKey.PluginSettings, roundTrip.PluginSettings)
 	require.Equal(t, apiKey.Group.MessagesDispatchModelConfig, roundTrip.Group.MessagesDispatchModelConfig)
 	require.Equal(t, idleMultiplier, *roundTrip.Group.IdleRateMultiplier)
 	require.Equal(t, idleProfit, *roundTrip.Group.IdleExtraProfitRatePercent)

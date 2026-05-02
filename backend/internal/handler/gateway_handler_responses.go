@@ -58,6 +58,11 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		h.responsesErrorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	body, err = applyPluginPromptTemplate(c.Request.Context(), h.pluginService, apiKey, body, service.PluginPromptTargetOpenAIResponses)
+	if err != nil {
+		h.responsesErrorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to apply prompt template")
+		return
+	}
 
 	setOpsRequestContext(c, "", false, body)
 

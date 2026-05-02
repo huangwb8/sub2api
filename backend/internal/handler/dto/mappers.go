@@ -162,6 +162,7 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 		Window5hStart: k.Window5hStart,
 		Window1dStart: k.Window1dStart,
 		Window7dStart: k.Window7dStart,
+		PluginSettings: k.PluginSettings,
 		User:          UserFromServiceShallow(k.User),
 		Group:         GroupFromServiceShallow(k.Group),
 	}

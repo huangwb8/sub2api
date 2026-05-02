@@ -102,6 +102,7 @@ type APIKeyMutation struct {
 	appendip_whitelist []string
 	ip_blacklist       *[]string
 	appendip_blacklist []string
+	plugin_settings    *domain.APIKeyPluginSettings
 	quota              *float64
 	addquota           *float64
 	quota_used         *float64
@@ -724,6 +725,42 @@ func (m *APIKeyMutation) ResetIPBlacklist() {
 	m.ip_blacklist = nil
 	m.appendip_blacklist = nil
 	delete(m.clearedFields, apikey.FieldIPBlacklist)
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (m *APIKeyMutation) SetPluginSettings(dkps domain.APIKeyPluginSettings) {
+	m.plugin_settings = &dkps
+}
+
+// PluginSettings returns the value of the "plugin_settings" field in the mutation.
+func (m *APIKeyMutation) PluginSettings() (r domain.APIKeyPluginSettings, exists bool) {
+	v := m.plugin_settings
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPluginSettings returns the old "plugin_settings" field's value of the APIKey entity.
+// If the APIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APIKeyMutation) OldPluginSettings(ctx context.Context) (v domain.APIKeyPluginSettings, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPluginSettings is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPluginSettings requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPluginSettings: %w", err)
+	}
+	return oldValue.PluginSettings, nil
+}
+
+// ResetPluginSettings resets all changes to the "plugin_settings" field.
+func (m *APIKeyMutation) ResetPluginSettings() {
+	m.plugin_settings = nil
 }
 
 // SetQuota sets the "quota" field.
@@ -1512,7 +1549,7 @@ func (m *APIKeyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APIKeyMutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 24)
 	if m.created_at != nil {
 		fields = append(fields, apikey.FieldCreatedAt)
 	}
@@ -1545,6 +1582,9 @@ func (m *APIKeyMutation) Fields() []string {
 	}
 	if m.ip_blacklist != nil {
 		fields = append(fields, apikey.FieldIPBlacklist)
+	}
+	if m.plugin_settings != nil {
+		fields = append(fields, apikey.FieldPluginSettings)
 	}
 	if m.quota != nil {
 		fields = append(fields, apikey.FieldQuota)
@@ -1612,6 +1652,8 @@ func (m *APIKeyMutation) Field(name string) (ent.Value, bool) {
 		return m.IPWhitelist()
 	case apikey.FieldIPBlacklist:
 		return m.IPBlacklist()
+	case apikey.FieldPluginSettings:
+		return m.PluginSettings()
 	case apikey.FieldQuota:
 		return m.Quota()
 	case apikey.FieldQuotaUsed:
@@ -1667,6 +1709,8 @@ func (m *APIKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldIPWhitelist(ctx)
 	case apikey.FieldIPBlacklist:
 		return m.OldIPBlacklist(ctx)
+	case apikey.FieldPluginSettings:
+		return m.OldPluginSettings(ctx)
 	case apikey.FieldQuota:
 		return m.OldQuota(ctx)
 	case apikey.FieldQuotaUsed:
@@ -1776,6 +1820,13 @@ func (m *APIKeyMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIPBlacklist(v)
+		return nil
+	case apikey.FieldPluginSettings:
+		v, ok := value.(domain.APIKeyPluginSettings)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPluginSettings(v)
 		return nil
 	case apikey.FieldQuota:
 		v, ok := value.(float64)
@@ -2098,6 +2149,9 @@ func (m *APIKeyMutation) ResetField(name string) error {
 		return nil
 	case apikey.FieldIPBlacklist:
 		m.ResetIPBlacklist()
+		return nil
+	case apikey.FieldPluginSettings:
+		m.ResetPluginSettings()
 		return nil
 	case apikey.FieldQuota:
 		m.ResetQuota()

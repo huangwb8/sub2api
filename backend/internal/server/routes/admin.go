@@ -444,6 +444,11 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		// 用户转售风控配置
 		adminSettings.GET("/user-risk-control", h.Admin.Setting.GetUserRiskControlConfig)
 		adminSettings.PUT("/user-risk-control", h.Admin.Setting.UpdateUserRiskControlConfig)
+		adminSettings.GET("/plugins", h.Admin.Plugin.List)
+		adminSettings.POST("/plugins", h.Admin.Plugin.Create)
+		adminSettings.PUT("/plugins/:name", h.Admin.Plugin.Update)
+		adminSettings.PUT("/plugins/:name/enabled", h.Admin.Plugin.SetEnabled)
+		adminSettings.POST("/plugins/:name/test", h.Admin.Plugin.Test)
 		// Anthropic API Key WebSearch 模拟
 		adminSettings.GET("/web-search-emulation", h.Admin.Setting.GetWebSearchEmulationConfig)
 		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)

@@ -60,6 +60,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Request body is empty")
 		return
 	}
+	body, err = applyPluginPromptTemplate(c.Request.Context(), h.pluginService, apiKey, body, service.PluginPromptTargetOpenAIChatCompletions)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to apply prompt template")
+		return
+	}
 
 	if !gjson.ValidBytes(body) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to parse request body")

@@ -15,6 +15,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // APIKeyCreate is the builder for creating a APIKey entity.
@@ -136,6 +137,20 @@ func (_c *APIKeyCreate) SetIPWhitelist(v []string) *APIKeyCreate {
 // SetIPBlacklist sets the "ip_blacklist" field.
 func (_c *APIKeyCreate) SetIPBlacklist(v []string) *APIKeyCreate {
 	_c.mutation.SetIPBlacklist(v)
+	return _c
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (_c *APIKeyCreate) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyCreate {
+	_c.mutation.SetPluginSettings(v)
+	return _c
+}
+
+// SetNillablePluginSettings sets the "plugin_settings" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillablePluginSettings(v *domain.APIKeyPluginSettings) *APIKeyCreate {
+	if v != nil {
+		_c.SetPluginSettings(*v)
+	}
 	return _c
 }
 
@@ -387,6 +402,10 @@ func (_c *APIKeyCreate) defaults() error {
 		v := apikey.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.PluginSettings(); !ok {
+		v := apikey.DefaultPluginSettings
+		_c.mutation.SetPluginSettings(v)
+	}
 	if _, ok := _c.mutation.Quota(); !ok {
 		v := apikey.DefaultQuota
 		_c.mutation.SetQuota(v)
@@ -456,6 +475,9 @@ func (_c *APIKeyCreate) check() error {
 		if err := apikey.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "APIKey.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.PluginSettings(); !ok {
+		return &ValidationError{Name: "plugin_settings", err: errors.New(`ent: missing required field "APIKey.plugin_settings"`)}
 	}
 	if _, ok := _c.mutation.Quota(); !ok {
 		return &ValidationError{Name: "quota", err: errors.New(`ent: missing required field "APIKey.quota"`)}
@@ -546,6 +568,10 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IPBlacklist(); ok {
 		_spec.SetField(apikey.FieldIPBlacklist, field.TypeJSON, value)
 		_node.IPBlacklist = value
+	}
+	if value, ok := _c.mutation.PluginSettings(); ok {
+		_spec.SetField(apikey.FieldPluginSettings, field.TypeJSON, value)
+		_node.PluginSettings = value
 	}
 	if value, ok := _c.mutation.Quota(); ok {
 		_spec.SetField(apikey.FieldQuota, field.TypeFloat64, value)
@@ -844,6 +870,18 @@ func (u *APIKeyUpsert) UpdateIPBlacklist() *APIKeyUpsert {
 // ClearIPBlacklist clears the value of the "ip_blacklist" field.
 func (u *APIKeyUpsert) ClearIPBlacklist() *APIKeyUpsert {
 	u.SetNull(apikey.FieldIPBlacklist)
+	return u
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (u *APIKeyUpsert) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyUpsert {
+	u.Set(apikey.FieldPluginSettings, v)
+	return u
+}
+
+// UpdatePluginSettings sets the "plugin_settings" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdatePluginSettings() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldPluginSettings)
 	return u
 }
 
@@ -1280,6 +1318,20 @@ func (u *APIKeyUpsertOne) UpdateIPBlacklist() *APIKeyUpsertOne {
 func (u *APIKeyUpsertOne) ClearIPBlacklist() *APIKeyUpsertOne {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.ClearIPBlacklist()
+	})
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (u *APIKeyUpsertOne) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPluginSettings(v)
+	})
+}
+
+// UpdatePluginSettings sets the "plugin_settings" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdatePluginSettings() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePluginSettings()
 	})
 }
 
@@ -1918,6 +1970,20 @@ func (u *APIKeyUpsertBulk) UpdateIPBlacklist() *APIKeyUpsertBulk {
 func (u *APIKeyUpsertBulk) ClearIPBlacklist() *APIKeyUpsertBulk {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.ClearIPBlacklist()
+	})
+}
+
+// SetPluginSettings sets the "plugin_settings" field.
+func (u *APIKeyUpsertBulk) SetPluginSettings(v domain.APIKeyPluginSettings) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPluginSettings(v)
+	})
+}
+
+// UpdatePluginSettings sets the "plugin_settings" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdatePluginSettings() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePluginSettings()
 	})
 }
 

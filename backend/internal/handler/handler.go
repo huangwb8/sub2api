@@ -21,6 +21,7 @@ type AdminHandlers struct {
 	Redeem                *admin.RedeemHandler
 	Promo                 *admin.PromoHandler
 	Affiliate             *admin.AffiliateHandler
+	Plugin                *admin.PluginHandler
 	Setting               *admin.SettingHandler
 	Ops                   *admin.OpsHandler
 	System                *admin.SystemHandler
@@ -44,6 +45,7 @@ type Handlers struct {
 	Redeem         *RedeemHandler
 	Subscription   *SubscriptionHandler
 	Announcement   *AnnouncementHandler
+	Plugin         *PluginHandler
 	Admin          *AdminHandlers
 	Gateway        *GatewayHandler
 	OpenAIGateway  *OpenAIGatewayHandler

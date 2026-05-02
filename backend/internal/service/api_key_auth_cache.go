@@ -1,6 +1,10 @@
 package service
 
-import "time"
+import (
+	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/domain"
+)
 
 // APIKeyAuthSnapshot API Key 认证缓存快照（仅包含认证所需字段）
 type APIKeyAuthSnapshot struct {
@@ -27,6 +31,7 @@ type APIKeyAuthSnapshot struct {
 	RateLimit7d float64 `json:"rate_limit_7d"`
 
 	UserGroupRPMLimit *int `json:"user_group_rpm_limit,omitempty"`
+	PluginSettings    domain.APIKeyPluginSettings `json:"plugin_settings,omitempty"`
 }
 
 // APIKeyAuthUserSnapshot 用户快照

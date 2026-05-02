@@ -57,6 +57,11 @@ func RegisterUserRoutes(
 			groups.GET("/rates", h.APIKey.GetUserGroupRates)
 		}
 
+		plugins := authenticated.Group("/plugins")
+		{
+			plugins.GET("/api-prompt/templates", h.Plugin.ListAPIPromptTemplates)
+		}
+
 		// 使用记录
 		usage := authenticated.Group("/usage")
 		{
