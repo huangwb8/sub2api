@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 OpenAI `chatapi` 账户类型：管理员现在可以为 OpenAI 平台创建专用于 `/v1/chat/completions` 直连透传的账号，并在前后端统一展示为独立账户类型，便于和 `Responses API` 账号分开调度与维护。
 - 新增了账号管理里的代理可用性与快速切换入口：账号列表默认显示“代理”列，单元格会按 IP 管理页同口径展示“正常 / 链接失败”，并支持管理员直接点击后为单个账号切换到当前可用的其它代理。
 - 新增了 `docs/plans/2026-05-02-plugin-system-local-first-simplification-plan.md`：重新审视插件系统复杂度后，规划将 `api-prompt` 从远端外挂方向收敛为 Sub2API 本地内置扩展，移除 `base_url`、`api_key`、远端协议与缓存降级语义，同时保留插件目录、模板管理、API Key 绑定和请求注入能力。
 - 新增了 `api-prompt` 本地插件说明文档：`docs/api-prompt-插件协议.md` 改为说明 `./plugins/{插件名}` 下 `manifest.json`、`config.json` 的本地配置结构、API Key 绑定格式和请求注入行为。
@@ -20,6 +21,8 @@
 - 新增了 `邀请码（临时）` 兑换码类型：用户使用该邀请码注册后会进入 24 小时充值观察期，若累计充值未超过 30 元则自动禁用，禁用持续超过 7 天后由后台任务彻底删除；管理员重新启用时会重置这 24 小时观察期。
 
 ### Changed（变更）
+- 优化了 OpenAI 账户调度与兼容逻辑：`/v1/chat/completions` 现在支持 `chatapi` 账号直接转发到上游 Chat Completions 接口，而 `/v1/responses`、Messages、Images 与相关 WS 入口会自动排除 `chatapi` 账号，避免把只支持 Chat Completions 的上游误用于 Responses 语义请求。
+- 调整了后台账号管理界面与配额展示：创建/编辑弹窗、类型徽章、配额限制卡片、状态/容量/用量单元格和操作菜单现在都把 `chatapi` 视为 API Key 类 OpenAI 账号，但不会为其暴露 OpenAI passthrough 或 Responses WS 专属开关。
 - 调整了插件目录解析策略：后端 `PluginService` 现在会优先从当前工作目录向上识别 Sub2API 项目根目录，并统一使用项目根下的 `./plugins/{插件名}`；即使按开发文档从 `backend/` 目录启动，管理端“系统设置 → 插件”也会读取正确的插件实例目录。
 - 调整了管理端运营统计口径：Dashboard、用量统计、模型/分组/用户排行、盈利趋势、容量建议与预聚合任务默认只纳入 `active` 用户，自动禁用的临时邀请用户不再进入正式用户、成本与盈利统计。
 - 优化了 `api-prompt` 插件系统：从远端外挂 API 模式收敛为 Sub2API 本地内置扩展，移除 `base_url`、`api_key`、远端健康检查、远端模板同步、远端渲染和缓存回退语义；管理端插件页同步改为本地配置检查与可编辑模板目录。
@@ -33,6 +36,7 @@
 - 调整了邀请码注册与管理员用户管理语义：公开邀请码校验、普通注册、OAuth 首次注册、管理员兑换码生成页和用户列表现在都能识别并展示“临时邀请”监管状态，管理员重新启用被该规则禁用的用户时会按规则重开新的 24 小时窗口。
 
 ### Fixed（修复）
+- 修复了 OpenAI Chat Completions 专用上游无法被安全接入的问题：此前 OpenAI API Key 账号默认按 Responses 口径测试、调度和转发，接入仅支持 `/v1/chat/completions` 的上游时容易误选到不兼容入口；现在测试链路、URL 构造、配额可调度判断与单元测试已同步覆盖 `chatapi` 场景。
 - 修复了“系统设置 → 插件”页面可能显示为空的问题：此前后端在 `cd backend && go run ./cmd/server/` 场景下会把插件根目录误判为 `backend/plugins`，导致已提交在项目根 `plugins/` 下的插件实例无法被加载；现在统一解析到项目根目录，并补充了对应测试与文档说明。
 - 修复了 v1.2.17 后端 CI 测试与 lint 失败问题：补齐 API Key 响应中的 `plugin_settings` 和管理员设置响应中的 `enable_anthropic_cache_ttl_1h_injection` 契约期望值，让相关测试不再依赖其它 build tag 测试文件中的 helper，并为用量计费 SQL 的 numeric 参数补齐显式类型以恢复集成测试通过。
 - 修复了仓库内缺少默认 `api-prompt` 插件实例的问题：现在直接提交 `plugins/api-prompt/manifest.json` 与 `plugins/api-prompt/config.json`，保证按项目约定开箱即可在 `./plugins/{插件名}` 下看到首个插件实例，而不是只有代码支持但没有实际目录。

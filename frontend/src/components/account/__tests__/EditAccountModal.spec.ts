@@ -209,6 +209,19 @@ describe('EditAccountModal', () => {
     expect((wsModeSelect!.element as HTMLSelectElement).value).toBe('ctx_pool')
   })
 
+  it('ChatAPI 账号编辑时应保留 API Key 表单，但不展示 OpenAI passthrough 与 WS mode', async () => {
+    const wrapper = mountModal({
+      ...buildAccount(),
+      type: 'chatapi'
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('input[type="password"].font-mono').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('admin.accounts.openai.oauthPassthrough')
+    expect(wrapper.findAll('select').some((select) => select.find('option[value="ctx_pool"]').exists())).toBe(false)
+  })
+
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {
     const account = buildAccount()
     updateAccountMock.mockResolvedValue(account)

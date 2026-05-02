@@ -71,6 +71,26 @@ describe('AccountStatusIndicator', () => {
     expect(wrapper.text()).not.toContain('admin.accounts.status.paused')
   })
 
+  it('chatapi 配额超限时同样显示 quota exceeded', () => {
+    const wrapper = mount(AccountStatusIndicator, {
+      props: {
+        account: makeAccount({
+          type: 'chatapi',
+          schedulable: false,
+          quota_limit: 100,
+          quota_used: 100
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('admin.accounts.status.quotaExceeded')
+  })
+
   it('临时不可调度时点击 badge 会发出 show-temp-unsched', async () => {
     const wrapper = mount(AccountStatusIndicator, {
       props: {

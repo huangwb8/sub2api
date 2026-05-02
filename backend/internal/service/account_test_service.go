@@ -419,8 +419,8 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		testModelID = openai.DefaultTestModel
 	}
 
-	// For API Key accounts with model mapping, map the model
-	if account.Type == "apikey" {
+	// For API Key-like accounts with model mapping, map the model
+	if account.Type == AccountTypeAPIKey || account.Type == AccountTypeChatAPI {
 		if mappedModel, matched := account.ResolveMappedModel(testModelID); matched {
 			testModelID = mappedModel
 		}
@@ -443,7 +443,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		// OAuth uses ChatGPT internal API
 		apiURL = chatgptCodexAPIURL
 		chatgptAccountID = account.GetChatGPTAccountID()
-	} else if account.Type == "apikey" {
+	} else if account.Type == AccountTypeAPIKey {
 		// API Key - use Platform API
 		authToken = account.GetOpenAIApiKey()
 		if authToken == "" {
@@ -459,6 +459,21 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 			return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid base URL: %s", err.Error()))
 		}
 		apiURL = buildOpenAIResponsesURL(normalizedBaseURL)
+	} else if account.Type == AccountTypeChatAPI {
+		authToken = account.GetOpenAIApiKey()
+		if authToken == "" {
+			return s.sendErrorAndEnd(c, "No API key available")
+		}
+
+		baseURL := account.GetOpenAIBaseURL()
+		if baseURL == "" {
+			baseURL = "https://api.openai.com"
+		}
+		normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
+		if err != nil {
+			return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid base URL: %s", err.Error()))
+		}
+		apiURL = buildOpenAIChatCompletionsURL(normalizedBaseURL)
 	} else {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Unsupported account type: %s", account.Type))
 	}
@@ -470,8 +485,11 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 
-	// Create OpenAI Responses API payload
+	// Create OpenAI payload
 	payload := createOpenAITestPayload(testModelID, isOAuth)
+	if account.Type == AccountTypeChatAPI {
+		payload = createOpenAIChatCompletionsTestPayload(testModelID)
+	}
 	payloadBytes, _ := json.Marshal(payload)
 
 	// Send test_start event
@@ -525,6 +543,10 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 			_ = s.accountRepo.SetError(ctx, account.ID, errMsg)
 		}
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
+	}
+
+	if account.Type == AccountTypeChatAPI {
+		return s.processOpenAIChatCompletionsStream(c, resp.Body)
 	}
 
 	// Process SSE stream
@@ -1022,6 +1044,71 @@ func (s *AccountTestService) processOpenAIStream(c *gin.Context, body io.Reader)
 	}
 }
 
+// processOpenAIChatCompletionsStream processes the SSE stream from OpenAI Chat Completions API
+func (s *AccountTestService) processOpenAIChatCompletionsStream(c *gin.Context, body io.Reader) error {
+	reader := bufio.NewReader(body)
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+				return nil
+			}
+			return s.sendErrorAndEnd(c, fmt.Sprintf("Stream read error: %s", err.Error()))
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" || !sseDataPrefix.MatchString(line) {
+			continue
+		}
+
+		jsonStr := sseDataPrefix.ReplaceAllString(line, "")
+		if jsonStr == "[DONE]" {
+			s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+			return nil
+		}
+
+		var data map[string]any
+		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+			continue
+		}
+
+		if usage, ok := data["usage"].(map[string]any); ok {
+			if promptTokens, ok := usage["prompt_tokens"].(float64); ok && promptTokens > 0 {
+				_ = promptTokens
+			}
+		}
+
+		switch choices := data["choices"].(type) {
+		case []any:
+			for _, choice := range choices {
+				item, ok := choice.(map[string]any)
+				if !ok {
+					continue
+				}
+				delta, ok := item["delta"].(map[string]any)
+				if !ok {
+					continue
+				}
+				if content, ok := delta["content"].(string); ok && content != "" {
+					s.sendEvent(c, TestEvent{Type: "content", Text: content})
+				}
+			}
+		}
+
+		if done, _ := data["done"].(bool); done {
+			s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+			return nil
+		}
+
+		if finishReason, _ := data["finish_reason"].(string); finishReason != "" {
+			s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+			return nil
+		}
+	}
+}
+
 // sendEvent sends a SSE event to the client
 func (s *AccountTestService) sendEvent(c *gin.Context, event TestEvent) {
 	eventJSON, _ := json.Marshal(event)
@@ -1037,6 +1124,24 @@ func (s *AccountTestService) sendErrorAndEnd(c *gin.Context, errorMsg string) er
 	log.Printf("Account test error: %s", errorMsg)
 	s.sendEvent(c, TestEvent{Type: "error", Error: errorMsg})
 	return fmt.Errorf("%s", errorMsg)
+}
+
+func createOpenAIChatCompletionsTestPayload(modelID string) map[string]any {
+	return map[string]any{
+		"model": modelID,
+		"messages": []map[string]any{
+			{
+				"role":    "user",
+				"content": "hi",
+			},
+		},
+		"stream": true,
+		"stream_options": map[string]any{
+			"include_usage": true,
+		},
+		"temperature": 0,
+		"max_tokens":   16,
+	}
 }
 
 // RunTestBackground executes an account test in-memory (no real HTTP client),

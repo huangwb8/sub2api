@@ -27,6 +27,7 @@ type OpenAIAccountScheduleRequest struct {
 	StickyAccountID    int64
 	PreviousResponseID string
 	RequestedModel     string
+	RequiredAPIFormat  OpenAIAPIFormat
 	RequiredTransport  OpenAIUpstreamTransport
 	ExcludedIDs        map[int64]struct{}
 }
@@ -254,7 +255,8 @@ func (s *defaultOpenAIAccountScheduler) Select(
 			return nil, decision, err
 		}
 		if selection != nil && selection.Account != nil {
-			if !s.isAccountTransportCompatible(selection.Account, req.RequiredTransport) {
+			if !s.isAccountTransportCompatible(selection.Account, req.RequiredTransport) ||
+				!s.isAccountAPIFormatCompatible(selection.Account, req.RequiredAPIFormat) {
 				selection = nil
 			}
 		}
@@ -345,6 +347,10 @@ func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 	}
 	account = s.service.recheckSelectedOpenAIAccountFromDB(ctx, account, req.RequestedModel)
 	if account == nil {
+		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
+		return nil, nil
+	}
+	if !s.isAccountAPIFormatCompatible(account, req.RequiredAPIFormat) {
 		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
 		return nil, nil
 	}
@@ -625,6 +631,9 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
 			continue
 		}
+		if !s.isAccountAPIFormatCompatible(account, req.RequiredAPIFormat) {
+			continue
+		}
 		if !s.isAccountTransportCompatible(account, req.RequiredTransport) {
 			continue
 		}
@@ -785,6 +794,16 @@ func (s *defaultOpenAIAccountScheduler) isAccountTransportCompatible(account *Ac
 	return s.service.getOpenAIWSProtocolResolver().Resolve(account).Transport == requiredTransport
 }
 
+func (s *defaultOpenAIAccountScheduler) isAccountAPIFormatCompatible(account *Account, requiredFormat OpenAIAPIFormat) bool {
+	if requiredFormat == OpenAIAPIFormatAny {
+		return true
+	}
+	if account == nil {
+		return false
+	}
+	return account.OpenAIAPIFormat() == requiredFormat
+}
+
 func (s *defaultOpenAIAccountScheduler) ReportResult(accountID int64, success bool, firstTokenMs *int) {
 	if s == nil || s.stats == nil {
 		return
@@ -853,6 +872,28 @@ func (s *OpenAIGatewayService) SelectAccountWithScheduler(
 	excludedIDs map[int64]struct{},
 	requiredTransport OpenAIUpstreamTransport,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	return s.SelectAccountWithSchedulerForFormat(
+		ctx,
+		groupID,
+		previousResponseID,
+		sessionHash,
+		requestedModel,
+		excludedIDs,
+		OpenAIAPIFormatAny,
+		requiredTransport,
+	)
+}
+
+func (s *OpenAIGatewayService) SelectAccountWithSchedulerForFormat(
+	ctx context.Context,
+	groupID *int64,
+	previousResponseID string,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requiredAPIFormat OpenAIAPIFormat,
+	requiredTransport OpenAIUpstreamTransport,
+) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	decision := OpenAIAccountScheduleDecision{}
 	scheduler := s.getOpenAIAccountScheduler()
 	if scheduler == nil {
@@ -874,6 +915,7 @@ func (s *OpenAIGatewayService) SelectAccountWithScheduler(
 		StickyAccountID:    stickyAccountID,
 		PreviousResponseID: previousResponseID,
 		RequestedModel:     requestedModel,
+		RequiredAPIFormat:  requiredAPIFormat,
 		RequiredTransport:  requiredTransport,
 		ExcludedIDs:        excludedIDs,
 	})

@@ -32,6 +32,19 @@ func TestAccountIsSchedulable_QuotaExceededForAPIKeyOrBedrock(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "chatapi total quota exceeded is not schedulable",
+			account: &Account{
+				Status:      StatusActive,
+				Type:        AccountTypeChatAPI,
+				Schedulable: true,
+				Extra: map[string]any{
+					"quota_limit": 10.0,
+					"quota_used":  10.0,
+				},
+			},
+			want: false,
+		},
+		{
 			name: "bedrock daily quota exceeded is not schedulable",
 			account: &Account{
 				Status:      StatusActive,

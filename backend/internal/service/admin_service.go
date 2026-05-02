@@ -1036,7 +1036,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		return nil, err
 	}
 
-	// require_oauth_only: 过滤掉 apikey 类型账号
+	// require_oauth_only: 过滤掉非 OAuth API Key 型账号
 	if group.RequireOAuthOnly && (group.Platform == PlatformOpenAI || group.Platform == PlatformAntigravity || group.Platform == PlatformAnthropic || group.Platform == PlatformGemini) && len(accountIDsToCopy) > 0 {
 		accounts, err := s.accountRepo.GetByIDs(ctx, accountIDsToCopy)
 		if err != nil {
@@ -1044,7 +1044,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		}
 		oauthIDs := make(map[int64]struct{}, len(accounts))
 		for _, acc := range accounts {
-			if acc.Type != AccountTypeAPIKey {
+			if acc.Type != AccountTypeAPIKey && acc.Type != AccountTypeChatAPI {
 				oauthIDs[acc.ID] = struct{}{}
 			}
 		}
@@ -1333,7 +1333,7 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 			return nil, fmt.Errorf("failed to clear existing account bindings: %w", err)
 		}
 
-		// require_oauth_only: 过滤掉 apikey 类型账号
+		// require_oauth_only: 过滤掉非 OAuth API Key 型账号
 		if group.RequireOAuthOnly && (group.Platform == PlatformOpenAI || group.Platform == PlatformAntigravity || group.Platform == PlatformAnthropic || group.Platform == PlatformGemini) && len(accountIDsToCopy) > 0 {
 			accounts, err := s.accountRepo.GetByIDs(ctx, accountIDsToCopy)
 			if err != nil {
@@ -1341,7 +1341,7 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 			}
 			oauthIDs := make(map[int64]struct{}, len(accounts))
 			for _, acc := range accounts {
-				if acc.Type != AccountTypeAPIKey {
+				if acc.Type != AccountTypeAPIKey && acc.Type != AccountTypeChatAPI {
 					oauthIDs[acc.ID] = struct{}{}
 				}
 			}

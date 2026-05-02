@@ -158,3 +158,68 @@ func TestGetGeminiBaseURL(t *testing.T) {
 		})
 	}
 }
+
+func TestOpenAIChatAPIHelpers(t *testing.T) {
+	tests := []struct {
+		name        string
+		account     Account
+		wantBaseURL string
+		wantAPIKey  string
+		wantChatAPI bool
+		wantFormat  OpenAIAPIFormat
+	}{
+		{
+			name: "chatapi uses default openai base url",
+			account: Account{
+				Type:        AccountTypeChatAPI,
+				Platform:    PlatformOpenAI,
+				Credentials: map[string]any{"api_key": "sk-chat"},
+			},
+			wantBaseURL: "https://api.openai.com",
+			wantAPIKey:  "sk-chat",
+			wantChatAPI: true,
+			wantFormat:  OpenAIAPIFormatChat,
+		},
+		{
+			name: "chatapi keeps custom base url",
+			account: Account{
+				Type:        AccountTypeChatAPI,
+				Platform:    PlatformOpenAI,
+				Credentials: map[string]any{"api_key": "sk-chat", "base_url": "https://chat.example.com/v1"},
+			},
+			wantBaseURL: "https://chat.example.com/v1",
+			wantAPIKey:  "sk-chat",
+			wantChatAPI: true,
+			wantFormat:  OpenAIAPIFormatChat,
+		},
+		{
+			name: "responses api key stays responses format",
+			account: Account{
+				Type:        AccountTypeAPIKey,
+				Platform:    PlatformOpenAI,
+				Credentials: map[string]any{"api_key": "sk-responses", "base_url": "https://api.openai.com"},
+			},
+			wantBaseURL: "https://api.openai.com",
+			wantAPIKey:  "sk-responses",
+			wantChatAPI: false,
+			wantFormat:  OpenAIAPIFormatResponses,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.account.GetOpenAIBaseURL(); got != tt.wantBaseURL {
+				t.Fatalf("GetOpenAIBaseURL() = %q, want %q", got, tt.wantBaseURL)
+			}
+			if got := tt.account.GetOpenAIApiKey(); got != tt.wantAPIKey {
+				t.Fatalf("GetOpenAIApiKey() = %q, want %q", got, tt.wantAPIKey)
+			}
+			if got := tt.account.IsOpenAIChatAPI(); got != tt.wantChatAPI {
+				t.Fatalf("IsOpenAIChatAPI() = %v, want %v", got, tt.wantChatAPI)
+			}
+			if got := tt.account.OpenAIAPIFormat(); got != tt.wantFormat {
+				t.Fatalf("OpenAIAPIFormat() = %q, want %q", got, tt.wantFormat)
+			}
+		})
+	}
+}

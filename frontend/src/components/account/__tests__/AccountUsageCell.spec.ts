@@ -102,6 +102,40 @@ describe('AccountUsageCell', () => {
     expect(wrapper.text()).toContain('admin.accounts.usageWindow.gemini3Image|70|2026-03-01T09:00:00Z')
   })
 
+  it('chatapi 账号存在配额时显示本地配额进度条', async () => {
+    const wrapper = mount(AccountUsageCell, {
+      props: {
+        account: makeAccount({
+          id: 1003,
+          platform: 'openai',
+          type: 'chatapi',
+          quota_daily_limit: 100,
+          quota_daily_used: 25,
+          quota_weekly_limit: 200,
+          quota_weekly_used: 50,
+          quota_limit: 500,
+          quota_used: 100,
+          extra: {}
+        })
+      },
+      global: {
+        stubs: {
+          UsageProgressBar: {
+            props: ['label', 'utilization', 'resetsAt', 'windowStats', 'color'],
+            template: '<div class="usage-bar">{{ label }}|{{ utilization }}</div>'
+          },
+          AccountQuotaInfo: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('1d|25')
+    expect(wrapper.text()).toContain('7d|25')
+    expect(wrapper.text()).toContain('total|20')
+  })
+
   it('Antigravity 会显示 AI Credits 余额信息', async () => {
     getUsage.mockResolvedValue({
       ai_credits: [

@@ -161,13 +161,14 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 		)
 		usedDeferredOAuth := false
 
-		selection, scheduleDecision, err = h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err = h.gatewayService.SelectAccountWithSchedulerForFormat(
 			c.Request.Context(),
 			apiKey.GroupID,
 			"",
 			sessionHash,
 			reqModel,
 			failedAccountIDs,
+			service.OpenAIAPIFormatResponses,
 			service.OpenAIUpstreamTransportAny,
 		)
 		if err != nil && len(deferredOAuthSelections) > 0 {

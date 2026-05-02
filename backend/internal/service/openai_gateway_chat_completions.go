@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"github.com/tidwall/gjson"
 )
 
 // ForwardAsChatCompletions accepts a Chat Completions request body, converts it
@@ -217,6 +218,123 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	return result, handleErr
 }
 
+// ForwardAsChatCompletionsDirect accepts a Chat Completions request body and
+// forwards it to a Chat Completions-only upstream without converting to Responses.
+func (s *OpenAIGatewayService) ForwardAsChatCompletionsDirect(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	promptCacheKey string,
+	defaultMappedModel string,
+) (*OpenAIForwardResult, error) {
+	startTime := time.Now()
+
+	if !gjson.ValidBytes(body) {
+		return nil, fmt.Errorf("parse chat completions request: invalid json")
+	}
+	originalModel := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	if originalModel == "" {
+		return nil, fmt.Errorf("parse chat completions request: model is required")
+	}
+	clientStream := gjson.GetBytes(body, "stream").Bool()
+
+	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
+	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
+	if upstreamModel != "" && upstreamModel != originalModel {
+		body = s.ReplaceModelInBody(body, upstreamModel)
+	}
+
+	logFields := []zap.Field{
+		zap.Int64("account_id", account.ID),
+		zap.String("original_model", originalModel),
+		zap.String("billing_model", billingModel),
+		zap.String("upstream_model", upstreamModel),
+		zap.Bool("stream", clientStream),
+	}
+	if promptCacheKey != "" {
+		logFields = append(logFields, zap.String("prompt_cache_key_sha256", hashSensitiveValueForLog(promptCacheKey)))
+	}
+	logger.L().Debug("openai chat_completions direct: model mapping applied", logFields...)
+
+	token, _, err := s.GetAccessToken(ctx, account)
+	if err != nil {
+		return nil, fmt.Errorf("get access token: %w", err)
+	}
+
+	upstreamReq, err := s.buildUpstreamChatCompletionsRequest(ctx, c, account, body, token)
+	if err != nil {
+		return nil, fmt.Errorf("build upstream request: %w", err)
+	}
+
+	proxyURL := ""
+	if account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+
+	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		safeErr := sanitizeUpstreamErrorMessage(err.Error())
+		setOpsUpstreamError(c, 0, safeErr, "")
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: 0,
+			Kind:               "request_error",
+			Message:            safeErr,
+		})
+		return nil, newUpstreamRequestFailoverError(safeErr)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		_ = resp.Body.Close()
+		resp.Body = io.NopCloser(bytes.NewReader(respBody))
+
+		upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
+		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
+		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
+			upstreamDetail := ""
+			if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
+				maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
+				if maxBytes <= 0 {
+					maxBytes = 2048
+				}
+				upstreamDetail = truncateString(string(respBody), maxBytes)
+			}
+			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+				Platform:           account.Platform,
+				AccountID:          account.ID,
+				AccountName:        account.Name,
+				UpstreamStatusCode: resp.StatusCode,
+				UpstreamRequestID:  resp.Header.Get("x-request-id"),
+				Kind:               "failover",
+				Message:            upstreamMsg,
+				Detail:             upstreamDetail,
+			})
+			if s.rateLimitService != nil {
+				s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
+			}
+			return nil, &UpstreamFailoverError{
+				StatusCode:             resp.StatusCode,
+				ResponseBody:           respBody,
+				RetryableOnSameAccount: account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
+			}
+		}
+		return s.handleChatCompletionsErrorResponse(resp, c, account)
+	}
+
+	if clientStream {
+		return s.handleChatCompletionsDirectStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+	}
+	return s.handleChatCompletionsDirectBufferedResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+}
+
 // handleChatCompletionsErrorResponse reads an upstream error and returns it in
 // OpenAI Chat Completions error format.
 func (s *OpenAIGatewayService) handleChatCompletionsErrorResponse(
@@ -225,6 +343,23 @@ func (s *OpenAIGatewayService) handleChatCompletionsErrorResponse(
 	account *Account,
 ) (*OpenAIForwardResult, error) {
 	return s.handleCompatErrorResponse(resp, c, account, writeChatCompletionsError)
+}
+
+func extractOpenAIChatUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return OpenAIUsage{}, false
+	}
+	values := gjson.GetManyBytes(
+		body,
+		"usage.prompt_tokens",
+		"usage.completion_tokens",
+		"usage.prompt_tokens_details.cached_tokens",
+	)
+	return OpenAIUsage{
+		InputTokens:          int(values[0].Int()),
+		OutputTokens:         int(values[1].Int()),
+		CacheReadInputTokens: int(values[2].Int()),
+	}, true
 }
 
 // handleChatBufferedStreamingResponse reads all Responses SSE events from the
@@ -327,6 +462,171 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 
 	return &OpenAIForwardResult{
 		RequestID:     requestID,
+		Usage:         usage,
+		Model:         originalModel,
+		BillingModel:  billingModel,
+		UpstreamModel: upstreamModel,
+		Stream:        false,
+		Duration:      time.Since(startTime),
+	}, nil
+}
+
+func (s *OpenAIGatewayService) handleChatCompletionsDirectStreamingResponse(
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	originalModel string,
+	billingModel string,
+	upstreamModel string,
+	startTime time.Time,
+) (*OpenAIForwardResult, error) {
+	requestID := resp.Header.Get("x-request-id")
+
+	if s.responseHeaderFilter != nil {
+		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	}
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+	c.Writer.WriteHeader(http.StatusOK)
+
+	var usage OpenAIUsage
+	var firstTokenMs *int
+	sawDone := false
+	clientDisconnected := false
+
+	scanner := bufio.NewScanner(resp.Body)
+	maxLineSize := defaultMaxLineSize
+	if s.cfg != nil && s.cfg.Gateway.MaxLineSize > 0 {
+		maxLineSize = s.cfg.Gateway.MaxLineSize
+	}
+	scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
+
+	writeLine := func(line string) {
+		if clientDisconnected {
+			return
+		}
+		if _, err := fmt.Fprintln(c.Writer, line); err != nil {
+			clientDisconnected = true
+			return
+		}
+		c.Writer.Flush()
+	}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if data, ok := extractOpenAISSEDataLine(line); ok {
+			trimmed := strings.TrimSpace(data)
+			if trimmed == "[DONE]" {
+				sawDone = true
+			}
+			if firstTokenMs == nil && trimmed != "" && trimmed != "[DONE]" {
+				ms := int(time.Since(startTime).Milliseconds())
+				firstTokenMs = &ms
+			}
+			if parsed, ok := extractOpenAIChatUsageFromJSONBytes([]byte(data)); ok {
+				usage = parsed
+			}
+			if upstreamModel != "" && originalModel != "" && strings.Contains(data, upstreamModel) {
+				line = s.replaceModelInSSELine(line, upstreamModel, originalModel)
+			}
+		}
+		writeLine(line)
+	}
+
+	if err := scanner.Err(); err != nil && !clientDisconnected && !sawDone {
+		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			logger.L().Warn("openai chat_completions direct stream: read error",
+				zap.Error(err),
+				zap.String("request_id", requestID),
+			)
+		}
+		return &OpenAIForwardResult{
+			RequestID:     requestID,
+			Usage:         usage,
+			Model:         originalModel,
+			BillingModel:  billingModel,
+			UpstreamModel: upstreamModel,
+			Stream:        true,
+			Duration:      time.Since(startTime),
+			FirstTokenMs:  firstTokenMs,
+		}, fmt.Errorf("stream read error: %w", err)
+	}
+
+	if !sawDone && !clientDisconnected {
+		return &OpenAIForwardResult{
+			RequestID:     requestID,
+			Usage:         usage,
+			Model:         originalModel,
+			BillingModel:  billingModel,
+			UpstreamModel: upstreamModel,
+			Stream:        true,
+			Duration:      time.Since(startTime),
+			FirstTokenMs:  firstTokenMs,
+		}, &UpstreamFailoverError{
+			StatusCode:   http.StatusBadGateway,
+			ResponseBody: []byte(`{"error":{"type":"api_error","message":"Upstream stream ended without [DONE]"}}`),
+		}
+	}
+
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(c.Request.Context(), account)
+	}
+
+	return &OpenAIForwardResult{
+		RequestID:     requestID,
+		Usage:         usage,
+		Model:         originalModel,
+		BillingModel:  billingModel,
+		UpstreamModel: upstreamModel,
+		Stream:        true,
+		Duration:      time.Since(startTime),
+		FirstTokenMs:  firstTokenMs,
+	}, nil
+}
+
+func (s *OpenAIGatewayService) handleChatCompletionsDirectBufferedResponse(
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	originalModel string,
+	billingModel string,
+	upstreamModel string,
+	startTime time.Time,
+) (*OpenAIForwardResult, error) {
+	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
+	if err != nil {
+		return nil, err
+	}
+
+	usage, usageOK := extractOpenAIChatUsageFromJSONBytes(body)
+	if !usageOK {
+		return nil, fmt.Errorf("parse response: invalid json response")
+	}
+
+	if upstreamModel != "" && originalModel != "" && upstreamModel != originalModel {
+		body = s.replaceModelInResponseBody(body, upstreamModel, originalModel)
+	}
+
+	if s.responseHeaderFilter != nil {
+		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	}
+
+	contentType := "application/json"
+	if s.cfg != nil && !s.cfg.Security.ResponseHeaders.Enabled {
+		if upstreamType := resp.Header.Get("Content-Type"); upstreamType != "" {
+			contentType = upstreamType
+		}
+	}
+
+	c.Data(resp.StatusCode, contentType, body)
+	if s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(c.Request.Context(), account)
+	}
+
+	return &OpenAIForwardResult{
+		RequestID:     resp.Header.Get("x-request-id"),
 		Usage:         usage,
 		Model:         originalModel,
 		BillingModel:  billingModel,

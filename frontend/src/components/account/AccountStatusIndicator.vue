@@ -343,7 +343,7 @@ const isQuotaResetExpired = (startKey: 'quota_daily_start' | 'quota_weekly_start
 const hasQuotaExceededStatus = computed(() => {
   if (effectiveStatus.value) return effectiveStatus.value === 'quota_exhausted'
   if (props.account.schedulable) return false
-  if (props.account.type !== 'apikey' && props.account.type !== 'bedrock') return false
+  if (props.account.type !== 'apikey' && props.account.type !== 'chatapi' && props.account.type !== 'bedrock') return false
 
   if ((props.account.quota_limit ?? 0) > 0 && (props.account.quota_used ?? 0) >= (props.account.quota_limit ?? 0)) {
     return true

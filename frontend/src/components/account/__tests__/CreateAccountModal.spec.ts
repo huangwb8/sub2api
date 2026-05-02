@@ -144,6 +144,14 @@ function mountModal() {
 }
 
 describe('CreateAccountModal', () => {
+  it('默认并发数应为 5', () => {
+    const wrapper = mountModal()
+
+    const numberInputs = wrapper.findAll('input[type="number"]')
+    expect(numberInputs.length).toBeGreaterThan(0)
+    expect((numberInputs[0].element as HTMLInputElement).value).toBe('5')
+  })
+
   it('OpenAI 新建账号时应展示 ctx_pool WS mode 选项', async () => {
     const wrapper = mountModal()
 
@@ -161,5 +169,22 @@ describe('CreateAccountModal', () => {
       'passthrough'
     ])
     expect((wsModeSelect!.element as HTMLSelectElement).value).toBe('ctx_pool')
+  })
+
+  it('OpenAI Chat Completions API 类型应隐藏 OpenAI passthrough 与 WS mode', async () => {
+    const wrapper = mountModal()
+
+    const openAIPlatformButton = wrapper.findAll('button').find((button) => button.text().includes('OpenAI'))
+    expect(openAIPlatformButton).toBeTruthy()
+    await openAIPlatformButton!.trigger('click')
+
+    const chatapiButton = wrapper.findAll('button').find((button) =>
+      button.text().includes('admin.accounts.types.chatCompletionsApi')
+    )
+    expect(chatapiButton).toBeTruthy()
+    await chatapiButton!.trigger('click')
+
+    expect(wrapper.text()).not.toContain('admin.accounts.openai.oauthPassthrough')
+    expect(wrapper.findAll('select').some((select) => select.find('option[value="ctx_pool"]').exists())).toBe(false)
   })
 })

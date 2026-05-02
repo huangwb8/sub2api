@@ -1581,6 +1581,27 @@ func TestBuildOpenAIResponsesURL(t *testing.T) {
 	}
 }
 
+func TestBuildOpenAIChatCompletionsURL(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{name: "official root adds v1", base: "https://api.openai.com", want: "https://api.openai.com/v1/chat/completions"},
+		{name: "official v1 keeps v1", base: "https://api.openai.com/v1", want: "https://api.openai.com/v1/chat/completions"},
+		{name: "custom root keeps literal base", base: "https://api-slb.packyapi.com", want: "https://api-slb.packyapi.com/chat/completions"},
+		{name: "custom v1 appends chat completions", base: "https://example.com/v1", want: "https://example.com/v1/chat/completions"},
+		{name: "custom chat completions stays as is", base: "https://example.com/chat/completions", want: "https://example.com/chat/completions"},
+		{name: "custom explicit v1 chat completions stays as is", base: "https://example.com/v1/chat/completions", want: "https://example.com/v1/chat/completions"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, buildOpenAIChatCompletionsURL(tt.base))
+		})
+	}
+}
+
 func TestOpenAIBuildUpstreamRequestOpenAIPassthroughPreservesCompactPath(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()
@@ -1922,6 +1943,42 @@ func TestExtractOpenAISSEDataLine(t *testing.T) {
 			got, ok := extractOpenAISSEDataLine(tt.line)
 			require.Equal(t, tt.wantOK, ok)
 			require.Equal(t, tt.wantData, got)
+		})
+	}
+}
+
+func TestExtractOpenAIChatUsageFromJSONBytes(t *testing.T) {
+	tests := []struct {
+		name   string
+		body   string
+		want   OpenAIUsage
+		wantOK bool
+	}{
+		{
+			name:   "parses prompt completion and cached tokens",
+			body:   `{"usage":{"prompt_tokens":11,"completion_tokens":7,"prompt_tokens_details":{"cached_tokens":3}}}`,
+			want:   OpenAIUsage{InputTokens: 11, OutputTokens: 7, CacheReadInputTokens: 3},
+			wantOK: true,
+		},
+		{
+			name:   "missing usage still returns zero usage but valid json",
+			body:   `{"id":"chatcmpl_123"}`,
+			want:   OpenAIUsage{},
+			wantOK: true,
+		},
+		{
+			name:   "invalid json returns false",
+			body:   `{"usage":`,
+			want:   OpenAIUsage{},
+			wantOK: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := extractOpenAIChatUsageFromJSONBytes([]byte(tt.body))
+			require.Equal(t, tt.wantOK, ok)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -1200,7 +1200,7 @@ func (a *Account) IsBedrockAPIKey() bool {
 
 // IsAPIKeyOrBedrock 返回账号类型是否支持配额和池模式等特性
 func (a *Account) IsAPIKeyOrBedrock() bool {
-	return a.Type == AccountTypeAPIKey || a.Type == AccountTypeBedrock
+	return a.Type == AccountTypeAPIKey || a.Type == AccountTypeChatAPI || a.Type == AccountTypeBedrock
 }
 
 func (a *Account) IsOpenAI() bool {
@@ -1219,11 +1219,15 @@ func (a *Account) IsOpenAIApiKey() bool {
 	return a.IsOpenAI() && a.Type == AccountTypeAPIKey
 }
 
+func (a *Account) IsOpenAIChatAPI() bool {
+	return a.IsOpenAI() && a.Type == AccountTypeChatAPI
+}
+
 func (a *Account) GetOpenAIBaseURL() string {
 	if !a.IsOpenAI() {
 		return ""
 	}
-	if a.Type == AccountTypeAPIKey {
+	if a.Type == AccountTypeAPIKey || a.Type == AccountTypeChatAPI {
 		baseURL := a.GetCredential("base_url")
 		if baseURL != "" {
 			return baseURL
@@ -1254,10 +1258,25 @@ func (a *Account) GetOpenAIIDToken() string {
 }
 
 func (a *Account) GetOpenAIApiKey() string {
-	if !a.IsOpenAIApiKey() {
+	if !a.IsOpenAIApiKey() && !a.IsOpenAIChatAPI() {
 		return ""
 	}
 	return a.GetCredential("api_key")
+}
+
+type OpenAIAPIFormat string
+
+const (
+	OpenAIAPIFormatAny       OpenAIAPIFormat = ""
+	OpenAIAPIFormatResponses OpenAIAPIFormat = "responses"
+	OpenAIAPIFormatChat      OpenAIAPIFormat = "chat"
+)
+
+func (a *Account) OpenAIAPIFormat() OpenAIAPIFormat {
+	if a != nil && a.IsOpenAIChatAPI() {
+		return OpenAIAPIFormatChat
+	}
+	return OpenAIAPIFormatResponses
 }
 
 func (a *Account) GetOpenAIUserAgent() string {

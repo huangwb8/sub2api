@@ -248,13 +248,14 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	for {
 		// Select account supporting the requested model
 		reqLog.Debug("openai.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForFormat(
 			c.Request.Context(),
 			apiKey.GroupID,
 			previousResponseID,
 			sessionHash,
 			reqModel,
 			failedAccountIDs,
+			service.OpenAIAPIFormatResponses,
 			service.OpenAIUpstreamTransportAny,
 		)
 		if err != nil {
@@ -639,13 +640,14 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			currentRoutingModel = effectiveMappedModel
 		}
 		reqLog.Debug("openai_messages.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForFormat(
 			c.Request.Context(),
 			apiKey.GroupID,
 			"", // no previous_response_id
 			sessionHash,
 			currentRoutingModel,
 			failedAccountIDs,
+			service.OpenAIAPIFormatResponses,
 			service.OpenAIUpstreamTransportAny,
 		)
 		if err != nil {
@@ -1163,13 +1165,14 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		firstMessage,
 		openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
 	)
-	selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+	selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForFormat(
 		ctx,
 		apiKey.GroupID,
 		previousResponseID,
 		sessionHash,
 		reqModel,
 		nil,
+		service.OpenAIAPIFormatResponses,
 		service.OpenAIUpstreamTransportResponsesWebsocketV2,
 	)
 	if err != nil {

@@ -237,6 +237,71 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_SessionSticky(t *testin
 	}
 }
 
+func TestOpenAIGatewayService_SelectAccountWithSchedulerForFormat_FiltersByAPIFormat(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(11)
+	chatOnly := Account{
+		ID:          2101,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeChatAPI,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+	}
+	responsesOnly := Account{
+		ID:          2102,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    10,
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{chatOnly, responsesOnly}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	responsesSelection, _, err := svc.SelectAccountWithSchedulerForFormat(
+		ctx,
+		&groupID,
+		"",
+		"",
+		"gpt-5.1",
+		nil,
+		OpenAIAPIFormatResponses,
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, responsesSelection)
+	require.NotNil(t, responsesSelection.Account)
+	require.Equal(t, responsesOnly.ID, responsesSelection.Account.ID)
+	if responsesSelection.ReleaseFunc != nil {
+		responsesSelection.ReleaseFunc()
+	}
+
+	chatSelection, _, err := svc.SelectAccountWithSchedulerForFormat(
+		ctx,
+		&groupID,
+		"",
+		"",
+		"gpt-5.1",
+		nil,
+		OpenAIAPIFormatChat,
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, chatSelection)
+	require.NotNil(t, chatSelection.Account)
+	require.Equal(t, chatOnly.ID, chatSelection.Account.ID)
+	if chatSelection.ReleaseFunc != nil {
+		chatSelection.ReleaseFunc()
+	}
+}
+
 func TestDefaultOpenAIAccountScheduler_SelectPrefersHigherCodexHeadroom(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(12)

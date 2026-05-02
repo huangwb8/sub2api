@@ -2421,6 +2421,8 @@ export default {
         oauth: 'OAuth',
         chatgptOauth: 'ChatGPT OAuth',
         responsesApi: 'Responses API',
+        chatCompletionsApi: 'Chat Completions API',
+        chatCompletionsDesc: 'Direct /v1/chat/completions passthrough',
         googleOauth: 'Google OAuth',
         codeAssist: 'Code Assist',
         antigravityOauth: 'Antigravity OAuth',

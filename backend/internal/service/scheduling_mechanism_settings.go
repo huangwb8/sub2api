@@ -132,7 +132,7 @@ func normalizeSchedulingMechanismAccountType(accountType string) string {
 	switch strings.ToLower(strings.TrimSpace(accountType)) {
 	case "", SchedulingMechanismAccountTypeAll:
 		return SchedulingMechanismAccountTypeAll
-	case AccountTypeOAuth, AccountTypeAPIKey, AccountTypeSetupToken, AccountTypeUpstream, AccountTypeBedrock:
+	case AccountTypeOAuth, AccountTypeAPIKey, AccountTypeChatAPI, AccountTypeSetupToken, AccountTypeUpstream, AccountTypeBedrock:
 		return strings.ToLower(strings.TrimSpace(accountType))
 	default:
 		return SchedulingMechanismAccountTypeAll
