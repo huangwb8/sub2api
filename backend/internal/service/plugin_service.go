@@ -510,31 +510,63 @@ func (s *PluginService) reloadFromDisk() error {
 
 func (s *PluginService) ensureDefaultPlugins() error {
 	s.mu.RLock()
-	hasPlugins := len(s.plugins) > 0
+	record, hasDefault := s.plugins["api-prompt"]
+	var defaultSnapshot *pluginDiskRecord
+	if hasDefault {
+		defaultSnapshot = clonePluginRecord(record)
+	}
+	needsDefaultTemplates := hasDefault &&
+		defaultSnapshot.Manifest.Type == PluginTypeAPIPrompt &&
+		(defaultSnapshot.Config == nil || len(defaultSnapshot.Config.Templates) == 0)
 	s.mu.RUnlock()
-	if hasPlugins {
+
+	if hasDefault && !needsDefaultTemplates {
 		return nil
 	}
 
 	now := time.Now()
-	record, err := s.buildRecord("api-prompt", PluginTypeAPIPrompt, pluginManifest{
+	if !hasDefault {
+		record, err := s.buildRecord("api-prompt", PluginTypeAPIPrompt, pluginManifest{
+			Name:        "api-prompt",
+			Type:        PluginTypeAPIPrompt,
+			Description: "默认 api-prompt 插件实例",
+			Enabled:     true,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := s.writeRecord(record); err != nil {
+			return err
+		}
+
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.plugins[record.Manifest.Name] = record
+		return nil
+	}
+
+	nextManifest := defaultSnapshot.Manifest
+	nextManifest.UpdatedAt = now
+	nextRecord, err := s.buildRecord("api-prompt", PluginTypeAPIPrompt, pluginManifest{
 		Name:        "api-prompt",
 		Type:        PluginTypeAPIPrompt,
-		Description: "默认 api-prompt 插件实例",
-		Enabled:     true,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}, nil, nil)
+		Description: nextManifest.Description,
+		Enabled:     nextManifest.Enabled,
+		CreatedAt:   nextManifest.CreatedAt,
+		UpdatedAt:   nextManifest.UpdatedAt,
+	}, &APIPromptPluginConfig{Templates: defaultAPIPromptTemplates()}, nil)
 	if err != nil {
 		return err
 	}
-	if err := s.writeRecord(record); err != nil {
+	if err := s.writeRecord(nextRecord); err != nil {
 		return err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.plugins[record.Manifest.Name] = record
+	s.plugins[nextRecord.Manifest.Name] = nextRecord
 	return nil
 }
 

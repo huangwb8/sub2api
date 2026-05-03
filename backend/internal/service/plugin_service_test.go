@@ -60,6 +60,74 @@ func TestPluginService_NewPluginService_BootstrapsDefaultPluginWhenRootDirEmpty(
 	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "config.json"))
 }
 
+func TestPluginService_NewPluginService_BootstrapsDefaultPluginWhenOnlyCustomPluginsExist(t *testing.T) {
+	t.Parallel()
+
+	rootDir := t.TempDir()
+	customDir := filepath.Join(rootDir, "custom-prompt")
+	require.NoError(t, os.MkdirAll(customDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(customDir, "manifest.json"), []byte(`{
+  "name": "custom-prompt",
+  "type": "api-prompt",
+  "description": "custom prompt plugin",
+  "enabled": true,
+  "created_at": "2026-05-02T05:20:07Z",
+  "updated_at": "2026-05-02T05:20:07Z"
+}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(customDir, "config.json"), []byte(`{
+  "templates": [
+    {"id": "focus", "name": "Focus", "prompt": "Use custom prompt.", "enabled": true}
+  ],
+  "source": "local"
+}`), 0o644))
+
+	svc, err := NewPluginService(rootDir)
+	require.NoError(t, err)
+
+	plugins, err := svc.ListPlugins(context.Background())
+	require.NoError(t, err)
+	require.Len(t, plugins, 2)
+	defaultPlugin, err := svc.GetPlugin(context.Background(), "api-prompt")
+	require.NoError(t, err)
+	require.NotNil(t, defaultPlugin.APIPrompt)
+	require.NotEmpty(t, defaultPlugin.APIPrompt.Templates)
+	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "manifest.json"))
+	require.FileExists(t, filepath.Join(rootDir, "api-prompt", "config.json"))
+}
+
+func TestPluginService_NewPluginService_BackfillsDefaultTemplatesWhenDefaultPluginConfigEmpty(t *testing.T) {
+	t.Parallel()
+
+	rootDir := t.TempDir()
+	pluginDir := filepath.Join(rootDir, "api-prompt")
+	require.NoError(t, os.MkdirAll(pluginDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "manifest.json"), []byte(`{
+  "name": "api-prompt",
+  "type": "api-prompt",
+  "description": "default prompt plugin",
+  "enabled": false,
+  "created_at": "2026-05-02T05:20:07Z",
+  "updated_at": "2026-05-02T05:20:07Z"
+}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(pluginDir, "config.json"), []byte(`{
+  "templates": [],
+  "source": "local"
+}`), 0o644))
+
+	svc, err := NewPluginService(rootDir)
+	require.NoError(t, err)
+
+	plugin, err := svc.GetPlugin(context.Background(), "api-prompt")
+	require.NoError(t, err)
+	require.False(t, plugin.Enabled)
+	require.NotNil(t, plugin.APIPrompt)
+	require.NotEmpty(t, plugin.APIPrompt.Templates)
+
+	configData, err := os.ReadFile(filepath.Join(pluginDir, "config.json"))
+	require.NoError(t, err)
+	require.Contains(t, string(configData), "general-writing")
+}
+
 func TestPluginService_NewPluginService_BootstrapsDefaultPluginInDataDirOutsideRepo(t *testing.T) {
 	startDir := t.TempDir()
 	dataDir := t.TempDir()
