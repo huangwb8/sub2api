@@ -232,6 +232,21 @@
               :manual-refresh-token="usageManualRefreshToken"
             />
           </template>
+          <template #cell-proxy_priority="{ row }">
+            <div class="flex min-w-[13rem] max-w-[14rem] items-center gap-2">
+              <div class="min-w-0 flex-1">
+                <AccountProxyCell :account="row" :proxies="proxies" @updated="handleAccountUpdated" />
+              </div>
+              <div class="shrink-0 rounded-md bg-gray-50 px-1.5 py-1 text-center dark:bg-dark-800">
+                <div class="text-[10px] leading-none text-gray-500 dark:text-dark-400">
+                  {{ t('admin.accounts.columns.priority') }}
+                </div>
+                <div class="mt-0.5 text-sm font-medium text-gray-800 dark:text-gray-100">
+                  {{ row.priority }}
+                </div>
+              </div>
+            </div>
+          </template>
           <template #cell-proxy="{ row }">
             <AccountProxyCell :account="row" :proxies="proxies" @updated="handleAccountUpdated" />
           </template>
@@ -445,11 +460,33 @@ const exportingData = ref(false)
 const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
 const hiddenColumns = reactive<Set<string>>(new Set())
-const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
+const DEFAULT_HIDDEN_COLUMNS = [
+  'platform_type',
+  'capacity',
+  'today_stats',
+  'groups',
+  'proxy',
+  'priority',
+  'notes',
+  'rate_multiplier',
+  'actual_cost_cny',
+  'expires_at'
+]
+const PREVIOUS_COMPACT_DEFAULT_HIDDEN_COLUMNS = [
+  'platform_type',
+  'capacity',
+  'today_stats',
+  'groups',
+  'notes',
+  'rate_multiplier',
+  'actual_cost_cny',
+  'expires_at'
+]
+const PREVIOUS_DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
 const LEGACY_DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier', 'actual_cost_cny']
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
 const HIDDEN_COLUMNS_VERSION_KEY = 'account-hidden-columns-version'
-const ACCOUNT_COLUMNS_VERSION = 2
+const ACCOUNT_COLUMNS_VERSION = 4
 
 // Sorting settings
 const ACCOUNT_SORT_STORAGE_KEY = 'account-table-sort'
@@ -570,15 +607,22 @@ const loadSavedColumns = () => {
     const saved = localStorage.getItem(HIDDEN_COLUMNS_KEY)
     if (saved) {
       const parsed = JSON.parse(saved) as string[]
-      parsed.forEach(key => {
-        hiddenColumns.add(key)
-      })
       const version = Number(localStorage.getItem(HIDDEN_COLUMNS_VERSION_KEY) || '0')
+      const matchesDefault = (defaults: string[]) =>
+        parsed.length === defaults.length && defaults.every((key) => parsed.includes(key))
       const matchesLegacyDefault =
-        parsed.length === LEGACY_DEFAULT_HIDDEN_COLUMNS.length &&
-        LEGACY_DEFAULT_HIDDEN_COLUMNS.every((key) => parsed.includes(key))
+        matchesDefault(LEGACY_DEFAULT_HIDDEN_COLUMNS) ||
+        matchesDefault(PREVIOUS_DEFAULT_HIDDEN_COLUMNS) ||
+        matchesDefault(PREVIOUS_COMPACT_DEFAULT_HIDDEN_COLUMNS)
+
       if (version < ACCOUNT_COLUMNS_VERSION && matchesLegacyDefault) {
-        hiddenColumns.delete('proxy')
+        DEFAULT_HIDDEN_COLUMNS.forEach(key => {
+          hiddenColumns.add(key)
+        })
+      } else {
+        parsed.forEach(key => {
+          hiddenColumns.add(key)
+        })
       }
     } else {
       DEFAULT_HIDDEN_COLUMNS.forEach(key => {
@@ -1008,6 +1052,7 @@ const allColumns = computed(() => {
   }
   c.push(
     { key: 'usage', label: t('admin.accounts.columns.usageWindows'), sortable: false },
+    { key: 'proxy_priority', label: t('admin.accounts.columns.proxyPriority'), sortable: false },
     { key: 'proxy', label: t('admin.accounts.columns.proxy'), sortable: false },
     { key: 'priority', label: t('admin.accounts.columns.priority'), sortable: true },
     { key: 'rate_multiplier', label: t('admin.accounts.columns.billingRateMultiplier'), sortable: true },
