@@ -186,6 +186,9 @@ func (r *proxyRepository) ListWithFiltersAndAccountCount(ctx context.Context, pa
 	if strings.EqualFold(strings.TrimSpace(params.SortBy), "account_count") {
 		return r.listWithAccountCountSort(ctx, q, params, total)
 	}
+	if strings.EqualFold(strings.TrimSpace(params.SortBy), "quality_score") {
+		return r.listWithQualityScoreSort(ctx, q, params, total)
+	}
 
 	proxiesQuery := q.
 		Offset(params.Offset()).
@@ -195,6 +198,17 @@ func (r *proxyRepository) ListWithFiltersAndAccountCount(ctx context.Context, pa
 	}
 
 	proxies, err := proxiesQuery.All(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return r.buildProxyWithAccountCountResult(ctx, proxies, params, int64(total))
+}
+
+func (r *proxyRepository) listWithQualityScoreSort(ctx context.Context, q *dbent.ProxyQuery, params pagination.PaginationParams, total int) ([]service.ProxyWithAccountCount, *pagination.PaginationResult, error) {
+	proxies, err := q.
+		Order(dbent.Desc(proxy.FieldID)).
+		All(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

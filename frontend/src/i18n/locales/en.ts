@@ -3429,6 +3429,7 @@ export default {
         status: 'Status',
         accounts: 'Accounts',
         latency: 'Latency',
+        quality: 'Quality',
         actions: 'Actions'
       },
       testConnection: 'Test Connection',

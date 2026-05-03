@@ -353,16 +353,30 @@
                 {{ row.latency_ms }}ms
               </span>
               <span v-else class="text-sm text-gray-400">-</span>
-              <div
-                v-if="typeof row.quality_checked === 'number'"
-                class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
-                :title="row.quality_summary || undefined"
-              >
-                <span>{{ t('admin.proxies.qualityInline', { grade: row.quality_grade || '-', score: row.quality_score ?? '-' }) }}</span>
-                <span class="badge" :class="qualityOverallClass(row.quality_status)">
-                  {{ qualityOverallLabel(row.quality_status) }}
+            </div>
+          </template>
+
+          <template #cell-quality_score="{ row }">
+            <div
+              class="flex flex-col gap-1"
+              :title="row.quality_summary || undefined"
+            >
+              <div class="flex items-center gap-2">
+                <span :class="['inline-flex h-5 w-7 items-center justify-center rounded text-xs font-semibold', qualityGradeClass(row.quality_grade)]">
+                  {{ row.quality_grade || '—' }}
                 </span>
+                <span v-if="typeof row.quality_score === 'number'" class="text-sm text-gray-700 dark:text-gray-200">
+                  {{ row.quality_score }}
+                </span>
+                <span v-else class="text-sm text-gray-400">-</span>
               </div>
+              <span
+                v-if="typeof row.quality_checked === 'number'"
+                class="badge w-fit"
+                :class="qualityOverallClass(row.quality_status)"
+              >
+                {{ qualityOverallLabel(row.quality_status) }}
+              </span>
             </div>
           </template>
 
@@ -1111,6 +1125,7 @@ const columns = computed<Column[]>(() => [
   { key: 'location', label: t('admin.proxies.columns.location'), sortable: false },
   { key: 'account_count', label: t('admin.proxies.columns.accounts'), sortable: true },
   { key: 'latency', label: t('admin.proxies.columns.latency'), sortable: false },
+  { key: 'quality_score', label: t('admin.proxies.columns.quality'), sortable: true },
   { key: 'status', label: t('admin.proxies.columns.status'), sortable: true },
   { key: 'actions', label: t('admin.proxies.columns.actions'), sortable: false }
 ])
@@ -1873,6 +1888,15 @@ const qualityOverallLabel = (status?: string) => {
   if (status === 'warn') return t('admin.proxies.qualityStatusWarn')
   if (status === 'challenge') return t('admin.proxies.qualityStatusChallenge')
   return t('admin.proxies.qualityStatusFail')
+}
+
+const qualityGradeClass = (grade?: string) => {
+  if (grade === 'A') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (grade === 'B') return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
+  if (grade === 'C') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  if (grade === 'D') return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+  if (grade === 'F') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  return 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'
 }
 
 const qualityTargetLabel = (target: string) => {

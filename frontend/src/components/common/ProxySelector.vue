@@ -77,7 +77,7 @@
 
           <!-- Proxy options -->
           <div
-            v-for="proxy in filteredProxies"
+            v-for="proxy in sortedProxies"
             :key="proxy.id"
             @click="selectOption(proxy.id)"
             :class="['select-option', modelValue === proxy.id && 'select-option-selected']"
@@ -85,6 +85,12 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <span class="truncate font-medium">{{ formatProxyName(proxy) }}</span>
+                <span
+                  :class="['proxy-quality-badge', qualityBadgeClass(proxy)]"
+                  :title="qualityBadgeTitle(proxy)"
+                >
+                  {{ qualityBadgeLabel(proxy) }}
+                </span>
                 <!-- Test result badges -->
                 <template v-if="testResults[proxy.id]">
                   <span
@@ -151,7 +157,7 @@
           </div>
 
           <!-- Empty state -->
-          <div v-if="filteredProxies.length === 0 && searchQuery" class="select-empty">
+          <div v-if="sortedProxies.length === 0 && searchQuery" class="select-empty">
             {{ t('common.noOptionsFound') }}
           </div>
         </div>
@@ -236,6 +242,62 @@ const filteredProxies = computed(() => {
     ])
   })
 })
+
+const sortedProxies = computed(() => {
+  return [...filteredProxies.value].sort(compareProxySelectorQuality)
+})
+
+const compareProxySelectorQuality = (left: Proxy, right: Proxy) => {
+  const leftHasScore = typeof left.quality_score === 'number'
+  const rightHasScore = typeof right.quality_score === 'number'
+  if (leftHasScore !== rightHasScore) {
+    return leftHasScore ? -1 : 1
+  }
+
+  if (leftHasScore && rightHasScore && left.quality_score !== right.quality_score) {
+    return (right.quality_score ?? -1) - (left.quality_score ?? -1)
+  }
+
+  const leftLatency = typeof left.latency_ms === 'number' ? left.latency_ms : Number.POSITIVE_INFINITY
+  const rightLatency =
+    typeof right.latency_ms === 'number' ? right.latency_ms : Number.POSITIVE_INFINITY
+  if (leftLatency !== rightLatency) {
+    return leftLatency - rightLatency
+  }
+
+  return left.id - right.id
+}
+
+const qualityBadgeLabel = (proxy: Proxy) => {
+  return proxy.quality_grade || '—'
+}
+
+const qualityBadgeTitle = (proxy: Proxy) => {
+  if (typeof proxy.quality_score !== 'number') {
+    return t('admin.proxies.qualityInline', { grade: '-', score: '-' })
+  }
+  return t('admin.proxies.qualityInline', {
+    grade: proxy.quality_grade || '-',
+    score: proxy.quality_score
+  })
+}
+
+const qualityBadgeClass = (proxy: Proxy) => {
+  switch (proxy.quality_grade) {
+    case 'A':
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+    case 'B':
+      return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
+    case 'C':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+    case 'D':
+      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+    case 'F':
+      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+    default:
+      return 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'
+  }
+}
 
 const toggle = () => {
   if (props.disabled) return
@@ -400,6 +462,10 @@ onUnmounted(() => {
 
 .select-option-label {
   @apply truncate;
+}
+
+.proxy-quality-badge {
+  @apply inline-flex h-5 w-7 flex-shrink-0 items-center justify-center rounded text-xs font-semibold;
 }
 
 .select-empty {

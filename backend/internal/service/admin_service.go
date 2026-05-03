@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -2206,7 +2207,62 @@ func (s *adminServiceImpl) ListProxiesWithAccountCount(ctx context.Context, page
 		return nil, 0, err
 	}
 	s.attachProxyLatency(ctx, proxies)
+	if isProxyQualityScoreSort(sortBy) {
+		sortProxiesByQualityScore(proxies, params.NormalizedSortOrder(pagination.SortOrderDesc))
+		proxies = paginateProxyWithAccountCount(proxies, params)
+	}
 	return proxies, result.Total, nil
+}
+
+func isProxyQualityScoreSort(sortBy string) bool {
+	return strings.EqualFold(strings.TrimSpace(sortBy), "quality_score")
+}
+
+func sortProxiesByQualityScore(proxies []ProxyWithAccountCount, sortOrder string) {
+	sort.SliceStable(proxies, func(i, j int) bool {
+		left := proxies[i]
+		right := proxies[j]
+		leftHasScore := left.QualityScore != nil
+		rightHasScore := right.QualityScore != nil
+		if leftHasScore != rightHasScore {
+			return leftHasScore
+		}
+		if leftHasScore && rightHasScore && *left.QualityScore != *right.QualityScore {
+			if sortOrder == pagination.SortOrderAsc {
+				return *left.QualityScore < *right.QualityScore
+			}
+			return *left.QualityScore > *right.QualityScore
+		}
+
+		leftLatency := proxyQualitySortLatency(left)
+		rightLatency := proxyQualitySortLatency(right)
+		if leftLatency != rightLatency {
+			return leftLatency < rightLatency
+		}
+		return left.ID < right.ID
+	})
+}
+
+func proxyQualitySortLatency(proxy ProxyWithAccountCount) int64 {
+	if proxy.LatencyMs != nil {
+		return *proxy.LatencyMs
+	}
+	return 1<<63 - 1
+}
+
+func paginateProxyWithAccountCount(proxies []ProxyWithAccountCount, params pagination.PaginationParams) []ProxyWithAccountCount {
+	if len(proxies) == 0 {
+		return []ProxyWithAccountCount{}
+	}
+	offset := params.Offset()
+	if offset >= len(proxies) {
+		return []ProxyWithAccountCount{}
+	}
+	end := offset + params.Limit()
+	if end > len(proxies) {
+		end = len(proxies)
+	}
+	return proxies[offset:end]
 }
 
 func (s *adminServiceImpl) GetAllProxies(ctx context.Context) ([]Proxy, error) {

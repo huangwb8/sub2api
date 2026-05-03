@@ -103,4 +103,38 @@ describe('ProxySelector', () => {
     expect(optionsText).toContain('abdkdkdidddy')
     expect(optionsText).not.toContain('only-ab-match')
   })
+
+  it('orders proxy options by quality score, latency, then id and shows quality badges', async () => {
+    const wrapper = mount(ProxySelector, {
+      props: {
+        modelValue: null,
+        proxies: [
+          buildProxy({ id: 4, name: 'unchecked' }),
+          buildProxy({ id: 3, name: 'mid', quality_score: 75, quality_grade: 'B', latency_ms: 90 }),
+          buildProxy({ id: 2, name: 'slow-high', quality_score: 95, quality_grade: 'A', latency_ms: 300 }),
+          buildProxy({ id: 1, name: 'fast-high', quality_score: 95, quality_grade: 'A', latency_ms: 120 })
+        ]
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.find('button.select-trigger').trigger('click')
+
+    const optionTexts = wrapper
+      .findAll('.select-option')
+      .slice(1)
+      .map((option) => option.text())
+
+    expect(optionTexts[0]).toContain('fast-high')
+    expect(optionTexts[1]).toContain('slow-high')
+    expect(optionTexts[2]).toContain('mid')
+    expect(optionTexts[3]).toContain('unchecked')
+
+    const badges = wrapper.findAll('.proxy-quality-badge').map((badge) => badge.text())
+    expect(badges).toEqual(['A', 'A', 'B', '—'])
+  })
 })

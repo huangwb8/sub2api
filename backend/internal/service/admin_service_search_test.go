@@ -72,6 +72,24 @@ type proxyRepoStubForAdminList struct {
 	listWithFiltersAndAccountCountErr      error
 }
 
+type proxyLatencyCacheStubForAdminList struct {
+	latencies map[int64]*ProxyLatencyInfo
+}
+
+func (s *proxyLatencyCacheStubForAdminList) GetProxyLatencies(_ context.Context, proxyIDs []int64) (map[int64]*ProxyLatencyInfo, error) {
+	out := make(map[int64]*ProxyLatencyInfo, len(proxyIDs))
+	for _, id := range proxyIDs {
+		if info := s.latencies[id]; info != nil {
+			out[id] = info
+		}
+	}
+	return out, nil
+}
+
+func (s *proxyLatencyCacheStubForAdminList) SetProxyLatency(_ context.Context, _ int64, _ *ProxyLatencyInfo) error {
+	return nil
+}
+
 func (s *proxyRepoStubForAdminList) ListWithFilters(_ context.Context, params pagination.PaginationParams, protocol, status, search string) ([]Proxy, *pagination.PaginationResult, error) {
 	s.listWithFiltersCalls++
 	s.listWithFiltersParams = params
@@ -240,6 +258,40 @@ func TestAdminService_ListProxiesWithAccountCount_WithSearch(t *testing.T) {
 		require.Equal(t, StatusDisabled, repo.listWithFiltersAndAccountCountStatus)
 		require.Equal(t, "p2", repo.listWithFiltersAndAccountCountSearch)
 	})
+}
+
+func TestAdminService_ListProxiesWithAccountCount_SortByQualityScore(t *testing.T) {
+	score75 := 75
+	score90 := 90
+	latency100 := int64(100)
+	latency400 := int64(400)
+	latency500 := int64(500)
+	repo := &proxyRepoStubForAdminList{
+		listWithFiltersAndAccountCountProxies: []ProxyWithAccountCount{
+			{Proxy: Proxy{ID: 1, Name: "p75"}, AccountCount: 5},
+			{Proxy: Proxy{ID: 2, Name: "unscored"}, AccountCount: 1},
+			{Proxy: Proxy{ID: 3, Name: "p90-slow"}, AccountCount: 2},
+			{Proxy: Proxy{ID: 4, Name: "p90-fast"}, AccountCount: 3},
+		},
+		listWithFiltersAndAccountCountResult: &pagination.PaginationResult{Total: 4},
+	}
+	cache := &proxyLatencyCacheStubForAdminList{
+		latencies: map[int64]*ProxyLatencyInfo{
+			1: {Success: true, QualityScore: &score75, LatencyMs: &latency500},
+			3: {Success: true, QualityScore: &score90, LatencyMs: &latency400},
+			4: {Success: true, QualityScore: &score90, LatencyMs: &latency100},
+		},
+	}
+	svc := &adminServiceImpl{proxyRepo: repo, proxyLatencyCache: cache}
+
+	proxies, total, err := svc.ListProxiesWithAccountCount(context.Background(), 1, 2, "", "", "", "quality_score", "desc")
+
+	require.NoError(t, err)
+	require.Equal(t, int64(4), total)
+	require.Equal(t, []int64{4, 3}, []int64{proxies[0].ID, proxies[1].ID})
+	require.Equal(t, &score90, proxies[0].QualityScore)
+	require.Equal(t, &latency100, proxies[0].LatencyMs)
+	require.Equal(t, pagination.PaginationParams{Page: 1, PageSize: 2, SortBy: "quality_score", SortOrder: "desc"}, repo.listWithFiltersAndAccountCountParams)
 }
 
 func TestAdminService_ListRedeemCodes_WithSearch(t *testing.T) {

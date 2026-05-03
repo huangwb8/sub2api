@@ -3519,6 +3519,7 @@ export default {
         status: '状态',
         accounts: '账号数',
         latency: '延迟',
+        quality: '质量',
         actions: '操作',
         nameLabel: '名称',
         namePlaceholder: '请输入代理名称',
