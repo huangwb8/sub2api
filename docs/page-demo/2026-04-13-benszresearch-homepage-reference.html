@@ -6,10 +6,10 @@
 -->
 <style>
   .bensz-home,
-  .bensz-home * {
+  .bensz-home *,
+  .bensz-home *::before,
+  .bensz-home *::after {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
   }
 
   .bensz-home {
@@ -40,7 +40,7 @@
     --text: var(--slate-900);
     --text-2: var(--slate-600);
     --text-3: var(--slate-500);
-    --text-4: var(--slate-400);
+    --text-4: var(--slate-500);
     --accent: var(--teal-600);
     --accent-dark: var(--teal-700);
     --warm: var(--gold-500);
@@ -282,187 +282,33 @@
     max-width: 54ch;
   }
 
-  .bensz-home__signal-band {
-    position: relative;
+  .bensz-home__benefits {
+    display: grid;
+    gap: 14px;
     margin-top: 28px;
-    padding: 18px 18px 20px;
-    border: 1px solid rgba(15, 118, 110, 0.12);
-    border-radius: 20px;
-    background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 250, 0.82)),
-      radial-gradient(circle at 88% 18%, rgba(229, 160, 75, 0.12), transparent 28%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), 0 16px 36px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
+    padding: 20px;
+    border: 1px solid rgba(15, 118, 110, 0.1);
+    border-radius: 16px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 253, 250, 0.75));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), var(--shadow-sm);
   }
 
-  .bensz-home__signal-band::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(15, 118, 110, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(15, 118, 110, 0.05) 1px, transparent 1px);
-    background-size: 18px 18px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 90%);
-    pointer-events: none;
-  }
-
-  .bensz-home__signal-band::after {
-    content: "";
-    position: absolute;
-    inset: auto -10% -56% 45%;
-    height: 140px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(20, 184, 166, 0.16), transparent 68%);
-    pointer-events: none;
-  }
-
-  .bensz-home__signal-head {
-    position: relative;
-    z-index: 1;
+  .bensz-home__benefit {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    align-items: flex-start;
     gap: 12px;
+    color: var(--text-2);
+    font-size: 14px;
+    line-height: 1.6;
   }
 
-  .bensz-home__signal-kicker {
-    color: var(--teal-700);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .bensz-home__signal-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-3);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-
-  .bensz-home__signal-status::before {
-    content: "";
+  .bensz-home__benefit-dot {
+    flex-shrink: 0;
     width: 8px;
     height: 8px;
+    margin-top: 7px;
     border-radius: 50%;
-    background: var(--gold-400);
-    box-shadow: 0 0 0 0 rgba(229, 160, 75, 0.2);
-    animation: benszBeacon 2.2s ease-in-out infinite;
-  }
-
-  .bensz-home__signal-track {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 18px;
-    padding-top: 16px;
-  }
-
-  .bensz-home__signal-line {
-    position: absolute;
-    left: 34px;
-    right: 34px;
-    top: 22px;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(20, 184, 166, 0.18), rgba(229, 160, 75, 0.24));
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .bensz-home__signal-line::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 12px;
-    height: 12px;
-    margin-top: -6px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--teal-600), var(--gold-400));
-    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.08), 0 0 12px rgba(20, 184, 166, 0.3);
-    animation: benszSignalTravel 3.8s ease-in-out infinite alternate;
-  }
-
-  .bensz-home__signal-line::after {
-    content: "";
-    position: absolute;
-    top: -4px;
-    left: 0;
-    width: 84px;
-    height: 10px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(20, 184, 166, 0), rgba(20, 184, 166, 0.28), rgba(229, 160, 75, 0));
-    filter: blur(5px);
-    animation: benszSignalSweep 3.8s ease-in-out infinite alternate;
-  }
-
-  .bensz-home__signal-stage {
-    position: relative;
-    min-height: 88px;
-    padding: 18px 14px 14px;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.84);
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(8px);
-  }
-
-  .bensz-home__signal-stage::before {
-    content: "";
-    position: absolute;
-    top: 10px;
-    left: 14px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-  }
-
-  .bensz-home__signal-stage--source::before {
-    background: var(--teal-500);
-    box-shadow: 0 0 8px rgba(20, 184, 166, 0.38);
-  }
-
-  .bensz-home__signal-stage--draft {
-    transform: translateY(16px);
-  }
-
-  .bensz-home__signal-stage--draft::before {
-    background: var(--gold-500);
-    box-shadow: 0 0 8px rgba(229, 160, 75, 0.34);
-  }
-
-  .bensz-home__signal-stage--ready {
-    transform: translateY(6px);
-  }
-
-  .bensz-home__signal-stage--ready::before {
-    background: var(--teal-700);
-    box-shadow: 0 0 8px rgba(15, 118, 110, 0.34);
-  }
-
-  .bensz-home__signal-stage-label {
-    display: block;
-    color: var(--slate-900);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    line-height: 1.25;
-  }
-
-  .bensz-home__signal-stage-meta {
-    display: block;
-    margin-top: 8px;
-    color: var(--text-3);
-    font-size: 11px;
-    line-height: 1.55;
-    letter-spacing: 0.03em;
+    background: linear-gradient(135deg, var(--teal-500), var(--gold-500));
   }
 
   .bensz-home__actions {
@@ -537,68 +383,11 @@
   .bensz-home__orbit {
     position: relative;
     flex: 1;
-    min-height: 240px;
+    min-height: 260px;
     border-radius: 18px;
-    background: radial-gradient(circle at 50% 50%, rgba(15, 118, 110, 0.05), transparent 50%), rgba(248, 250, 252, 0.6);
+    background: radial-gradient(circle at 50% 50%, rgba(15, 118, 110, 0.06), transparent 55%), rgba(248, 250, 252, 0.6);
     border: 1px solid var(--border);
     overflow: hidden;
-  }
-
-  .bensz-home__orbit-ring {
-    position: absolute;
-    border-radius: 50%;
-  }
-
-  .bensz-home__orbit-ring--inner {
-    width: 100px;
-    height: 100px;
-    left: calc(50% - 50px);
-    top: calc(50% - 50px);
-    border: 1px dashed rgba(15, 118, 110, 0.2);
-    animation: benszSpin 36s linear infinite;
-  }
-
-  .bensz-home__orbit-ring--mid {
-    width: 168px;
-    height: 168px;
-    left: calc(50% - 84px);
-    top: calc(50% - 84px);
-    border: 1px dashed rgba(15, 118, 110, 0.1);
-    animation: benszSpinR 56s linear infinite;
-  }
-
-  .bensz-home__orbit-ring--outer {
-    width: 236px;
-    height: 236px;
-    left: calc(50% - 118px);
-    top: calc(50% - 118px);
-    border: 1px solid rgba(15, 118, 110, 0.05);
-  }
-
-  .bensz-home__orbit-dot {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .bensz-home__orbit-dot--a {
-    top: calc(50% - 50px - 3px);
-    left: calc(50% - 3px);
-    transform-origin: 3px 53px;
-    background: var(--teal-500);
-    box-shadow: 0 0 10px rgba(20, 184, 166, 0.55);
-    animation: benszSpin 36s linear infinite;
-  }
-
-  .bensz-home__orbit-dot--b {
-    top: calc(50% - 84px - 3px);
-    left: calc(50% - 3px);
-    transform-origin: 3px 87px;
-    background: var(--gold-400);
-    box-shadow: 0 0 10px rgba(229, 160, 75, 0.5);
-    animation: benszSpinR 56s linear infinite;
   }
 
   .bensz-home__orbit-core {
@@ -607,16 +396,16 @@
     top: 50%;
     display: grid;
     place-items: center;
-    width: 68px;
-    height: 68px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: linear-gradient(145deg, var(--teal-700), var(--teal-600));
     color: var(--white);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.1em;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 0 10px rgba(15, 118, 110, 0.06), 0 0 0 22px rgba(15, 118, 110, 0.025), 0 12px 32px rgba(15, 118, 110, 0.18);
+    box-shadow: 0 0 0 12px rgba(15, 118, 110, 0.06), 0 0 0 24px rgba(15, 118, 110, 0.03), 0 12px 32px rgba(15, 118, 110, 0.18);
   }
 
   .bensz-home__node {
@@ -761,9 +550,10 @@
   }
 
   .bensz-home__pricing-card--featured {
-    border-color: rgba(15, 118, 110, 0.18);
-    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(15, 118, 110, 0.06);
-    transform: translateY(-3px);
+    border-color: rgba(15, 118, 110, 0.25);
+    background: linear-gradient(180deg, rgba(15, 118, 110, 0.04), rgba(255, 255, 255, 0.9));
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(15, 118, 110, 0.1), 0 8px 32px rgba(15, 118, 110, 0.1);
+    transform: translateY(-4px);
   }
 
   .bensz-home__pricing-card-top {
@@ -806,6 +596,11 @@
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.04em;
+  }
+
+  .bensz-home__pricing-badge--featured {
+    background: linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(212, 148, 10, 0.12));
+    color: var(--accent-dark);
   }
 
   .bensz-home__pricing-name {
@@ -1024,6 +819,21 @@
     text-align: center;
   }
 
+  .bensz-home__pricing-loading {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bensz-home__pricing-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: benszShimmer 1.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
   .bensz-home__pricing-error {
     color: #b45309;
     background: rgba(254, 243, 199, 0.36);
@@ -1077,54 +887,18 @@
     color: var(--text-2);
   }
 
-  @keyframes benszSpin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  .bensz-home__nav-btn:focus-visible,
+  .bensz-home__cta:focus-visible,
+  .bensz-home__pricing-buy:focus-visible,
+  .bensz-home__pricing-retry:focus-visible,
+  .bensz-home__footer-links a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
-  @keyframes benszSpinR {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(-360deg);
-    }
-  }
-
-  @keyframes benszBeacon {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 rgba(229, 160, 75, 0.2);
-      opacity: 0.95;
-    }
-    50% {
-      box-shadow: 0 0 0 6px rgba(229, 160, 75, 0.05);
-      opacity: 0.55;
-    }
-  }
-
-  @keyframes benszSignalTravel {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(calc(100% - 12px));
-    }
-  }
-
-  @keyframes benszSignalSweep {
-    from {
-      transform: translateX(0);
-      opacity: 0.2;
-    }
-    to {
-      transform: translateX(calc(100% - 84px));
-      opacity: 0.9;
-    }
+  @keyframes benszShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1133,13 +907,7 @@
     .bensz-home__feat,
     .bensz-home__pricing-buy,
     .bensz-home__pricing-retry,
-    .bensz-home__orbit-ring--inner,
-    .bensz-home__orbit-ring--mid,
-    .bensz-home__orbit-dot--a,
-    .bensz-home__orbit-dot--b,
-    .bensz-home__signal-status::before,
-    .bensz-home__signal-line::before,
-    .bensz-home__signal-line::after {
+    .bensz-home__pricing-loading::after {
       animation: none !important;
       transition: none !important;
     }
@@ -1156,7 +924,7 @@
     }
 
     .bensz-home__side {
-      min-height: 380px;
+      min-height: 320px;
     }
   }
 
@@ -1197,21 +965,6 @@
       min-height: 220px;
     }
 
-    .bensz-home__signal-track {
-      grid-template-columns: 1fr;
-      gap: 10px;
-      padding-top: 0;
-    }
-
-    .bensz-home__signal-line {
-      display: none;
-    }
-
-    .bensz-home__signal-stage--draft,
-    .bensz-home__signal-stage--ready {
-      transform: none;
-    }
-
     .bensz-home__node--grant {
       top: 14px;
       left: 10px;
@@ -1232,19 +985,8 @@
       align-items: stretch;
     }
 
-    .bensz-home__signal-head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .bensz-home__signal-band {
-      padding: 16px 14px 16px;
-      margin-top: 24px;
-    }
-
-    .bensz-home__signal-stage {
-      min-height: auto;
-      padding: 16px 12px 12px;
+    .bensz-home__benefits {
+      padding: 16px;
     }
 
     .bensz-home__cta,
@@ -1307,25 +1049,18 @@
             专为科研人员设计的 AI API 服务平台，让学术写作更高效，经费报销更顺畅。
           </p>
 
-          <div class="bensz-home__signal-band" aria-hidden="true">
-            <div class="bensz-home__signal-head">
-              <span class="bensz-home__signal-kicker">Research Flow</span>
-              <span class="bensz-home__signal-status">workflow live</span>
+          <div class="bensz-home__benefits" role="list">
+            <div class="bensz-home__benefit" role="listitem">
+              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
+              <span>文献检索 → 提纲构建 → 成稿润色，一条链路打通学术写作全流程</span>
             </div>
-            <div class="bensz-home__signal-track">
-              <div class="bensz-home__signal-line"></div>
-              <div class="bensz-home__signal-stage bensz-home__signal-stage--source">
-                <span class="bensz-home__signal-stage-label">检索线索</span>
-                <span class="bensz-home__signal-stage-meta">文献检索、提纲线索与资料入口先汇成一条路。</span>
-              </div>
-              <div class="bensz-home__signal-stage bensz-home__signal-stage--draft">
-                <span class="bensz-home__signal-stage-label">写作成稿</span>
-                <span class="bensz-home__signal-stage-meta">提示词、模型调用与学术表达在同一工作流里推进。</span>
-              </div>
-              <div class="bensz-home__signal-stage bensz-home__signal-stage--ready">
-                <span class="bensz-home__signal-stage-label">归档交付</span>
-                <span class="bensz-home__signal-stage-meta">从结果沉淀到经费归档，保持科研节奏连续不中断。</span>
-              </div>
+            <div class="bensz-home__benefit" role="listitem">
+              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
+              <span>平台开具正规发票，科研经费报销合规无忧</span>
+            </div>
+            <div class="bensz-home__benefit" role="listitem">
+              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
+              <span>一个 API Key 对接主流 AI 模型，开箱即用无需配置</span>
             </div>
           </div>
 
@@ -1353,11 +1088,6 @@
           </div>
 
           <div class="bensz-home__orbit" aria-hidden="true">
-            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--inner"></div>
-            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--mid"></div>
-            <div class="bensz-home__orbit-ring bensz-home__orbit-ring--outer"></div>
-            <span class="bensz-home__orbit-dot bensz-home__orbit-dot--a"></span>
-            <span class="bensz-home__orbit-dot bensz-home__orbit-dot--b"></span>
             <div class="bensz-home__orbit-core">BR</div>
             <div class="bensz-home__node bensz-home__node--grant">标书写作</div>
             <div class="bensz-home__node bensz-home__node--paper">论文润色</div>
@@ -1412,7 +1142,7 @@
         </div>
 
         <div class="bensz-home__pricing-empty" data-pricing-empty hidden>
-          当前暂未上架可售套餐。管理员在后台开启套餐售卖后，这里会自动展示。
+          当前暂无可售套餐，如有需要请联系客服。
         </div>
 
         <div class="bensz-home__pricing-grid" data-pricing-grid hidden></div>
@@ -1754,14 +1484,14 @@
         }
       ];
 
-      var featureList = features.length ? features : ['自动对接后台上架套餐', '适合科研写作场景的稳定入口', '套餐停售或调整后会自动同步'];
+      var featureList = features.length ? features : ['稳定可靠的科研 AI 服务入口', '适合学术写作与文献处理场景', '套餐信息随平台更新自动同步'];
 
       return [
         '<article class="bensz-home__pricing-card' + (featured ? ' bensz-home__pricing-card--featured' : '') + '">',
         '  <div>',
         '    <div class="bensz-home__pricing-card-top">',
         '      <span class="bensz-home__pricing-platform">' + escapeHtml(platformLabel) + '</span>',
-        featured ? '      <span class="bensz-home__pricing-badge">推荐</span>' : '      <span class="bensz-home__pricing-badge">已上线</span>',
+        featured ? '      <span class="bensz-home__pricing-badge bensz-home__pricing-badge--featured">推荐</span>' : '      <span class="bensz-home__pricing-badge">已上线</span>',
         '    </div>',
         '    <h3 class="bensz-home__pricing-name">' + escapeHtml(plan.name || '未命名套餐') + '</h3>',
         '    <p class="bensz-home__pricing-caption">' + description + '</p>',
