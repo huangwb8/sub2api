@@ -82,6 +82,9 @@ func (userSubRepoNoop) GetActiveByUserIDAndGroupID(context.Context, int64, int64
 func (userSubRepoNoop) Update(context.Context, *UserSubscription) error {
 	panic("unexpected Update call")
 }
+func (userSubRepoNoop) ExtendOrActivateByUserAndGroup(context.Context, int64, int64, int, string, *SubscriptionPlanSnapshot, *time.Time) (*UserSubscription, error) {
+	panic("unexpected ExtendOrActivateByUserAndGroup call")
+}
 func (userSubRepoNoop) Delete(context.Context, int64) error { panic("unexpected Delete call") }
 func (userSubRepoNoop) ListByUserID(context.Context, int64) ([]UserSubscription, error) {
 	panic("unexpected ListByUserID call")
@@ -196,6 +199,40 @@ func (s *subscriptionUserSubRepoStub) GetByID(_ context.Context, id int64) (*Use
 		return nil, ErrSubscriptionNotFound
 	}
 	cp := *sub
+	return &cp, nil
+}
+
+func (s *subscriptionUserSubRepoStub) ExtendOrActivateByUserAndGroup(_ context.Context, userID, groupID int64, validityDays int, notes string, snapshot *SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time) (*UserSubscription, error) {
+	sub := s.byUserGroup[s.key(userID, groupID)]
+	if sub == nil {
+		return nil, ErrSubscriptionNotFound
+	}
+	if validityDays <= 0 {
+		validityDays = 30
+	}
+	if validityDays > MaxValidityDays {
+		validityDays = MaxValidityDays
+	}
+	cp := *sub
+	now := time.Now()
+	if cp.ExpiresAt.After(now) {
+		cp.ExpiresAt = cp.ExpiresAt.AddDate(0, 0, validityDays)
+	} else {
+		cp.ExpiresAt = now.AddDate(0, 0, validityDays)
+	}
+	if cp.ExpiresAt.After(MaxExpiresAt) {
+		cp.ExpiresAt = MaxExpiresAt
+	}
+	cp.Status = SubscriptionStatusActive
+	if notes != "" {
+		if cp.Notes != "" {
+			cp.Notes += "\n"
+		}
+		cp.Notes += notes
+	}
+	applySubscriptionPlanSnapshot(&cp, snapshot, billingCycleStartedAt, now)
+	s.byID[cp.ID] = &cp
+	s.byUserGroup[s.key(userID, groupID)] = &cp
 	return &cp, nil
 }
 

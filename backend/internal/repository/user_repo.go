@@ -12,6 +12,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	dbgroup "github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -470,6 +471,28 @@ func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount flo
 		return service.ErrUserNotFound
 	}
 	return nil
+}
+
+func (r *userRepository) AdjustBalanceAtomically(ctx context.Context, id int64, delta float64, preventNegative bool) (*service.User, error) {
+	client := clientFromContext(ctx, r.client)
+	predicates := []predicate.User{dbuser.IDEQ(id)}
+	if preventNegative && delta < 0 {
+		predicates = append(predicates, dbuser.BalanceGTE(-delta))
+	}
+	n, err := client.User.Update().
+		Where(predicates...).
+		AddBalance(delta).
+		Save(ctx)
+	if err != nil {
+		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	if n == 0 {
+		if _, getErr := r.GetByID(ctx, id); getErr != nil {
+			return nil, getErr
+		}
+		return nil, service.ErrInsufficientBalance
+	}
+	return r.GetByID(ctx, id)
 }
 
 // DeductBalance 扣除用户余额

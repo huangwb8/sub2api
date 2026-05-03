@@ -206,50 +206,9 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 
 	// 已有订阅，执行续期（在事务中完成所有更新）
 	if existingSub != nil {
-		now := time.Now()
-		var newExpiresAt time.Time
-
-		if existingSub.ExpiresAt.After(now) {
-			// 未过期：从当前过期时间累加
-			newExpiresAt = existingSub.ExpiresAt.AddDate(0, 0, validityDays)
-		} else {
-			// 已过期：从当前时间开始计算
-			newExpiresAt = now.AddDate(0, 0, validityDays)
-		}
-
-		// 确保不超过最大过期时间
-		if newExpiresAt.After(MaxExpiresAt) {
-			newExpiresAt = MaxExpiresAt
-		}
-
-		// 开启事务：续期与可选套餐快照更新在同一事务中完成
-		tx, err := s.entClient.Tx(ctx)
+		sub, err := s.userSubRepo.ExtendOrActivateByUserAndGroup(ctx, input.UserID, input.GroupID, validityDays, input.Notes, input.PlanSnapshot, input.BillingCycleStartedAt)
 		if err != nil {
-			return nil, false, fmt.Errorf("begin transaction: %w", err)
-		}
-		txCtx := dbent.NewTxContext(ctx, tx)
-
-		existingSub.ExpiresAt = newExpiresAt
-		if existingSub.Status != SubscriptionStatusActive {
-			existingSub.Status = SubscriptionStatusActive
-		}
-		if input.Notes != "" {
-			newNotes := existingSub.Notes
-			if newNotes != "" {
-				newNotes += "\n"
-			}
-			newNotes += input.Notes
-			existingSub.Notes = newNotes
-		}
-		applySubscriptionPlanSnapshot(existingSub, input.PlanSnapshot, input.BillingCycleStartedAt, now)
-		if err := s.userSubRepo.Update(txCtx, existingSub); err != nil {
-			_ = tx.Rollback()
 			return nil, false, fmt.Errorf("update subscription: %w", err)
-		}
-
-		// 提交事务
-		if err := tx.Commit(); err != nil {
-			return nil, false, fmt.Errorf("commit transaction: %w", err)
 		}
 
 		// 失效订阅缓存
@@ -263,9 +222,7 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 			}()
 		}
 
-		// 返回更新后的订阅
-		sub, err := s.userSubRepo.GetByID(ctx, existingSub.ID)
-		return sub, true, err // true 表示是续期
+		return sub, true, nil // true 表示是续期
 	}
 
 	// 没有订阅，创建新订阅

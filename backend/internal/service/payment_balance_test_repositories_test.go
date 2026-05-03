@@ -217,6 +217,40 @@ func (r *paymentTestUserSubscriptionRepo) Update(ctx context.Context, sub *UserS
 	return nil
 }
 
+func (r *paymentTestUserSubscriptionRepo) ExtendOrActivateByUserAndGroup(ctx context.Context, userID, groupID int64, validityDays int, notes string, snapshot *SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time) (*UserSubscription, error) {
+	sub, err := r.GetByUserIDAndGroupID(ctx, userID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	if validityDays <= 0 {
+		validityDays = 30
+	}
+	if validityDays > MaxValidityDays {
+		validityDays = MaxValidityDays
+	}
+	now := time.Now()
+	if sub.ExpiresAt.After(now) {
+		sub.ExpiresAt = sub.ExpiresAt.AddDate(0, 0, validityDays)
+	} else {
+		sub.ExpiresAt = now.AddDate(0, 0, validityDays)
+	}
+	if sub.ExpiresAt.After(MaxExpiresAt) {
+		sub.ExpiresAt = MaxExpiresAt
+	}
+	sub.Status = SubscriptionStatusActive
+	if notes != "" {
+		if sub.Notes != "" {
+			sub.Notes += "\n"
+		}
+		sub.Notes += notes
+	}
+	applySubscriptionPlanSnapshot(sub, snapshot, billingCycleStartedAt, now)
+	if err := r.Update(ctx, sub); err != nil {
+		return nil, err
+	}
+	return r.GetByID(ctx, sub.ID)
+}
+
 func (r *paymentTestUserSubscriptionRepo) Delete(ctx context.Context, id int64) error {
 	_, err := paymentTestClientFromContext(ctx, r.client).UserSubscription.Delete().
 		Where(dbusersubscription.IDEQ(id)).

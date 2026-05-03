@@ -13,6 +13,7 @@ type UserSubscriptionRepository interface {
 	GetByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*UserSubscription, error)
 	GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*UserSubscription, error)
 	Update(ctx context.Context, sub *UserSubscription) error
+	ExtendOrActivateByUserAndGroup(ctx context.Context, userID, groupID int64, validityDays int, notes string, snapshot *SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time) (*UserSubscription, error)
 	Delete(ctx context.Context, id int64) error
 
 	ListByUserID(ctx context.Context, userID int64) ([]UserSubscription, error)

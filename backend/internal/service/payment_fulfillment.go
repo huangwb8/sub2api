@@ -389,18 +389,20 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
 	}
-	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed && o.Status != OrderStatusRecharging {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
 	if o.SubscriptionGroupID == nil || o.SubscriptionDays == nil {
 		return infraerrors.BadRequest("INVALID_STATUS", "missing subscription info")
 	}
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
-	if err != nil {
-		return fmt.Errorf("lock: %w", err)
-	}
-	if c == 0 {
-		return nil
+	if o.Status != OrderStatusRecharging {
+		c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
+		if err != nil {
+			return fmt.Errorf("lock: %w", err)
+		}
+		if c == 0 {
+			return nil
+		}
 	}
 	if err := s.doSub(ctx, o); err != nil {
 		s.markFailed(ctx, oid, err)
@@ -420,21 +422,23 @@ func (s *PaymentService) ExecuteSubscriptionUpgradeFulfillment(ctx context.Conte
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
 	}
-	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed && o.Status != OrderStatusRecharging {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
 	if o.PlanID == nil || o.SourceSubscriptionID == nil {
 		return infraerrors.BadRequest("INVALID_STATUS", "missing upgrade order info")
 	}
-	c, err := s.entClient.PaymentOrder.Update().
-		Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).
-		SetStatus(OrderStatusRecharging).
-		Save(ctx)
-	if err != nil {
-		return fmt.Errorf("lock: %w", err)
-	}
-	if c == 0 {
-		return nil
+	if o.Status != OrderStatusRecharging {
+		c, err := s.entClient.PaymentOrder.Update().
+			Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).
+			SetStatus(OrderStatusRecharging).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("lock: %w", err)
+		}
+		if c == 0 {
+			return nil
+		}
 	}
 	if err := s.doSubscriptionUpgrade(ctx, o); err != nil {
 		s.markFailed(ctx, oid, err)
@@ -457,25 +461,46 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 			return fmt.Errorf("load subscription plan: %w", err)
 		}
 	}
-	// Idempotency: check audit log to see if subscription was already assigned.
-	// Prevents double-extension on retry after markCompleted fails.
-	if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
-		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "groupID", gid)
-		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin subscription fulfillment transaction: %w", err)
 	}
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+
 	orderNote := fmt.Sprintf("payment order %d", o.ID)
-	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
+	if _, _, err = s.subscriptionSvc.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
 		UserID:       o.UserID,
 		GroupID:      gid,
 		ValidityDays: days,
 		AssignedBy:   0,
 		Notes:        orderNote,
 		PlanSnapshot: subscriptionPlanSnapshotFromPlan(plan),
-	})
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("assign subscription: %w", err)
 	}
-	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+
+	now := time.Now()
+	updated, err := tx.PaymentOrder.Update().
+		Where(paymentorder.IDEQ(o.ID), paymentorder.StatusEQ(OrderStatusRecharging)).
+		SetStatus(OrderStatusCompleted).
+		SetCompletedAt(now).
+		ClearFailedAt().
+		ClearFailedReason().
+		Save(txCtx)
+	if err != nil {
+		return fmt.Errorf("mark completed: %w", err)
+	}
+	if updated == 0 {
+		return infraerrors.Conflict("ORDER_STATE_CHANGED", "order state changed during fulfillment")
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit subscription fulfillment: %w", err)
+	}
+
+	s.writeAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS", "system", map[string]any{"rechargeCode": o.RechargeCode, "amount": o.Amount})
+	return nil
 }
 
 func (s *PaymentService) doSubscriptionUpgrade(ctx context.Context, o *dbent.PaymentOrder) error {
@@ -592,6 +617,10 @@ func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error 
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot retry")
 	}
 	if o.Status == OrderStatusRecharging {
+		if o.PaymentType == payment.TypeBalance && (o.OrderType == payment.OrderTypeSubscription || o.OrderType == payment.OrderTypeSubscriptionUpgrade) {
+			s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{"detail": "admin manual retry for balance-paid order in recharging state"})
+			return s.executeFulfillment(ctx, oid)
+		}
 		return infraerrors.Conflict("CONFLICT", "order is being processed")
 	}
 	if o.Status == OrderStatusCompleted {

@@ -13,6 +13,7 @@ import (
 
 type billingCacheWorkerStub struct {
 	balanceUpdates      int64
+	balanceInvalidates  int64
 	subscriptionUpdates int64
 	balance             float64
 	balanceErr          error
@@ -40,6 +41,7 @@ func (b *billingCacheWorkerStub) DeductUserBalance(ctx context.Context, userID i
 }
 
 func (b *billingCacheWorkerStub) InvalidateUserBalance(ctx context.Context, userID int64) error {
+	atomic.AddInt64(&b.balanceInvalidates, 1)
 	return nil
 }
 

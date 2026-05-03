@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -158,6 +159,76 @@ func TestPaymentService_CreateOrder_WithBalancePaymentCompletesSubscription(t *t
 	require.Equal(t, plan.ValidityDays, *sub.CurrentPlanValidityDays)
 	require.Equal(t, plan.ValidityUnit, sub.CurrentPlanValidityUnit)
 	require.NotNil(t, sub.BillingCycleStartedAt)
+}
+
+func TestPaymentService_RetryFulfillment_RecoversBalanceSubscriptionInRechargingWithoutSecondDebit(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentServiceSQLite(t)
+	ctx := context.Background()
+
+	user := mustCreatePaymentUser(t, ctx, client, 100)
+	group := mustCreatePlanGroup(t, ctx, client, "balance-recovery-group", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, group.ID, "balance-recovery-plan", true)
+	cfg, err := svc.configService.GetPaymentConfig(ctx)
+	require.NoError(t, err)
+	serviceUser, err := svc.userRepo.GetByID(ctx, user.ID)
+	require.NoError(t, err)
+
+	order, err := svc.createBalanceSubscriptionOrderInTx(ctx, CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      plan.Price,
+		PaymentType: payment.TypeBalance,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      plan.ID,
+	}, serviceUser, plan, cfg, plan.Price)
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusRecharging, order.Status)
+
+	afterDebit, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.InDelta(t, user.Balance-plan.Price, afterDebit.Balance, 0.0001)
+
+	err = svc.RetryFulfillment(ctx, order.ID)
+	require.NoError(t, err)
+
+	completed, err := client.PaymentOrder.Get(ctx, order.ID)
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusCompleted, completed.Status)
+
+	afterRetry, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.InDelta(t, afterDebit.Balance, afterRetry.Balance, 0.0001, "retry must not deduct wallet balance again")
+
+	sub, err := svc.subscriptionSvc.GetActiveSubscription(ctx, user.ID, group.ID)
+	require.NoError(t, err)
+	require.NotNil(t, sub)
+}
+
+func TestPaymentService_CreateOrder_WithBalancePaymentInvalidatesBalanceCache(t *testing.T) {
+	t.Parallel()
+
+	svc, client := newPaymentServiceSQLite(t)
+	ctx := context.Background()
+	cache := &billingCacheWorkerStub{balance: 100}
+	billingCacheSvc := NewBillingCacheService(cache, svc.userRepo, svc.subscriptionSvc.userSubRepo, nil, nil)
+	t.Cleanup(billingCacheSvc.Stop)
+	svc.subscriptionSvc.billingCacheService = billingCacheSvc
+
+	user := mustCreatePaymentUser(t, ctx, client, 100)
+	group := mustCreatePlanGroup(t, ctx, client, "balance-cache-group", StatusActive, SubscriptionTypeSubscription)
+	plan := mustCreateSubscriptionPlan(t, ctx, client, group.ID, "balance-cache-plan", true)
+
+	resp, err := svc.CreateOrder(ctx, CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      plan.Price,
+		PaymentType: payment.TypeBalance,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      plan.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, OrderStatusCompleted, resp.Status)
+	require.GreaterOrEqual(t, atomic.LoadInt64(&cache.balanceInvalidates), int64(1))
 }
 
 func TestPaymentService_CreateOrder_WithBalancePaymentRefreshesPlanSnapshotOnRenewal(t *testing.T) {

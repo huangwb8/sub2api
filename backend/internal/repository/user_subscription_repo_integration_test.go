@@ -5,6 +5,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -202,6 +203,88 @@ func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID_ExpiredIgnor
 
 	_, err := s.repo.GetActiveByUserIDAndGroupID(s.ctx, user.ID, group.ID)
 	s.Require().Error(err, "expected error for expired subscription")
+}
+
+func (s *UserSubscriptionRepoSuite) TestConcurrentExtendOrActivateByUserAndGroupAccumulatesValidity() {
+	ctx := context.Background()
+	client := testEntClient(s.T())
+	repo := NewUserSubscriptionRepository(client).(*userSubscriptionRepository)
+	_, _ = integrationDB.ExecContext(ctx, "DELETE FROM user_subscriptions")
+	_, _ = integrationDB.ExecContext(ctx, "DELETE FROM users")
+	_, _ = integrationDB.ExecContext(ctx, "DELETE FROM groups")
+	var user *dbent.User
+	var group *dbent.Group
+	defer func() {
+		if user != nil {
+			_, _ = integrationDB.ExecContext(context.Background(), "DELETE FROM user_subscriptions WHERE user_id = $1", user.ID)
+			_, _ = integrationDB.ExecContext(context.Background(), "DELETE FROM users WHERE id = $1", user.ID)
+		}
+		if group != nil {
+			_, _ = integrationDB.ExecContext(context.Background(), "DELETE FROM groups WHERE id = $1", group.ID)
+		}
+	}()
+
+	var err error
+	user, err = client.User.Create().
+		SetEmail("concurrent-renew@test.com").
+		SetPasswordHash("test-password-hash").
+		SetStatus(service.StatusActive).
+		SetRole(service.RoleUser).
+		Save(ctx)
+	s.Require().NoError(err)
+	group, err = client.Group.Create().
+		SetName("g-concurrent-renew").
+		SetStatus(service.StatusActive).
+		Save(ctx)
+	s.Require().NoError(err)
+	baseExpiresAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Microsecond)
+	created, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(group.ID).
+		SetStartsAt(time.Now().Add(-1 * time.Hour)).
+		SetExpiresAt(baseExpiresAt).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(time.Now()).
+		SetNotes("").
+		Save(ctx)
+	s.Require().NoError(err)
+
+	errCh := make(chan error, 2)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	planID := int64(99)
+	planPrice := 19.9
+	planDays := 30
+	snapshot := &service.SubscriptionPlanSnapshot{
+		PlanID:       &planID,
+		PlanName:     "concurrent plan",
+		PlanPriceCNY: &planPrice,
+		ValidityDays: &planDays,
+		ValidityUnit: "day",
+	}
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := repo.ExtendOrActivateByUserAndGroup(ctx, user.ID, group.ID, 30, "concurrent renewal", snapshot, nil)
+			errCh <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		s.Require().NoError(err)
+	}
+
+	got, err := repo.GetByID(ctx, created.ID)
+	s.Require().NoError(err)
+	s.Require().WithinDuration(baseExpiresAt.AddDate(0, 0, 60), got.ExpiresAt, time.Second)
+	s.Require().Equal(service.SubscriptionStatusActive, got.Status)
+	s.Require().NotNil(got.CurrentPlanID)
+	s.Require().Equal(planID, *got.CurrentPlanID)
+	s.Require().Equal("concurrent plan", got.CurrentPlanName)
 }
 
 // --- ListByUserID / ListActiveByUserID ---

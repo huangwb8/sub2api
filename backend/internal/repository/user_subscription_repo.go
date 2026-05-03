@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -143,11 +144,198 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, service.ErrSubscriptionAlreadyExists)
 }
 
+func (r *userSubscriptionRepository) ExtendOrActivateByUserAndGroup(ctx context.Context, userID, groupID int64, validityDays int, notes string, snapshot *service.SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time) (*service.UserSubscription, error) {
+	if validityDays <= 0 {
+		validityDays = 30
+	}
+	if validityDays > service.MaxValidityDays {
+		validityDays = service.MaxValidityDays
+	}
+
+	now := time.Now().UTC()
+	maxExpiresAt := service.MaxExpiresAt
+	planID, planPrice, planDays := sql.NullInt64{}, sql.NullFloat64{}, sql.NullInt64{}
+	planName, planUnit := "", ""
+	cycleStartedAt := sql.NullTime{}
+	if snapshot != nil {
+		if snapshot.PlanID != nil {
+			planID = sql.NullInt64{Int64: *snapshot.PlanID, Valid: true}
+		}
+		planName = snapshot.PlanName
+		if snapshot.PlanPriceCNY != nil {
+			planPrice = sql.NullFloat64{Float64: *snapshot.PlanPriceCNY, Valid: true}
+		}
+		if snapshot.ValidityDays != nil {
+			planDays = sql.NullInt64{Int64: int64(*snapshot.ValidityDays), Valid: true}
+		}
+		planUnit = snapshot.ValidityUnit
+		if billingCycleStartedAt != nil {
+			cycleStartedAt = sql.NullTime{Time: *billingCycleStartedAt, Valid: true}
+		} else {
+			cycleStartedAt = sql.NullTime{Time: now, Valid: true}
+		}
+	}
+
+	const query = `
+		UPDATE user_subscriptions
+		SET
+			expires_at = LEAST(
+				CASE
+					WHEN expires_at > $1 THEN expires_at + ($2::int * INTERVAL '1 day')
+					ELSE $1 + ($2::int * INTERVAL '1 day')
+				END,
+				$3
+			),
+			status = $4,
+			notes = CASE
+				WHEN $5 = '' THEN COALESCE(notes, '')
+				WHEN COALESCE(notes, '') = '' THEN $5
+				ELSE COALESCE(notes, '') || E'\n' || $5
+			END,
+			current_plan_id = CASE WHEN $6::boolean THEN $7::bigint ELSE current_plan_id END,
+			current_plan_name = CASE WHEN $6::boolean THEN $8::text ELSE current_plan_name END,
+			current_plan_price_cny = CASE WHEN $6::boolean THEN $9::numeric ELSE current_plan_price_cny END,
+			current_plan_validity_days = CASE WHEN $6::boolean THEN $10::int ELSE current_plan_validity_days END,
+			current_plan_validity_unit = CASE WHEN $6::boolean THEN $11::text ELSE current_plan_validity_unit END,
+			billing_cycle_started_at = CASE WHEN $6::boolean THEN $12::timestamptz ELSE billing_cycle_started_at END,
+			updated_at = $1
+		WHERE user_id = $13
+			AND group_id = $14
+			AND deleted_at IS NULL
+		RETURNING id, user_id, group_id, current_plan_id, current_plan_name, current_plan_price_cny,
+			current_plan_validity_days, current_plan_validity_unit, billing_cycle_started_at, starts_at,
+			expires_at, status, daily_window_start, weekly_window_start, monthly_window_start,
+			daily_usage_usd, weekly_usage_usd, monthly_usage_usd, assigned_by, assigned_at,
+			notes, created_at, updated_at
+	`
+
+	client := clientFromContext(ctx, r.client)
+	rows, err := client.QueryContext(
+		ctx,
+		query,
+		now,
+		validityDays,
+		maxExpiresAt,
+		service.SubscriptionStatusActive,
+		notes,
+		snapshot != nil,
+		planID,
+		planName,
+		planPrice,
+		planDays,
+		planUnit,
+		cycleStartedAt,
+		userID,
+		groupID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return nil, service.ErrSubscriptionNotFound
+	}
+	sub, err := scanUserSubscriptionRow(rows)
+	if err != nil {
+		return nil, translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return sub, nil
+}
+
 func (r *userSubscriptionRepository) Delete(ctx context.Context, id int64) error {
 	// Match GORM semantics: deleting a missing row is not an error.
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.Delete().Where(usersubscription.IDEQ(id)).Exec(ctx)
 	return err
+}
+
+type userSubscriptionScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanUserSubscriptionRow(row userSubscriptionScanner) (*service.UserSubscription, error) {
+	var (
+		sub                     service.UserSubscription
+		currentPlanID           sql.NullInt64
+		currentPlanName         sql.NullString
+		currentPlanPriceCNY     sql.NullFloat64
+		currentPlanValidityDays sql.NullInt64
+		currentPlanValidityUnit sql.NullString
+		billingCycleStartedAt   sql.NullTime
+		dailyWindowStart        sql.NullTime
+		weeklyWindowStart       sql.NullTime
+		monthlyWindowStart      sql.NullTime
+		assignedBy              sql.NullInt64
+		notes                   sql.NullString
+	)
+	if err := row.Scan(
+		&sub.ID,
+		&sub.UserID,
+		&sub.GroupID,
+		&currentPlanID,
+		&currentPlanName,
+		&currentPlanPriceCNY,
+		&currentPlanValidityDays,
+		&currentPlanValidityUnit,
+		&billingCycleStartedAt,
+		&sub.StartsAt,
+		&sub.ExpiresAt,
+		&sub.Status,
+		&dailyWindowStart,
+		&weeklyWindowStart,
+		&monthlyWindowStart,
+		&sub.DailyUsageUSD,
+		&sub.WeeklyUsageUSD,
+		&sub.MonthlyUsageUSD,
+		&assignedBy,
+		&sub.AssignedAt,
+		&notes,
+		&sub.CreatedAt,
+		&sub.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	if currentPlanID.Valid {
+		sub.CurrentPlanID = &currentPlanID.Int64
+	}
+	if currentPlanName.Valid {
+		sub.CurrentPlanName = currentPlanName.String
+	}
+	if currentPlanPriceCNY.Valid {
+		sub.CurrentPlanPriceCNY = &currentPlanPriceCNY.Float64
+	}
+	if currentPlanValidityDays.Valid {
+		days := int(currentPlanValidityDays.Int64)
+		sub.CurrentPlanValidityDays = &days
+	}
+	if currentPlanValidityUnit.Valid {
+		sub.CurrentPlanValidityUnit = currentPlanValidityUnit.String
+	}
+	if billingCycleStartedAt.Valid {
+		sub.BillingCycleStartedAt = &billingCycleStartedAt.Time
+	}
+	if dailyWindowStart.Valid {
+		sub.DailyWindowStart = &dailyWindowStart.Time
+	}
+	if weeklyWindowStart.Valid {
+		sub.WeeklyWindowStart = &weeklyWindowStart.Time
+	}
+	if monthlyWindowStart.Valid {
+		sub.MonthlyWindowStart = &monthlyWindowStart.Time
+	}
+	if assignedBy.Valid {
+		sub.AssignedBy = &assignedBy.Int64
+	}
+	if notes.Valid {
+		sub.Notes = notes.String
+	}
+	return &sub, nil
 }
 
 func (r *userSubscriptionRepository) ListByUserID(ctx context.Context, userID int64) ([]service.UserSubscription, error) {

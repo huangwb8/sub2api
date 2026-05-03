@@ -367,16 +367,9 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
+	s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 
-	sub, reused, err := s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-		UserID:       req.UserID,
-		GroupID:      plan.GroupID,
-		ValidityDays: psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit),
-		AssignedBy:   0,
-		Notes:        fmt.Sprintf("payment order %d", order.ID),
-		PlanSnapshot: subscriptionPlanSnapshotFromPlan(plan),
-	})
-	if err != nil {
+	if err := s.ExecuteSubscriptionFulfillment(ctx, order.ID); err != nil {
 		if rollbackErr := s.userRepo.UpdateBalance(ctx, req.UserID, amount); rollbackErr != nil {
 			s.writeAuditLog(ctx, order.ID, "BALANCE_PAYMENT_ROLLBACK_FAILED", "system", map[string]any{
 				"amount":        amount,
@@ -384,6 +377,7 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 				"rollbackError": rollbackErr.Error(),
 			})
 			s.markFailed(ctx, order.ID, fmt.Errorf("assign subscription: %w", err))
+			s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 			return nil, fmt.Errorf("assign subscription: %w (balance rollback failed: %w)", err, rollbackErr)
 		}
 		s.writeAuditLog(ctx, order.ID, "BALANCE_PAYMENT_ROLLED_BACK", "system", map[string]any{
@@ -391,11 +385,8 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 			"reason": err.Error(),
 		})
 		s.markFailed(ctx, order.ID, fmt.Errorf("assign subscription: %w", err))
+		s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 		return nil, fmt.Errorf("assign subscription: %w", err)
-	}
-
-	if err := s.markCompleted(ctx, order, "SUBSCRIPTION_SUCCESS"); err != nil {
-		return nil, err
 	}
 
 	completedOrder, err := s.entClient.PaymentOrder.Get(ctx, order.ID)
@@ -407,13 +398,6 @@ func (s *PaymentService) createBalanceSubscriptionOrder(ctx context.Context, req
 		"paymentType": req.PaymentType,
 		"paidAmount":  amount,
 		"source":      "balance",
-		"reused":      reused,
-		"subscriptionID": func() int64 {
-			if sub == nil {
-				return 0
-			}
-			return sub.ID
-		}(),
 	})
 
 	return &CreateOrderResponse{
@@ -490,10 +474,13 @@ func (s *PaymentService) createSubscriptionUpgradeOrder(ctx context.Context, req
 		if err != nil {
 			return nil, err
 		}
+		s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 		if err := s.ExecuteSubscriptionUpgradeFulfillment(ctx, order.ID); err != nil {
 			if rollbackErr := s.userRepo.UpdateBalance(ctx, req.UserID, amount); rollbackErr != nil {
+				s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 				return nil, fmt.Errorf("upgrade fulfillment failed: %w (balance rollback failed: %w)", err, rollbackErr)
 			}
+			s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 			return nil, err
 		}
 		completedOrder, err := s.entClient.PaymentOrder.Get(ctx, order.ID)
@@ -537,7 +524,13 @@ func (s *PaymentService) ensureNoPendingUpgradeOrder(ctx context.Context, source
 		Where(
 			paymentorder.OrderTypeEQ(payment.OrderTypeSubscriptionUpgrade),
 			paymentorder.SourceSubscriptionID(sourceSubscriptionID),
-			paymentorder.StatusIn(OrderStatusPending, OrderStatusPaid, OrderStatusRecharging, OrderStatusFailed),
+			paymentorder.Or(
+				paymentorder.StatusIn(OrderStatusPending, OrderStatusPaid, OrderStatusRecharging),
+				paymentorder.And(
+					paymentorder.StatusEQ(OrderStatusFailed),
+					paymentorder.PaidAtNotNil(),
+				),
+			),
 		).
 		Exist(ctx)
 	if err != nil {
@@ -547,6 +540,19 @@ func (s *PaymentService) ensureNoPendingUpgradeOrder(ctx context.Context, source
 		return infraerrors.Conflict("UPGRADE_ORDER_EXISTS", "there is already an unfinished upgrade order for this subscription")
 	}
 	return nil
+}
+
+func (s *PaymentService) invalidateBalanceAfterWalletDebit(ctx context.Context, userID, orderID int64, amount float64) {
+	if s == nil || s.subscriptionSvc == nil || s.subscriptionSvc.billingCacheService == nil {
+		return
+	}
+	if err := s.subscriptionSvc.billingCacheService.InvalidateUserBalance(ctx, userID); err != nil {
+		s.writeAuditLog(ctx, orderID, "BALANCE_CACHE_INVALIDATE_FAILED", "system", map[string]any{
+			"userID": userID,
+			"amount": amount,
+			"error":  err.Error(),
+		})
+	}
 }
 
 func (s *PaymentService) createZeroSubscriptionUpgradeOrder(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, quote *UpgradeQuote, cfg *PaymentConfig) (*dbent.PaymentOrder, error) {

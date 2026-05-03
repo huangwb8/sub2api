@@ -480,6 +480,10 @@ type userRechargeBatchReader interface {
 	SumPositiveBalanceByUsers(ctx context.Context, userIDs []int64) (map[int64]float64, error)
 }
 
+type atomicBalanceAdjuster interface {
+	AdjustBalanceAtomically(ctx context.Context, id int64, delta float64, preventNegative bool) (*User, error)
+}
+
 // NewAdminService creates a new AdminService
 func NewAdminService(
 	userRepo UserRepository,
@@ -797,24 +801,57 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 	}
 
 	oldBalance := user.Balance
+	appliedDelta := 0.0
 
 	switch operation {
 	case "set":
 		user.Balance = balance
+		if user.Balance < 0 {
+			return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
+		}
+		if err := s.userRepo.Update(ctx, user); err != nil {
+			return nil, err
+		}
+		appliedDelta = user.Balance - oldBalance
 	case "add":
-		user.Balance += balance
+		if adjuster, ok := s.userRepo.(atomicBalanceAdjuster); ok {
+			user, err = adjuster.AdjustBalanceAtomically(ctx, userID, balance, true)
+			if err != nil {
+				return nil, err
+			}
+			appliedDelta = balance
+		} else {
+			user.Balance += balance
+			if user.Balance < 0 {
+				return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
+			}
+			if err := s.userRepo.Update(ctx, user); err != nil {
+				return nil, err
+			}
+			appliedDelta = user.Balance - oldBalance
+		}
 	case "subtract":
-		user.Balance -= balance
+		delta := -balance
+		if adjuster, ok := s.userRepo.(atomicBalanceAdjuster); ok {
+			user, err = adjuster.AdjustBalanceAtomically(ctx, userID, delta, true)
+			if err != nil {
+				return nil, err
+			}
+			appliedDelta = delta
+		} else {
+			user.Balance += delta
+			if user.Balance < 0 {
+				return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
+			}
+			if err := s.userRepo.Update(ctx, user); err != nil {
+				return nil, err
+			}
+			appliedDelta = user.Balance - oldBalance
+		}
+	default:
+		return nil, fmt.Errorf("unsupported balance operation: %s", operation)
 	}
-
-	if user.Balance < 0 {
-		return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
-	}
-
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return nil, err
-	}
-	balanceDiff := user.Balance - oldBalance
+	balanceDiff := appliedDelta
 	if s.authCacheInvalidator != nil && balanceDiff != 0 {
 		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 	}

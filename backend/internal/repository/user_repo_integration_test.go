@@ -4,6 +4,7 @@ package repository
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -138,6 +139,34 @@ func (s *UserRepoSuite) TestUpdate() {
 	updated, err := s.repo.GetByID(s.ctx, user.ID)
 	s.Require().NoError(err, "GetByID after update")
 	s.Require().Equal("updated", updated.Username)
+}
+
+func (s *UserRepoSuite) TestConcurrentAdjustBalanceAtomicallyAccumulatesAdds() {
+	user := s.mustCreateUser(&service.User{Email: "balance-concurrent@test.com", Balance: 10})
+
+	errCh := make(chan error, 2)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for _, delta := range []float64{5, 7} {
+		delta := delta
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := s.repo.AdjustBalanceAtomically(s.ctx, user.ID, delta, true)
+			errCh <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		s.Require().NoError(err)
+	}
+
+	got, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().InDelta(22, got.Balance, 0.0001)
 }
 
 func (s *UserRepoSuite) TestDelete() {
