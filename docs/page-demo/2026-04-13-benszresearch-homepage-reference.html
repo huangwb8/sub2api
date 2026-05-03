@@ -204,13 +204,13 @@
   .bensz-home__view[data-bensz-view="home"]:not([hidden]) {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .bensz-home__hero {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: clamp(20px, 1.5vw, 28px);
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: clamp(18px, 1.35vw, 26px);
     align-items: stretch;
   }
 
@@ -228,7 +228,7 @@
 
   .bensz-home__main,
   .bensz-home__side {
-    padding: clamp(28px, 2.25vw, 44px);
+    padding: clamp(24px, 1.85vw, 36px);
   }
 
   .bensz-home__main {
@@ -274,7 +274,7 @@
   .bensz-home__title,
   .bensz-home__side-title {
     margin: 0 0 12px;
-    font-size: clamp(1.7rem, 2.15vw, 2.75rem);
+    font-size: clamp(1.58rem, 1.92vw, 2.45rem);
     line-height: 1.13;
     letter-spacing: -0.018em;
     font-weight: 800;
@@ -300,23 +300,23 @@
   }
 
   .bensz-home__lead {
-    max-width: 58ch;
+    max-width: 56ch;
   }
 
-  .bensz-home__benefits {
+  .bensz-home__promise {
     display: grid;
-    gap: clamp(10px, 0.8vw, 14px);
+    gap: clamp(10px, 0.72vw, 13px);
     min-width: 0;
     max-width: 100%;
-    margin-top: clamp(20px, 1.5vw, 28px);
-    padding: clamp(16px, 1.2vw, 22px);
+    margin-top: clamp(18px, 1.25vw, 24px);
+    padding: clamp(15px, 1.05vw, 20px);
     border: 1px solid rgba(15, 118, 110, 0.1);
     border-radius: 16px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 253, 250, 0.75));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), var(--shadow-sm);
   }
 
-  .bensz-home__benefit {
+  .bensz-home__promise-line {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -326,16 +326,15 @@
     line-height: 1.55;
   }
 
-  .bensz-home__benefit > span:last-child,
-  .bensz-home__scope-text,
-  .bensz-home__boundary > span:last-child {
+  .bensz-home__promise-line > span:last-child,
+  .bensz-home__scope-text {
     display: block;
     min-width: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
-  .bensz-home__benefit-dot {
+  .bensz-home__promise-dot {
     flex-shrink: 0;
     width: 8px;
     height: 8px;
@@ -351,7 +350,7 @@
     gap: 12px;
     min-width: 0;
     max-width: 100%;
-    margin-top: clamp(20px, 1.45vw, 28px);
+    margin-top: clamp(18px, 1.25vw, 24px);
   }
 
   .bensz-home__cta {
@@ -418,7 +417,7 @@
   .bensz-home__orbit {
     position: relative;
     flex: 1;
-    min-height: clamp(210px, 14vw, 280px);
+    min-height: clamp(176px, 11.5vw, 230px);
     border-radius: 18px;
     background: radial-gradient(circle at 50% 50%, rgba(15, 118, 110, 0.06), transparent 55%), rgba(248, 250, 252, 0.6);
     border: 1px solid var(--border);
@@ -456,35 +455,6 @@
     color: var(--text-2);
     font-size: 12.5px;
     line-height: 1.45;
-  }
-
-  .bensz-home__boundary {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-width: 0;
-    max-width: 100%;
-    padding: 12px 14px;
-    border: 1px solid rgba(212, 148, 10, 0.16);
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(254, 243, 199, 0.4), rgba(255, 255, 255, 0.74));
-    color: var(--text-2);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .bensz-home__boundary-mark {
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    background: rgba(212, 148, 10, 0.1);
-    color: var(--gold-600);
-    font-size: 13px;
-    font-weight: 800;
   }
 
   .bensz-home__orbit-core {
@@ -565,16 +535,17 @@
 
   .bensz-home__features {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: clamp(14px, 1.2vw, 24px);
-    margin-top: clamp(18px, 1.35vw, 26px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(16px, 1.2vw, 24px);
+    margin-top: clamp(18px, 1.2vw, 24px);
   }
 
   .bensz-home__feat {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: clamp(15px, 1vw, 20px) clamp(15px, 1.1vw, 20px);
+    align-items: center;
+    gap: 16px;
+    min-height: clamp(112px, 6.6vw, 138px);
+    padding: clamp(20px, 1.28vw, 26px) clamp(20px, 1.45vw, 30px);
     border: 1px solid var(--border);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.78);
@@ -591,10 +562,10 @@
     flex-shrink: 0;
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    font-size: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 19px;
     background: rgba(15, 118, 110, 0.05);
     border: 1px solid rgba(15, 118, 110, 0.1);
   }
@@ -606,9 +577,9 @@
   }
 
   .bensz-home__feat-title {
-    margin: 0 0 4px;
+    margin: 0 0 7px;
     color: var(--slate-800);
-    font-size: 13px;
+    font-size: clamp(14px, 0.82vw, 16px);
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.3;
@@ -617,8 +588,8 @@
   .bensz-home__feat-desc {
     margin: 0;
     color: var(--text-3);
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: clamp(12.5px, 0.72vw, 14px);
+    line-height: 1.58;
     font-weight: 400;
   }
 
@@ -1060,13 +1031,13 @@
       line-height: 1.55;
     }
 
-    .bensz-home__benefits {
+    .bensz-home__promise {
       gap: 8px;
-      margin-top: 16px;
-      padding: 14px 16px;
+      margin-top: 14px;
+      padding: 13px 15px;
     }
 
-    .bensz-home__benefit {
+    .bensz-home__promise-line {
       font-size: 12.8px;
       line-height: 1.45;
     }
@@ -1092,25 +1063,20 @@
       font-size: 10.5px;
     }
 
-    .bensz-home__boundary {
-      padding: 10px 12px;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
     .bensz-home__features {
-      gap: 12px;
-      margin-top: 16px;
+      gap: 14px;
+      margin-top: 15px;
     }
 
     .bensz-home__feat {
-      gap: 10px;
-      padding: 12px 14px;
+      gap: 14px;
+      min-height: 104px;
+      padding: 17px 18px;
     }
 
     .bensz-home__feat-desc {
-      font-size: 11.5px;
-      line-height: 1.42;
+      font-size: 12.2px;
+      line-height: 1.48;
     }
 
     .bensz-home__footer {
@@ -1182,11 +1148,11 @@
       align-items: stretch;
     }
 
-    .bensz-home__benefits {
+    .bensz-home__promise {
       padding: 16px;
     }
 
-    .bensz-home__benefit > span:last-child,
+    .bensz-home__promise-line > span:last-child,
     .bensz-home__lead,
     .bensz-home__side-desc,
     .bensz-home__feat-desc {
@@ -1216,6 +1182,7 @@
     }
 
     .bensz-home__feat {
+      min-height: auto;
       padding: 16px 14px;
     }
   }
@@ -1250,21 +1217,21 @@
             <span class="bensz-home__title-line2">AI 写作与分析助手</span>
           </h1>
           <p class="bensz-home__lead">
-            专为科研写作和研究分析优化的 AI API 服务平台，以小范围内测节奏打磨体验，让学术工作更高效、使用边界更清晰。
+            把常用 AI 能力收束成更适合科研节奏的工作入口，让老师和团队少一点配置成本，多一点时间留给真正的判断、写作与讨论。
           </p>
 
-          <div class="bensz-home__benefits" role="list">
-            <div class="bensz-home__benefit" role="listitem">
-              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
-              <span>仅面向经过论文验证的高校老师与科研团队，小范围准入，用户自觉性更高</span>
+          <div class="bensz-home__promise" role="list">
+            <div class="bensz-home__promise-line" role="listitem">
+              <span class="bensz-home__promise-dot" aria-hidden="true"></span>
+              <span>为认真做研究的人，准备一个安静、克制、可长期打磨的 AI 工作台</span>
             </div>
-            <div class="bensz-home__benefit" role="listitem">
-              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
-              <span>当前以内测体验为优先，不盲目扩张，持续优化稳定性与响应质量</span>
+            <div class="bensz-home__promise-line" role="listitem">
+              <span class="bensz-home__promise-dot" aria-hidden="true"></span>
+              <span>从标书、论文到分析讨论，围绕科研链路做统一入口与体验打磨</span>
             </div>
-            <div class="bensz-home__benefit" role="listitem">
-              <span class="bensz-home__benefit-dot" aria-hidden="true"></span>
-              <span>正式运营阶段可提供正规发票，便于后续科研经费报销</span>
+            <div class="bensz-home__promise-line" role="listitem">
+              <span class="bensz-home__promise-dot" aria-hidden="true"></span>
+              <span>以小范围内测节奏持续迭代，优先保证可用性、稳定性和边界感</span>
             </div>
           </div>
 
@@ -1309,10 +1276,6 @@
             <div class="bensz-home__node bensz-home__node--review">研究分析</div>
           </div>
 
-          <div class="bensz-home__boundary">
-            <span class="bensz-home__boundary-mark" aria-hidden="true">!</span>
-            <span>适合公开资料与常规科研写作辅助；不推荐在保密项目的研究中使用。</span>
-          </div>
         </aside>
       </div>
 
@@ -1321,28 +1284,28 @@
           <div class="bensz-home__feat-icon" aria-hidden="true">🎓</div>
           <div>
             <h3 class="bensz-home__feat-title">科研专属平台</h3>
-            <p class="bensz-home__feat-desc">面向论文验证后的高校老师与科研团队，贴合真实学术场景。</p>
+            <p class="bensz-home__feat-desc">面向论文验证后的高校老师与科研团队开放，小范围准入，服务对象更聚焦。</p>
           </div>
         </article>
         <article class="bensz-home__feat">
           <div class="bensz-home__feat-icon" aria-hidden="true">📝</div>
           <div>
             <h3 class="bensz-home__feat-title">写作与分析优化</h3>
-            <p class="bensz-home__feat-desc">标书、论文、数据解读与结果讨论，从框架搭建到语言润色。</p>
+            <p class="bensz-home__feat-desc">覆盖标书、论文、数据解读与结果讨论，从框架搭建到语言润色都更顺手。</p>
           </div>
         </article>
         <article class="bensz-home__feat">
           <div class="bensz-home__feat-icon" aria-hidden="true">🧾</div>
           <div>
             <h3 class="bensz-home__feat-title">正式运营可开票</h3>
-            <p class="bensz-home__feat-desc">正式运营阶段支持正规发票，便于科研经费报销。</p>
+            <p class="bensz-home__feat-desc">正式运营阶段支持正规发票，便于团队后续走科研经费报销流程。</p>
           </div>
         </article>
         <article class="bensz-home__feat">
           <div class="bensz-home__feat-icon" aria-hidden="true">🛡️</div>
           <div>
             <h3 class="bensz-home__feat-title">边界清晰</h3>
-            <p class="bensz-home__feat-desc">内测不盲目扩张；涉及保密项目时建议使用专门合规环境。</p>
+            <p class="bensz-home__feat-desc">适合公开资料与常规科研写作辅助；涉及保密项目时建议使用专门合规环境。</p>
           </div>
         </article>
       </div>
