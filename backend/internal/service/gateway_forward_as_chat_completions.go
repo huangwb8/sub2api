@@ -364,6 +364,7 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 	var usage ClaudeUsage
 	var firstTokenMs *int
 	firstChunk := true
+	var responseBytes int64
 
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
@@ -374,14 +375,15 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 
 	resultWithUsage := func() *ForwardResult {
 		return &ForwardResult{
-			RequestID:       requestID,
-			Usage:           usage,
-			Model:           originalModel,
-			UpstreamModel:   mappedModel,
-			ReasoningEffort: reasoningEffort,
-			Stream:          true,
-			Duration:        time.Since(startTime),
-			FirstTokenMs:    firstTokenMs,
+			RequestID:          requestID,
+			Usage:              usage,
+			Model:              originalModel,
+			UpstreamModel:      mappedModel,
+			ReasoningEffort:    reasoningEffort,
+			Stream:             true,
+			Duration:           time.Since(startTime),
+			FirstTokenMs:       firstTokenMs,
+			ProxyResponseBytes: responseBytes,
 		}
 	}
 
@@ -428,6 +430,7 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		responseBytes += sseScannerLineWireBytes(line)
 		if !strings.HasPrefix(line, "event: ") {
 			continue
 		}
@@ -436,6 +439,7 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 			break
 		}
 		dataLine := scanner.Text()
+		responseBytes += sseScannerLineWireBytes(dataLine)
 		if !strings.HasPrefix(dataLine, "data: ") {
 			continue
 		}

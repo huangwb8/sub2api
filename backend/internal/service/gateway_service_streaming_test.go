@@ -49,4 +49,5 @@ func TestGatewayService_StreamingReusesScannerBufferAndStillParsesUsage(t *testi
 	require.NotNil(t, result.usage)
 	require.Equal(t, 3, result.usage.InputTokens)
 	require.Equal(t, 7, result.usage.OutputTokens)
+	require.Greater(t, result.proxyResponseBytes, int64(0))
 }

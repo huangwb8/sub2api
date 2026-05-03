@@ -2470,6 +2470,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		var clientDisconnect bool
 		var partialUsage bool
 		var usageIncompleteReason string
+		var proxyResponseBytes int64
 		if reqStream {
 			streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
 			if err != nil {
@@ -2483,6 +2484,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 			usage = streamResult.usage
 			firstTokenMs = streamResult.firstTokenMs
 			clientDisconnect = streamResult.clientDisconnect
+			proxyResponseBytes = streamResult.proxyResponseBytes
 		} else {
 			usage, err = s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel)
 			if err != nil {
@@ -2519,6 +2521,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 			PartialUsage:          partialUsage,
 			UsageIncompleteReason: usageIncompleteReason,
 			ProxyRequestBytes:     int64(len(reqBody)),
+			ProxyResponseBytes:    proxyResponseBytes,
 		}, nil
 	}
 }
@@ -2654,6 +2657,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 
 	var usage *OpenAIUsage
 	var firstTokenMs *int
+	var proxyResponseBytes int64
 	if reqStream {
 		result, err := s.handleStreamingResponsePassthrough(ctx, resp, c, account, startTime)
 		if err != nil {
@@ -2661,6 +2665,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		}
 		usage = result.usage
 		firstTokenMs = result.firstTokenMs
+		proxyResponseBytes = result.proxyResponseBytes
 	} else {
 		usage, err = s.handleNonStreamingResponsePassthrough(ctx, resp, c)
 		if err != nil {
@@ -2677,16 +2682,17 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	}
 
 	return &OpenAIForwardResult{
-		RequestID:         resp.Header.Get("x-request-id"),
-		Usage:             *usage,
-		Model:             reqModel,
-		ServiceTier:       extractOpenAIServiceTierFromBody(body),
-		ReasoningEffort:   reasoningEffort,
-		Stream:            reqStream,
-		OpenAIWSMode:      false,
-		Duration:          time.Since(startTime),
-		FirstTokenMs:      firstTokenMs,
-		ProxyRequestBytes: int64(len(body)),
+		RequestID:          resp.Header.Get("x-request-id"),
+		Usage:              *usage,
+		Model:              reqModel,
+		ServiceTier:        extractOpenAIServiceTierFromBody(body),
+		ReasoningEffort:    reasoningEffort,
+		Stream:             reqStream,
+		OpenAIWSMode:       false,
+		Duration:           time.Since(startTime),
+		FirstTokenMs:       firstTokenMs,
+		ProxyRequestBytes:  int64(len(body)),
+		ProxyResponseBytes: proxyResponseBytes,
 	}, nil
 }
 
@@ -3031,8 +3037,9 @@ func collectOpenAIPassthroughTimeoutHeaders(h http.Header) []string {
 }
 
 type openaiStreamingResultPassthrough struct {
-	usage        *OpenAIUsage
-	firstTokenMs *int
+	usage              *OpenAIUsage
+	firstTokenMs       *int
+	proxyResponseBytes int64
 }
 
 func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
@@ -3061,6 +3068,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 
 	usage := &OpenAIUsage{}
 	var firstTokenMs *int
+	var responseBytes int64
 	clientDisconnected := false
 	sawDone := false
 	sawTerminalEvent := false
@@ -3077,6 +3085,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		responseBytes += sseScannerLineWireBytes(line)
 		if data, ok := extractOpenAISSEDataLine(line); ok {
 			dataBytes := []byte(data)
 			trimmedData := strings.TrimSpace(data)
@@ -3104,17 +3113,17 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	}
 	if err := scanner.Err(); err != nil {
 		if sawTerminalEvent {
-			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, nil
+			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, nil
 		}
 		if clientDisconnected {
-			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, fmt.Errorf("stream usage incomplete after disconnect: %w", err)
+			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, fmt.Errorf("stream usage incomplete after disconnect: %w", err)
 		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, fmt.Errorf("stream usage incomplete: %w", err)
+			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, fmt.Errorf("stream usage incomplete: %w", err)
 		}
 		if errors.Is(err, bufio.ErrTooLong) {
 			logger.LegacyPrintf("service.openai_gateway", "[OpenAI passthrough] SSE line too long: account=%d max_size=%d error=%v", account.ID, maxLineSize, err)
-			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, err
+			return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, err
 		}
 		logger.LegacyPrintf("service.openai_gateway",
 			"[OpenAI passthrough] 流读取异常中断: account=%d request_id=%s err=%v",
@@ -3122,7 +3131,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			upstreamRequestID,
 			err,
 		)
-		return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, fmt.Errorf("stream read error: %w", err)
+		return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, fmt.Errorf("stream read error: %w", err)
 	}
 	if !clientDisconnected && !sawDone && !sawTerminalEvent && ctx.Err() == nil {
 		logger.FromContext(ctx).With(
@@ -3130,10 +3139,10 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			zap.Int64("account_id", account.ID),
 			zap.String("upstream_request_id", upstreamRequestID),
 		).Info("OpenAI passthrough 上游流在未收到 [DONE] 时结束，疑似断流")
-		return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, errors.New("stream usage incomplete: missing terminal event")
+		return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, errors.New("stream usage incomplete: missing terminal event")
 	}
 
-	return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs}, nil
+	return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs, proxyResponseBytes: responseBytes}, nil
 }
 
 func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
@@ -3648,9 +3657,10 @@ func (s *OpenAIGatewayService) handleCompatErrorResponse(
 
 // openaiStreamingResult streaming response result
 type openaiStreamingResult struct {
-	usage            *OpenAIUsage
-	firstTokenMs     *int
-	clientDisconnect bool
+	usage              *OpenAIUsage
+	firstTokenMs       *int
+	clientDisconnect   bool
+	proxyResponseBytes int64
 }
 
 func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string) (*openaiStreamingResult, error) {
@@ -3685,6 +3695,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 
 	usage := &OpenAIUsage{}
 	var firstTokenMs *int
+	var responseBytes int64
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
 	if s.cfg != nil && s.cfg.Gateway.MaxLineSize > 0 {
@@ -3752,7 +3763,12 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 
 	needModelReplace := originalModel != mappedModel
 	resultWithUsage := func() *openaiStreamingResult {
-		return &openaiStreamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}
+		return &openaiStreamingResult{
+			usage:              usage,
+			firstTokenMs:       firstTokenMs,
+			clientDisconnect:   clientDisconnected,
+			proxyResponseBytes: responseBytes,
+		}
 	}
 	markProxySuccess := func() {
 		if s.rateLimitService != nil {
@@ -3873,7 +3889,9 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 	if streamInterval <= 0 && keepaliveInterval <= 0 {
 		defer putSSEScannerBuf64K(scanBuf)
 		for scanner.Scan() {
-			processSSELine(scanner.Text(), true)
+			line := scanner.Text()
+			responseBytes += sseScannerLineWireBytes(line)
+			processSSELine(line, true)
 		}
 		if result, err, done := handleScanErr(scanner.Err()); done {
 			return result, err
@@ -3882,8 +3900,9 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 	}
 
 	type scanEvent struct {
-		line string
-		err  error
+		line  string
+		bytes int64
+		err   error
 	}
 	// 独立 goroutine 读取上游，避免读取阻塞影响 keepalive/超时处理
 	events := make(chan scanEvent, 16)
@@ -3903,7 +3922,8 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 		defer close(events)
 		for scanner.Scan() {
 			atomic.StoreInt64(&lastReadAt, time.Now().UnixNano())
-			if !sendEvent(scanEvent{line: scanner.Text()}) {
+			line := scanner.Text()
+			if !sendEvent(scanEvent{line: line, bytes: sseScannerLineWireBytes(line)}) {
 				return
 			}
 		}
@@ -3922,6 +3942,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			if result, err, done := handleScanErr(ev.err); done {
 				return result, err
 			}
+			responseBytes += ev.bytes
 			processSSELine(ev.line, len(events) == 0)
 
 		case <-intervalCh:

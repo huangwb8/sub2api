@@ -11,6 +11,23 @@ func TestResidentialIPCalibration_UsesObservedUsageSample(t *testing.T) {
 	lastObservedAt := time.Date(2026, 5, 1, 8, 0, 0, 0, time.UTC)
 	calibration := buildResidentialIPCalibration(residentialIPCalibrationSample{
 		lastObservedAt: sqlNullTime(lastObservedAt),
+		observedBytes:  480000,
+		observedTokens: 60000,
+	})
+
+	if calibration.Source != "usage_log_observed_proxy_bytes" {
+		t.Fatalf("Source = %q, want usage_log_observed_proxy_bytes", calibration.Source)
+	}
+	if math.Abs(calibration.EffectiveBytesPerToken-8.0) > 0.000001 {
+		t.Fatalf("EffectiveBytesPerToken = %v, want 8.0", calibration.EffectiveBytesPerToken)
+	}
+	if calibration.LastCalibratedAt == nil || !calibration.LastCalibratedAt.Equal(lastObservedAt) {
+		t.Fatalf("LastCalibratedAt = %v, want %v", calibration.LastCalibratedAt, lastObservedAt)
+	}
+}
+
+func TestResidentialIPCalibration_ClampsObservedSampleBelowDefault(t *testing.T) {
+	calibration := buildResidentialIPCalibration(residentialIPCalibrationSample{
 		observedBytes:  420000,
 		observedTokens: 60000,
 	})
@@ -18,11 +35,12 @@ func TestResidentialIPCalibration_UsesObservedUsageSample(t *testing.T) {
 	if calibration.Source != "usage_log_observed_proxy_bytes" {
 		t.Fatalf("Source = %q, want usage_log_observed_proxy_bytes", calibration.Source)
 	}
-	if math.Abs(calibration.EffectiveBytesPerToken-7.0) > 0.000001 {
-		t.Fatalf("EffectiveBytesPerToken = %v, want 7.0", calibration.EffectiveBytesPerToken)
-	}
-	if calibration.LastCalibratedAt == nil || !calibration.LastCalibratedAt.Equal(lastObservedAt) {
-		t.Fatalf("LastCalibratedAt = %v, want %v", calibration.LastCalibratedAt, lastObservedAt)
+	if math.Abs(calibration.EffectiveBytesPerToken-dashboardOversellDefaultEffectiveBytesPerToken) > 0.000001 {
+		t.Fatalf(
+			"EffectiveBytesPerToken = %v, want default floor %v",
+			calibration.EffectiveBytesPerToken,
+			dashboardOversellDefaultEffectiveBytesPerToken,
+		)
 	}
 }
 

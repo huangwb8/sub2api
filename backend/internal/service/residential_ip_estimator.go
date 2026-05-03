@@ -379,8 +379,8 @@ func buildResidentialIPCalibration(sample residentialIPCalibrationSample) Reside
 	if value <= 0 || math.IsNaN(value) || math.IsInf(value, 0) {
 		return calibration
 	}
-	if value < 1 {
-		value = 1
+	if value < dashboardOversellDefaultEffectiveBytesPerToken {
+		value = dashboardOversellDefaultEffectiveBytesPerToken
 	}
 	if value > 64 {
 		value = 64

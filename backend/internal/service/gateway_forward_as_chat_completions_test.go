@@ -105,5 +105,6 @@ func TestHandleCCStreamingFromAnthropic_PreservesMessageStartCacheUsageAndReason
 	require.Equal(t, 4, result.Usage.CacheCreationInputTokens)
 	require.NotNil(t, result.ReasoningEffort)
 	require.Equal(t, "medium", *result.ReasoningEffort)
+	require.Greater(t, result.ProxyResponseBytes, int64(0))
 	require.Contains(t, rec.Body.String(), `[DONE]`)
 }

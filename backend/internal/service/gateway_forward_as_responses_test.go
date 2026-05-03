@@ -90,5 +90,6 @@ func TestHandleResponsesStreamingResponse_PreservesMessageStartCacheUsage(t *tes
 	require.Equal(t, 8, result.Usage.OutputTokens)
 	require.Equal(t, 11, result.Usage.CacheReadInputTokens)
 	require.Equal(t, 4, result.Usage.CacheCreationInputTokens)
+	require.Greater(t, result.ProxyResponseBytes, int64(0))
 	require.Contains(t, rec.Body.String(), `response.completed`)
 }

@@ -1132,6 +1132,7 @@ func TestOpenAIStreamingClientDisconnectDrainsUpstreamUsage(t *testing.T) {
 	if result.usage.InputTokens != 3 || result.usage.OutputTokens != 5 || result.usage.CacheReadInputTokens != 1 {
 		t.Fatalf("unexpected usage: %+v", *result.usage)
 	}
+	require.Greater(t, result.proxyResponseBytes, int64(0))
 	if strings.Contains(rec.Body.String(), "event: error") || strings.Contains(rec.Body.String(), "write_failed") {
 		t.Fatalf("expected no injected SSE error event, got %q", rec.Body.String())
 	}
