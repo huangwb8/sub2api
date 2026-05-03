@@ -477,9 +477,15 @@ func (s *PaymentService) createSubscriptionUpgradeOrder(ctx context.Context, req
 		s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 		if err := s.ExecuteSubscriptionUpgradeFulfillment(ctx, order.ID); err != nil {
 			if rollbackErr := s.userRepo.UpdateBalance(ctx, req.UserID, amount); rollbackErr != nil {
+				s.writeAuditLog(ctx, order.ID, "BALANCE_PAYMENT_ROLLBACK_FAILED", "system", map[string]any{
+					"amount":        amount,
+					"originalError": err.Error(),
+					"rollbackError": rollbackErr.Error(),
+				})
 				s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 				return nil, fmt.Errorf("upgrade fulfillment failed: %w (balance rollback failed: %w)", err, rollbackErr)
 			}
+			s.markBalancePaymentRolledBack(ctx, order.ID, amount, err)
 			s.invalidateBalanceAfterWalletDebit(ctx, req.UserID, order.ID, amount)
 			return nil, err
 		}
@@ -550,6 +556,21 @@ func (s *PaymentService) invalidateBalanceAfterWalletDebit(ctx context.Context, 
 		s.writeAuditLog(ctx, orderID, "BALANCE_CACHE_INVALIDATE_FAILED", "system", map[string]any{
 			"userID": userID,
 			"amount": amount,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (s *PaymentService) markBalancePaymentRolledBack(ctx context.Context, orderID int64, amount float64, cause error) {
+	reason := psErrMsg(cause)
+	s.writeAuditLog(ctx, orderID, "BALANCE_PAYMENT_ROLLED_BACK", "system", map[string]any{
+		"amount": amount,
+		"reason": reason,
+	})
+	if _, err := s.entClient.PaymentOrder.UpdateOneID(orderID).ClearPaidAt().Save(ctx); err != nil {
+		s.writeAuditLog(ctx, orderID, "BALANCE_PAYMENT_ROLLBACK_MARK_FAILED", "system", map[string]any{
+			"amount": amount,
+			"reason": reason,
 			"error":  err.Error(),
 		})
 	}

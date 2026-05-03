@@ -10,6 +10,8 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/enttest"
+	"github.com/Wei-Shaw/sub2api/ent/hook"
+	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/repository" //nolint:depguard // integration-style service test uses repository-backed stores.
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -103,6 +105,38 @@ func (upgradeLoadBalancerStub) GetInstanceConfig(context.Context, int64) (map[st
 
 func (upgradeLoadBalancerStub) SelectInstance(context.Context, payment.PaymentType, []string, payment.Strategy, float64) (*payment.InstanceSelection, error) {
 	return nil, nil
+}
+
+func newPaymentUpgradeServiceTestEnv(t *testing.T) (*service.PaymentService, *service.SubscriptionService, *dbent.Client) {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", strings.NewReplacer("/", "_", " ", "_").Replace(t.Name()))
+	db, err := sql.Open("sqlite", dsn)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	_, err = db.Exec("PRAGMA foreign_keys = ON")
+	require.NoError(t, err)
+
+	drv := entsql.OpenDB(dialect.SQLite, db)
+	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
+	t.Cleanup(func() { _ = client.Close() })
+
+	settingRepo := &upgradeSettingRepoStub{
+		values: map[string]string{
+			service.SettingPaymentEnabled:      "true",
+			service.SettingEnabledPaymentTypes: "balance,wxpay",
+			service.SettingLoadBalanceStrategy: payment.DefaultLoadBalanceStrategy,
+		},
+	}
+	userRepo := repository.NewUserRepository(client, db)
+	groupRepo := repository.NewGroupRepository(client, db)
+	userSubRepo := repository.NewUserSubscriptionRepository(client)
+	subscriptionSvc := service.NewSubscriptionService(groupRepo, userSubRepo, nil, client, nil)
+	configSvc := service.NewPaymentConfigService(client, settingRepo, nil)
+	paymentSvc := service.NewPaymentService(client, payment.NewRegistry(), upgradeLoadBalancerStub{}, nil, subscriptionSvc, configSvc, userRepo, groupRepo)
+
+	return paymentSvc, subscriptionSvc, client
 }
 
 func mustCreateUpgradeUser(t *testing.T, ctx context.Context, client *dbent.Client, balance float64) *dbent.User {
@@ -560,4 +594,182 @@ func TestPaymentService_CreateOrder_WithBalanceSubscriptionUpgradeCompletes(t *t
 	require.NotNil(t, activeTargetSub.CurrentPlanID)
 	require.Equal(t, targetPlan.ID, *activeTargetSub.CurrentPlanID)
 	require.Equal(t, targetPlan.Name, activeTargetSub.CurrentPlanName)
+}
+
+func TestPaymentService_CreateOrder_WithBalanceSubscriptionUpgradeRollbackAllowsNewUpgradeOrder(t *testing.T) {
+	t.Parallel()
+
+	paymentSvc, subscriptionSvc, client := newPaymentUpgradeServiceTestEnv(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	user := mustCreateUpgradeUser(t, ctx, client, 200)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "rollback-basic")
+	targetGroupA := mustCreateUpgradeGroup(t, ctx, client, "rollback-pro-a")
+	targetGroupB := mustCreateUpgradeGroup(t, ctx, client, "rollback-pro-b")
+	sourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic", 100, "openai-team", 10)
+	targetPlanA := mustCreateUpgradePlan(t, ctx, client, targetGroupA.ID, "Pro A", 150, "openai-team", 20)
+	targetPlanB := mustCreateUpgradePlan(t, ctx, client, targetGroupB.ID, "Pro B", 180, "openai-team", 30)
+
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(sourcePlan.ID).
+		SetCurrentPlanName(sourcePlan.Name).
+		SetCurrentPlanPriceCny(sourcePlan.Price).
+		SetCurrentPlanValidityDays(sourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(sourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(now.AddDate(0, 0, -15)).
+		SetStartsAt(now.AddDate(0, 0, -15)).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(now.AddDate(0, 0, -15)).
+		SetNotes("current basic subscription").
+		Save(ctx)
+	require.NoError(t, err)
+
+	var revokeFailed bool
+	client.UserSubscription.Use(func(next dbent.Mutator) dbent.Mutator {
+		return hook.UserSubscriptionFunc(func(ctx context.Context, m *dbent.UserSubscriptionMutation) (dbent.Value, error) {
+			id, hasID := m.ID()
+			status, hasStatus := m.Status()
+			if !revokeFailed && hasID && id == sourceSub.ID && hasStatus && status == service.SubscriptionStatusExpired {
+				revokeFailed = true
+				return nil, fmt.Errorf("injected source revoke failure")
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+
+	_, err = paymentSvc.CreateOrder(ctx, service.CreateOrderRequest{
+		UserID:               user.ID,
+		PaymentType:          payment.TypeBalance,
+		OrderType:            payment.OrderTypeSubscriptionUpgrade,
+		PlanID:               targetPlanA.ID,
+		SourceSubscriptionID: sourceSub.ID,
+	})
+	require.Error(t, err)
+	require.True(t, revokeFailed)
+
+	failedOrder, err := client.PaymentOrder.Query().
+		Where(
+			paymentorder.OrderTypeEQ(payment.OrderTypeSubscriptionUpgrade),
+			paymentorder.SourceSubscriptionID(sourceSub.ID),
+			paymentorder.PlanIDEQ(targetPlanA.ID),
+		).
+		Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, payment.TypeBalance, failedOrder.PaymentType)
+	require.Equal(t, service.OrderStatusFailed, failedOrder.Status)
+	require.Nil(t, failedOrder.PaidAt)
+
+	updatedUser, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.InDelta(t, 200, updatedUser.Balance, 0.0001)
+
+	updatedSource, err := client.UserSubscription.Get(ctx, sourceSub.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionStatusActive, updatedSource.Status)
+
+	resp, err := paymentSvc.CreateOrder(ctx, service.CreateOrderRequest{
+		UserID:               user.ID,
+		PaymentType:          payment.TypeBalance,
+		OrderType:            payment.OrderTypeSubscriptionUpgrade,
+		PlanID:               targetPlanB.ID,
+		SourceSubscriptionID: sourceSub.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.OrderStatusCompleted, resp.Status)
+
+	updatedSource, err = client.UserSubscription.Get(ctx, sourceSub.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionStatusExpired, updatedSource.Status)
+
+	activeTargetSub, err := subscriptionSvc.GetActiveSubscription(ctx, user.ID, targetGroupB.ID)
+	require.NoError(t, err)
+	require.NotNil(t, activeTargetSub.CurrentPlanID)
+	require.Equal(t, targetPlanB.ID, *activeTargetSub.CurrentPlanID)
+}
+
+func TestPaymentService_CreateOrder_WithSubscriptionUpgradeFailedOrderBlockingSemantics(t *testing.T) {
+	t.Parallel()
+
+	paymentSvc, _, client := newPaymentUpgradeServiceTestEnv(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	user := mustCreateUpgradeUser(t, ctx, client, 200)
+	sourceGroup := mustCreateUpgradeGroup(t, ctx, client, "blocking-basic")
+	targetGroup := mustCreateUpgradeGroup(t, ctx, client, "blocking-pro")
+	sourcePlan := mustCreateUpgradePlan(t, ctx, client, sourceGroup.ID, "Basic", 100, "openai-team", 10)
+	targetPlan := mustCreateUpgradePlan(t, ctx, client, targetGroup.ID, "Pro", 150, "openai-team", 20)
+
+	sourceSub, err := client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetGroupID(sourceGroup.ID).
+		SetCurrentPlanID(sourcePlan.ID).
+		SetCurrentPlanName(sourcePlan.Name).
+		SetCurrentPlanPriceCny(sourcePlan.Price).
+		SetCurrentPlanValidityDays(sourcePlan.ValidityDays).
+		SetCurrentPlanValidityUnit(sourcePlan.ValidityUnit).
+		SetBillingCycleStartedAt(now.AddDate(0, 0, -15)).
+		SetStartsAt(now.AddDate(0, 0, -15)).
+		SetExpiresAt(now.AddDate(0, 0, 15)).
+		SetStatus(service.SubscriptionStatusActive).
+		SetAssignedAt(now.AddDate(0, 0, -15)).
+		SetNotes("current basic subscription").
+		Save(ctx)
+	require.NoError(t, err)
+
+	paidAt := now.Add(-time.Hour)
+	_, err = client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(100).
+		SetPayAmount(100).
+		SetFeeRate(0).
+		SetRechargeCode("paid-failed").
+		SetOutTradeNo("paid-failed").
+		SetPaymentType(payment.TypeWxpay).
+		SetPaymentTradeNo("trade-paid-failed").
+		SetOrderType(payment.OrderTypeSubscriptionUpgrade).
+		SetPlanID(targetPlan.ID).
+		SetSourceSubscriptionID(sourceSub.ID).
+		SetSourcePlanID(sourcePlan.ID).
+		SetSubscriptionGroupID(targetPlan.GroupID).
+		SetSubscriptionDays(targetPlan.ValidityDays).
+		SetStatus(service.OrderStatusFailed).
+		SetExpiresAt(paidAt.Add(time.Hour)).
+		SetPaidAt(paidAt).
+		SetFailedAt(paidAt).
+		SetFailedReason("manual paid failure").
+		SetClientIP("127.0.0.1").
+		SetSrcHost("localhost").
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = paymentSvc.CreateOrder(ctx, service.CreateOrderRequest{
+		UserID:               user.ID,
+		PaymentType:          payment.TypeBalance,
+		OrderType:            payment.OrderTypeSubscriptionUpgrade,
+		PlanID:               targetPlan.ID,
+		SourceSubscriptionID: sourceSub.ID,
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "UPGRADE_ORDER_EXISTS")
+
+	_, err = client.PaymentOrder.Update().
+		Where(paymentorder.SourceSubscriptionID(sourceSub.ID)).
+		ClearPaidAt().
+		Save(ctx)
+	require.NoError(t, err)
+
+	resp, err := paymentSvc.CreateOrder(ctx, service.CreateOrderRequest{
+		UserID:               user.ID,
+		PaymentType:          payment.TypeBalance,
+		OrderType:            payment.OrderTypeSubscriptionUpgrade,
+		PlanID:               targetPlan.ID,
+		SourceSubscriptionID: sourceSub.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.OrderStatusCompleted, resp.Status)
 }

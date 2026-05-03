@@ -291,6 +291,47 @@ Sub2API 内置支付系统，支持用户自助充值、购买订阅、续费订
 - 升级支付成功后，旧订阅会立即结束，目标订阅从支付完成时开始按目标套餐完整有效期重新生效
 - 升级订单会冻结来源订阅、目标套餐、折抵金额和应付差价快照，前端提交的金额不会作为最终计费依据
 - 升级订单退款默认不自动恢复旧订阅，只做金额退款收口；如需恢复订阅，请管理员人工核查后处理
+- 余额支付升级如果履约失败且余额已成功退回，系统会记录 `BALANCE_PAYMENT_ROLLED_BACK` 审计日志并清除该订单的 `paid_at`，用户可以重新提交升级订单；如果余额回滚失败，订单仍会保留已支付标记并阻止重复升级，等待管理员人工处理
+
+### 余额升级卡单人工处理
+
+历史版本可能存在余额支付升级履约失败、余额已退回但订单仍保留 `paid_at` 的卡单。管理员处理前应先只读排查候选订单：
+
+```sql
+SELECT id, user_id, source_subscription_id, amount, pay_amount, status, payment_type, paid_at, failed_at, failed_reason
+FROM payment_orders
+WHERE order_type = 'subscription_upgrade'
+  AND payment_type = 'balance'
+  AND status = 'FAILED'
+  AND paid_at IS NOT NULL
+ORDER BY failed_at DESC;
+```
+
+只有同时确认以下条件后，才允许人工清除 `paid_at`：
+
+- 订单没有 `UPGRADE_SUCCESS` 审计日志
+- 用户余额已退回，或管理员已补偿余额
+- 失败原因不是余额回滚失败
+- 来源订阅仍可升级，或管理员接受用户重新下单后的业务结果
+
+修复 SQL 必须使用占位符，不要直接复制真实订单 ID 到文档或工单：
+
+```sql
+UPDATE payment_orders
+SET paid_at = NULL, updated_at = NOW()
+WHERE id = :order_id
+  AND order_type = 'subscription_upgrade'
+  AND payment_type = 'balance'
+  AND status = 'FAILED'
+  AND paid_at IS NOT NULL;
+```
+
+建议同时补一条人工审计记录：
+
+```sql
+INSERT INTO payment_audit_logs (order_id, action, detail, operator, created_at)
+VALUES (:order_id_text, 'BALANCE_PAYMENT_ROLLED_BACK', '{"source":"manual_repair"}', 'admin', NOW());
+```
 
 ---
 
