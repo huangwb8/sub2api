@@ -105,6 +105,10 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 
 ---
 
+请基于 docs/plans/2026-05-03-proxy-quality-sort-plan.md docs/plans/2026-05-03-residential-ip-traffic-metering-optimization-plan.md 等计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
+
+---
+
 请基于 docs/plans/backfill-subscription-plan-names.md  docs/plans/2026-05-03-subscription-upgrade-order-blocking-fix-plan.md 等计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---

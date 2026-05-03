@@ -12,9 +12,11 @@
 | `api-prompt` 本地插件说明 | `docs/api-prompt-插件协议.md`、`plugins/api-prompt/manifest.json`、`plugins/api-prompt/config.json` | 本地插件实例元数据和模板配置；`config.json` 保存可绑定 Prompt 模板，`source` 固定为 `local` |
 | 用量日志结构 | `backend/ent/schema/usage_log.go` | token、成本、耗时、账号、分组、模型、请求类型、`proxy_id`、住宅代理流量字段 |
 | 用量查询实现 | `backend/internal/repository/usage_log_repo.go`、`backend/internal/repository/dashboard_aggregation_repo.go`、`backend/internal/service/dashboard_recommendation_service.go` | 聚合 SQL、分页性能、统计字段来源；管理端运营统计默认只纳入 `active` 用户，自动禁用用户不进入成本、盈利、排行和容量建议口径 |
+| 住宅代理流量计量 | `backend/internal/service/residential_ip_traffic_meter.go`、`backend/internal/service/residential_ip_estimator.go`、`backend/internal/service/gateway_service.go`、`backend/internal/service/gateway_forward_as_chat_completions.go`、`backend/internal/service/gateway_forward_as_responses.go`、`backend/internal/service/openai_gateway_service.go` | `proxy_traffic_*` 字段的来源、streaming 响应字节捕获、校准值默认下限与 Dashboard oversell calculator 的住宅 IP 流量估算口径 |
 | 代理巡检历史结构 | `backend/ent/schema/proxy_probe_log.go` | `proxy_probe_logs` 短期历史、巡检来源、出口信息与错误截断字段 |
 | 代理巡检写入 | `backend/internal/service/proxy_failover_service.go`、`backend/internal/service/admin_service.go` | 自动巡检与手动测试旁路写入，不改变迁移和探测主流程 |
 | 代理可靠性分析 | `backend/internal/repository/proxy_probe_log_repo.go`、`backend/internal/handler/admin/proxy_handler.go` | `/admin/proxies/:id/probe-logs` 与 `/admin/proxies/:id/reliability` 的只读分析口径 |
+| 代理列表质量排序 | `backend/internal/repository/proxy_repo.go`、`backend/internal/service/admin_service.go`、`frontend/src/views/admin/ProxiesView.vue`、`frontend/src/components/common/ProxySelector.vue` | `sort_by=quality_score` 走服务层 Redis 质量缓存排序；代理选择器默认按质量分、延迟、ID 展示，并显示 A-F 质量等级 |
 | 临时邀请用户状态 | `backend/internal/service/auth_service.go`、`backend/internal/service/temporary_invitation_service.go`、`backend/internal/service/admin_service.go` | `邀请码（临时）` 注册后的 24h 充值观察、自动禁用/删除与管理员重新启用重置窗口语义 |
 | 前端管理端 API | `frontend/src/api/admin/usage.ts` | 管理端 usage 接口的参数与返回类型 |
 | 前端插件 API | `frontend/src/api/admin/plugins.ts`、`frontend/src/api/plugins.ts` | 管理端插件管理接口与用户侧 `api-prompt` 模板目录接口的入参与返回值 |

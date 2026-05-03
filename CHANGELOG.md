@@ -13,6 +13,8 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 优化了代理质量排序链路：管理端代理列表支持 `sort_by=quality_score`，后端在附加 Redis 质量缓存后按分数、延迟和 ID 稳定排序，代理选择器默认将更可靠的节点排在前面并展示固定宽度 A-F 等级徽章。
+- 优化了住宅代理流量计量口径：动态校准值不再低于历史默认 `7.096031856906913 Bytes/token`，并在 Anthropic/OpenAI streaming 路径捕获上游 SSE 响应字节，减少住宅 IP 流量长期低估。
 - 优化了 `skills/sub2api-add-users/README.md`：按 `write-skill-readme` 流程重写为用户指南，补充推荐 Prompt、结果解读、配置项、安全边界和脚本备选流程。
 - 优化了 OpenAI `chatapi` 账号的 Responses 兼容能力：管理员现在可在账号 `extra.chatapi_responses_enabled` 中按账号开启 Responses API 调度，网关会把启用该开关的 `chatapi` 账号视为 Responses 兼容线路，并在前端编辑弹窗提供对应开关与文案。
 - 调整了插件系统的 Docker 运行目录解析：源码仓库运行仍优先使用项目根 `./plugins/{插件名}`，但 Docker 镜像、安装脚本或其它非完整仓库运行环境会回退到可写持久化数据目录的 `plugins/{插件名}`，避免把插件实例写到不可写或不可持久化的容器工作目录。
