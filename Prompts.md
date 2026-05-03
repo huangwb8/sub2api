@@ -107,6 +107,12 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 
 docs/page-demo/2026-04-13-benszresearch-homepage-reference.html 优化
 
+- 左上角的logo和文字还是太小。 能不能再大30%？
+
+---
+
+docs/page-demo/2026-04-13-benszresearch-homepage-reference.html 优化
+
 - 优势介绍：
   - 仅对经过论文验证的高校老师，不对外开放，用户自觉性高
   - 目前是内测阶段，以保证用户体验而不是盲目扩张为主
