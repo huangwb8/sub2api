@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <!--
   BenszResearch 主页
   技术：纯 HTML + CSS + 少量原生 JS，兼容 sub2api 后台 home_content 渲染。
@@ -5,6 +6,7 @@
   设计语言：Editorial-Tech — 学术严谨排版 + 现代科技精致感
 -->
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   .bensz-home,
   .bensz-home *,
@@ -56,6 +58,7 @@
     --page-pad-x: clamp(20px, 4vw, 72px);
     --page-pad-y: clamp(18px, 1.8vw, 34px);
     --shell-max: clamp(1180px, 72vw, 1680px);
+    --content-gap: clamp(18px, 1.35vw, 26px);
 
     position: relative;
     overflow: hidden;
@@ -209,8 +212,8 @@
 
   .bensz-home__hero {
     display: grid;
-    grid-template-columns: 1.08fr 0.92fr;
-    gap: clamp(18px, 1.35vw, 26px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--content-gap);
     align-items: stretch;
   }
 
@@ -503,7 +506,8 @@
 
   .bensz-home__node--grant {
     top: 20px;
-    left: 14px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .bensz-home__node--grant::before {
@@ -512,7 +516,7 @@
   }
 
   .bensz-home__node--paper {
-    right: 10px;
+    right: 28px;
     top: 50%;
     transform: translateY(-50%);
   }
@@ -523,9 +527,9 @@
   }
 
   .bensz-home__node--review {
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
+    left: 28px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .bensz-home__node--review::before {
@@ -536,8 +540,8 @@
   .bensz-home__features {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(16px, 1.2vw, 24px);
-    margin-top: clamp(18px, 1.2vw, 24px);
+    gap: var(--content-gap);
+    margin-top: var(--content-gap);
   }
 
   .bensz-home__feat {
@@ -1130,15 +1134,15 @@
 
     .bensz-home__node--grant {
       top: 14px;
-      left: 10px;
+      left: 50%;
     }
 
     .bensz-home__node--paper {
-      right: 8px;
+      right: 10px;
     }
 
     .bensz-home__node--review {
-      bottom: 14px;
+      left: 10px;
     }
   }
 
