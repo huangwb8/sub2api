@@ -105,6 +105,19 @@ PlanMarkdown = docs/plans/2026-05-01-upstream-55a7fa-to-489120-optimization-plan
 
 ---
 
+docs/page-demo/2026-04-13-benszresearch-homepage-reference.html 优化
+
+- 优势介绍：
+  - 仅对经过论文验证的高校老师，不对外开放，用户自觉性高
+  - 目前是内测阶段，以保证用户体验而不是盲目扩张为主
+  - 正式运营阶段可提供发票报销
+- 局限性
+  - 不推荐在保密项目的研究中使用
+
+上述内容要有机地融入这个demo里； 既包含这些内涵，又保证整个界面美观、整洁。
+
+---
+
 请基于 docs/plans/2026-05-03-proxy-quality-sort-plan.md docs/plans/2026-05-03-residential-ip-traffic-metering-optimization-plan.md 等计划优化项目。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作，让成品趋于完美。
 
 ---

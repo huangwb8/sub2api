@@ -13,6 +13,7 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 优化了 BenszResearch 首页参考模板的宽屏自适应布局：页面容器改为流体宽度并同步放大首屏卡片、标题、图形区和功能卡间距，让大尺寸浏览器中内容以更舒适比例铺满屏幕。
 - 优化了代理质量排序链路：管理端代理列表支持 `sort_by=quality_score`，后端在附加 Redis 质量缓存后按分数、延迟和 ID 稳定排序，代理选择器默认将更可靠的节点排在前面并展示固定宽度 A-F 等级徽章。
 - 优化了住宅代理流量计量口径：动态校准值不再低于历史默认 `7.096031856906913 Bytes/token`，并在 Anthropic/OpenAI streaming 路径捕获上游 SSE 响应字节，减少住宅 IP 流量长期低估。
 - 优化了 `skills/sub2api-add-users/README.md`：按 `write-skill-readme` 流程重写为用户指南，补充推荐 Prompt、结果解读、配置项、安全边界和脚本备选流程。

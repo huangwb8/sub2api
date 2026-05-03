@@ -52,10 +52,14 @@
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.03);
     --shadow-xl: 0 20px 56px rgba(0, 0, 0, 0.07), 0 8px 20px rgba(0, 0, 0, 0.03);
 
+    --page-pad-x: clamp(20px, 4vw, 72px);
+    --page-pad-y: clamp(24px, 2.4vw, 56px);
+    --shell-max: clamp(1180px, 72vw, 1680px);
+
     position: relative;
     overflow: hidden;
     min-height: 100vh;
-    padding: 32px clamp(20px, 4vw, 56px) 48px;
+    padding: var(--page-pad-y) var(--page-pad-x) clamp(36px, 3vw, 64px);
     color: var(--text);
     background:
       radial-gradient(ellipse 70% 50% at 10% 5%, rgba(20, 184, 166, 0.06), transparent),
@@ -81,7 +85,10 @@
   .bensz-home__shell {
     position: relative;
     z-index: 1;
-    max-width: 1180px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    width: min(100%, var(--shell-max));
+    min-height: calc(100vh - var(--page-pad-y) - clamp(36px, 3vw, 64px));
     margin: 0 auto;
   }
 
@@ -90,7 +97,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 40px;
+    margin-bottom: clamp(32px, 3vw, 56px);
   }
 
   .bensz-home__brand {
@@ -189,10 +196,20 @@
     display: none !important;
   }
 
+  .bensz-home__view {
+    min-width: 0;
+  }
+
+  .bensz-home__view[data-bensz-view="home"]:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
   .bensz-home__hero {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
-    gap: 24px;
+    gap: clamp(24px, 1.8vw, 36px);
     align-items: stretch;
   }
 
@@ -208,7 +225,7 @@
 
   .bensz-home__main,
   .bensz-home__side {
-    padding: clamp(32px, 4.5vw, 44px);
+    padding: clamp(32px, 3.1vw, 64px);
   }
 
   .bensz-home__main {
@@ -254,7 +271,7 @@
   .bensz-home__title,
   .bensz-home__side-title {
     margin: 0 0 14px;
-    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-size: clamp(1.65rem, 2.45vw, 3.25rem);
     line-height: 1.15;
     letter-spacing: -0.025em;
     font-weight: 800;
@@ -273,20 +290,20 @@
   .bensz-home__lead,
   .bensz-home__side-desc {
     color: var(--text-2);
-    font-size: clamp(0.94rem, 1.6vw, 1.05rem);
+    font-size: clamp(0.96rem, 1.1vw, 1.2rem);
     line-height: 1.8;
     font-weight: 400;
   }
 
   .bensz-home__lead {
-    max-width: 54ch;
+    max-width: 58ch;
   }
 
   .bensz-home__benefits {
     display: grid;
-    gap: 14px;
-    margin-top: 28px;
-    padding: 20px;
+    gap: clamp(14px, 1vw, 18px);
+    margin-top: clamp(28px, 2.1vw, 40px);
+    padding: clamp(20px, 1.5vw, 28px);
     border: 1px solid rgba(15, 118, 110, 0.1);
     border-radius: 16px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 253, 250, 0.75));
@@ -298,7 +315,7 @@
     align-items: flex-start;
     gap: 12px;
     color: var(--text-2);
-    font-size: 14px;
+    font-size: clamp(14px, 0.78vw, 15.5px);
     line-height: 1.6;
   }
 
@@ -316,7 +333,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 12px;
-    margin-top: 26px;
+    margin-top: clamp(26px, 1.9vw, 36px);
   }
 
   .bensz-home__cta {
@@ -383,7 +400,7 @@
   .bensz-home__orbit {
     position: relative;
     flex: 1;
-    min-height: 260px;
+    min-height: clamp(260px, 18vw, 380px);
     border-radius: 18px;
     background: radial-gradient(circle at 50% 50%, rgba(15, 118, 110, 0.06), transparent 55%), rgba(248, 250, 252, 0.6);
     border: 1px solid var(--border);
@@ -469,15 +486,15 @@
   .bensz-home__features {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-top: 24px;
+    gap: clamp(14px, 1.2vw, 24px);
+    margin-top: clamp(24px, 1.8vw, 36px);
   }
 
   .bensz-home__feat {
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    padding: 20px 18px;
+    padding: clamp(20px, 1.4vw, 28px) clamp(18px, 1.3vw, 26px);
     border: 1px solid var(--border);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.78);
@@ -526,14 +543,14 @@
   }
 
   .bensz-home__pricing-shell {
-    padding: clamp(28px, 4vw, 40px);
+    padding: clamp(28px, 3vw, 56px);
     background: linear-gradient(178deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.88) 100%);
   }
 
   .bensz-home__pricing-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    gap: clamp(18px, 1.4vw, 28px);
   }
 
   .bensz-home__pricing-card {
@@ -861,7 +878,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-top: 32px;
+    margin-top: clamp(32px, 3vw, 56px);
     padding-top: 24px;
     border-top: 1px solid var(--border);
     color: var(--text-4);
@@ -930,6 +947,8 @@
 
   @media (max-width: 768px) {
     .bensz-home {
+      --page-pad-x: 16px;
+      --page-pad-y: 20px;
       padding: 20px 16px 36px;
     }
 
