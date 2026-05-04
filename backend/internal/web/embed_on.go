@@ -20,6 +20,7 @@ import (
 const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
 	NonceHTMLPlaceholder = "__CSP_NONCE_VALUE__"
+	indexHTMLCacheControl = "no-store, no-cache, must-revalidate, max-age=0"
 )
 
 //go:embed all:dist
@@ -132,7 +133,7 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 		content := replaceNoncePlaceholder(cached.Content, nonce)
 
 		c.Header("ETag", cached.ETag)
-		c.Header("Cache-Control", "no-cache") // Must revalidate
+		setIndexHTMLCacheHeaders(c)
 		c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 		c.Abort()
 		return
@@ -145,6 +146,7 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 	settings, err := s.settings.GetPublicSettingsForInjection(ctx)
 	if err != nil {
 		// Fallback: serve without injection
+		setIndexHTMLCacheHeaders(c)
 		c.Data(http.StatusOK, "text/html; charset=utf-8", s.baseHTML)
 		c.Abort()
 		return
@@ -153,6 +155,7 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
 		// Fallback: serve without injection
+		setIndexHTMLCacheHeaders(c)
 		c.Data(http.StatusOK, "text/html; charset=utf-8", s.baseHTML)
 		c.Abort()
 		return
@@ -168,9 +171,15 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 	if cached != nil {
 		c.Header("ETag", cached.ETag)
 	}
-	c.Header("Cache-Control", "no-cache")
+	setIndexHTMLCacheHeaders(c)
 	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 	c.Abort()
+}
+
+func setIndexHTMLCacheHeaders(c *gin.Context) {
+	c.Header("Cache-Control", indexHTMLCacheControl)
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 }
 
 func (s *FrontendServer) injectSettings(settingsJSON []byte) []byte {

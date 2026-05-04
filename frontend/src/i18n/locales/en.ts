@@ -4733,7 +4733,7 @@ export default {
       plugins: {
         eyebrow: 'LOCAL PLUGINS',
         title: 'Local Plugin Center',
-        description: 'Manage local plugin instances stored under ./plugins/{plugin-name}. We start with api-prompt, and future plugins will reuse the same directory rule, enable/disable flow, and configuration check model.',
+        description: 'Manage local plugin instances stored under ./plugins/plugin-name/. We start with api-prompt, and future plugins will reuse the same directory rule, enable/disable flow, and configuration check model.',
         metrics: {
           instances: 'Instances',
           enabled: 'Enabled',
@@ -4757,7 +4757,7 @@ export default {
           description: 'Describe the prompt scenario or local purpose of this plugin'
         },
         hints: {
-          directoryRule: 'After creation, this plugin instance will always live under ./plugins/{plugin-name}/.',
+          directoryRule: 'After creation, this plugin instance will always live under ./plugins/plugin-name/.',
           localMode: 'Templates come from the local config.json file and can be edited directly.'
         },
         actions: {

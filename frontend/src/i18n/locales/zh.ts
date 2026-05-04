@@ -4900,7 +4900,7 @@ export default {
       plugins: {
         eyebrow: 'LOCAL PLUGINS',
         title: '本地插件中心',
-        description: '集中管理保存在 ./plugins/{插件名} 的本地插件实例。当前先支持 api-prompt，后续新插件也会沿用同一目录约定、启停能力与配置检查流程。',
+        description: '集中管理保存在 ./plugins/插件名/ 的本地插件实例。当前先支持 api-prompt，后续新插件也会沿用同一目录约定、启停能力与配置检查流程。',
         metrics: {
           instances: '插件实例',
           enabled: '已启用',
@@ -4924,7 +4924,7 @@ export default {
           description: '说明该插件负责的提示词场景或本地用途'
         },
         hints: {
-          directoryRule: '创建后会固定保存到 ./plugins/{插件名}/ 下。',
+          directoryRule: '创建后会固定保存到 ./plugins/插件名/ 下。',
           localMode: '模板来自本地 config.json，可直接编辑并保存。'
         },
         actions: {

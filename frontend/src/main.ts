@@ -4,8 +4,15 @@ import App from './App.vue'
 import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
+import { recoverFromChunkLoadError } from '@/utils/assetRefresh'
 import { startThemeRuntime } from '@/utils/theme'
 import './style.css'
+
+window.addEventListener('vite:preloadError', (event) => {
+  if (recoverFromChunkLoadError((event as Event & { payload?: unknown }).payload)) {
+    event.preventDefault()
+  }
+})
 
 async function bootstrap() {
   // Apply theme class globally before app mount to keep all routes consistent.
