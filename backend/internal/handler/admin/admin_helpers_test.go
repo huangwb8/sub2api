@@ -166,6 +166,17 @@ func TestParseOpsTimeRange(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestParseOpsTimeRange_DefaultObservationWindow(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	start, end, err := parseOpsTimeRange(c, opsDefaultObservationRange)
+	require.NoError(t, err)
+	require.WithinDuration(t, start.Add(5*time.Minute), end, time.Second)
+}
+
 func TestParseOpsRealtimeWindow(t *testing.T) {
 	dur, label, ok := parseOpsRealtimeWindow("5m")
 	require.True(t, ok)

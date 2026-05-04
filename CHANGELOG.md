@@ -15,6 +15,7 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 调整了运维监控默认观察窗口：Ops Dashboard、错误列表、请求明细和 snapshot-v2 接口在未显式传入时间范围时默认查看最近 `5m`，前端筛选器、自定义时间范围初始值和时间解析兜底同步从 `1h` 收敛为 `5m`。
 - 优化了公开费用页入口：BenszResearch 首页参考模板切换到“费用”时会把地址同步为既有 `/pricing` 路径；站点配置内联自定义首页时，`/pricing` 会优先渲染该自定义首页的费用视图，没有自定义首页时仍回落到默认公开费用页。
 - 吸收了上游 OpenAI 兼容网关稳定性优化：Chat Completions 直转保留 `reasoning_effort`、`service_tier`、stream usage 和上游端点审计，Images 网关按上游 `Content-Type` 判定流式并补齐 JSON fallback 与图片数兜底计数，未知 OpenAI/Codex 模型不再被静默映射到默认模型。
 - 优化了账号批量编辑弹窗：支持批量写入 OpenAI compact mode 和 compact model mapping，并同步中英文文案与组件测试。

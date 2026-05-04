@@ -48,9 +48,10 @@ func (h *OpsHandler) GetErrorLogByID(c *gin.Context) {
 }
 
 const (
-	opsListViewErrors   = "errors"
-	opsListViewExcluded = "excluded"
-	opsListViewAll      = "all"
+	opsDefaultObservationRange = "5m"
+	opsListViewErrors          = "errors"
+	opsListViewExcluded        = "excluded"
+	opsListViewAll             = "all"
 )
 
 func parseOpsViewParam(c *gin.Context) string {
@@ -92,7 +93,7 @@ func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
 		pageSize = 500
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -194,7 +195,7 @@ func (h *OpsHandler) ListRequestErrors(c *gin.Context) {
 	if pageSize > 500 {
 		pageSize = 500
 	}
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -326,7 +327,7 @@ func (h *OpsHandler) ListRequestErrorUpstreamErrors(c *gin.Context) {
 	}
 
 	// Keep correlation window wide enough so linked upstream errors
-	// are discoverable even when UI defaults to 1h elsewhere.
+	// are discoverable even when the UI defaults to a short observation window.
 	startTime, endTime, err := parseOpsTimeRange(c, "30d")
 	if err != nil {
 		response.BadRequest(c, err.Error())
@@ -479,7 +480,7 @@ func (h *OpsHandler) ListUpstreamErrors(c *gin.Context) {
 	if pageSize > 500 {
 		pageSize = 500
 	}
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -622,7 +623,7 @@ func (h *OpsHandler) ListRequestDetails(c *gin.Context) {
 		pageSize = 100
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return

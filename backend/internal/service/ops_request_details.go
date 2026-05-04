@@ -12,6 +12,8 @@ const (
 	OpsRequestKindError   OpsRequestKind = "error"
 )
 
+const opsRequestDetailDefaultWindow = 5 * time.Minute
+
 // OpsRequestDetail is a request-level view across success (usage_logs) and error (ops_error_logs).
 // It powers "request drilldown" UIs without exposing full request bodies for successful requests.
 type OpsRequestDetail struct {
@@ -72,7 +74,7 @@ func (f *OpsRequestDetailFilter) Normalize() (page, pageSize int, startTime, end
 	page = 1
 	pageSize = 50
 	endTime = time.Now()
-	startTime = endTime.Add(-1 * time.Hour)
+	startTime = endTime.Add(-opsRequestDetailDefaultWindow)
 
 	if f == nil {
 		return page, pageSize, startTime, endTime
@@ -94,7 +96,7 @@ func (f *OpsRequestDetailFilter) Normalize() (page, pageSize int, startTime, end
 	if f.StartTime != nil {
 		startTime = *f.StartTime
 	} else if f.EndTime != nil {
-		startTime = endTime.Add(-1 * time.Hour)
+		startTime = endTime.Add(-opsRequestDetailDefaultWindow)
 	}
 
 	if startTime.After(endTime) {

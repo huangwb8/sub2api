@@ -174,12 +174,12 @@ function handleGroupChange(val: string | number | boolean | null) {
 }
 
 function handleTimeRangeChange(val: string | number | boolean | null) {
-  const newValue = String(val || '1h')
+  const newValue = String(val || '5m')
   if (newValue === 'custom') {
-    // 初始化为最近1小时
+    // 初始化为最近5分钟
     const now = new Date()
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-    customStartTimeInput.value = oneHourAgo.toISOString().slice(0, 16)
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    customStartTimeInput.value = fiveMinutesAgo.toISOString().slice(0, 16)
     customEndTimeInput.value = now.toISOString().slice(0, 16)
     showCustomTimeRangeDialog.value = true
   } else {

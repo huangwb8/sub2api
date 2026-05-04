@@ -46,16 +46,16 @@ export function sumNumbers(values: Array<number | null | undefined>): number {
  */
 export function parseTimeRangeMinutes(range: string): number {
   const trimmed = (range || '').trim()
-  if (!trimmed) return 60
+  if (!trimmed) return 5
   if (trimmed.endsWith('m')) {
     const v = Number.parseInt(trimmed.slice(0, -1), 10)
-    return Number.isFinite(v) && v > 0 ? v : 60
+    return Number.isFinite(v) && v > 0 ? v : 5
   }
   if (trimmed.endsWith('h')) {
     const v = Number.parseInt(trimmed.slice(0, -1), 10)
-    return Number.isFinite(v) && v > 0 ? v * 60 : 60
+    return Number.isFinite(v) && v > 0 ? v * 60 : 5
   }
-  return 60
+  return 5
 }
 
 export function formatHistoryLabel(date: string | undefined, timeRange: string): string {

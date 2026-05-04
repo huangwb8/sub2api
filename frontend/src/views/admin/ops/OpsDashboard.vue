@@ -180,6 +180,7 @@ const opsEnabled = computed(() => adminSettingsStore.opsMonitoringEnabled)
 
 type TimeRange = '5m' | '30m' | '1h' | '6h' | '24h' | 'custom'
 const allowedTimeRanges = new Set<TimeRange>(['5m', '30m', '1h', '6h', '24h', 'custom'])
+const defaultTimeRange: TimeRange = '5m'
 
 type QueryMode = 'auto' | 'raw' | 'preagg'
 const allowedQueryModes = new Set<QueryMode>(['auto', 'raw', 'preagg'])
@@ -189,7 +190,7 @@ const hasLoadedOnce = ref(false)
 const errorMessage = ref('')
 const lastUpdated = ref<Date | null>(new Date())
 
-const timeRange = ref<TimeRange>('1h')
+const timeRange = ref<TimeRange>(defaultTimeRange)
 const platform = ref<string>('')
 const groupId = ref<number | null>(null)
 const queryMode = ref<QueryMode>('auto')
@@ -319,7 +320,7 @@ const buildQueryFromState = () => {
     delete next[k]
   })
 
-  if (timeRange.value !== '1h') next[QUERY_KEYS.timeRange] = timeRange.value
+  if (timeRange.value !== defaultTimeRange) next[QUERY_KEYS.timeRange] = timeRange.value
   if (platform.value) next[QUERY_KEYS.platform] = platform.value
   if (typeof groupId.value === 'number' && groupId.value > 0) next[QUERY_KEYS.groupId] = String(groupId.value)
   if (queryMode.value !== 'auto') next[QUERY_KEYS.queryMode] = queryMode.value
@@ -525,7 +526,7 @@ function buildApiParams() {
       params.end_time = customEndTime.value
     } else {
       // Safety fallback: avoid sending time_range=custom (backend may not support it)
-      params.time_range = '1h'
+      params.time_range = defaultTimeRange
     }
   } else {
     params.time_range = timeRange.value

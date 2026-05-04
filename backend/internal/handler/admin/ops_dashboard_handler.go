@@ -24,7 +24,7 @@ func (h *OpsHandler) GetDashboardOverview(c *gin.Context) {
 		return
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -65,7 +65,7 @@ func (h *OpsHandler) GetDashboardThroughputTrend(c *gin.Context) {
 		return
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -107,7 +107,7 @@ func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
 		return
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -148,7 +148,7 @@ func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {
 		return
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -190,7 +190,7 @@ func (h *OpsHandler) GetDashboardErrorDistribution(c *gin.Context) {
 		return
 	}
 
-	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	startTime, endTime, err := parseOpsTimeRange(c, opsDefaultObservationRange)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
