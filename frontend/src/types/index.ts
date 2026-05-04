@@ -1164,7 +1164,13 @@ export interface AdminDataImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation' | 'invitation_temp'
+export type RedeemCodeType =
+  | 'balance'
+  | 'concurrency'
+  | 'subscription'
+  | 'invitation'
+  | 'invitation_temp'
+  | 'invitation_balance'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2'
 
 export interface UsageLog {

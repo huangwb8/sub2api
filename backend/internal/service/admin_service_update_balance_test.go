@@ -95,3 +95,37 @@ func TestAdminService_UpdateUserBalance_NoChangeNoInvalidate(t *testing.T) {
 	require.Empty(t, invalidator.userIDs)
 	require.Empty(t, redeemRepo.created)
 }
+
+func TestAdminService_GenerateRedeemCodes_InvitationBalanceKeepsValue(t *testing.T) {
+	redeemRepo := &balanceRedeemRepoStub{redeemRepoStub: &redeemRepoStub{}}
+	svc := &adminServiceImpl{redeemCodeRepo: redeemRepo}
+
+	codes, err := svc.GenerateRedeemCodes(context.Background(), &GenerateRedeemCodesInput{
+		Count: 2,
+		Type:  RedeemTypeInvitationBalance,
+		Value: 9.99,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, codes, 2)
+	require.Len(t, redeemRepo.created, 2)
+	for i := range redeemRepo.created {
+		require.Equal(t, RedeemTypeInvitationBalance, redeemRepo.created[i].Type)
+		require.InDelta(t, 9.99, redeemRepo.created[i].Value, 0.0001)
+		require.Equal(t, StatusUnused, redeemRepo.created[i].Status)
+	}
+}
+
+func TestAdminService_GenerateRedeemCodes_InvitationBalanceRejectsNegativeValue(t *testing.T) {
+	redeemRepo := &balanceRedeemRepoStub{redeemRepoStub: &redeemRepoStub{}}
+	svc := &adminServiceImpl{redeemCodeRepo: redeemRepo}
+
+	_, err := svc.GenerateRedeemCodes(context.Background(), &GenerateRedeemCodesInput{
+		Count: 1,
+		Type:  RedeemTypeInvitationBalance,
+		Value: -1,
+	})
+
+	require.ErrorContains(t, err, "non-negative")
+	require.Empty(t, redeemRepo.created)
+}

@@ -219,10 +219,10 @@
               <Select v-model="generateForm.type" :options="typeOptions" />
             </div>
             <!-- 余额/并发类型：显示数值输入 -->
-            <div v-if="generateForm.type !== 'subscription' && generateForm.type !== 'invitation' && generateForm.type !== 'invitation_temp'">
+            <div v-if="showValueInput">
               <label class="input-label">
                 {{
-                  generateForm.type === 'balance'
+                  generateForm.type === 'balance' || generateForm.type === 'invitation_balance'
                     ? t('admin.redeem.amount')
                     : t('admin.redeem.columns.value')
                 }}
@@ -230,16 +230,16 @@
               <input
                 v-model.number="generateForm.value"
                 type="number"
-                :step="generateForm.type === 'balance' ? '0.01' : '1'"
-                :min="generateForm.type === 'balance' ? '0.01' : '1'"
+                :step="generateForm.type === 'balance' || generateForm.type === 'invitation_balance' ? '0.01' : '1'"
+                :min="generateForm.type === 'invitation_balance' ? '0' : generateForm.type === 'balance' ? '0.01' : '1'"
                 required
                 class="input"
               />
             </div>
             <!-- 邀请码类型：显示提示信息 -->
-            <div v-if="generateForm.type === 'invitation' || generateForm.type === 'invitation_temp'" class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+            <div v-if="isInvitationType" class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
               <p class="text-sm text-blue-700 dark:text-blue-300">
-                {{ generateForm.type === 'invitation_temp' ? t('admin.redeem.temporaryInvitationHint') : t('admin.redeem.invitationHint') }}
+                {{ invitationHint }}
               </p>
             </div>
             <!-- 订阅类型：显示分组选择和有效天数 -->
@@ -514,7 +514,8 @@ const typeOptions = computed(() => [
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
   { value: 'invitation', label: t('admin.redeem.invitation') },
-  { value: 'invitation_temp', label: t('admin.redeem.invitation_temp') }
+  { value: 'invitation_temp', label: t('admin.redeem.invitation_temp') },
+  { value: 'invitation_balance', label: t('admin.redeem.invitation_balance') }
 ])
 
 const filterTypeOptions = computed(() => [
@@ -523,7 +524,8 @@ const filterTypeOptions = computed(() => [
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
   { value: 'invitation', label: t('admin.redeem.invitation') },
-  { value: 'invitation_temp', label: t('admin.redeem.invitation_temp') }
+  { value: 'invitation_temp', label: t('admin.redeem.invitation_temp') },
+  { value: 'invitation_balance', label: t('admin.redeem.invitation_balance') }
 ])
 
 const filterStatusOptions = computed(() => [
@@ -567,11 +569,35 @@ const generateForm = reactive({
   validity_days: 30
 })
 
-// 监听类型变化，邀请码类型时自动设置 value 为 0
+const isInvitationType = computed(() =>
+  generateForm.type === 'invitation' ||
+  generateForm.type === 'invitation_temp' ||
+  generateForm.type === 'invitation_balance'
+)
+
+const showValueInput = computed(() =>
+  generateForm.type !== 'subscription' &&
+  generateForm.type !== 'invitation' &&
+  generateForm.type !== 'invitation_temp'
+)
+
+const invitationHint = computed(() => {
+  if (generateForm.type === 'invitation_temp') {
+    return t('admin.redeem.temporaryInvitationHint')
+  }
+  if (generateForm.type === 'invitation_balance') {
+    return t('admin.redeem.invitationBalanceHint')
+  }
+  return t('admin.redeem.invitationHint')
+})
+
+// 监听类型变化，普通邀请码类型时自动设置 value 为 0，余额邀请码默认 0 且允许管理员编辑。
 watch(
   () => generateForm.type,
   (newType) => {
     if (newType === 'invitation' || newType === 'invitation_temp') {
+      generateForm.value = 0
+    } else if (newType === 'invitation_balance') {
       generateForm.value = 0
     } else if (generateForm.value === 0) {
       generateForm.value = 10
@@ -659,6 +685,9 @@ const handleGenerateCodes = async () => {
   if (generateForm.type === 'subscription' && !generateForm.group_id) {
     appStore.showError(t('admin.redeem.groupRequired'))
     return
+  }
+  if (generateForm.type === 'invitation_balance' && generateForm.value < 0) {
+    generateForm.value = 0
   }
 
   generating.value = true

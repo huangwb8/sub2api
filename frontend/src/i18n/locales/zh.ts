@@ -3810,6 +3810,7 @@ export default {
         subscription: '订阅',
         invitation: '邀请码',
         invitation_temp: '邀请码（临时）',
+        invitation_balance: '邀请码（余额）',
         // 管理员在用户管理页面调整余额/并发时产生的记录
         admin_balance: '余额（管理员）',
         admin_concurrency: '并发数（管理员）'
@@ -3822,6 +3823,8 @@ export default {
       invitationHint: '邀请码用于限制用户注册，使用后自动标记为已使用。',
       invitation_temp: '邀请码（临时）',
       temporaryInvitationHint: '临时邀请码用户需在注册后 24 小时内累计充值超过 30 元，否则会被自动禁用；禁用超过 7 天会被自动彻底删除。',
+      invitation_balance: '邀请码（余额）',
+      invitationBalanceHint: '余额邀请码用于限制用户注册，使用后自动标记为已使用，并在新用户默认余额基础上增加配置金额。',
       allTypes: '全部类型',
       allStatus: '全部状态',
       unused: '未使用',

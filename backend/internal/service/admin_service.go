@@ -2407,6 +2407,10 @@ func (s *adminServiceImpl) GetRedeemCode(ctx context.Context, id int64) (*Redeem
 }
 
 func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *GenerateRedeemCodesInput) ([]RedeemCode, error) {
+	if input.Type == RedeemTypeInvitationBalance && input.Value < 0 {
+		return nil, errors.New("value must be non-negative for invitation balance type")
+	}
+
 	// 如果是订阅类型，验证必须有 GroupID
 	if input.Type == RedeemTypeSubscription {
 		if input.GroupID == nil {
@@ -2434,7 +2438,7 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			Value:  input.Value,
 			Status: StatusUnused,
 		}
-		if IsInvitationRedeemType(input.Type) {
+		if IsInvitationRedeemType(input.Type) && !IsBalanceInvitationRedeemType(input.Type) {
 			code.Value = 0
 		}
 		// 订阅类型专用字段

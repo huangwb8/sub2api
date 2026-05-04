@@ -653,6 +653,36 @@ func TestAuthService_Register_TemporaryInvitationMarksUser(t *testing.T) {
 	require.Equal(t, user.ID, *redeemRepo.usedBy)
 }
 
+func TestAuthService_Register_InvitationBalanceAddsToDefaultBalance(t *testing.T) {
+	repo := &userRepoStub{nextID: 100}
+	redeemRepo := &authRedeemRepoStub{
+		code: &RedeemCode{
+			ID:     17,
+			Code:   "BALANCE-CODE",
+			Type:   RedeemTypeInvitationBalance,
+			Value:  12.25,
+			Status: StatusUnused,
+		},
+	}
+	service := newAuthServiceWithDeps(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+		SettingKeyDefaultBalance:        "3.75",
+	}, nil, redeemRepo, nil)
+
+	_, user, err := service.RegisterWithAffiliate(context.Background(), "balance-invite@test.com", "password", "", "", "BALANCE-CODE", "")
+
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.InDelta(t, 16.0, user.Balance, 0.0001)
+	require.Len(t, repo.created, 1)
+	require.InDelta(t, 16.0, repo.created[0].Balance, 0.0001)
+	require.NotNil(t, redeemRepo.usedCode)
+	require.NotNil(t, redeemRepo.usedBy)
+	require.Equal(t, int64(17), *redeemRepo.usedCode)
+	require.Equal(t, user.ID, *redeemRepo.usedBy)
+}
+
 func TestAuthService_OAuthRegister_TemporaryInvitationMarksUser(t *testing.T) {
 	repo := &authOAuthUserRepoStub{nextID: 321}
 	redeemRepo := &authRedeemRepoStub{
@@ -682,4 +712,33 @@ func TestAuthService_OAuthRegister_TemporaryInvitationMarksUser(t *testing.T) {
 	require.WithinDuration(t, after.Add(TemporaryInvitationSignupWindow), *user.TemporaryInvitationDeadlineAt, 2*time.Second)
 	require.NotEmpty(t, tokenPair.AccessToken)
 	require.NotEmpty(t, tokenPair.RefreshToken)
+}
+
+func TestAuthService_OAuthRegister_InvitationBalanceAddsToDefaultBalance(t *testing.T) {
+	repo := &authOAuthUserRepoStub{nextID: 322}
+	redeemRepo := &authRedeemRepoStub{
+		code: &RedeemCode{
+			ID:     18,
+			Code:   "BALANCE-OAUTH",
+			Type:   RedeemTypeInvitationBalance,
+			Value:  6.5,
+			Status: StatusUnused,
+		},
+	}
+	service := newAuthServiceWithDeps(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+		SettingKeyDefaultBalance:        "1.5",
+	}, nil, redeemRepo, refreshTokenCacheNoopStub{})
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPair(context.Background(), "oauth-balance@test.com", "oauth-balance", "BALANCE-OAUTH")
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.NotNil(t, user)
+	require.NotNil(t, repo.createdUser)
+	require.InDelta(t, 8.0, user.Balance, 0.0001)
+	require.InDelta(t, 8.0, repo.createdUser.Balance, 0.0001)
+	require.NotNil(t, redeemRepo.usedCode)
+	require.Equal(t, int64(18), *redeemRepo.usedCode)
 }

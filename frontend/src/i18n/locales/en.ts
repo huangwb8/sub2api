@@ -3676,6 +3676,8 @@ export default {
       invitationHint: 'Invitation codes are used to restrict user registration. They are automatically marked as used after use.',
       invitation_temp: 'Invitation (Temporary)',
       temporaryInvitationHint: 'Users created with temporary invitation codes must accumulate more than CNY 30 in recharges within 24 hours, or they will be auto-disabled. If they stay disabled for more than 7 days, the account is permanently deleted.',
+      invitation_balance: 'Invitation (Balance)',
+      invitationBalanceHint: 'Balance invitation codes restrict registration, are marked as used after signup, and add the configured amount to the new user default balance.',
       unused: 'Unused',
       used: 'Used',
       columns: {
@@ -3724,6 +3726,7 @@ export default {
         subscription: 'Subscription',
         invitation: 'Invitation',
         invitation_temp: 'Invitation (Temporary)',
+        invitation_balance: 'Invitation (Balance)',
         // Admin adjustment types (created when admin modifies user balance/concurrency)
         admin_balance: 'Balance (Admin)',
         admin_concurrency: 'Concurrency (Admin)'

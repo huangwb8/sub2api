@@ -7,14 +7,17 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 `邀请码（余额）` 兑换码类型：管理员生成邀请码时可配置注册赠送余额，用户使用后会在默认余额基础上自动增加对应金额，普通注册与 OAuth 首次注册链路同步支持。
 - 新增了管理员邀请返利审计能力：后端提供邀请记录、返利入账、转余额记录和用户返利概览只读接口，新增 `backend/migrations/127_affiliate_ledger_audit_snapshots.sql` 记录返利订单来源与转余额快照，前端管理页增加对应审计列表。
 - 新增了 `docs/plans/2026-05-04-upstream-489120-to-df722c-optimization-plan.md`：基于上游 `48912014..df722c9a` 的提交区间，梳理 OpenAI 兼容计费、Images 流式处理、返利后台记录页、批量编辑 compact 配置和 license 同步状态，并沉淀选择性吸收计划。
+- 新增了 `docs/plans/2026-05-04-invitation-balance-code-plan.md`：记录 `邀请码（余额）` 的后端类型、注册余额发放、前端管理入口和验证范围。
 - 新增了 `backend/migrations/126_backfill_subscription_plan_names.sql`：一次性把用户订阅中的 `current_plan_name` 同步为套餐表最新名称，修复绕过套餐更新 API 后遗留订阅仍显示旧套餐名的问题。
 - 新增了 `docs/plans/2026-05-03-subscription-upgrade-order-blocking-fix-plan.md`：记录余额支付订阅升级失败后订单被误判为未完成升级订单的根因、最小修复范围、回归测试与历史卡单人工处理方案。
 - 新增了 `skills/sub2api-add-users` Agent Skill：用于在用户提供真实站点鉴权后，只读采集 sub2api 容量与聚合用量数据，评估当前站点适合新增多少同类订阅用户，并包含 `auto-test-skill` 一轮 A/B 自检产物。
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 同步了 `skills/sub2api-summary` 源码地图：补充 `邀请码（余额）` 的注册余额叠加、管理员生成入口和前端筛选入口，避免运营分析遗漏该类注册赠送金额。
 - 调整了运维监控默认观察窗口：Ops Dashboard、错误列表、请求明细和 snapshot-v2 接口在未显式传入时间范围时默认查看最近 `5m`，前端筛选器、自定义时间范围初始值和时间解析兜底同步从 `1h` 收敛为 `5m`。
 - 优化了公开费用页入口：BenszResearch 首页参考模板切换到“费用”时会把地址同步为既有 `/pricing` 路径；站点配置内联自定义首页时，`/pricing` 会优先渲染该自定义首页的费用视图，没有自定义首页时仍回落到默认公开费用页。
 - 吸收了上游 OpenAI 兼容网关稳定性优化：Chat Completions 直转保留 `reasoning_effort`、`service_tier`、stream usage 和上游端点审计，Images 网关按上游 `Content-Type` 判定流式并补齐 JSON fallback 与图片数兜底计数，未知 OpenAI/Codex 模型不再被静默映射到默认模型。

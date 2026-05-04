@@ -9,11 +9,22 @@ const (
 )
 
 func IsInvitationRedeemType(codeType string) bool {
-	return codeType == RedeemTypeInvitation || codeType == RedeemTypeInvitationTemp
+	return codeType == RedeemTypeInvitation || codeType == RedeemTypeInvitationTemp || codeType == RedeemTypeInvitationBalance
 }
 
 func IsTemporaryInvitationRedeemType(codeType string) bool {
 	return codeType == RedeemTypeInvitationTemp
+}
+
+func IsBalanceInvitationRedeemType(codeType string) bool {
+	return codeType == RedeemTypeInvitationBalance
+}
+
+func InvitationBalanceBonus(code *RedeemCode) float64 {
+	if code == nil || !IsBalanceInvitationRedeemType(code.Type) || code.Value <= 0 {
+		return 0
+	}
+	return code.Value
 }
 
 func TemporaryInvitationQualified(totalAmountCNY float64) bool {

@@ -194,6 +194,7 @@ func (s *AuthService) RegisterWithAffiliate(ctx context.Context, email, password
 		defaultBalance = s.settingService.GetDefaultBalance(ctx)
 		defaultConcurrency = s.settingService.GetDefaultConcurrency(ctx)
 	}
+	defaultBalance += InvitationBalanceBonus(invitationRedeemCode)
 
 	// 创建用户
 	user := &User{
@@ -208,7 +209,33 @@ func (s *AuthService) RegisterWithAffiliate(ctx context.Context, email, password
 		ApplyTemporaryInvitationWindow(user, time.Now())
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
+	invitationCodeMarkedInTx := false
+	if s.entClient != nil && invitationRedeemCode != nil {
+		tx, err := s.entClient.Tx(ctx)
+		if err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to begin transaction for registration: %v", err)
+			return "", nil, ErrServiceUnavailable
+		}
+		defer func() { _ = tx.Rollback() }()
+		txCtx := dbent.NewTxContext(ctx, tx)
+
+		if err := s.userRepo.Create(txCtx, user); err != nil {
+			// 优先检查邮箱冲突错误（竞态条件下可能发生）
+			if errors.Is(err, ErrEmailExists) {
+				return "", nil, ErrEmailExists
+			}
+			logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
+			return "", nil, ErrServiceUnavailable
+		}
+		if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, user.ID); err != nil {
+			return "", nil, ErrInvitationCodeInvalid
+		}
+		if err := tx.Commit(); err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to commit registration transaction: %v", err)
+			return "", nil, ErrServiceUnavailable
+		}
+		invitationCodeMarkedInTx = true
+	} else if err := s.userRepo.Create(ctx, user); err != nil {
 		// 优先检查邮箱冲突错误（竞态条件下可能发生）
 		if errors.Is(err, ErrEmailExists) {
 			return "", nil, ErrEmailExists
@@ -229,7 +256,7 @@ func (s *AuthService) RegisterWithAffiliate(ctx context.Context, email, password
 	}
 
 	// 标记邀请码为已使用（如果使用了邀请码）
-	if invitationRedeemCode != nil {
+	if invitationRedeemCode != nil && !invitationCodeMarkedInTx {
 		if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
 			// 邀请码标记失败不影响注册，只记录日志
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to mark invitation code as used for user %d: %v", user.ID, err)
@@ -616,6 +643,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				defaultBalance = s.settingService.GetDefaultBalance(ctx)
 				defaultConcurrency = s.settingService.GetDefaultConcurrency(ctx)
 			}
+			defaultBalance += InvitationBalanceBonus(invitationRedeemCode)
 
 			newUser := &User{
 				Email:        email,
