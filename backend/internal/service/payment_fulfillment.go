@@ -352,7 +352,8 @@ func (s *PaymentService) applyAffiliateRebateForOrder(ctx context.Context, o *db
 		})
 		return nil
 	}
-	rebate, err := s.affiliateSvc.AccrueInviteRebate(ctx, o.UserID, o.Amount)
+	sourceOrderID := o.ID
+	rebate, err := s.affiliateSvc.AccrueInviteRebateForOrder(ctx, o.UserID, o.Amount, &sourceOrderID)
 	if err != nil {
 		return fmt.Errorf("affiliate rebate: %w", err)
 	}
