@@ -7,17 +7,18 @@
     </div>
     <div class="px-6 py-6">
       <form @submit.prevent="handleUpdateProfile" class="space-y-6">
-        <section class="grid gap-5 lg:grid-cols-[144px,1fr]">
+        <section class="grid gap-5 md:grid-cols-[144px,1fr]">
           <div class="flex flex-col items-center gap-3">
-            <UserAvatar
-              :user="user"
-              :preview-type="avatarType"
-              :preview-style="avatarStyle"
-              :preview-url="previewUrl"
-              size="xl"
-              rounded="2xl"
-              class="shadow-lg shadow-primary-500/15"
-            />
+            <div class="rounded-[1.35rem] bg-white p-2 shadow-lg shadow-primary-500/15 ring-1 ring-gray-200 dark:bg-dark-900/60 dark:ring-dark-700">
+              <UserAvatar
+                :user="user"
+                :preview-type="avatarType"
+                :preview-style="avatarStyle"
+                :preview-url="previewUrl"
+                size="xl"
+                rounded="2xl"
+              />
+            </div>
             <button
               v-if="avatarType !== 'generated'"
               type="button"
@@ -82,20 +83,108 @@
             </div>
 
             <div v-if="avatarType === 'uploaded'" class="space-y-2">
-              <label for="avatarFile" class="input-label">
-                {{ t('profile.avatar.uploadFile') }}
-              </label>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <label for="avatarFile" class="input-label mb-0">
+                  {{ t('profile.avatar.uploadFile') }}
+                </label>
+                <div v-if="selectedFile" class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ selectedFile.name }}
+                </div>
+              </div>
               <input
                 id="avatarFile"
                 ref="fileInputRef"
                 type="file"
-                class="input h-auto p-3"
+                class="sr-only"
                 accept="image/png,image/jpeg,image/webp"
                 @change="handleFileChange"
               />
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('profile.avatar.uploadHint') }}
-              </p>
+              <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50/80 p-4 dark:border-dark-600 dark:bg-dark-900/40">
+                <div class="flex flex-wrap items-center gap-3">
+                  <label for="avatarFile" class="btn btn-secondary btn-sm cursor-pointer">
+                    {{ t('profile.avatar.chooseFile') }}
+                  </label>
+                  <button
+                    v-if="cropSourceUrl"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    @click="resetCrop"
+                  >
+                    {{ t('profile.avatar.recenter') }}
+                  </button>
+                  <button
+                    v-if="selectedFile"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    @click="clearSelectedFile()"
+                  >
+                    {{ t('profile.avatar.removeUpload') }}
+                  </button>
+                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('profile.avatar.uploadHint') }}
+                </p>
+
+                <div v-if="cropSourceUrl" class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,320px),1fr]">
+                  <div>
+                    <div
+                      ref="cropFrameRef"
+                      class="relative aspect-square w-full max-w-80 touch-none select-none overflow-hidden rounded-2xl border border-gray-200 bg-gray-950 shadow-inner dark:border-dark-600"
+                      @pointerdown="startDrag"
+                    >
+                      <img
+                        ref="cropImageRef"
+                        :src="cropSourceUrl"
+                        alt=""
+                        class="absolute left-1/2 top-1/2 max-w-none cursor-grab select-none"
+                        :class="{ 'cursor-grabbing': isDragging }"
+                        :style="cropImageStyle"
+                        draggable="false"
+                        @load="handleCropImageLoad"
+                      />
+                      <div class="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/25"></div>
+                      <div class="pointer-events-none absolute left-1/3 top-0 h-full w-px bg-white/20"></div>
+                      <div class="pointer-events-none absolute left-2/3 top-0 h-full w-px bg-white/20"></div>
+                      <div class="pointer-events-none absolute left-0 top-1/3 h-px w-full bg-white/20"></div>
+                      <div class="pointer-events-none absolute left-0 top-2/3 h-px w-full bg-white/20"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex min-w-0 flex-col justify-between gap-4">
+                    <div>
+                      <div class="mb-2 flex items-center justify-between gap-3">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                          {{ t('profile.avatar.zoom') }}
+                        </span>
+                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          {{ Math.round(cropZoom * 100) }}%
+                        </span>
+                      </div>
+                      <input
+                        v-model.number="cropZoom"
+                        type="range"
+                        min="1"
+                        max="3"
+                        step="0.01"
+                        class="w-full accent-primary-500"
+                        @input="clampCropOffset"
+                        @change="applyCrop"
+                      />
+                      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        {{ t('profile.avatar.cropHint') }}
+                      </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-primary btn-sm" @click="applyCrop">
+                        {{ t('profile.avatar.applyCrop') }}
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-sm" @click="resetCrop">
+                        {{ t('profile.avatar.resetCrop') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="space-y-3">
@@ -147,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
@@ -169,9 +258,18 @@ const avatarType = ref<User['avatar_type']>('generated')
 const avatarStyle = ref<User['avatar_style']>('classic_letter')
 const avatarUrl = ref('')
 const selectedFile = ref<File | null>(null)
+const selectedSourceFileName = ref('')
 const selectedFileUrl = ref('')
+const cropSourceUrl = ref('')
 const loading = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const cropFrameRef = ref<HTMLElement | null>(null)
+const cropImageRef = ref<HTMLImageElement | null>(null)
+const cropZoom = ref(1)
+const cropOffset = ref({ x: 0, y: 0 })
+const naturalSize = ref({ width: 0, height: 0 })
+const isDragging = ref(false)
+const dragStart = ref({ pointerId: 0, x: 0, y: 0, offsetX: 0, offsetY: 0 })
 
 const avatarSources = computed(() => [
   {
@@ -207,6 +305,30 @@ const previewUrl = computed(() => {
     return avatarUrl.value
   }
   return ''
+})
+
+const cropFrameSize = computed(() => cropFrameRef.value?.clientWidth || 320)
+
+const cropBaseScale = computed(() => {
+  if (!naturalSize.value.width || !naturalSize.value.height) return 1
+  return Math.max(cropFrameSize.value / naturalSize.value.width, cropFrameSize.value / naturalSize.value.height)
+})
+
+const cropScale = computed(() => cropBaseScale.value * cropZoom.value)
+
+const cropImageStyle = computed(() => {
+  if (!naturalSize.value.width || !naturalSize.value.height) {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'translate(-50%, -50%)'
+    }
+  }
+  return {
+    width: `${naturalSize.value.width * cropScale.value}px`,
+    height: `${naturalSize.value.height * cropScale.value}px`,
+    transform: `translate(calc(-50% + ${cropOffset.value.x}px), calc(-50% + ${cropOffset.value.y}px))`
+  }
 })
 
 watch(() => props.user, (user) => {
@@ -245,11 +367,18 @@ function handleFileChange(event: Event) {
   }
 
   selectedFile.value = file
-  selectedFileUrl.value = URL.createObjectURL(file)
+  selectedSourceFileName.value = file.name
+  cropSourceUrl.value = URL.createObjectURL(file)
+  selectedFileUrl.value = cropSourceUrl.value
+  resetCrop()
 }
 
 function clearSelectedFile(resetInput = true) {
   selectedFile.value = null
+  selectedSourceFileName.value = ''
+  naturalSize.value = { width: 0, height: 0 }
+  cropZoom.value = 1
+  cropOffset.value = { x: 0, y: 0 }
   revokeSelectedFileUrl()
   if (resetInput && fileInputRef.value) {
     fileInputRef.value.value = ''
@@ -257,10 +386,122 @@ function clearSelectedFile(resetInput = true) {
 }
 
 function revokeSelectedFileUrl() {
-  if (selectedFileUrl.value) {
-    URL.revokeObjectURL(selectedFileUrl.value)
-    selectedFileUrl.value = ''
+  const previewUrl = selectedFileUrl.value
+  const sourceUrl = cropSourceUrl.value
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl)
   }
+  if (sourceUrl && sourceUrl !== previewUrl) {
+    URL.revokeObjectURL(sourceUrl)
+  }
+  selectedFileUrl.value = ''
+  cropSourceUrl.value = ''
+}
+
+function handleCropImageLoad() {
+  const image = cropImageRef.value
+  if (!image) return
+  naturalSize.value = {
+    width: image.naturalWidth,
+    height: image.naturalHeight
+  }
+  nextTick(() => {
+    clampCropOffset()
+    void applyCrop()
+  })
+}
+
+function resetCrop() {
+  cropZoom.value = 1
+  cropOffset.value = { x: 0, y: 0 }
+  nextTick(() => {
+    clampCropOffset()
+    if (cropSourceUrl.value) void applyCrop()
+  })
+}
+
+function clampCropOffset() {
+  const displayWidth = naturalSize.value.width * cropScale.value
+  const displayHeight = naturalSize.value.height * cropScale.value
+  const frameSize = cropFrameSize.value
+  const maxX = Math.max(0, (displayWidth - frameSize) / 2)
+  const maxY = Math.max(0, (displayHeight - frameSize) / 2)
+  cropOffset.value = {
+    x: Math.min(maxX, Math.max(-maxX, cropOffset.value.x)),
+    y: Math.min(maxY, Math.max(-maxY, cropOffset.value.y))
+  }
+}
+
+function startDrag(event: PointerEvent) {
+  if (!cropSourceUrl.value) return
+  isDragging.value = true
+  dragStart.value = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    offsetX: cropOffset.value.x,
+    offsetY: cropOffset.value.y
+  }
+  cropFrameRef.value?.setPointerCapture(event.pointerId)
+  window.addEventListener('pointermove', dragCrop)
+  window.addEventListener('pointerup', stopDrag, { once: true })
+}
+
+function dragCrop(event: PointerEvent) {
+  if (!isDragging.value) return
+  cropOffset.value = {
+    x: dragStart.value.offsetX + event.clientX - dragStart.value.x,
+    y: dragStart.value.offsetY + event.clientY - dragStart.value.y
+  }
+  clampCropOffset()
+}
+
+function stopDrag(event: PointerEvent) {
+  if (!isDragging.value) return
+  isDragging.value = false
+  cropFrameRef.value?.releasePointerCapture(dragStart.value.pointerId)
+  window.removeEventListener('pointermove', dragCrop)
+  if (event.pointerId === dragStart.value.pointerId) {
+    void applyCrop()
+  }
+}
+
+async function applyCrop() {
+  const image = cropImageRef.value
+  if (!image || !cropSourceUrl.value || !naturalSize.value.width || !naturalSize.value.height) return
+
+  const outputSize = 512
+  const frameSize = cropFrameSize.value
+  const sourceSize = frameSize / cropScale.value
+  const sourceX = (naturalSize.value.width / 2) - (sourceSize / 2) - (cropOffset.value.x / cropScale.value)
+  const sourceY = (naturalSize.value.height / 2) - (sourceSize / 2) - (cropOffset.value.y / cropScale.value)
+  const canvas = document.createElement('canvas')
+  canvas.width = outputSize
+  canvas.height = outputSize
+  const context = canvas.getContext('2d')
+  if (!context) return
+
+  context.drawImage(
+    image,
+    Math.max(0, sourceX),
+    Math.max(0, sourceY),
+    Math.min(naturalSize.value.width, sourceSize),
+    Math.min(naturalSize.value.height, sourceSize),
+    0,
+    0,
+    outputSize,
+    outputSize
+  )
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+  if (!blob) return
+
+  if (selectedFileUrl.value && selectedFileUrl.value !== cropSourceUrl.value) {
+    URL.revokeObjectURL(selectedFileUrl.value)
+  }
+  const fileName = selectedSourceFileName.value.replace(/\.[^.]+$/, '') || 'avatar'
+  selectedFile.value = new File([blob], `${fileName}-cropped.jpg`, { type: 'image/jpeg' })
+  selectedFileUrl.value = URL.createObjectURL(blob)
 }
 
 function useGeneratedAvatar() {

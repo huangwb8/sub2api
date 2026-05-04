@@ -29,7 +29,7 @@
       <span class="absolute right-[20%] top-[18%] h-2 w-2 rounded-full bg-white/40"></span>
     </span>
     <span v-else class="absolute right-[16%] top-[16%] h-[18%] w-[18%] rounded-full bg-white/25"></span>
-    <span class="relative z-10 font-semibold leading-none" :class="textClass">{{ initials }}</span>
+    <span v-if="!showImage" class="relative z-10 font-semibold leading-none" :class="textClass">{{ initials }}</span>
   </span>
 </template>
 
