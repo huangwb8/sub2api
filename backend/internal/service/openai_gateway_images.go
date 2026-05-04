@@ -383,7 +383,7 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesRequest(
 		return s.handleCompatErrorResponse(resp, c, account, writeImagesError)
 	}
 
-	if reqStream {
+	if reqStream && isEventStreamResponse(resp.Header) {
 		result, err := s.handleImagesStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
 		if result != nil {
 			result.ProxyRequestBytes = int64(len(requestBody))
@@ -470,16 +470,38 @@ func (s *OpenAIGatewayService) handleImagesStreamingResponse(
 	}
 	scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
 	usage := OpenAIUsage{}
+	imageCount := 0
 	var firstTokenMs *int
+	var fallbackBody bytes.Buffer
+	var seenSSEData bool
+	var fallbackTooLarge bool
+	var fallbackBytes int64
+	fallbackLimit := resolveUpstreamResponseReadLimit(s.cfg)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if data, ok := extractOpenAISSEDataLine(line); ok {
 			if data != "" && data != "[DONE]" {
+				seenSSEData = true
+				fallbackBody.Reset()
+				fallbackBytes = 0
+				dataBytes := []byte(data)
 				usage = mergeOpenAIUsage(usage, parseOpenAIImagesUsage([]byte(data)))
+				if count := extractOpenAIImagesBillableCountFromJSONBytes(dataBytes); count > imageCount {
+					imageCount = count
+				}
 				if firstTokenMs == nil {
 					ms := int(time.Since(startTime).Milliseconds())
 					firstTokenMs = &ms
 				}
+			}
+		} else if !seenSSEData && !fallbackTooLarge {
+			fallbackBytes += int64(len(line)) + 1
+			if fallbackBytes <= fallbackLimit {
+				fallbackBody.WriteString(line)
+				fallbackBody.WriteByte('\n')
+			} else {
+				fallbackTooLarge = true
+				fallbackBody.Reset()
 			}
 		}
 		if _, err := fmt.Fprintln(c.Writer, line); err != nil {
@@ -493,6 +515,15 @@ func (s *OpenAIGatewayService) handleImagesStreamingResponse(
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("read images stream: %w", err)
 	}
+	if !seenSSEData && fallbackBody.Len() > 0 {
+		body := bytes.TrimSpace(fallbackBody.Bytes())
+		if len(body) > 0 {
+			usage = mergeOpenAIUsage(usage, parseOpenAIImagesUsage(body))
+			if count := extractOpenAIImagesBillableCountFromJSONBytes(body); count > imageCount {
+				imageCount = count
+			}
+		}
+	}
 	flusher.Flush()
 	return &OpenAIForwardResult{
 		RequestID:     resp.Header.Get("x-request-id"),
@@ -500,6 +531,7 @@ func (s *OpenAIGatewayService) handleImagesStreamingResponse(
 		Model:         originalModel,
 		BillingModel:  billingModel,
 		UpstreamModel: upstreamModel,
+		ImageCount:    imageCount,
 		Stream:        true,
 		Duration:      time.Since(startTime),
 		FirstTokenMs:  firstTokenMs,
@@ -538,7 +570,7 @@ func parseOpenAIImagesUsage(body []byte) OpenAIUsage {
 func parseOpenAIImagesMetadata(responseBody []byte, requestBody []byte) (int, string) {
 	imageCount := 0
 	if len(responseBody) > 0 && gjson.ValidBytes(responseBody) {
-		imageCount = len(gjson.GetBytes(responseBody, "data").Array())
+		imageCount = extractOpenAIImagesBillableCountFromJSONBytes(responseBody)
 	}
 	if imageCount == 0 && len(requestBody) > 0 {
 		imageCount = int(gjson.GetBytes(requestBody, "n").Int())
@@ -549,6 +581,29 @@ func parseOpenAIImagesMetadata(responseBody []byte, requestBody []byte) (int, st
 
 	size := normalizeOpenAIImageSize(gjson.GetBytes(requestBody, "size").String())
 	return imageCount, size
+}
+
+func extractOpenAIImagesBillableCountFromJSONBytes(body []byte) int {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return 0
+	}
+	if dataCount := len(gjson.GetBytes(body, "data").Array()); dataCount > 0 {
+		return dataCount
+	}
+	if count := int(gjson.GetBytes(body, "usage.images").Int()); count > 0 {
+		return count
+	}
+	if count := int(gjson.GetBytes(body, "tool_usage.image_gen.images").Int()); count > 0 {
+		return count
+	}
+	eventType := strings.TrimSpace(gjson.GetBytes(body, "type").String())
+	if eventType == "" || !strings.HasSuffix(eventType, ".completed") {
+		return 0
+	}
+	if gjson.GetBytes(body, "b64_json").Exists() || gjson.GetBytes(body, "url").Exists() {
+		return 1
+	}
+	return 0
 }
 
 func normalizeOpenAIImageSize(raw string) string {

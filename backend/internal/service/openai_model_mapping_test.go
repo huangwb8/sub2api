@@ -69,14 +69,14 @@ func TestResolveOpenAIForwardModel(t *testing.T) {
 	}
 }
 
-func TestResolveOpenAIForwardModel_PreventsClaudeModelFromFallingBackToGpt51(t *testing.T) {
+func TestResolveOpenAIForwardModel_PreservesUnknownModelWithoutDefault(t *testing.T) {
 	account := &Account{
 		Credentials: map[string]any{},
 	}
 
 	withoutDefault := normalizeCodexModel(resolveOpenAIForwardModel(account, "claude-opus-4-6", ""))
-	if withoutDefault != "gpt-5.1" {
-		t.Fatalf("normalizeCodexModel(...) = %q, want %q", withoutDefault, "gpt-5.1")
+	if withoutDefault != "claude-opus-4-6" {
+		t.Fatalf("normalizeCodexModel(...) = %q, want %q", withoutDefault, "claude-opus-4-6")
 	}
 
 	withDefault := normalizeCodexModel(resolveOpenAIForwardModel(account, "claude-opus-4-6", "gpt-5.4"))
@@ -110,10 +110,10 @@ func TestNormalizeOpenAIModelForUpstream(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "oauth keeps codex normalization behavior",
+			name:    "oauth preserves unknown compatible model",
 			account: &Account{Type: AccountTypeOAuth},
 			model:   "gemini-3-flash-preview",
-			want:    "gpt-5.1",
+			want:    "gemini-3-flash-preview",
 		},
 		{
 			name:    "apikey preserves custom compatible model",

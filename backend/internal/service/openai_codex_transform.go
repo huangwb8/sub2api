@@ -318,6 +318,20 @@ func normalizeCodexModel(model string) string {
 	if model == "" {
 		return "gpt-5.1"
 	}
+	if mapped, ok := normalizeKnownCodexModel(model); ok {
+		return mapped
+	}
+	return strings.TrimSpace(model)
+}
+
+func normalizeKnownCodexModel(model string) (string, bool) {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return "", false
+	}
+	if isOpenAIImageGenerationModel(model) {
+		return model, true
+	}
 
 	modelID := model
 	if strings.Contains(modelID, "/") {
@@ -325,61 +339,82 @@ func normalizeCodexModel(model string) string {
 		modelID = parts[len(parts)-1]
 	}
 
-	if mapped := getNormalizedCodexModel(modelID); mapped != "" {
-		return mapped
+	key := codexModelLookupKey(modelID)
+	if key == "" {
+		return "", false
+	}
+	if mapped := getNormalizedCodexModel(key); mapped != "" {
+		return mapped, true
 	}
 
-	normalized := strings.ToLower(modelID)
+	knownPrefixes := []struct {
+		prefix string
+		target string
+	}{
+		{prefix: "gpt-5.5", target: "gpt-5.5"},
+		{prefix: "gpt-5.4-mini", target: "gpt-5.4-mini"},
+		{prefix: "gpt-5.4-nano", target: "gpt-5.4-nano"},
+		{prefix: "gpt-5.4", target: "gpt-5.4"},
+		{prefix: "gpt-5.2-codex", target: "gpt-5.2-codex"},
+		{prefix: "gpt-5.2", target: "gpt-5.2"},
+		{prefix: "gpt-5.3-codex-spark", target: "gpt-5.3-codex-spark"},
+		{prefix: "gpt-5.3-codex", target: "gpt-5.3-codex"},
+		{prefix: "gpt-5.3", target: "gpt-5.3-codex"},
+		{prefix: "gpt-5.1-codex-max", target: "gpt-5.1-codex-max"},
+		{prefix: "gpt-5.1-codex-mini", target: "gpt-5.1-codex-mini"},
+		{prefix: "gpt-5.1-codex", target: "gpt-5.1-codex"},
+		{prefix: "gpt-5.1", target: "gpt-5.1"},
+		{prefix: "gpt-5", target: "gpt-5.1"},
+	}
+	for _, item := range knownPrefixes {
+		if key == item.prefix {
+			return item.target, true
+		}
+		if suffix, ok := strings.CutPrefix(key, item.prefix+"-"); ok && isKnownCodexModelSuffix(suffix) {
+			return item.target, true
+		}
+	}
+	return "", false
+}
 
-	if strings.Contains(normalized, "gpt-5.5") || strings.Contains(normalized, "gpt 5.5") {
-		return "gpt-5.5"
-	}
-	if strings.Contains(normalized, "gpt-5.4-mini") || strings.Contains(normalized, "gpt 5.4 mini") {
-		return "gpt-5.4-mini"
-	}
-	if strings.Contains(normalized, "gpt-5.4-nano") || strings.Contains(normalized, "gpt 5.4 nano") {
-		return "gpt-5.4-nano"
-	}
-	if strings.Contains(normalized, "gpt-5.4") || strings.Contains(normalized, "gpt 5.4") {
-		return "gpt-5.4"
-	}
-	if strings.Contains(normalized, "gpt-5.2-codex") || strings.Contains(normalized, "gpt 5.2 codex") {
-		return "gpt-5.2-codex"
-	}
-	if strings.Contains(normalized, "gpt-5.2") || strings.Contains(normalized, "gpt 5.2") {
-		return "gpt-5.2"
-	}
-	if strings.Contains(normalized, "gpt-5.3-codex") || strings.Contains(normalized, "gpt 5.3 codex") {
-		return "gpt-5.3-codex"
-	}
-	if strings.Contains(normalized, "gpt-5.3") || strings.Contains(normalized, "gpt 5.3") {
-		return "gpt-5.3-codex"
-	}
-	if strings.Contains(normalized, "gpt-5.1-codex-max") || strings.Contains(normalized, "gpt 5.1 codex max") {
-		return "gpt-5.1-codex-max"
-	}
-	if strings.Contains(normalized, "gpt-5.1-codex-mini") || strings.Contains(normalized, "gpt 5.1 codex mini") {
-		return "gpt-5.1-codex-mini"
-	}
-	if strings.Contains(normalized, "codex-mini-latest") ||
-		strings.Contains(normalized, "gpt-5-codex-mini") ||
-		strings.Contains(normalized, "gpt 5 codex mini") {
-		return "codex-mini-latest"
-	}
-	if strings.Contains(normalized, "gpt-5.1-codex") || strings.Contains(normalized, "gpt 5.1 codex") {
-		return "gpt-5.1-codex"
-	}
-	if strings.Contains(normalized, "gpt-5.1") || strings.Contains(normalized, "gpt 5.1") {
-		return "gpt-5.1"
-	}
-	if strings.Contains(normalized, "codex") {
-		return "gpt-5.1-codex"
-	}
-	if strings.Contains(normalized, "gpt-5") || strings.Contains(normalized, "gpt 5") {
-		return "gpt-5.1"
-	}
+func isOpenAIImageGenerationModel(model string) bool {
+	key := codexModelLookupKey(model)
+	return strings.HasPrefix(key, "gpt-image-") || key == "dall-e-2" || key == "dall-e-3"
+}
 
-	return "gpt-5.1"
+func codexModelLookupKey(modelID string) string {
+	modelID = strings.TrimSpace(modelID)
+	if modelID == "" {
+		return ""
+	}
+	if strings.Contains(modelID, "/") {
+		parts := strings.Split(modelID, "/")
+		modelID = parts[len(parts)-1]
+	}
+	return strings.ToLower(strings.Join(strings.Fields(modelID), "-"))
+}
+
+func isKnownCodexModelSuffix(suffix string) bool {
+	switch suffix {
+	case "none", "minimal", "low", "medium", "high", "xhigh":
+		return true
+	}
+	return isCodexDateSuffix(suffix)
+}
+
+func isCodexDateSuffix(suffix string) bool {
+	parts := strings.Split(suffix, "-")
+	if len(parts) != 3 || len(parts[0]) != 4 || len(parts[1]) != 2 || len(parts[2]) != 2 {
+		return false
+	}
+	for _, part := range parts {
+		for _, r := range part {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func normalizeOpenAIModelForUpstream(account *Account, model string) string {
@@ -413,17 +448,12 @@ func SupportsVerbosity(model string) bool {
 }
 
 func getNormalizedCodexModel(modelID string) string {
-	if modelID == "" {
+	key := codexModelLookupKey(modelID)
+	if key == "" {
 		return ""
 	}
-	if mapped, ok := codexModelMap[modelID]; ok {
+	if mapped, ok := codexModelMap[key]; ok {
 		return mapped
-	}
-	lower := strings.ToLower(modelID)
-	for key, value := range codexModelMap {
-		if strings.ToLower(key) == lower {
-			return value
-		}
 	}
 	return ""
 }

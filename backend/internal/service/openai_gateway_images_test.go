@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
@@ -105,6 +106,78 @@ func TestOpenAIGatewayService_ForwardAsImageGeneration_NonStream(t *testing.T) {
 	require.Equal(t, 5, result.Usage.ImageOutputTokens)
 	require.Equal(t, 1, result.ImageCount)
 	require.Equal(t, "1K", result.ImageSize)
+}
+
+func TestOpenAIGatewayService_ForwardAsImageGeneration_StreamRequestWithJSONResponse(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(nil))
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"img-json"}},
+		Body: io.NopCloser(strings.NewReader(`{
+			"data": [{"url": "https://example.test/1.png"}, {"url": "https://example.test/2.png"}],
+			"usage": {
+				"total_tokens": 14,
+				"input_tokens": 4,
+				"output_tokens": 10,
+				"usage": {"images": 2},
+				"output_tokens_details": {"image_tokens": 10}
+			}
+		}`)),
+	}}
+	svc := &OpenAIGatewayService{httpUpstream: upstream}
+	account := &Account{
+		ID:          8,
+		Name:        "openai-apikey",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Concurrency: 1,
+		Credentials: map[string]any{"api_key": "sk-upstream", "base_url": "https://api.openai.com"},
+	}
+
+	result, err := svc.ForwardAsImageGeneration(
+		context.Background(),
+		c,
+		account,
+		[]byte(`{"model":"gpt-image-2","prompt":"draw cats","stream":true,"n":2}`),
+		"gpt-image-2",
+	)
+
+	require.NoError(t, err)
+	require.False(t, result.Stream)
+	require.Equal(t, "application/json", rec.Header().Get("Content-Type"))
+	require.Equal(t, 2, result.ImageCount)
+	require.Equal(t, 4, result.Usage.InputTokens)
+	require.Equal(t, 10, result.Usage.ImageOutputTokens)
+}
+
+func TestOpenAIGatewayService_HandleImagesStreamingResponseCountsCompletedEvents(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "x-request-id": []string{"img-stream"}},
+		Body: io.NopCloser(strings.NewReader(strings.Join([]string{
+			`data: {"type":"image_generation.completed","usage":{"input_tokens":6,"output_tokens":20,"images":3},"tool_usage":{"image_gen":{"images":3}}}`,
+			`data: [DONE]`,
+			``,
+		}, "\n"))),
+	}
+	svc := &OpenAIGatewayService{}
+
+	result, err := svc.handleImagesStreamingResponse(resp, c, "gpt-image-2", "gpt-image-2", "gpt-image-2", time.Now())
+
+	require.NoError(t, err)
+	require.True(t, result.Stream)
+	require.Equal(t, 3, result.ImageCount)
+	require.Equal(t, 6, result.Usage.InputTokens)
+	require.Equal(t, 20, result.Usage.OutputTokens)
 }
 
 func TestOpenAIGatewayService_BuildOpenAIImagesRequest_OAuthExperimental(t *testing.T) {

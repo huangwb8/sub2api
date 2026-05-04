@@ -405,6 +405,34 @@ func TestStreamingTextOnly(t *testing.T) {
 	assert.Equal(t, "message_stop", events[1].Type)
 }
 
+func TestStreamingResponseDoneTerminatesAnthropicStream(t *testing.T) {
+	state := NewResponsesEventToAnthropicState()
+
+	ResponsesEventToAnthropicEvents(&ResponsesStreamEvent{
+		Type:     "response.created",
+		Response: &ResponsesResponse{ID: "resp_done", Model: "gpt-5.2"},
+	}, state)
+	ResponsesEventToAnthropicEvents(&ResponsesStreamEvent{
+		Type:  "response.output_text.delta",
+		Delta: "Hello",
+	}, state)
+
+	events := ResponsesEventToAnthropicEvents(&ResponsesStreamEvent{
+		Type: "response.done",
+		Response: &ResponsesResponse{
+			Status: "completed",
+			Usage:  &ResponsesUsage{InputTokens: 7, OutputTokens: 3},
+		},
+	}, state)
+
+	require.Len(t, events, 3)
+	assert.Equal(t, "content_block_stop", events[0].Type)
+	assert.Equal(t, "message_delta", events[1].Type)
+	assert.Equal(t, 7, events[1].Usage.InputTokens)
+	assert.Equal(t, 3, events[1].Usage.OutputTokens)
+	assert.Equal(t, "message_stop", events[2].Type)
+}
+
 func TestStreamingToolCall(t *testing.T) {
 	state := NewResponsesEventToAnthropicState()
 

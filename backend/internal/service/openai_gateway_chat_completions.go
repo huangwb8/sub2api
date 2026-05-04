@@ -16,8 +16,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	"go.uber.org/zap"
 )
 
 // ForwardAsChatCompletions accepts a Chat Completions request body, converts it
@@ -238,11 +239,20 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletionsDirect(
 		return nil, fmt.Errorf("parse chat completions request: model is required")
 	}
 	clientStream := gjson.GetBytes(body, "stream").Bool()
+	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
+	serviceTier := extractOpenAIServiceTierFromBody(body)
 
 	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
 	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
 	if upstreamModel != "" && upstreamModel != originalModel {
 		body = s.ReplaceModelInBody(body, upstreamModel)
+	}
+	if clientStream {
+		updatedBody, err := ensureOpenAIChatStreamUsage(body)
+		if err != nil {
+			return nil, fmt.Errorf("enable stream usage: %w", err)
+		}
+		body = updatedBody
 	}
 
 	logFields := []zap.Field{
@@ -330,9 +340,9 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletionsDirect(
 	}
 
 	if clientStream {
-		return s.handleChatCompletionsDirectStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+		return s.handleChatCompletionsDirectStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
 	}
-	return s.handleChatCompletionsDirectBufferedResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+	return s.handleChatCompletionsDirectBufferedResponse(resp, c, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
 }
 
 // handleChatCompletionsErrorResponse reads an upstream error and returns it in
@@ -360,6 +370,17 @@ func extractOpenAIChatUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
 		OutputTokens:         int(values[1].Int()),
 		CacheReadInputTokens: int(values[2].Int()),
 	}, true
+}
+
+func ensureOpenAIChatStreamUsage(body []byte) ([]byte, error) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return body, nil
+	}
+	updated, err := sjson.SetBytes(body, "stream_options.include_usage", true)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 // handleChatBufferedStreamingResponse reads all Responses SSE events from the
@@ -478,6 +499,8 @@ func (s *OpenAIGatewayService) handleChatCompletionsDirectStreamingResponse(
 	originalModel string,
 	billingModel string,
 	upstreamModel string,
+	reasoningEffort *string,
+	serviceTier *string,
 	startTime time.Time,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
@@ -543,31 +566,35 @@ func (s *OpenAIGatewayService) handleChatCompletionsDirectStreamingResponse(
 			)
 		}
 		return &OpenAIForwardResult{
-			RequestID:     requestID,
-			Usage:         usage,
-			Model:         originalModel,
-			BillingModel:  billingModel,
-			UpstreamModel: upstreamModel,
-			Stream:        true,
-			Duration:      time.Since(startTime),
-			FirstTokenMs:  firstTokenMs,
+			RequestID:       requestID,
+			Usage:           usage,
+			Model:           originalModel,
+			BillingModel:    billingModel,
+			UpstreamModel:   upstreamModel,
+			ServiceTier:     serviceTier,
+			ReasoningEffort: reasoningEffort,
+			Stream:          true,
+			Duration:        time.Since(startTime),
+			FirstTokenMs:    firstTokenMs,
 		}, fmt.Errorf("stream read error: %w", err)
 	}
 
 	if !sawDone && !clientDisconnected {
 		return &OpenAIForwardResult{
-			RequestID:     requestID,
-			Usage:         usage,
-			Model:         originalModel,
-			BillingModel:  billingModel,
-			UpstreamModel: upstreamModel,
-			Stream:        true,
-			Duration:      time.Since(startTime),
-			FirstTokenMs:  firstTokenMs,
-		}, &UpstreamFailoverError{
-			StatusCode:   http.StatusBadGateway,
-			ResponseBody: []byte(`{"error":{"type":"api_error","message":"Upstream stream ended without [DONE]"}}`),
-		}
+				RequestID:       requestID,
+				Usage:           usage,
+				Model:           originalModel,
+				BillingModel:    billingModel,
+				UpstreamModel:   upstreamModel,
+				ServiceTier:     serviceTier,
+				ReasoningEffort: reasoningEffort,
+				Stream:          true,
+				Duration:        time.Since(startTime),
+				FirstTokenMs:    firstTokenMs,
+			}, &UpstreamFailoverError{
+				StatusCode:   http.StatusBadGateway,
+				ResponseBody: []byte(`{"error":{"type":"api_error","message":"Upstream stream ended without [DONE]"}}`),
+			}
 	}
 
 	if s.rateLimitService != nil {
@@ -575,14 +602,16 @@ func (s *OpenAIGatewayService) handleChatCompletionsDirectStreamingResponse(
 	}
 
 	return &OpenAIForwardResult{
-		RequestID:     requestID,
-		Usage:         usage,
-		Model:         originalModel,
-		BillingModel:  billingModel,
-		UpstreamModel: upstreamModel,
-		Stream:        true,
-		Duration:      time.Since(startTime),
-		FirstTokenMs:  firstTokenMs,
+		RequestID:       requestID,
+		Usage:           usage,
+		Model:           originalModel,
+		BillingModel:    billingModel,
+		UpstreamModel:   upstreamModel,
+		ServiceTier:     serviceTier,
+		ReasoningEffort: reasoningEffort,
+		Stream:          true,
+		Duration:        time.Since(startTime),
+		FirstTokenMs:    firstTokenMs,
 	}, nil
 }
 
@@ -593,6 +622,8 @@ func (s *OpenAIGatewayService) handleChatCompletionsDirectBufferedResponse(
 	originalModel string,
 	billingModel string,
 	upstreamModel string,
+	reasoningEffort *string,
+	serviceTier *string,
 	startTime time.Time,
 ) (*OpenAIForwardResult, error) {
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
@@ -626,13 +657,15 @@ func (s *OpenAIGatewayService) handleChatCompletionsDirectBufferedResponse(
 	}
 
 	return &OpenAIForwardResult{
-		RequestID:     resp.Header.Get("x-request-id"),
-		Usage:         usage,
-		Model:         originalModel,
-		BillingModel:  billingModel,
-		UpstreamModel: upstreamModel,
-		Stream:        false,
-		Duration:      time.Since(startTime),
+		RequestID:       resp.Header.Get("x-request-id"),
+		Usage:           usage,
+		Model:           originalModel,
+		BillingModel:    billingModel,
+		UpstreamModel:   upstreamModel,
+		ServiceTier:     serviceTier,
+		ReasoningEffort: reasoningEffort,
+		Stream:          false,
+		Duration:        time.Since(startTime),
 	}, nil
 }
 
@@ -703,7 +736,8 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 		}
 
 		// Extract usage from completion events
-		if (event.Type == "response.completed" || event.Type == "response.incomplete" || event.Type == "response.failed") &&
+		if (event.Type == "response.completed" || event.Type == "response.done" ||
+			event.Type == "response.incomplete" || event.Type == "response.failed") &&
 			event.Response != nil && event.Response.Usage != nil {
 			usage = OpenAIUsage{
 				InputTokens:  event.Response.Usage.InputTokens,
