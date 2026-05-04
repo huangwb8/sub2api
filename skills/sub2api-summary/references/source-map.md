@@ -18,7 +18,9 @@
 | 代理可靠性分析 | `backend/internal/repository/proxy_probe_log_repo.go`、`backend/internal/handler/admin/proxy_handler.go` | `/admin/proxies/:id/probe-logs` 与 `/admin/proxies/:id/reliability` 的只读分析口径 |
 | 代理列表质量排序 | `backend/internal/repository/proxy_repo.go`、`backend/internal/service/admin_service.go`、`frontend/src/views/admin/ProxiesView.vue`、`frontend/src/components/common/ProxySelector.vue` | `sort_by=quality_score` 走服务层 Redis 质量缓存排序；代理选择器默认按质量分、延迟、ID 展示，并显示 A-F 质量等级 |
 | 临时邀请用户状态 | `backend/internal/service/auth_service.go`、`backend/internal/service/temporary_invitation_service.go`、`backend/internal/service/admin_service.go` | `邀请码（临时）` 注册后的 24h 充值观察、自动禁用/删除与管理员重新启用重置窗口语义 |
+| 邀请返利审计 | `backend/internal/handler/admin/affiliate_handler.go`、`backend/internal/service/affiliate_service.go`、`backend/internal/repository/affiliate_repo.go`、`backend/migrations/127_affiliate_ledger_audit_snapshots.sql` | `/admin/affiliates/invites`、`/admin/affiliates/rebates`、`/admin/affiliates/transfers` 与 `/admin/affiliates/users/:user_id/overview` 的只读审计口径；`source_order_id` 关联返利订单，转余额 ledger 记录余额与返利额度快照 |
 | 前端管理端 API | `frontend/src/api/admin/usage.ts` | 管理端 usage 接口的参数与返回类型 |
+| 前端返利管理 API | `frontend/src/api/admin/affiliate.ts`、`frontend/src/views/admin/AffiliateView.vue` | 管理端返利专属配置、邀请记录、返利入账和转余额记录的前端请求路径与展示字段 |
 | 前端插件 API | `frontend/src/api/admin/plugins.ts`、`frontend/src/api/plugins.ts` | 管理端插件管理接口与用户侧 `api-prompt` 模板目录接口的入参与返回值 |
 | 前端代理 API | `frontend/src/api/admin/proxies.ts` | 代理巡检历史与可靠性接口类型 |
 | 前端 Dashboard API | `frontend/src/api/admin/dashboard.ts` | Dashboard 接口的参数与返回类型 |

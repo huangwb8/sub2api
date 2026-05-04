@@ -7,12 +7,17 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了管理员邀请返利审计能力：后端提供邀请记录、返利入账、转余额记录和用户返利概览只读接口，新增 `backend/migrations/127_affiliate_ledger_audit_snapshots.sql` 记录返利订单来源与转余额快照，前端管理页增加对应审计列表。
+- 新增了 `docs/plans/2026-05-04-upstream-489120-to-df722c-optimization-plan.md`：基于上游 `48912014..df722c9a` 的提交区间，梳理 OpenAI 兼容计费、Images 流式处理、返利后台记录页、批量编辑 compact 配置和 license 同步状态，并沉淀选择性吸收计划。
 - 新增了 `backend/migrations/126_backfill_subscription_plan_names.sql`：一次性把用户订阅中的 `current_plan_name` 同步为套餐表最新名称，修复绕过套餐更新 API 后遗留订阅仍显示旧套餐名的问题。
 - 新增了 `docs/plans/2026-05-03-subscription-upgrade-order-blocking-fix-plan.md`：记录余额支付订阅升级失败后订单被误判为未完成升级订单的根因、最小修复范围、回归测试与历史卡单人工处理方案。
 - 新增了 `skills/sub2api-add-users` Agent Skill：用于在用户提供真实站点鉴权后，只读采集 sub2api 容量与聚合用量数据，评估当前站点适合新增多少同类订阅用户，并包含 `auto-test-skill` 一轮 A/B 自检产物。
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 吸收了上游 OpenAI 兼容网关稳定性优化：Chat Completions 直转保留 `reasoning_effort`、`service_tier`、stream usage 和上游端点审计，Images 网关按上游 `Content-Type` 判定流式并补齐 JSON fallback 与图片数兜底计数，未知 OpenAI/Codex 模型不再被静默映射到默认模型。
+- 优化了账号批量编辑弹窗：支持批量写入 OpenAI compact mode 和 compact model mapping，并同步中英文文案与组件测试。
+- 同步了 `skills/sub2api-summary` 源码地图：补充邀请返利审计接口、ledger 快照字段和前端返利管理 API 的核对入口。
 - 优化了管理端账号列表的“切换代理”弹窗高度：弹窗内容区改为高版布局，并为代理选择器启用更高的选项列表，减少选择 IP 时的纵向拥挤感。
 - 移除了管理端账号列表中的冗余“代理优先级”列：代理信息与账号优先级分别由独立“代理”和“优先级”列展示，避免重复信息干扰列表扫描。
 - 优化了前端静态资源更新自恢复机制：入口 HTML 改为 `no-store` 防止发布后复用旧入口，动态 chunk/CSS 加载失配时前端会自动带 cache-bust 参数重新进入当前页面，减少用户手动清理站点缓存的需要。
@@ -36,6 +41,9 @@
 - 调整了订阅套餐改名的同步语义：管理员更新套餐名称时，后端会在同一事务内同步回写引用该 `current_plan_id` 的用户订阅显示名，让用户侧订阅页与升级页自动显示最新套餐名，同时继续保留价格、有效期等历史快照字段用于结算与升级计算。
 
 ### Fixed（修复）
+- 修复了 OpenAI 零用量成功请求不写审计日志的问题：usage 全 0 时仍保留请求日志但不产生错误扣费，避免运营审计断层。
+- 修复了 OpenAI 兼容流式转换未识别 `response.done` 终止事件的问题：Anthropic 与 Chat Completions 转换链都会把该事件纳入完成态，降低 usage 未 drain 导致漏计的概率。
+- 修复了前端邀请返利管理 API 路径与后端实际 `/admin/affiliates/...` 路由不一致的问题。
 - 修复了管理端“系统设置 → 插件”页的 i18n 文案占位符错误：此前 `./plugins/{插件名}` / `./plugins/{plugin-name}` 会被 vue-i18n 当作变量插值解析，导致 `Invalid token in placeholder` 并直接炸掉页面；现在改为纯文本路径说明。
 - 修复了 Stripe 相关脚本在 CSP 下的加载失败问题：默认 `script-src` 与 `frame-src` 现在允许 `https://js.stripe.com`，避免支付 SDK 在相关设置页/支付页触发不必要的控制台报错。
 - 修复了 Docker/历史持久化卷中“系统设置 → 插件”页仍可能没有默认可配置项的问题：后端插件自举不再只判断插件目录是否为空，而是会确保默认 `api-prompt` 实例存在，并在默认实例模板配置为空时自动补回内置模板，同时保留已有启停状态。
