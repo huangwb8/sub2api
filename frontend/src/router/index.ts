@@ -124,7 +124,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/pricing',
     name: 'Pricing',
-    component: () => import('@/views/PublicPricingView.vue'),
+    component: () => import('@/views/PricingView.vue'),
     meta: {
       requiresAuth: false,
       title: 'Pricing',
