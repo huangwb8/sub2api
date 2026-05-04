@@ -1,0 +1,66 @@
+# sub2api-codex-available 技能配置文件
+
+skill_info:
+  name: sub2api-codex-available
+  version: 0.1.0
+  description: 判断并修复 sub2api 账号是否可被本地 Codex 程序正常调用
+  author: "Bensz Conan"
+  category: 运维诊断
+
+directories:
+  work_root: "tmp/sub2api-codex-available"
+  logs: "logs"
+  data: "data"
+  analysis: "analysis"
+  plans: "plans"
+  tests: "tests"
+
+defaults:
+  timezone: "Asia/Shanghai"
+  page_size: 200
+  request_timeout_seconds: 45
+  codex_model: "gpt-5.1"
+  codex_prompt: "Reply with ok."
+
+auth:
+  admin_api_key_env: "SUB2API_ADMIN_API_KEY"
+  bearer_token_env: "SUB2API_AUTH_TOKEN"
+  base_url_env: "SUB2API_BASE_URL"
+  codex_api_key_env: "SUB2API_CODEX_API_KEY"
+  auth_modes:
+    - "admin-api-key"
+    - "bearer"
+
+diagnostics:
+  require_admin_auth: true
+  require_target_accounts: true
+  allow_write_fixes_default: false
+  verify_usage_log_after_e2e: true
+  enable_real_codex_cli_probe: false
+  require_cli_stage_usage_when_cli_probe_enabled: true
+  usage_log_poll_seconds: 10
+  usage_log_poll_interval_seconds: 2
+  codex_cli_timeout_seconds: 90
+
+codex_request:
+  endpoint: "/v1/responses"
+  headers:
+    User-Agent: "codex_cli_rs/0.104.0"
+    Accept: "text/event-stream"
+    Content-Type: "application/json"
+    OpenAI-Beta: "responses=experimental"
+  body:
+    input: "Reply with ok."
+    instructions: "You are a concise test assistant."
+    stream: false
+
+codex_cli:
+  command: "codex"
+  exec_subcommand: "exec"
+  login_args:
+    - "login"
+    - "--with-api-key"
+  required_env:
+    - "OPENAI_API_KEY"
+    - "OPENAI_BASE_URL"
+  prompt: "Return exactly pong and nothing else."

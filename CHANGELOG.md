@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 `skills/sub2api-codex-available` Agent Skill：用于判断并修复指定 sub2api 账号是否能被本地 Codex CLI 通过真实网关链路调用，包含真实站点鉴权要求、Codex 风格 E2E/CLI 验证、usage 命中证明、诊断脚本与 `auto-test-skill` 一轮自检产物。
 - 新增了 `邀请码（余额）` 兑换码类型：管理员生成邀请码时可配置注册赠送余额，用户使用后会在默认余额基础上自动增加对应金额，普通注册与 OAuth 首次注册链路同步支持。
 - 新增了管理员邀请返利审计能力：后端提供邀请记录、返利入账、转余额记录和用户返利概览只读接口，新增 `backend/migrations/127_affiliate_ledger_audit_snapshots.sql` 记录返利订单来源与转余额快照，前端管理页增加对应审计列表。
 - 新增了 `docs/plans/2026-05-04-upstream-489120-to-df722c-optimization-plan.md`：基于上游 `48912014..df722c9a` 的提交区间，梳理 OpenAI 兼容计费、Images 流式处理、返利后台记录页、批量编辑 compact 配置和 license 同步状态，并沉淀选择性吸收计划。
