@@ -3677,7 +3677,7 @@ export default {
       invitation_temp: 'Invitation (Temporary)',
       temporaryInvitationHint: 'Users created with temporary invitation codes must accumulate more than CNY 30 in recharges within 24 hours, or they will be auto-disabled. If they stay disabled for more than 7 days, the account is permanently deleted.',
       invitation_balance: 'Invitation (Balance)',
-      invitationBalanceHint: 'Balance invitation codes restrict registration, are marked as used after signup, and add the configured amount to the new user default balance.',
+      invitationBalanceHint: 'Balance invitation codes restrict registration, are marked as used after signup, and add the configured amount to the new user default balance. The amount is credited to the user balance in CNY.',
       unused: 'Unused',
       used: 'Used',
       columns: {
@@ -3702,7 +3702,7 @@ export default {
       generatedSuccessfully: 'Generated Successfully',
       codesCreated: '{count} redeem code(s) created',
       codeType: 'Code Type',
-      amount: 'Amount ($)',
+      amount: 'Amount (¥)',
       value: 'Value',
       count: 'Count',
       generating: 'Generating...',
