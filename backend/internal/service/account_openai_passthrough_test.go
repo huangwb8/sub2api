@@ -106,6 +106,26 @@ func TestAccount_IsChatAPIResponsesEnabled(t *testing.T) {
 	})
 }
 
+func TestAccount_ShouldForwardChatCompletionsDirect(t *testing.T) {
+	require.True(t, (&Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeChatAPI,
+	}).ShouldForwardChatCompletionsDirect())
+
+	require.False(t, (&Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeChatAPI,
+		Extra: map[string]any{
+			"chatapi_responses_enabled": true,
+		},
+	}).ShouldForwardChatCompletionsDirect())
+
+	require.False(t, (&Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+	}).ShouldForwardChatCompletionsDirect())
+}
+
 func TestAccount_IsCodexCLIOnlyEnabled(t *testing.T) {
 	t.Run("OpenAI OAuth 开启", func(t *testing.T) {
 		account := &Account{

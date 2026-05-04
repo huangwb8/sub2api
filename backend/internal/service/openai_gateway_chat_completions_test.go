@@ -69,3 +69,46 @@ func TestForwardAsChatCompletionsDirectStreamPreservesBillingMetadata(t *testing
 	require.NotNil(t, result.ServiceTier)
 	require.Equal(t, "flex", *result.ServiceTier)
 }
+
+func TestForwardAsChatCompletionsChatAPIResponsesEnabledUsesResponsesEndpoint(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(nil))
+	c.Request.Header.Set("User-Agent", "openai-test-client")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"bad request"}}`)),
+	}}
+	svc := &OpenAIGatewayService{httpUpstream: upstream}
+	account := &Account{
+		ID:          43,
+		Name:        "chatapi-responses",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeChatAPI,
+		Concurrency: 1,
+		Credentials: map[string]any{
+			"api_key":  "sk-upstream",
+			"base_url": "https://chat.example.com/v1",
+		},
+		Extra: map[string]any{
+			"chatapi_responses_enabled": true,
+		},
+	}
+
+	_, err := svc.ForwardAsChatCompletions(
+		context.Background(),
+		c,
+		account,
+		[]byte(`{"model":"gpt-5.1","stream":false,"messages":[{"role":"user","content":"hi"}]}`),
+		"",
+		"",
+	)
+
+	require.Error(t, err)
+	require.Equal(t, "https://chat.example.com/v1/responses", upstream.lastReq.URL.String())
+	require.Equal(t, "Bearer sk-upstream", upstream.lastReq.Header.Get("Authorization"))
+	require.Equal(t, "gpt-5.1", gjson.GetBytes(upstream.lastBody, "model").String())
+}

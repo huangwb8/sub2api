@@ -1387,6 +1387,10 @@ func (a *Account) IsChatAPIResponsesEnabled() bool {
 	return false
 }
 
+func (a *Account) ShouldForwardChatCompletionsDirect() bool {
+	return a != nil && a.Type == AccountTypeChatAPI && !a.IsChatAPIResponsesEnabled()
+}
+
 // IsOpenAIResponsesWebSocketV2Enabled 返回 OpenAI 账号是否开启 Responses WebSocket v2。
 //
 // 分类型新字段：

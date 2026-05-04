@@ -352,6 +352,93 @@ func TestOpenAIGatewayService_SelectAccountWithSchedulerForFormat_AllowsChatAPIR
 	}
 }
 
+func TestOpenAIGatewayService_SelectChatCompletionsAccountWithScheduler_PrefersChatAPI(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(14)
+	oauth := Account{
+		ID:          2301,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+	}
+	chatAPI := Account{
+		ID:          2302,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeChatAPI,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    100,
+	}
+	cache := &stubGatewayCache{sessionBindings: map[string]int64{
+		"openai:chat-completions-session": oauth.ID,
+	}}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{oauth, chatAPI}},
+		cache:              cache,
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	selection, _, err := svc.SelectChatCompletionsAccountWithScheduler(
+		ctx,
+		&groupID,
+		"",
+		"chat-completions-session",
+		"gpt-5.1",
+		nil,
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, chatAPI.ID, selection.Account.ID)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayService_SelectChatCompletionsAccountWithScheduler_FallsBackWhenNoChatAPI(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(15)
+	oauth := Account{
+		ID:          2401,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		Priority:    0,
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{oauth}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	selection, _, err := svc.SelectChatCompletionsAccountWithScheduler(
+		ctx,
+		&groupID,
+		"",
+		"chat-completions-fallback-session",
+		"gpt-5.1",
+		nil,
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, oauth.ID, selection.Account.ID)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
 func TestDefaultOpenAIAccountScheduler_SelectPrefersHigherCodexHeadroom(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(12)

@@ -887,6 +887,43 @@ func (s *OpenAIGatewayService) SelectAccountWithScheduler(
 	)
 }
 
+func (s *OpenAIGatewayService) SelectChatCompletionsAccountWithScheduler(
+	ctx context.Context,
+	groupID *int64,
+	previousResponseID string,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requiredTransport OpenAIUpstreamTransport,
+) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	selection, decision, err := s.SelectAccountWithSchedulerForFormat(
+		ctx,
+		groupID,
+		previousResponseID,
+		sessionHash,
+		requestedModel,
+		excludedIDs,
+		OpenAIAPIFormatChat,
+		requiredTransport,
+	)
+	if err == nil {
+		return selection, decision, nil
+	}
+	if !isOpenAINoAvailableAccountsError(err) {
+		return selection, decision, err
+	}
+	return s.SelectAccountWithSchedulerForFormat(
+		ctx,
+		groupID,
+		previousResponseID,
+		sessionHash,
+		requestedModel,
+		excludedIDs,
+		OpenAIAPIFormatAny,
+		requiredTransport,
+	)
+}
+
 func (s *OpenAIGatewayService) SelectAccountWithSchedulerForFormat(
 	ctx context.Context,
 	groupID *int64,
@@ -922,6 +959,17 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForFormat(
 		RequiredTransport:  requiredTransport,
 		ExcludedIDs:        excludedIDs,
 	})
+}
+
+func isOpenAINoAvailableAccountsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, ErrNoAvailableAccounts) {
+		return true
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(msg, "no available openai accounts")
 }
 
 func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, success bool, firstTokenMs *int) {
