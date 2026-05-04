@@ -1384,6 +1384,7 @@
     var abortController = null;
     var settingsAbortController = null;
     var loaded = false;
+    var homePath = getHomePath();
 
     function registerCleanup(task) {
       if (typeof task === 'function') {
@@ -1483,20 +1484,61 @@
       });
     }
 
-    function setView(view) {
+    function getHomePath() {
+      if (!window.location || !window.location.pathname) return '/home';
+
+      var pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (pathname === '/pricing') return '/home';
+      return pathname;
+    }
+
+    function getViewFromLocation() {
+      if (!window.location || !window.location.pathname) return 'home';
+
+      var pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+      return pathname === '/pricing' ? 'pricing' : 'home';
+    }
+
+    function buildViewPath(view) {
+      return view === 'pricing' ? '/pricing' : homePath;
+    }
+
+    function syncViewUrl(view, replace) {
+      if (!window.history || typeof window.history.pushState !== 'function') return;
+
+      var targetPath = buildViewPath(view);
+      if (window.location.pathname === targetPath) return;
+
+      var targetUrl = targetPath + window.location.search + window.location.hash;
+      var state = { benszHomeView: view };
+      if (replace && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(state, '', targetUrl);
+        return;
+      }
+      window.history.pushState(state, '', targetUrl);
+    }
+
+    function setView(view, options) {
+      var safeView = view === 'pricing' ? 'pricing' : 'home';
+      var viewOptions = options || {};
+
       for (var i = 0; i < navButtons.length; i += 1) {
         var button = navButtons[i];
-        var active = button.getAttribute('data-bensz-view-target') === view;
+        var active = button.getAttribute('data-bensz-view-target') === safeView;
         button.classList.toggle('is-active', active);
         button.setAttribute('aria-selected', active ? 'true' : 'false');
       }
 
       for (var j = 0; j < viewPanels.length; j += 1) {
         var panel = viewPanels[j];
-        panel.hidden = panel.getAttribute('data-bensz-view') !== view;
+        panel.hidden = panel.getAttribute('data-bensz-view') !== safeView;
       }
 
-      if (view === 'pricing' && !loaded) {
+      if (!viewOptions.skipUrl) {
+        syncViewUrl(safeView, !!viewOptions.replaceUrl);
+      }
+
+      if (safeView === 'pricing' && !loaded) {
         loadPlans();
       }
     }
@@ -1508,14 +1550,21 @@
       }
     }
 
+    function onPopState() {
+      setView(getViewFromLocation(), { skipUrl: true });
+    }
+
     for (var i = 0; i < navButtons.length; i += 1) {
       navButtons[i].addEventListener('click', onNavClick);
     }
+
+    window.addEventListener('popstate', onPopState);
 
     registerCleanup(function () {
       for (var k = 0; k < navButtons.length; k += 1) {
         navButtons[k].removeEventListener('click', onNavClick);
       }
+      window.removeEventListener('popstate', onPopState);
     });
 
     function showState(state) {
@@ -1793,6 +1842,6 @@
     });
 
     void ensurePublicSettings();
-    setView('home');
+    setView(getViewFromLocation(), { replaceUrl: true });
   })();
 </script>
