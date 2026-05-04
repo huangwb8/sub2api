@@ -2467,7 +2467,6 @@ export default {
         todayStats: 'Today Stats',
         groups: 'Groups',
         usageWindows: 'Usage Windows',
-        proxyPriority: 'Proxy Priority',
         proxy: 'Proxy',
         lastUsed: 'Last Used',
         expiresAt: 'Expires At',

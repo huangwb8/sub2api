@@ -81,6 +81,10 @@ const ProxySelectorStub = defineComponent({
     proxies: {
       type: Array,
       default: () => []
+    },
+    dropdownSize: {
+      type: String,
+      default: 'normal'
     }
   },
   emits: ['update:modelValue'],

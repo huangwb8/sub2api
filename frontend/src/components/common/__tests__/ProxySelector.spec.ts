@@ -137,4 +137,23 @@ describe('ProxySelector', () => {
     const badges = wrapper.findAll('.proxy-quality-badge').map((badge) => badge.text())
     expect(badges).toEqual(['A', 'A', 'B', '—'])
   })
+
+  it('supports a taller option list for dense proxy picking dialogs', async () => {
+    const wrapper = mount(ProxySelector, {
+      props: {
+        modelValue: null,
+        proxies: [buildProxy()],
+        dropdownSize: 'tall'
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.find('button.select-trigger').trigger('click')
+
+    expect(wrapper.find('.select-options').classes()).toContain('select-options-tall')
+  })
 })

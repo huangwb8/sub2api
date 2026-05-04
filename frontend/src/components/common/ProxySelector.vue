@@ -65,7 +65,7 @@
         </div>
 
         <!-- Options list -->
-        <div class="select-options">
+        <div :class="['select-options', dropdownSize === 'tall' && 'select-options-tall']">
           <!-- No Proxy option -->
           <div
             @click="selectOption(null)"
@@ -190,10 +190,12 @@ interface Props {
   modelValue: number | null
   proxies: Proxy[]
   disabled?: boolean
+  dropdownSize?: 'normal' | 'tall'
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  disabled: false
+  disabled: false,
+  dropdownSize: 'normal'
 })
 
 const emit = defineEmits<{
@@ -445,6 +447,10 @@ onUnmounted(() => {
 
 .select-options {
   @apply max-h-60 overflow-y-auto py-1;
+}
+
+.select-options-tall {
+  @apply max-h-[22rem];
 }
 
 .select-option {

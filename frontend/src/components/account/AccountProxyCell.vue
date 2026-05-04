@@ -46,7 +46,7 @@
       width="normal"
       @close="closeDialog"
     >
-      <div class="space-y-4">
+      <div class="min-h-[26rem] space-y-4 sm:min-h-[30rem]">
         <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-800">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-sm font-medium text-gray-900 dark:text-white">
@@ -67,7 +67,7 @@
 
         <div>
           <label class="input-label">{{ t('admin.accounts.proxySwitchDialog.targetLabel') }}</label>
-          <ProxySelector v-model="selectedProxyID" :proxies="selectorProxies" />
+          <ProxySelector v-model="selectedProxyID" :proxies="selectorProxies" dropdown-size="tall" />
           <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
             {{ t('admin.accounts.proxySwitchDialog.hint') }}
           </p>
