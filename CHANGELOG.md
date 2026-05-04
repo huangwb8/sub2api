@@ -43,6 +43,7 @@
 - 调整了订阅套餐改名的同步语义：管理员更新套餐名称时，后端会在同一事务内同步回写引用该 `current_plan_id` 的用户订阅显示名，让用户侧订阅页与升级页自动显示最新套餐名，同时继续保留价格、有效期等历史快照字段用于结算与升级计算。
 
 ### Fixed（修复）
+- 修复了用户头像上传链路在本地开发和嵌入式前端中表现不一致的问题：开发服务现在会把 `/uploads` 代理到后端，避免保存后的上传头像在 Vite 端口下 404；同时重新构建前端静态产物以包含头像裁剪编辑界面。
 - 修复了 OpenAI Chat Completions 入站请求可能绕过 `chatapi` 账号的问题：调度器现在会优先选择 Chat Completions API 账号，只有没有可用 `chatapi` 时才回退到原 Responses/OAuth 兼容线路；同时 `chatapi_responses_enabled=true` 的账号会把 Chat Completions 入站转换后转发到上游 `/v1/responses`，兼容 PackyAPI 这类 Responses-only 中转站。
 - 修复了 OpenAI 零用量成功请求不写审计日志的问题：usage 全 0 时仍保留请求日志但不产生错误扣费，避免运营审计断层。
 - 修复了 OpenAI 兼容流式转换未识别 `response.done` 终止事件的问题：Anthropic 与 Chat Completions 转换链都会把该事件纳入完成态，降低 usage 未 drain 导致漏计的概率。

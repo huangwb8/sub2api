@@ -122,6 +122,10 @@ export default defineConfig(({ mode }) => {
         '/setup': {
           target: backendUrl,
           changeOrigin: true
+        },
+        '/uploads': {
+          target: backendUrl,
+          changeOrigin: true
         }
       }
     }
