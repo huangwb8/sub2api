@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client'
-import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest, PaginatedResponse, APIKeyPluginSettings } from '@/types'
+import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest, PaginatedResponse, APIKeyPluginSettings, APIPromptTemplateAccess } from '@/types'
 
 /**
  * List all API keys for current user
@@ -42,6 +42,11 @@ export async function list(
  */
 export async function getById(id: number): Promise<ApiKey> {
   const { data } = await apiClient.get<ApiKey>(`/keys/${id}`)
+  return data
+}
+
+export async function getPromptTemplateAccess(): Promise<APIPromptTemplateAccess> {
+  const { data } = await apiClient.get<APIPromptTemplateAccess>('/keys/prompt-template-access')
   return data
 }
 
@@ -138,6 +143,7 @@ export async function toggleStatus(id: number, status: 'active' | 'inactive'): P
 export const keysAPI = {
   list,
   getById,
+  getPromptTemplateAccess,
   create,
   update,
   delete: deleteKey,

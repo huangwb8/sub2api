@@ -182,6 +182,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/templates',
+    name: 'TemplateManagement',
+    component: () => import('@/views/user/TemplateManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Template Management',
+      titleKey: 'templateManagement.title',
+      descriptionKey: 'templateManagement.description'
+    }
+  },
+  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),

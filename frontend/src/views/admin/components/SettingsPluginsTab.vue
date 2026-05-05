@@ -1,42 +1,5 @@
 <template>
   <div class="space-y-6">
-    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_34%),linear-gradient(135deg,_#f8fafc,_#eef2ff)] p-6 shadow-sm dark:border-dark-700 dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.2),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(30,41,59,0.96))]">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="max-w-2xl">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
-            {{ t('admin.settings.plugins.eyebrow') }}
-          </p>
-          <h2 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-            {{ t('admin.settings.plugins.title') }}
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {{ t('admin.settings.plugins.description') }}
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div class="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <div class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {{ t('admin.settings.plugins.metrics.instances') }}
-            </div>
-            <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ plugins.length }}</div>
-          </div>
-          <div class="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <div class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {{ t('admin.settings.plugins.metrics.enabled') }}
-            </div>
-            <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ enabledCount }}</div>
-          </div>
-          <div class="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-            <div class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {{ t('admin.settings.plugins.metrics.templates') }}
-            </div>
-            <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ templateCount }}</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="card">
       <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -222,6 +185,17 @@
                 :placeholder="t('admin.settings.plugins.placeholders.description')"
               />
             </div>
+            <div>
+              <label class="input-label">{{ t('admin.settings.plugins.fields.customTemplatePlanName') }}</label>
+              <input
+                v-model.trim="plugin.api_prompt!.custom_template_plan_name"
+                class="input"
+                :placeholder="t('admin.settings.plugins.placeholders.customTemplatePlanName')"
+              />
+              <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                {{ t('admin.settings.plugins.hints.customTemplatePlanName') }}
+              </p>
+            </div>
           </div>
 
           <div class="rounded-3xl border border-slate-200 bg-slate-50/70 p-5 dark:border-dark-700 dark:bg-dark-800/50">
@@ -260,8 +234,30 @@
                 :key="template.id"
                 class="rounded-2xl border border-white bg-white p-4 shadow-sm dark:border-dark-600 dark:bg-dark-900/70"
               >
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div class="grid flex-1 gap-4 lg:grid-cols-2">
+                <div class="space-y-4">
+                  <div class="flex flex-col gap-3 border-b border-slate-100 pb-4 dark:border-dark-700 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span v-if="template.builtin" class="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-200">
+                        {{ t('admin.settings.plugins.labels.builtin') }}
+                      </span>
+                      <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-dark-700 dark:text-slate-300">
+                        #{{ index + 1 }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <Toggle v-model="template.enabled" />
+                      <button
+                        type="button"
+                        class="rounded-full p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-300"
+                        :title="t('common.delete')"
+                        @click="removeTemplate(plugin, index)"
+                      >
+                        <Icon name="trash" size="sm" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid gap-4 lg:grid-cols-2">
                     <div>
                       <label class="input-label">{{ t('admin.settings.plugins.templates.fields.name') }}</label>
                       <input v-model.trim="template.name" class="input" :placeholder="t('admin.settings.plugins.templates.placeholders.name')" />
@@ -282,32 +278,6 @@
                         class="input min-h-[140px] font-mono text-sm leading-6"
                         :placeholder="t('admin.settings.plugins.templates.placeholders.prompt')"
                       />
-                    </div>
-                  </div>
-
-                  <div class="flex min-w-[180px] flex-row items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-dark-600 dark:bg-dark-800 lg:flex-col">
-                    <div class="space-y-2">
-                      <div class="flex flex-wrap gap-2">
-                        <span v-if="template.builtin" class="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-200">
-                          {{ t('admin.settings.plugins.labels.builtin') }}
-                        </span>
-                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-dark-700 dark:text-slate-300">
-                          #{{ index + 1 }}
-                        </span>
-                      </div>
-                      <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ t('admin.settings.plugins.templates.hints.injection') }}
-                      </p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <Toggle v-model="template.enabled" />
-                      <button
-                        type="button"
-                        class="rounded-full p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/20 dark:hover:text-rose-300"
-                        @click="removeTemplate(plugin, index)"
-                      >
-                        <Icon name="trash" size="sm" />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -367,15 +337,11 @@ const defaultTemplatePreview = computed(() => [
   }
 ])
 
-const enabledCount = computed(() => plugins.value.filter((plugin) => plugin.enabled).length)
-const templateCount = computed(() =>
-  plugins.value.reduce((total, plugin) => total + (plugin.api_prompt?.templates.length ?? 0), 0)
-)
-
 function cloneTemplates(config?: APIPromptPluginConfig): APIPromptPluginConfig {
   return {
     templates: (config?.templates ?? []).map((template) => ({ ...template })),
-    source: 'local'
+    source: 'local',
+    custom_template_plan_name: config?.custom_template_plan_name || 'G-Ultra'
   }
 }
 

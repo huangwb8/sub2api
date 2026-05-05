@@ -374,6 +374,7 @@ export default {
     adminConsole: '控制台',
     announcements: '公告',
     apiKeys: 'API 密钥',
+    templateManagement: '模板管理',
     usage: '使用记录',
     redeem: '兑换',
     affiliate: '邀请返利',
@@ -643,6 +644,7 @@ export default {
       generalDescription: '按普通 API Key 工作，只传递用户自己的上下文。',
       builtin: '内置模板',
       sourceLocal: '本地模板',
+      searchPlaceholder: '搜索模板名称、插件或说明...',
       unavailable: '当前不可用',
       unavailableHint: '此模板当前不可用，可能是对应插件已停用、模板被删除或已被禁用。',
       unavailableTemplateName: '历史模板 · {templateId}',
@@ -785,6 +787,28 @@ export default {
       quota_exhausted: '额度耗尽',
       expired: '已过期'
     }
+  },
+
+  templateManagement: {
+    title: '模板管理',
+    description: '管理 API 密钥与 Prompt 模板的绑定关系',
+    customEnabled: '你当前拥有 {plan} 权限，可以为自己的 API 密钥使用自定义模板。',
+    defaultOnly: '普通用户只能使用管理员提供的默认模板；{plan} 用户可创建自定义模板。',
+    searchPlaceholder: '搜索密钥、分组或模板...',
+    templateSearchPlaceholder: '搜索模板名称、插件或说明...',
+    keyCount: '{count} 个密钥',
+    emptyTitle: '暂无 API 密钥',
+    emptyDescription: '先创建 API 密钥后，再在这里管理它与 Prompt 模板的关系。',
+    customTemplate: '自定义模板',
+    newCustomTemplate: '新建自定义模板',
+    newCustomTemplateHint: '仅限符合资格套餐的用户，为当前 API 密钥保存独立 Prompt。',
+    copyTemplate: '复制现有模板',
+    customNamePlaceholder: '模板名称',
+    customPromptPlaceholder: '填写要注入到请求中的系统指令',
+    customPromptRequired: '自定义模板 Prompt 内容不能为空',
+    loadFailed: '加载模板管理数据失败',
+    saveSuccess: '模板绑定已保存',
+    saveFailed: '保存模板绑定失败'
   },
 
   // Usage
@@ -4935,15 +4959,18 @@ export default {
         fields: {
           name: '插件名',
           type: '插件类型',
-          description: '插件描述'
+          description: '插件描述',
+          customTemplatePlanName: '自定义模板资格套餐'
         },
         placeholders: {
           name: '例如：api-prompt-main',
-          description: '说明该插件负责的提示词场景或本地用途'
+          description: '说明该插件负责的提示词场景或本地用途',
+          customTemplatePlanName: 'G-Ultra'
         },
         hints: {
           directoryRule: '创建后会固定保存到 ./plugins/插件名/ 下。',
-          localMode: '模板来自本地 config.json，可直接编辑并保存。'
+          localMode: '模板来自本地 config.json，可直接编辑并保存。',
+          customTemplatePlanName: '拥有此套餐名的有效订阅用户可以为自己的 API 密钥创建自定义 Prompt 模板。'
         },
         actions: {
           test: '检查配置',

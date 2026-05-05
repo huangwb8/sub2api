@@ -374,6 +374,7 @@ export default {
     adminConsole: 'Console',
     announcements: 'Announcements',
     apiKeys: 'API Keys',
+    templateManagement: 'Templates',
     usage: 'Usage',
     redeem: 'Redeem',
     affiliate: 'Affiliate',
@@ -644,6 +645,7 @@ export default {
       generalDescription: 'Works like a normal API key and only sends the user context.',
       builtin: 'Built-in',
       sourceLocal: 'Local template',
+      searchPlaceholder: 'Search templates, plugins, or descriptions...',
       unavailable: 'Unavailable',
       unavailableHint: 'This template is currently unavailable. The plugin may be disabled, or the template may have been removed or turned off.',
       unavailableTemplateName: 'Historical Template · {templateId}',
@@ -781,6 +783,28 @@ export default {
       quota_exhausted: 'Quota Exhausted',
       expired: 'Expired',
     },
+  },
+
+  templateManagement: {
+    title: 'Template Management',
+    description: 'Manage API key and prompt template mappings',
+    customEnabled: 'Your current {plan} entitlement allows custom templates for your own API keys.',
+    defaultOnly: 'Regular users can only use admin-provided default templates. {plan} users can create custom templates.',
+    searchPlaceholder: 'Search keys, groups, or templates...',
+    templateSearchPlaceholder: 'Search templates, plugins, or descriptions...',
+    keyCount: '{count} keys',
+    emptyTitle: 'No API keys yet',
+    emptyDescription: 'Create an API key first, then manage its prompt template mapping here.',
+    customTemplate: 'Custom Template',
+    newCustomTemplate: 'New Custom Template',
+    newCustomTemplateHint: 'Available only to eligible plan users; saved independently for the current API key.',
+    copyTemplate: 'Copy Template',
+    customNamePlaceholder: 'Template name',
+    customPromptPlaceholder: 'Enter the system instruction to inject into requests',
+    customPromptRequired: 'Custom template prompt cannot be empty',
+    loadFailed: 'Failed to load template management data',
+    saveSuccess: 'Template binding saved',
+    saveFailed: 'Failed to save template binding'
   },
 
   // Usage
@@ -4768,15 +4792,18 @@ export default {
         fields: {
           name: 'Plugin Name',
           type: 'Plugin Type',
-          description: 'Description'
+          description: 'Description',
+          customTemplatePlanName: 'Custom Template Plan'
         },
         placeholders: {
           name: 'For example: api-prompt-main',
-          description: 'Describe the prompt scenario or local purpose of this plugin'
+          description: 'Describe the prompt scenario or local purpose of this plugin',
+          customTemplatePlanName: 'G-Ultra'
         },
         hints: {
           directoryRule: 'After creation, this plugin instance will always live under ./plugins/plugin-name/.',
-          localMode: 'Templates come from the local config.json file and can be edited directly.'
+          localMode: 'Templates come from the local config.json file and can be edited directly.',
+          customTemplatePlanName: 'Users with an active subscription matching this plan name can create custom prompt templates for their own API keys.'
         },
         actions: {
           test: 'Check Config',

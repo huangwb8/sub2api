@@ -469,6 +469,8 @@
             :options="promptTemplateSelectOptions"
             :placeholder="t('keys.promptMode.general')"
             :disabled="promptTemplatesLoading"
+            searchable
+            :search-placeholder="t('keys.promptMode.searchPlaceholder')"
           />
 
           <div
@@ -1305,13 +1307,24 @@ const statusOptions = computed(() => [
 const parsePromptBindingValue = (value: string): APIKeyPluginSettings['api_prompt'] | null => {
   if (!value) return null
   try {
-    const parsed = JSON.parse(value) as { plugin_name?: string; template_id?: string }
+    const parsed = JSON.parse(value) as {
+      plugin_name?: string
+      template_id?: string
+      name?: string
+      description?: string
+      prompt?: string
+      custom?: boolean
+    }
     if (!parsed.plugin_name || !parsed.template_id) {
       return null
     }
     return {
       plugin_name: parsed.plugin_name,
-      template_id: parsed.template_id
+      template_id: parsed.template_id,
+      name: parsed.name,
+      description: parsed.description,
+      prompt: parsed.prompt,
+      custom: parsed.custom
     }
   } catch {
     return null
@@ -1324,7 +1337,11 @@ const encodePromptBindingValue = (settings?: APIKeyPluginSettings | null): strin
   }
   return JSON.stringify({
     plugin_name: settings.api_prompt.plugin_name,
-    template_id: settings.api_prompt.template_id
+    template_id: settings.api_prompt.template_id,
+    name: settings.api_prompt.name,
+    description: settings.api_prompt.description,
+    prompt: settings.api_prompt.prompt,
+    custom: settings.api_prompt.custom
   })
 }
 
@@ -1341,6 +1358,9 @@ const currentUnavailablePromptTemplate = computed<PromptTemplateView | null>(() 
   if (!binding) return null
   const existing = promptTemplateMap.value.get(`${binding.plugin_name}::${binding.template_id}`)
   if (existing) return null
+  if (binding.custom && binding.prompt) {
+    return null
+  }
   return {
     plugin_name: binding.plugin_name,
     template_id: binding.template_id,
@@ -1392,6 +1412,20 @@ const selectedPromptTemplate = computed<PromptTemplateView | null>(() => {
   if (!binding) return null
   const existing = promptTemplateMap.value.get(`${binding.plugin_name}::${binding.template_id}`)
   if (existing) return existing
+  if (binding.custom && binding.prompt) {
+    return {
+      plugin_name: binding.plugin_name,
+      template_id: binding.template_id,
+      name: binding.name || binding.template_id,
+      description: binding.description || '',
+      prompt: binding.prompt,
+      builtin: false,
+      sort_order: -1,
+      source: 'custom',
+      status: 'available',
+      custom: true
+    }
+  }
   return currentUnavailablePromptTemplate.value
 })
 
@@ -1590,6 +1624,9 @@ const resolvePromptBindingLabel = (settings?: APIKeyPluginSettings | null): stri
   )
   if (match) {
     return match.name
+  }
+  if (settings.api_prompt.custom) {
+    return settings.api_prompt.name || settings.api_prompt.template_id
   }
   return t('keys.promptMode.bindingFallback', {
     pluginName: settings.api_prompt.plugin_name,

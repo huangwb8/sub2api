@@ -290,12 +290,12 @@ func TestPluginService_ValidateAPIKeyPluginSettings_LocalTemplateRequired(t *tes
 	binding := domain.APIKeyPluginSettings{
 		APIPrompt: &domain.APIPromptKeyBinding{PluginName: "prompt-local", TemplateID: "local-focus"},
 	}
-	validated, err := svc.ValidateAPIKeyPluginSettings(context.Background(), binding)
+	validated, err := svc.ValidateAPIKeyPluginSettings(context.Background(), binding, false)
 	require.NoError(t, err)
 	require.Equal(t, "local-focus", validated.APIPrompt.TemplateID)
 
 	binding.APIPrompt.TemplateID = "missing"
-	_, err = svc.ValidateAPIKeyPluginSettings(context.Background(), binding)
+	_, err = svc.ValidateAPIKeyPluginSettings(context.Background(), binding, false)
 	require.ErrorIs(t, err, ErrInvalidPluginBinding)
 }
 

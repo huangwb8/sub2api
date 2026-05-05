@@ -533,6 +533,10 @@ export interface ApiKey {
 export interface APIPromptKeyBinding {
   plugin_name: string
   template_id: string
+  name?: string
+  description?: string
+  prompt?: string
+  custom?: boolean
 }
 
 export interface APIKeyPluginSettings {
@@ -582,6 +586,7 @@ export interface APIPromptTemplate {
 export interface APIPromptPluginConfig {
   templates: APIPromptTemplate[]
   source?: 'local' | string
+  custom_template_plan_name?: string
 }
 
 export interface Plugin {
@@ -604,6 +609,12 @@ export interface APIPromptTemplateOption {
   sort_order: number
   source?: 'local' | string
   status?: 'available' | string
+  custom?: boolean
+}
+
+export interface APIPromptTemplateAccess {
+  can_create_custom: boolean
+  custom_template_plan_name: string
 }
 
 export interface CreateGroupRequest {

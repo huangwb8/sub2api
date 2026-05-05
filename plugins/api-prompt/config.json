@@ -28,5 +28,6 @@
       "sort_order": 30
     }
   ],
-  "source": "local"
+  "source": "local",
+  "custom_template_plan_name": "G-Ultra"
 }

@@ -38,7 +38,8 @@ plugins/{插件名}/
       "sort_order": 20
     }
   ],
-  "source": "local"
+  "source": "local",
+  "custom_template_plan_name": "G-Ultra"
 }
 ```
 
@@ -50,6 +51,7 @@ plugins/{插件名}/
 - 如果默认 `api-prompt` 实例存在但模板配置为空，后端会自动补回内置模板并保留该实例原有启停状态，确保 Docker / 安装脚本部署后的“系统设置 → 插件”页有可编辑项。
 - 当前只加载 `type=api-prompt` 的本地插件实例。
 - 管理端插件页可创建、启停、编辑描述、维护模板并检查本地配置。
+- 管理端插件页可配置 `custom_template_plan_name`，用于决定哪些订阅套餐用户可以在“模板管理”中为自己的 API Key 保存自定义 Prompt。默认值为 `G-Ultra`。
 - 检查配置只校验本地模板是否存在启用项，以及模板字段是否有效。
 - 遗留 `manifest.json` 中的 `base_url` 或 `api_key` 字段会被读取时忽略；管理员保存插件后，这些字段不会再写回。
 
@@ -67,6 +69,22 @@ API Key 的 `plugin_settings` 结构保持稳定：
 ```
 
 创建或更新 API Key 时，后端要求绑定的插件已启用，且模板存在、启用并包含非空 `prompt`。用户侧模板列表只返回本地已启用插件中的已启用模板。
+
+符合 `custom_template_plan_name` 的有效订阅用户也可以把自定义 Prompt 直接保存在当前 API Key 的 `plugin_settings.api_prompt` 中：
+
+```json
+{
+  "api_prompt": {
+    "plugin_name": "api-prompt",
+    "template_id": "custom-123",
+    "name": "我的论文审校模板",
+    "prompt": "你是一位严格的论文审校助手...",
+    "custom": true
+  }
+}
+```
+
+普通用户提交 `custom=true` 的绑定会被后端拒绝；他们只能选择管理员提供的默认模板或通用模式。
 
 ## 请求注入
 

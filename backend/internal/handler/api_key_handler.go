@@ -316,3 +316,20 @@ func (h *APIKeyHandler) GetUserGroupRates(c *gin.Context) {
 
 	response.Success(c, rates)
 }
+
+// GetPromptTemplateAccess returns the current user's api-prompt custom template entitlement.
+// GET /api/v1/keys/prompt-template-access
+func (h *APIKeyHandler) GetPromptTemplateAccess(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	access, err := h.apiKeyService.GetAPIPromptTemplateAccess(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, access)
+}

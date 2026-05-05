@@ -7,6 +7,9 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 `docs/plans/2026-05-05-openai-gpt-image-2-upstream-absorption-plan.md`：梳理上游 `gpt-image-2` Images API、OpenAI OAuth Responses 桥接与 Codex 图片工具支持的吸收路径、风险边界和验证矩阵。
+- 新增了用户侧 `模板管理` 页面：位于 API 密钥与使用记录之间，用于集中管理 API Key 与 Prompt 模板的映射关系，并支持符合资格套餐的用户为自己的 API Key 保存自定义 Prompt。
+- 新增了 `api-prompt` 自定义模板资格配置：插件 `config.json` 支持 `custom_template_plan_name`，默认 `G-Ultra`，后端提供 `/api/v1/keys/prompt-template-access` 返回当前用户资格。
 - 新增了 `skills/sub2api-codex-available` Agent Skill：用于判断并修复指定 sub2api 账号是否能被本地 Codex CLI 通过真实网关链路调用，包含真实站点鉴权要求、Codex 风格 E2E/CLI 验证、usage 命中证明、诊断脚本与 `auto-test-skill` 一轮自检产物。
 - 新增了 `邀请码（余额）` 兑换码类型：管理员生成邀请码时可配置注册赠送余额，用户使用后会在默认余额基础上自动增加对应金额，普通注册与 OAuth 首次注册链路同步支持。
 - 新增了管理员邀请返利审计能力：后端提供邀请记录、返利入账、转余额记录和用户返利概览只读接口，新增 `backend/migrations/127_affiliate_ledger_audit_snapshots.sql` 记录返利订单来源与转余额快照，前端管理页增加对应审计列表。
@@ -18,6 +21,9 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 优化了 API Key 创建/编辑表单的 Prompt 模板选择器：复用现有可搜索下拉组件，支持按模板名称、插件名和说明快速筛选。
+- 优化了管理端“系统设置 → 插件”页：移除冗余的本地插件中心说明卡片，并重排模板编辑卡片，让启停和删除操作收敛到模板头部，避免宽屏下小按钮占据半个界面。
+- 扩展了 API Key 的 `plugin_settings.api_prompt`：符合资格的自定义模板会随 API Key 保存并在网关请求期直接注入，普通用户仍只能使用管理员提供的默认模板或通用模式。
 - 优化了 OpenAI OAuth 账号创建默认行为：新增账号未显式指定分组时会自动加入所有活跃 OpenAI 分组，并在未提供调度参数时默认设置并发数 `3`、负载因子 `3`。
 - 统一了 `邀请码（余额）` 的货币口径：管理员兑换码页、前端中英文文案和 `skills/sub2api-summary` 源码地图均明确注册赠送金额按人民币 CNY 计入用户余额，避免误读为美元。
 - 同步了 `skills/sub2api-summary` 源码地图：补充 `邀请码（余额）` 的注册余额叠加、管理员生成入口和前端筛选入口，避免运营分析遗漏该类注册赠送金额。

@@ -370,7 +370,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		}
 	}
 
-	pluginSettings, err := s.validatePluginSettings(ctx, req.PluginSettings)
+	pluginSettings, err := s.validatePluginSettings(ctx, userID, req.PluginSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +637,7 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 		apiKey.Window7dStart = nil
 	}
 	if req.PluginSettings != nil {
-		pluginSettings, err := s.validatePluginSettings(ctx, *req.PluginSettings)
+		pluginSettings, err := s.validatePluginSettings(ctx, userID, *req.PluginSettings)
 		if err != nil {
 			return nil, err
 		}
@@ -659,14 +659,53 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	return apiKey, nil
 }
 
-func (s *APIKeyService) validatePluginSettings(ctx context.Context, settings domain.APIKeyPluginSettings) (domain.APIKeyPluginSettings, error) {
+func (s *APIKeyService) validatePluginSettings(ctx context.Context, userID int64, settings domain.APIKeyPluginSettings) (domain.APIKeyPluginSettings, error) {
 	if settings.APIPrompt == nil {
 		return domain.APIKeyPluginSettings{}, nil
 	}
 	if s.pluginService == nil {
 		return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
 	}
-	return s.pluginService.ValidateAPIKeyPluginSettings(ctx, settings)
+	canUseCustom, err := s.CanUserUseCustomAPIPromptTemplate(ctx, userID)
+	if err != nil {
+		return domain.APIKeyPluginSettings{}, err
+	}
+	return s.pluginService.ValidateAPIKeyPluginSettings(ctx, settings, canUseCustom)
+}
+
+func (s *APIKeyService) CanUserUseCustomAPIPromptTemplate(ctx context.Context, userID int64) (bool, error) {
+	if s.pluginService == nil || s.userSubRepo == nil {
+		return false, nil
+	}
+	requiredPlanName := strings.TrimSpace(s.pluginService.GetAPIPromptCustomTemplatePlanName(ctx))
+	if requiredPlanName == "" {
+		requiredPlanName = defaultAPIPromptCustomTemplatePlanName
+	}
+	subs, err := s.userSubRepo.ListActiveByUserID(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("list active subscriptions: %w", err)
+	}
+	for _, sub := range subs {
+		if strings.EqualFold(strings.TrimSpace(sub.CurrentPlanName), requiredPlanName) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *APIKeyService) GetAPIPromptTemplateAccess(ctx context.Context, userID int64) (*APIPromptTemplateAccess, error) {
+	planName := defaultAPIPromptCustomTemplatePlanName
+	if s.pluginService != nil {
+		planName = s.pluginService.GetAPIPromptCustomTemplatePlanName(ctx)
+	}
+	canCreateCustom, err := s.CanUserUseCustomAPIPromptTemplate(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &APIPromptTemplateAccess{
+		CanCreateCustom:        canCreateCustom,
+		CustomTemplatePlanName: planName,
+	}, nil
 }
 
 // Delete 删除API Key

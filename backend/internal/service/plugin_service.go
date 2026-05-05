@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +23,8 @@ type PluginType string
 const (
 	PluginTypeAPIPrompt PluginType = "api-prompt"
 )
+
+const defaultAPIPromptCustomTemplatePlanName = "G-Ultra"
 
 type PluginPromptTarget string
 
@@ -55,8 +58,9 @@ type APIPromptTemplate struct {
 }
 
 type APIPromptPluginConfig struct {
-	Templates []APIPromptTemplate `json:"templates"`
-	Source    string              `json:"source,omitempty"`
+	Templates              []APIPromptTemplate `json:"templates"`
+	Source                 string              `json:"source,omitempty"`
+	CustomTemplatePlanName string              `json:"custom_template_plan_name,omitempty"`
 }
 
 type Plugin struct {
@@ -99,6 +103,12 @@ type APIPromptTemplateOption struct {
 	SortOrder   int    `json:"sort_order"`
 	Source      string `json:"source,omitempty"`
 	Status      string `json:"status,omitempty"`
+	Custom      bool   `json:"custom,omitempty"`
+}
+
+type APIPromptTemplateAccess struct {
+	CanCreateCustom        bool   `json:"can_create_custom"`
+	CustomTemplatePlanName string `json:"custom_template_plan_name"`
 }
 
 type PluginDriver interface {
@@ -384,10 +394,62 @@ func (s *PluginService) ListAPIPromptTemplateOptions(ctx context.Context) ([]API
 	return options, nil
 }
 
-func (s *PluginService) ValidateAPIKeyPluginSettings(ctx context.Context, settings domain.APIKeyPluginSettings) (domain.APIKeyPluginSettings, error) {
+func (s *PluginService) GetAPIPromptCustomTemplatePlanName(ctx context.Context) string {
+	_ = ctx
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	names := make([]string, 0, len(s.plugins))
+	for name, record := range s.plugins {
+		if record.Manifest.Type == PluginTypeAPIPrompt && record.Config != nil {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if planName := strings.TrimSpace(s.plugins[name].Config.CustomTemplatePlanName); planName != "" {
+			return planName
+		}
+	}
+	return defaultAPIPromptCustomTemplatePlanName
+}
+
+func (s *PluginService) ValidateAPIKeyPluginSettings(ctx context.Context, settings domain.APIKeyPluginSettings, canUseCustomTemplate bool) (domain.APIKeyPluginSettings, error) {
 	_ = ctx
 	if settings.APIPrompt == nil {
 		return domain.APIKeyPluginSettings{}, nil
+	}
+
+	if settings.APIPrompt.Custom {
+		if !canUseCustomTemplate {
+			return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
+		}
+		prompt := strings.TrimSpace(settings.APIPrompt.Prompt)
+		if prompt == "" {
+			return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
+		}
+		pluginName := strings.TrimSpace(settings.APIPrompt.PluginName)
+		if pluginName == "" {
+			pluginName = "api-prompt"
+		}
+		pluginName, err := normalizePluginName(pluginName)
+		if err != nil {
+			return domain.APIKeyPluginSettings{}, ErrInvalidPluginBinding
+		}
+		templateID := strings.TrimSpace(settings.APIPrompt.TemplateID)
+		if templateID == "" {
+			templateID = fmt.Sprintf("custom-%08x", promptHash(prompt))
+		}
+		return domain.APIKeyPluginSettings{
+			APIPrompt: &domain.APIPromptKeyBinding{
+				PluginName:  pluginName,
+				TemplateID:  templateID,
+				Name:        strings.TrimSpace(settings.APIPrompt.Name),
+				Description: strings.TrimSpace(settings.APIPrompt.Description),
+				Prompt:      prompt,
+				Custom:      true,
+			},
+		}, nil
 	}
 
 	pluginName, err := normalizePluginName(settings.APIPrompt.PluginName)
@@ -454,6 +516,25 @@ func (s *PluginService) ApplyBoundPromptTemplate(ctx context.Context, body []byt
 func (s *PluginService) resolvePromptTemplate(ctx context.Context, settings domain.APIKeyPluginSettings, target PluginPromptTarget) *APIPromptTemplateOption {
 	if settings.APIPrompt == nil {
 		return nil
+	}
+	if settings.APIPrompt.Custom && strings.TrimSpace(settings.APIPrompt.Prompt) != "" {
+		name := strings.TrimSpace(settings.APIPrompt.Name)
+		if name == "" {
+			name = strings.TrimSpace(settings.APIPrompt.TemplateID)
+		}
+		if name == "" {
+			name = "自定义模板"
+		}
+		return &APIPromptTemplateOption{
+			PluginName:  strings.TrimSpace(settings.APIPrompt.PluginName),
+			TemplateID:  strings.TrimSpace(settings.APIPrompt.TemplateID),
+			Name:        name,
+			Description: strings.TrimSpace(settings.APIPrompt.Description),
+			Prompt:      strings.TrimSpace(settings.APIPrompt.Prompt),
+			Source:      "custom",
+			Status:      "available",
+			Custom:      true,
+		}
 	}
 	pluginName, err := normalizePluginName(settings.APIPrompt.PluginName)
 	if err != nil {
@@ -868,8 +949,9 @@ func normalizeAPIPromptConfigWithPromptRequirement(cfg *APIPromptPluginConfig, u
 		return normalized[i].ID < normalized[j].ID
 	})
 	return &APIPromptPluginConfig{
-		Templates: normalized,
-		Source:    "local",
+		Templates:              normalized,
+		Source:                 "local",
+		CustomTemplatePlanName: strings.TrimSpace(cfg.CustomTemplatePlanName),
 	}, nil
 }
 
@@ -912,9 +994,16 @@ func cloneAPIPromptConfig(cfg *APIPromptPluginConfig) *APIPromptPluginConfig {
 	templates := make([]APIPromptTemplate, len(cfg.Templates))
 	copy(templates, cfg.Templates)
 	return &APIPromptPluginConfig{
-		Templates: templates,
-		Source:    cfg.Source,
+		Templates:              templates,
+		Source:                 cfg.Source,
+		CustomTemplatePlanName: strings.TrimSpace(cfg.CustomTemplatePlanName),
 	}
+}
+
+func promptHash(prompt string) uint32 {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(prompt))
+	return h.Sum32()
 }
 
 func prependAnthropicSystemPrompt(body []byte, prompt string) ([]byte, error) {
