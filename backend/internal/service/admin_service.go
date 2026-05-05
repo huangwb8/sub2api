@@ -1703,15 +1703,20 @@ func (s *adminServiceImpl) GetAccountsByIDs(ctx context.Context, ids []int64) ([
 func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccountInput) (*Account, error) {
 	// 绑定分组
 	groupIDs := input.GroupIDs
-	// 如果没有指定分组,自动绑定对应平台的默认分组
+	// 如果没有指定分组,自动绑定对应平台的默认分组。
+	// OpenAI OAuth 账号默认加入所有活跃 OpenAI 分组，确保新增 auth 账号立即可被相关分组调度。
 	if len(groupIDs) == 0 && !input.SkipDefaultGroupBind {
-		defaultGroupName := input.Platform + "-default"
 		groups, err := s.groupRepo.ListActiveByPlatform(ctx, input.Platform)
 		if err == nil {
-			for _, g := range groups {
-				if g.Name == defaultGroupName {
-					groupIDs = []int64{g.ID}
-					break
+			if isOpenAIOAuthAccount(input.Platform, input.Type) {
+				groupIDs = openAIOAuthDefaultGroupIDs(groups)
+			} else {
+				defaultGroupName := input.Platform + "-default"
+				for _, g := range groups {
+					if g.Name == defaultGroupName {
+						groupIDs = []int64{g.ID}
+						break
+					}
 				}
 			}
 		}
@@ -1724,6 +1729,18 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 		}
 	}
 
+	concurrency := input.Concurrency
+	loadFactor := input.LoadFactor
+	if isOpenAIOAuthAccount(input.Platform, input.Type) {
+		if concurrency <= 0 {
+			concurrency = 3
+		}
+		if loadFactor == nil || *loadFactor <= 0 {
+			defaultLoadFactor := 3
+			loadFactor = &defaultLoadFactor
+		}
+	}
+
 	account := &Account{
 		Name:        input.Name,
 		Notes:       normalizeAccountNotes(input.Notes),
@@ -1732,7 +1749,7 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 		Credentials: input.Credentials,
 		Extra:       input.Extra,
 		ProxyID:     input.ProxyID,
-		Concurrency: input.Concurrency,
+		Concurrency: concurrency,
 		Priority:    input.Priority,
 		Status:      StatusActive,
 		Schedulable: true,
@@ -1773,11 +1790,11 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 			account.ActualCostUpdatedAt = &now
 		}
 	}
-	if input.LoadFactor != nil && *input.LoadFactor > 0 {
-		if *input.LoadFactor > 10000 {
+	if loadFactor != nil && *loadFactor > 0 {
+		if *loadFactor > 10000 {
 			return nil, errors.New("load_factor must be <= 10000")
 		}
-		account.LoadFactor = input.LoadFactor
+		account.LoadFactor = loadFactor
 	}
 	if err := s.accountRepo.Create(ctx, account); err != nil {
 		return nil, err
@@ -1816,6 +1833,20 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 	}
 
 	return account, nil
+}
+
+func isOpenAIOAuthAccount(platform, accountType string) bool {
+	return platform == PlatformOpenAI && accountType == AccountTypeOAuth
+}
+
+func openAIOAuthDefaultGroupIDs(groups []Group) []int64 {
+	groupIDs := make([]int64, 0, len(groups))
+	for _, g := range groups {
+		if g.ID > 0 && g.Platform == PlatformOpenAI && g.Status == StatusActive {
+			groupIDs = append(groupIDs, g.ID)
+		}
+	}
+	return groupIDs
 }
 
 func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *UpdateAccountInput) (*Account, error) {

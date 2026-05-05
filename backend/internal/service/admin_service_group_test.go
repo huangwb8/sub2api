@@ -31,6 +31,9 @@ type groupRepoStubForAdmin struct {
 	listWithFiltersGroups      []Group
 	listWithFiltersResult      *pagination.PaginationResult
 	listWithFiltersErr         error
+	listActiveByPlatformGroups []Group
+	listActiveByPlatform       string
+	listActiveByPlatformErr    error
 }
 
 func (s *groupRepoStubForAdmin) Create(_ context.Context, g *Group) error {
@@ -97,8 +100,12 @@ func (s *groupRepoStubForAdmin) ListActive(_ context.Context) ([]Group, error) {
 	panic("unexpected ListActive call")
 }
 
-func (s *groupRepoStubForAdmin) ListActiveByPlatform(_ context.Context, _ string) ([]Group, error) {
-	panic("unexpected ListActiveByPlatform call")
+func (s *groupRepoStubForAdmin) ListActiveByPlatform(_ context.Context, platform string) ([]Group, error) {
+	s.listActiveByPlatform = platform
+	if s.listActiveByPlatformErr != nil {
+		return nil, s.listActiveByPlatformErr
+	}
+	return s.listActiveByPlatformGroups, nil
 }
 
 func (s *groupRepoStubForAdmin) ExistsByName(_ context.Context, _ string) (bool, error) {
