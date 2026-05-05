@@ -45,7 +45,7 @@ Sub2API 是一个为 AI 订阅资源管理场景设计的 API 网关平台，把
 - 多上游账号统一接入，支持 OAuth、API Key 等不同凭证形态
 - 用户 API Key 分发与权限隔离，支持分组、额度、速率与并发限制
 - Token 级别计费、用量追踪、成本核算与统计展示
-- OpenAI 兼容端点支持 Responses、Chat Completions 与 Images API（图片生成/编辑）
+- OpenAI 兼容端点支持 Responses、Chat Completions 与 Images API（含 `gpt-image-2`；API Key 账号直连，OAuth 账号通过 Responses `image_generation` 桥接，可能受上游风控影响）
 - 智能调度与粘性会话，适配多账号轮转、失败切换和模型映射
 - 内置支付系统，支持 EasyPay、支付宝官方、微信官方、Stripe
 - 用户自助充值、购买订阅套餐、续费、补差价升级、查看订单与支付状态
@@ -92,6 +92,7 @@ sudo systemctl enable --now sub2api
 | [docs/关键模型参数设置.md](docs/关键模型参数设置.md) | 账号、分组与调度关键参数配置教程 |
 | [docs/汇率波动如何影响用户购买行为与权益.md](docs/汇率波动如何影响用户购买行为与权益.md) | 人民币余额、美元 usage 与汇率波动关系说明 |
 | [docs/管理员参数设置最佳实践.md](docs/管理员参数设置最佳实践.md) | 管理员系统参数配置推荐值 |
+| [docs/chatgpt-oauth-images-experimental.md](docs/chatgpt-oauth-images-experimental.md) | OpenAI Images、`gpt-image-2`、账号池配置与 OAuth 图片桥接教程 |
 | [deploy/DATAMANAGEMENTD_CN.md](deploy/DATAMANAGEMENTD_CN.md) | 数据管理能力宿主机联动说明 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本历史与重要变更记录 |
 

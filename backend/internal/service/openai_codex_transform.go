@@ -180,6 +180,14 @@ func applyCodexOAuthTransform(reqBody map[string]any, isCodexCLI bool, isCompact
 		result.Modified = true
 	}
 
+	if normalizeCodexImageGenerationRequest(reqBody, normalizedModel, isCodexCLI) {
+		result.Modified = true
+		if model, ok := reqBody["model"].(string); ok {
+			result.NormalizedModel = strings.TrimSpace(model)
+			normalizedModel = result.NormalizedModel
+		}
+	}
+
 	if v, ok := reqBody["prompt_cache_key"].(string); ok {
 		result.PromptCacheKey = strings.TrimSpace(v)
 	}
@@ -288,6 +296,143 @@ func validateCodexSparkInput(reqBody map[string]any, model string) error {
 		return fmt.Errorf("model %q does not support image input", strings.TrimSpace(model))
 	}
 	return nil
+}
+
+func normalizeCodexImageGenerationRequest(reqBody map[string]any, model string, isCodexCLI bool) bool {
+	if reqBody == nil {
+		return false
+	}
+	modified := false
+	imageModel := ""
+	if isOpenAIImageGenerationModel(model) {
+		imageModel = strings.TrimSpace(model)
+	}
+	if imageModel == "" {
+		if toolModel := firstImageGenerationToolModel(reqBody); isOpenAIImageGenerationModel(toolModel) {
+			imageModel = strings.TrimSpace(toolModel)
+		}
+	}
+	if imageModel != "" {
+		if strings.TrimSpace(firstString(reqBody["model"])) != openaiImagesOAuthResponsesModel {
+			reqBody["model"] = openaiImagesOAuthResponsesModel
+			modified = true
+		}
+		prompt := strings.TrimSpace(firstString(reqBody["prompt"]))
+		if prompt != "" {
+			reqBody["input"] = prompt
+			delete(reqBody, "prompt")
+			modified = true
+		}
+		if ensureCodexImageGenerationTool(reqBody, imageModel) {
+			modified = true
+		}
+		if _, ok := reqBody["tool_choice"]; !ok {
+			reqBody["tool_choice"] = map[string]any{"type": "image_generation"}
+			modified = true
+		}
+		return modified
+	}
+	if isCodexCLI && codexRequestMentionsImageGeneration(reqBody) {
+		if ensureCodexImageGenerationTool(reqBody, "gpt-image-2") {
+			modified = true
+		}
+		if appendCodexImageGenerationInstructions(reqBody) {
+			modified = true
+		}
+	}
+	return modified
+}
+
+func firstImageGenerationToolModel(reqBody map[string]any) string {
+	rawTools, ok := reqBody["tools"].([]any)
+	if !ok {
+		return ""
+	}
+	for _, rawTool := range rawTools {
+		tool, ok := rawTool.(map[string]any)
+		if !ok || strings.TrimSpace(firstString(tool["type"])) != "image_generation" {
+			continue
+		}
+		if model := strings.TrimSpace(firstString(tool["model"])); model != "" {
+			return model
+		}
+	}
+	return ""
+}
+
+func ensureCodexImageGenerationTool(reqBody map[string]any, imageModel string) bool {
+	tool := map[string]any{"type": "image_generation"}
+	if strings.TrimSpace(imageModel) != "" {
+		tool["model"] = strings.TrimSpace(imageModel)
+	}
+	rawTools, _ := reqBody["tools"].([]any)
+	for _, rawTool := range rawTools {
+		existing, ok := rawTool.(map[string]any)
+		if !ok || strings.TrimSpace(firstString(existing["type"])) != "image_generation" {
+			continue
+		}
+		if _, hasModel := existing["model"]; !hasModel && strings.TrimSpace(imageModel) != "" {
+			existing["model"] = strings.TrimSpace(imageModel)
+			return true
+		}
+		return false
+	}
+	reqBody["tools"] = append(rawTools, tool)
+	return true
+}
+
+func codexRequestMentionsImageGeneration(reqBody map[string]any) bool {
+	text := strings.ToLower(strings.Join([]string{
+		firstString(reqBody["instructions"]),
+		extractTextFromOpenAIValue(reqBody["input"]),
+		firstString(reqBody["prompt"]),
+	}, "\n"))
+	for _, marker := range []string{"image_generation", "image_gen", "$imagegen"} {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func extractTextFromOpenAIValue(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			if text := extractTextFromOpenAIValue(item); text != "" {
+				parts = append(parts, text)
+			}
+		}
+		return strings.Join(parts, "\n")
+	case map[string]any:
+		parts := make([]string, 0, 3)
+		for _, key := range []string{"text", "content", "input_text"} {
+			if text := extractTextFromOpenAIValue(v[key]); text != "" {
+				parts = append(parts, text)
+			}
+		}
+		return strings.Join(parts, "\n")
+	default:
+		return ""
+	}
+}
+
+func appendCodexImageGenerationInstructions(reqBody map[string]any) bool {
+	const marker = "<sub2api-codex-image-generation-tool>"
+	existing := firstString(reqBody["instructions"])
+	if strings.Contains(existing, marker) {
+		return false
+	}
+	addition := marker + "\nWhen the user asks to generate or edit an image, use the native OpenAI Responses `image_generation` tool. A missing local image_gen namespace does not mean server-side image generation is unavailable.\n</sub2api-codex-image-generation-tool>"
+	if strings.TrimSpace(existing) == "" {
+		reqBody["instructions"] = addition
+	} else {
+		reqBody["instructions"] = strings.TrimRight(existing, " \t\r\n") + "\n\n" + addition
+	}
+	return true
 }
 
 func applyCodexSparkImageUnsupportedInstructions(reqBody map[string]any) bool {

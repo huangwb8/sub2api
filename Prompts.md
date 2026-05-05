@@ -4,7 +4,7 @@
 
 ```
 github项目：huangwb8/sub2api
-version=1.3.11
+version=1.3.12
 新增 tag 为 v{version}； git-commit skill保存变更； git-publish-release skill 发布为一个release到github仓库 huangwb8/sub2api。采用精简发布，即：只发布 Docker Hub 的 x86/amd64 镜像。不要发布 arm64、GHCR、多架构 manifest，也不要执行任何补发或扩展发布流程。最后汇报 release 链接、所有相关 actions 链接、镜像地址、完整发布产物清单，以及首个 x86 可用耗时和完整发布总耗时。
 ```
 
@@ -101,6 +101,10 @@ PlanMarkdown = docs/plans/2026-05-04-upstream-489120-to-df722c-optimization-plan
   - 70f41bbf9027a7e77a1f184ea61fd76ed56aaa97 这是一个相对稳定（但可能有潜在bug）的支付相关git版本。
 
 # 日常
+
+---
+
+基于 docs/plans/2026-05-05-openai-gpt-image-2-upstream-absorption-plan.md 这个计划增强图像模型支持。 请使用 awesome-code skill 辅助规划、优化。所有问题都要解决。 如果工作时有疑问，或者有更好的方案，自己选个最优方案优化，不要问我。不要破坏其它已经存在的功能。要保证最终成品能正常、稳定、高效地工作。
 
 ---
 

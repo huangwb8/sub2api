@@ -81,8 +81,8 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 			return
 		}
 		modelResult := gjson.GetBytes(body, "model")
-		if !modelResult.Exists() || modelResult.Type != gjson.String || strings.TrimSpace(modelResult.String()) == "" {
-			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "model is required")
+		if modelResult.Exists() && modelResult.Type != gjson.String {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "invalid model field type")
 			return
 		}
 		promptResult := gjson.GetBytes(body, "prompt")
@@ -96,6 +96,13 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 			return
 		}
 		reqModel = strings.TrimSpace(modelResult.String())
+		if reqModel == "" {
+			reqModel = "gpt-image-2"
+		}
+		if !strings.HasPrefix(strings.ToLower(reqModel), "gpt-image-") {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "images endpoint requires an image model")
+			return
+		}
 		reqStream = streamResult.Bool()
 	case "edits":
 		if err := c.Request.ParseMultipartForm(64 << 20); err != nil {
@@ -105,6 +112,10 @@ func (h *OpenAIGatewayHandler) handleImages(c *gin.Context, operation string) {
 		reqModel = strings.TrimSpace(c.Request.FormValue("model"))
 		if reqModel == "" {
 			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "model is required")
+			return
+		}
+		if !strings.HasPrefix(strings.ToLower(reqModel), "gpt-image-") {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "images endpoint requires an image model")
 			return
 		}
 		if strings.TrimSpace(c.Request.FormValue("prompt")) == "" {
@@ -341,6 +352,10 @@ func (h *OpenAIGatewayHandler) recordImagesUsage(
 	userAgent := c.GetHeader("User-Agent")
 	clientIP := ip.GetClientIP(c)
 	h.submitUsageRecordTask(func(ctx context.Context) {
+		upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
+		if strings.TrimSpace(result.UpstreamEndpoint) != "" {
+			upstreamEndpoint = result.UpstreamEndpoint
+		}
 		if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 			Result:             result,
 			APIKey:             apiKey,
@@ -348,7 +363,7 @@ func (h *OpenAIGatewayHandler) recordImagesUsage(
 			Account:            account,
 			Subscription:       subscription,
 			InboundEndpoint:    GetInboundEndpoint(c),
-			UpstreamEndpoint:   GetUpstreamEndpoint(c, account.Platform),
+			UpstreamEndpoint:   upstreamEndpoint,
 			UserAgent:          userAgent,
 			IPAddress:          clientIP,
 			APIKeyService:      h.apiKeyService,

@@ -433,6 +433,73 @@ func TestApplyCodexOAuthTransform_StringInputWithToolsField(t *testing.T) {
 	require.Len(t, input, 1)
 }
 
+func TestApplyCodexOAuthTransform_ImageOnlyModelUsesResponsesTool(t *testing.T) {
+	reqBody := map[string]any{
+		"model":  "gpt-image-2",
+		"prompt": "draw a cat",
+	}
+
+	result := applyCodexOAuthTransform(reqBody, true, false)
+
+	require.True(t, result.Modified)
+	require.Equal(t, "gpt-5.4-mini", reqBody["model"])
+	input, ok := reqBody["input"].([]any)
+	require.True(t, ok)
+	require.Len(t, input, 1)
+	msg, ok := input[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "draw a cat", msg["content"])
+	require.NotContains(t, reqBody, "prompt")
+	toolChoice, ok := reqBody["tool_choice"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "image_generation", toolChoice["type"])
+	tools, ok := reqBody["tools"].([]any)
+	require.True(t, ok)
+	require.Len(t, tools, 1)
+	tool, ok := tools[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "image_generation", tool["type"])
+	require.Equal(t, "gpt-image-2", tool["model"])
+}
+
+func TestApplyCodexOAuthTransform_CodexCLIInjectsImageToolForImagegenWorkflow(t *testing.T) {
+	reqBody := map[string]any{
+		"model": "gpt-5.4",
+		"input": "Use $imagegen to draw a cat",
+	}
+
+	result := applyCodexOAuthTransform(reqBody, true, false)
+
+	require.True(t, result.Modified)
+	require.True(t, hasOpenAIImageGenerationTool(reqBody))
+	instructions, ok := reqBody["instructions"].(string)
+	require.True(t, ok)
+	require.Contains(t, instructions, "server-side image generation is unavailable")
+}
+
+func TestApplyCodexOAuthTransform_CodexCLIInjectsImageToolForMessageArrayImagegenWorkflow(t *testing.T) {
+	reqBody := map[string]any{
+		"model": "gpt-5.4",
+		"input": []any{
+			map[string]any{
+				"type": "message",
+				"role": "user",
+				"content": []any{
+					map[string]any{"type": "input_text", "text": "Use $imagegen to draw a cat"},
+				},
+			},
+		},
+	}
+
+	result := applyCodexOAuthTransform(reqBody, true, false)
+
+	require.True(t, result.Modified)
+	require.True(t, hasOpenAIImageGenerationTool(reqBody))
+	instructions, ok := reqBody["instructions"].(string)
+	require.True(t, ok)
+	require.Contains(t, instructions, "server-side image generation is unavailable")
+}
+
 func TestExtractSystemMessagesFromInput(t *testing.T) {
 	t.Run("no system messages", func(t *testing.T) {
 		reqBody := map[string]any{

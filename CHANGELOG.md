@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### Added（新增）
+- 新增了 OpenAI Images 账号池与调用教程：在 `docs/chatgpt-oauth-images-experimental.md` 中补充了 API Key / OAuth 账号怎么进池、分组与模型映射怎么配，以及 `gpt-image-2`、`/v1/images/generations`、`/v1/responses` 的具体调用示例。
+- 新增了 OpenAI OAuth Images 正式桥接能力：`/v1/images/generations` 可通过 ChatGPT Codex Responses `/v1/responses` + `image_generation` tool 调用 `gpt-image-2`，并补充非流式/流式归一化测试与探测脚本 `--mode responses-tool`。
 - 新增了 `docs/plans/2026-05-05-openai-gpt-image-2-upstream-absorption-plan.md`：梳理上游 `gpt-image-2` Images API、OpenAI OAuth Responses 桥接与 Codex 图片工具支持的吸收路径、风险边界和验证矩阵。
 - 新增了用户侧 `模板管理` 页面：位于 API 密钥与使用记录之间，用于集中管理 API Key 与 Prompt 模板的映射关系，并支持符合资格套餐的用户为自己的 API Key 保存自定义 Prompt。
 - 新增了 `api-prompt` 自定义模板资格配置：插件 `config.json` 支持 `custom_template_plan_name`，默认 `G-Ultra`，后端提供 `/api/v1/keys/prompt-template-access` 返回当前用户资格。
@@ -21,6 +23,9 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 升级了 OpenAI Images 图片链路：Images generation 默认模型收敛为 `gpt-image-2`，API Key 账号继续直连 Images API，OAuth 账号不再依赖账号级 probe 作为硬性准入，并将图片 token、图片数量、尺寸和上游端点归一化写入 usage。
+- 优化了 Codex 图片请求兼容：`gpt-image-*` image-only Responses 请求会自动改写为文本主模型 + `image_generation` tool，Codex CLI 图片工作流会注入图片工具提示，同时 `gpt-5.3-codex-spark` 继续明确拒绝图片能力。
+- 同步了 `gpt-image-2` 定价资源：按当前 OpenAI 定价口径校准输出 token 与图片输出 token 单价，并更新 README、多语言 README、OAuth Images 文档和 `skills/sub2api-summary` 源码地图。
 - 优化了 API Key 创建/编辑表单的 Prompt 模板选择器：复用现有可搜索下拉组件，支持按模板名称、插件名和说明快速筛选。
 - 优化了管理端“系统设置 → 插件”页：移除冗余的本地插件中心说明卡片，并重排模板编辑卡片，让启停和删除操作收敛到模板头部，避免宽屏下小按钮占据半个界面。
 - 扩展了 API Key 的 `plugin_settings.api_prompt`：符合资格的自定义模板会随 API Key 保存并在网关请求期直接注入，普通用户仍只能使用管理员提供的默认模板或通用模式。

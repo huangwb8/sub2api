@@ -28,76 +28,70 @@ func TestOpenAIGatewayService_ValidateOpenAIImagesAccount(t *testing.T) {
 		require.Nil(t, capability)
 	})
 
-	t.Run("global flag disabled", func(t *testing.T) {
+	t.Run("new global flag explicitly disabled", func(t *testing.T) {
+		disabled := false
+		svc := &OpenAIGatewayService{
+			cfg: &config.Config{
+				Gateway: config.GatewayConfig{
+					OpenAIOAuthImagesEnabled: &disabled,
+				},
+			},
+		}
+		_, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
+			"openai_oauth_images_experimental":    true,
+			"openai_oauth_images_probe_supported": true,
+			"openai_oauth_images_strategy":        OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth,
+		}), "generations", false)
+		typedErr, ok := ResolveOpenAIOAuthImagesError(err)
+		require.True(t, ok)
+		require.Equal(t, "oauth_images_disabled", typedErr.Code)
+	})
+
+	t.Run("account probe fields are no longer required", func(t *testing.T) {
 		svc := &OpenAIGatewayService{
 			cfg: &config.Config{
 				Gateway: config.GatewayConfig{},
 			},
 		}
-		_, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
-			"openai_oauth_images_experimental":    true,
+		capability, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
 			"openai_oauth_images_probe_supported": true,
 			"openai_oauth_images_strategy":        OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth,
 		}), "generations", false)
-		typedErr, ok := ResolveOpenAIOAuthImagesError(err)
-		require.True(t, ok)
-		require.Equal(t, "oauth_images_experimental_disabled", typedErr.Code)
+		require.NoError(t, err)
+		require.NotNil(t, capability)
+		require.Equal(t, OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool, capability.Strategy)
 	})
 
-	t.Run("account flag disabled", func(t *testing.T) {
+	t.Run("probe failure metadata no longer blocks", func(t *testing.T) {
 		svc := &OpenAIGatewayService{
 			cfg: &config.Config{
-				Gateway: config.GatewayConfig{
-					OpenAIOAuthImagesExperimentalEnabled: true,
-				},
+				Gateway: config.GatewayConfig{},
 			},
 		}
-		_, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
-			"openai_oauth_images_probe_supported": true,
-			"openai_oauth_images_strategy":        OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth,
-		}), "generations", false)
-		typedErr, ok := ResolveOpenAIOAuthImagesError(err)
-		require.True(t, ok)
-		require.Equal(t, "oauth_images_account_disabled", typedErr.Code)
-	})
-
-	t.Run("probe not supported", func(t *testing.T) {
-		svc := &OpenAIGatewayService{
-			cfg: &config.Config{
-				Gateway: config.GatewayConfig{
-					OpenAIOAuthImagesExperimentalEnabled: true,
-				},
-			},
-		}
-		_, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
+		capability, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
 			"openai_oauth_images_experimental": true,
 			"openai_oauth_images_strategy":     OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth,
 			"openai_oauth_images_probe_reason": "probe_403_unsupported",
 			"openai_oauth_images_probe_status": 403,
 		}), "generations", false)
-		typedErr, ok := ResolveOpenAIOAuthImagesError(err)
-		require.True(t, ok)
-		require.Equal(t, "oauth_images_probe_failed", typedErr.Code)
-		require.Contains(t, typedErr.Message, "probe_403_unsupported")
+		require.NoError(t, err)
+		require.NotNil(t, capability)
+		require.True(t, capability.Supported)
 	})
 
-	t.Run("stream not supported", func(t *testing.T) {
+	t.Run("stream supported through responses bridge", func(t *testing.T) {
 		svc := &OpenAIGatewayService{
 			cfg: &config.Config{
-				Gateway: config.GatewayConfig{
-					OpenAIOAuthImagesExperimentalEnabled: true,
-				},
+				Gateway: config.GatewayConfig{},
 			},
 		}
-		_, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
+		capability, err := svc.ValidateOpenAIImagesAccount(ctx, newAccount(map[string]any{
 			"openai_oauth_images_experimental":    true,
 			"openai_oauth_images_probe_supported": true,
 			"openai_oauth_images_strategy":        OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth,
 		}), "generations", true)
-		typedErr, ok := ResolveOpenAIOAuthImagesError(err)
-		require.True(t, ok)
-		require.Equal(t, http.StatusBadRequest, typedErr.Status)
-		require.Equal(t, "oauth_images_stream_not_supported", typedErr.Code)
+		require.NoError(t, err)
+		require.NotNil(t, capability)
 	})
 
 	t.Run("edits not supported", func(t *testing.T) {
@@ -137,7 +131,7 @@ func TestOpenAIGatewayService_ValidateOpenAIImagesAccount(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, capability)
 		require.True(t, capability.Supported)
-		require.Equal(t, OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth, capability.Strategy)
+		require.Equal(t, OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool, capability.Strategy)
 
 		cachedAny, ok := svc.openaiOAuthImagesCapabilities.Load(account.ID)
 		require.True(t, ok)

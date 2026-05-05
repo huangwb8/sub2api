@@ -37,11 +37,23 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	originalModel string,
 ) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
-	capability, err := s.ValidateOpenAIImagesAccount(ctx, account, "generations", gjson.GetBytes(body, "stream").Bool())
+	parsed, err := parseOpenAIImagesGenerationRequest(body)
+	if err != nil {
+		return nil, newOpenAIOAuthImagesError(http.StatusBadRequest, "invalid_request_error", "invalid_images_request", err.Error())
+	}
+	capability, err := s.ValidateOpenAIImagesAccount(ctx, account, "generations", parsed.Stream)
 	if err != nil {
 		return nil, err
 	}
-	requestModel := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	if account != nil && account.IsOpenAIOAuth() {
+		return s.forwardOpenAIImagesViaResponsesBridge(ctx, c, account, parsed, startTime)
+	}
+	modelResult := gjson.GetBytes(body, "model")
+	explicitModel := modelResult.Exists()
+	requestModel := strings.TrimSpace(modelResult.String())
+	if requestModel == "" {
+		requestModel = parsed.Model
+	}
 	if requestModel == "" {
 		requestModel = originalModel
 	}
@@ -49,7 +61,7 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	if mappedModel == "" {
 		mappedModel = requestModel
 	}
-	if mappedModel != requestModel {
+	if mappedModel != requestModel || !explicitModel {
 		body = s.ReplaceModelInBody(body, mappedModel)
 	}
 	billingModel := mappedModel
@@ -67,6 +79,79 @@ func (s *OpenAIGatewayService) ForwardAsImageGeneration(
 	}
 
 	return s.forwardOpenAIImagesRequest(ctx, c, account, upstreamReq, body, originalModel, billingModel, upstreamModel, reqStream, startTime)
+}
+
+func (s *OpenAIGatewayService) forwardOpenAIImagesViaResponsesBridge(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	parsed openAIImagesParsedRequest,
+	startTime time.Time,
+) (*OpenAIForwardResult, error) {
+	if parsed.N > 1 {
+		return nil, newOpenAIOAuthImagesError(http.StatusBadRequest, "invalid_request_error", "oauth_images_n_not_supported", "OpenAI OAuth image bridge currently supports n=1")
+	}
+	responsesBody, err := buildOpenAIImagesResponsesRequest(parsed)
+	if err != nil {
+		return nil, fmt.Errorf("build responses image bridge request: %w", err)
+	}
+	token, _, err := s.GetAccessToken(ctx, account)
+	if err != nil {
+		return nil, fmt.Errorf("get access token: %w", err)
+	}
+	upstreamReq, err := s.buildOpenAIImagesResponsesBridgeRequest(c.Request, account, token, responsesBody)
+	if err != nil {
+		return nil, fmt.Errorf("build responses image bridge request: %w", err)
+	}
+	proxyURL := ""
+	if account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		safeErr := sanitizeUpstreamErrorMessage(err.Error())
+		setOpsUpstreamError(c, 0, safeErr, "")
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:  account.Platform,
+			AccountID: account.ID,
+			Kind:      "request_error",
+			Message:   safeErr,
+		})
+		return nil, newUpstreamRequestFailoverError(safeErr)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		_ = resp.Body.Close()
+		resp.Body = io.NopCloser(bytes.NewReader(respBody))
+		upstreamMsg := sanitizeUpstreamErrorMessage(strings.TrimSpace(extractUpstreamErrorMessage(respBody)))
+		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
+			if s.rateLimitService != nil {
+				s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
+			}
+			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+				Platform:           account.Platform,
+				AccountID:          account.ID,
+				AccountName:        account.Name,
+				UpstreamStatusCode: resp.StatusCode,
+				UpstreamRequestID:  resp.Header.Get("x-request-id"),
+				Kind:               "failover",
+				Message:            upstreamMsg,
+			})
+			return nil, &UpstreamFailoverError{StatusCode: resp.StatusCode, ResponseBody: respBody}
+		}
+		return s.handleCompatErrorResponse(resp, c, account, writeImagesError)
+	}
+
+	result, err := s.handleImagesResponsesBridge(resp, c, parsed, int64(len(responsesBody)), 0, startTime)
+	if err == nil && result != nil && s.rateLimitService != nil {
+		s.rateLimitService.recordProxyUpstreamSuccess(ctx, account)
+	}
+	return result, err
 }
 
 // ForwardAsImageEdit rebuilds the inbound multipart/form-data request and
@@ -544,6 +629,9 @@ func parseOpenAIImagesUsage(body []byte) OpenAIUsage {
 	}
 	usage := gjson.GetBytes(body, "usage")
 	if !usage.Exists() {
+		usage = gjson.GetBytes(body, "response.usage")
+	}
+	if !usage.Exists() {
 		return OpenAIUsage{}
 	}
 	inputTokens := int(usage.Get("input_tokens").Int())
@@ -556,6 +644,9 @@ func parseOpenAIImagesUsage(body []byte) OpenAIUsage {
 	}
 	imageInputTokens := int(usage.Get("input_tokens_details.image_tokens").Int())
 	imageOutputTokens := int(usage.Get("output_tokens_details.image_tokens").Int())
+	if imageOutputTokens == 0 {
+		imageOutputTokens = int(usage.Get("output_tokens_details.image_output_tokens").Int())
+	}
 	if imageOutputTokens == 0 {
 		imageOutputTokens = outputTokens
 	}

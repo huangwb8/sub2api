@@ -45,7 +45,7 @@ Sub2API は、AI サブスクリプション型リソース配分のための AP
 - OAuth や API キーなど複数の認証形態に対応したマルチ上流アカウント接続
 - グループ、残高、レート制限、同時実行数を含むユーザー API キー管理
 - トークン単位の課金、利用量追跡、コスト計算、統計表示
-- OpenAI 互換エンドポイントは Responses、Chat Completions、画像生成/編集向け Images API に対応
+- OpenAI 互換エンドポイントは Responses、Chat Completions、`gpt-image-2` を含む Images API に対応。API Key アカウントは Images API に直結し、OpenAI OAuth アカウントは Responses `image_generation` 経由でブリッジします（上流のリスク制御の影響を受ける場合があります）
 - スティッキーセッション、ローテーション、フェイルオーバー、モデルマッピングを含むスマートスケジューリング
 - EasyPay、公式 Alipay、公式 WeChat Pay、Stripe に対応した内蔵決済
 - ユーザーによる残高チャージ、サブスクリプション購入、更新、差額支払いによるアップグレード、注文確認
@@ -89,6 +89,7 @@ sudo systemctl enable --now sub2api
 | [deploy/README.md](deploy/README.md) | デプロイ全体、Docker とバイナリ導入、リリース自動化 |
 | [docs/PAYMENT_CN.md](docs/PAYMENT_CN.md) | 中国語の決済設定ガイド |
 | [docs/PAYMENT.md](docs/PAYMENT.md) | 英語の決済ガイド |
+| [docs/chatgpt-oauth-images-experimental.md](docs/chatgpt-oauth-images-experimental.md) | OpenAI Images、`gpt-image-2`、アカウントプール設定、OAuth 画像ブリッジの説明 |
 | [deploy/DATAMANAGEMENTD_CN.md](deploy/DATAMANAGEMENTD_CN.md) | データ管理機能のためのホスト側連携説明 |
 | [docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md](docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md) | GitHub Release と Docker イメージ自動化の設定手順 |
 | [CHANGELOG.md](CHANGELOG.md) | バージョン履歴と重要な変更記録 |

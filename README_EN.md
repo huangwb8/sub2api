@@ -45,7 +45,7 @@ Sub2API is an AI API gateway platform designed for subscription-backed resource 
 - Unified multi-upstream account access with OAuth and API key credentials
 - User API key issuance with group, quota, rate limit, and concurrency isolation
 - Token-level billing, usage tracking, cost accounting, and reporting
-- OpenAI-compatible endpoints include Responses, Chat Completions, and Images API for generation/editing
+- OpenAI-compatible endpoints include Responses, Chat Completions, and Images API, including `gpt-image-2`; API Key accounts use direct Images upstreams, while OpenAI OAuth accounts bridge through Responses `image_generation` and may still be affected by upstream risk controls
 - Smart scheduling with sticky sessions, account rotation, failover, and model mapping
 - Built-in payments with EasyPay, official Alipay, official WeChat Pay, and Stripe
 - Self-service top-up, subscription purchase, renewal, upgrade-with-difference payment, order lookup, and payment status pages
@@ -89,6 +89,7 @@ See [deploy/README.md](deploy/README.md) for full deployment details.
 | [deploy/README.md](deploy/README.md) | Deployment overview, Docker and binary install, release automation |
 | [docs/PAYMENT_CN.md](docs/PAYMENT_CN.md) | Chinese payment guide (top-up, subscriptions, webhook, provider config) |
 | [docs/PAYMENT.md](docs/PAYMENT.md) | English payment guide |
+| [docs/chatgpt-oauth-images-experimental.md](docs/chatgpt-oauth-images-experimental.md) | OpenAI Images, `gpt-image-2`, account-pool setup, and OAuth image bridge guide |
 | [deploy/DATAMANAGEMENTD_CN.md](deploy/DATAMANAGEMENTD_CN.md) | Host-side integration for the data management feature |
 | [docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md](docs/GITHUB_REPOSITORY_SETUP_TUTORIAL.md) | GitHub Release and Docker image automation setup |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and important project changes |

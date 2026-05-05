@@ -66,11 +66,21 @@ func (s *OpenAIGatewayService) isOpenAIOAuthImagesExperimentalEnabled() bool {
 	return s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIOAuthImagesExperimentalEnabled
 }
 
+func (s *OpenAIGatewayService) isOpenAIOAuthImagesEnabled() bool {
+	if s == nil || s.cfg == nil {
+		return true
+	}
+	if s.cfg.Gateway.OpenAIOAuthImagesEnabled != nil {
+		return *s.cfg.Gateway.OpenAIOAuthImagesEnabled
+	}
+	return true
+}
+
 func normalizeOpenAIOAuthImagesStrategy(strategy string) string {
 	switch strings.ToLower(strings.TrimSpace(strategy)) {
-	case "", OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth:
-		return OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth
-	case OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool:
+	case "", OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool:
+		return OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool
+	case OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth:
 		return OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool
 	case OpenAIOAuthImagesStrategyChatGPTInternalImages:
 		return OpenAIOAuthImagesStrategyChatGPTInternalImages
@@ -110,10 +120,8 @@ func (s *OpenAIGatewayService) getOpenAIOAuthImagesCapability(_ context.Context,
 	}
 
 	switch {
-	case !s.isOpenAIOAuthImagesExperimentalEnabled():
+	case !s.isOpenAIOAuthImagesEnabled():
 		capability.Reason = openAIOAuthImagesProbeReasonExperimentalDisabled
-	case !account.IsOpenAIOAuthImagesExperimentalEnabled():
-		capability.Reason = openAIOAuthImagesProbeReasonAccountDisabled
 	default:
 		strategy := normalizeOpenAIOAuthImagesStrategy(account.OpenAIOAuthImagesStrategy())
 		if strategy == "" {
@@ -122,20 +130,10 @@ func (s *OpenAIGatewayService) getOpenAIOAuthImagesCapability(_ context.Context,
 		}
 		capability.Strategy = strategy
 		switch strategy {
-		case OpenAIOAuthImagesStrategyAPIPlatformImagesWithOAuth:
-			if account.IsOpenAIOAuthImagesProbeSupported() {
-				capability.Supported = true
-				capability.Status = http.StatusOK
-				capability.Reason = "ok"
-			} else {
-				capability.Status = account.OpenAIOAuthImagesProbeStatus()
-				if capability.Status == 0 {
-					capability.Status = http.StatusServiceUnavailable
-				}
-				if reason := account.OpenAIOAuthImagesProbeReason(); reason != "" {
-					capability.Reason = reason
-				}
-			}
+		case OpenAIOAuthImagesStrategyChatGPTCodexResponsesTool:
+			capability.Supported = true
+			capability.Status = http.StatusOK
+			capability.Reason = "ok"
 		default:
 			capability.Status = http.StatusNotImplemented
 			capability.Reason = openAIOAuthImagesProbeReasonStrategyUnsupported
@@ -147,6 +145,7 @@ func (s *OpenAIGatewayService) getOpenAIOAuthImagesCapability(_ context.Context,
 }
 
 func (s *OpenAIGatewayService) ValidateOpenAIImagesAccount(ctx context.Context, account *Account, operation string, reqStream bool) (*OpenAIOAuthImagesCapability, error) {
+	_ = reqStream
 	if account == nil {
 		return nil, newOpenAIOAuthImagesError(http.StatusBadRequest, "invalid_request_error", "oauth_images_account_missing", "No upstream account selected")
 	}
@@ -157,10 +156,7 @@ func (s *OpenAIGatewayService) ValidateOpenAIImagesAccount(ctx context.Context, 
 		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_account_type_unsupported", "Images API currently only supports OpenAI API Key accounts or explicitly enabled OAuth experimental accounts")
 	}
 	if operation != "generations" {
-		return nil, newOpenAIOAuthImagesError(http.StatusNotImplemented, "api_error", "oauth_images_edits_not_supported", "OpenAI OAuth experimental image generation currently only supports /v1/images/generations")
-	}
-	if reqStream {
-		return nil, newOpenAIOAuthImagesError(http.StatusBadRequest, "invalid_request_error", "oauth_images_stream_not_supported", "OpenAI OAuth experimental image generation does not support stream=true yet")
+		return nil, newOpenAIOAuthImagesError(http.StatusNotImplemented, "api_error", "oauth_images_edits_not_supported", "OpenAI OAuth image bridge currently only supports /v1/images/generations")
 	}
 
 	capability := s.getOpenAIOAuthImagesCapability(ctx, account)
@@ -170,13 +166,13 @@ func (s *OpenAIGatewayService) ValidateOpenAIImagesAccount(ctx context.Context, 
 
 	switch capability.Reason {
 	case openAIOAuthImagesProbeReasonExperimentalDisabled:
-		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_experimental_disabled", "OpenAI OAuth experimental image generation is disabled")
+		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_disabled", "OpenAI OAuth image generation is disabled")
 	case openAIOAuthImagesProbeReasonAccountDisabled:
-		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_account_disabled", "This OpenAI OAuth account is not enabled for experimental image generation")
+		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_account_disabled", "This OpenAI OAuth account is not enabled for image generation")
 	case openAIOAuthImagesProbeReasonStrategyUnsupported:
 		return nil, newOpenAIOAuthImagesError(http.StatusServiceUnavailable, "api_error", "oauth_images_strategy_unsupported", "The configured OpenAI OAuth image strategy is not implemented in this deployment")
 	default:
-		msg := "OpenAI OAuth experimental image generation probe did not confirm upstream support"
+		msg := "OpenAI OAuth image generation bridge did not confirm upstream support"
 		if reason := strings.TrimSpace(capability.Reason); reason != "" && reason != openAIOAuthImagesProbeReasonProbeFailed {
 			msg = msg + ": " + reason
 		}

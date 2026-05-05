@@ -242,6 +242,7 @@ type OpenAIForwardResult struct {
 	ProxyResponseBytes    int64
 	ImageCount            int
 	ImageSize             string
+	UpstreamEndpoint      string
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -4708,6 +4709,8 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		CacheCreationTokens: result.Usage.CacheCreationInputTokens,
 		CacheReadTokens:     result.Usage.CacheReadInputTokens,
 		ImageOutputTokens:   result.Usage.ImageOutputTokens,
+		ImageCount:          result.ImageCount,
+		ImageSize:           optionalTrimmedStringPtr(result.ImageSize),
 	}
 	if cost != nil {
 		usageLog.InputCost = cost.InputCost

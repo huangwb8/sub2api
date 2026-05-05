@@ -2010,6 +2010,9 @@ func (stubUserSubscriptionRepo) GetByUserIDAndGroupID(ctx context.Context, userI
 func (stubUserSubscriptionRepo) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
 	return nil, errors.New("not implemented")
 }
+func (stubUserSubscriptionRepo) ExtendOrActivateByUserAndGroup(ctx context.Context, userID, groupID int64, validityDays int, notes string, snapshot *service.SubscriptionPlanSnapshot, billingCycleStartedAt *time.Time) (*service.UserSubscription, error) {
+	return nil, errors.New("not implemented")
+}
 func (stubUserSubscriptionRepo) Update(ctx context.Context, sub *service.UserSubscription) error {
 	return errors.New("not implemented")
 }
