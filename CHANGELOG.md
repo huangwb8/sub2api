@@ -23,6 +23,7 @@
 - 新增了 `skills/sub2api-summary/README.md`：为 sub2api 运营分析 skill 补充用户使用指南，说明推荐 Prompt、输入凭据要求、输出目录、安全边界和脚本备选流程。
 
 ### Changed（变更）
+- 优化了 OpenAI Images 账号配置教程：补充管理员新增 OpenAI OAuth/Auth 账号时的后台参数速查、推荐配置模板、白名单必选模型和易误配开关说明，并让前端 OpenAI 模型白名单内置 `gpt-image-2`，避免“填充相关模型”漏掉图片模型。
 - 升级了 OpenAI Images 图片链路：Images generation 默认模型收敛为 `gpt-image-2`，API Key 账号继续直连 Images API，OAuth 账号不再依赖账号级 probe 作为硬性准入，并将图片 token、图片数量、尺寸和上游端点归一化写入 usage。
 - 优化了 Codex 图片请求兼容：`gpt-image-*` image-only Responses 请求会自动改写为文本主模型 + `image_generation` tool，Codex CLI 图片工作流会注入图片工具提示，同时 `gpt-5.3-codex-spark` 继续明确拒绝图片能力。
 - 同步了 `gpt-image-2` 定价资源：按当前 OpenAI 定价口径校准输出 token 与图片输出 token 单价，并更新 README、多语言 README、OAuth Images 文档和 `skills/sub2api-summary` 源码地图。

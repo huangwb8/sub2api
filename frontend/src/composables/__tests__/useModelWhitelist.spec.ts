@@ -17,6 +17,12 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('gpt-5.4-2026-03-05')
   })
 
+  it('openai 模型列表包含 Images 图片模型', () => {
+    const models = getModelsByPlatform('openai')
+
+    expect(models).toContain('gpt-image-2')
+  })
+
   it('antigravity 模型列表包含图片模型兼容项', () => {
     const models = getModelsByPlatform('antigravity')
 

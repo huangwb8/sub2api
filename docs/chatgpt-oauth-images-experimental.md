@@ -127,6 +127,49 @@ gateway:
 
 旧版 `extra.openai_oauth_images_*` 字段只作为诊断信息保留，不再要求手动设置 `openai_oauth_images_probe_supported=true`。
 
+### OpenAI OAuth 后台参数速查
+
+管理员新增 OpenAI OAuth 账号时，影响 `gpt-image-2` 支持的关键参数按下面配置。最稳妥的默认方案是“自动透传开启 + 继承默认模型”，这样不会因为账号级白名单漏掉图片模型。
+
+| 后台字段 | 推荐设置 | 对 `gpt-image-2` 的影响 |
+|----------|----------|--------------------------|
+| 平台 | `OpenAI` | 必须是 OpenAI 平台；`chatapi` 不参与 Images 调度 |
+| 账号类型 | `OAuth / Auth` | 选择 OAuth 授权链路，不要选 Chat Completions API 专用类型 |
+| 授权方式 | 后台生成授权 URL 或粘贴 refresh token | 成功后需保存 `access_token`、`refresh_token`、`expires_at`；有多 workspace 时建议保留 `chatgpt_account_id` |
+| 分组 | 选择用户 API Key 所属图片分组，例如 `openai-images` | 用户请求只会调度到同分组或可继承的账号；分组错了会表现为没有可用上游 |
+| 模型限制 | 推荐 `继承默认模型` | 默认模型集包含 `gpt-image-2`；如改成白名单，必须手动加入 `gpt-image-2` |
+| 模型映射 | 默认不配置 | 只有想给用户侧模型起别名时才配置，例如 `image-latest -> gpt-image-2`；不要把 `gpt-image-2` 映射到文本模型 |
+| OpenAI 自动透传 | 推荐开启 | 开启后账号级模型限制不再拦截 OpenAI 兼容模型，最不容易误伤 Images/Responses 图片链路 |
+| OpenAI WS Mode | 保持默认即可，推荐 `ctx_pool` | 主要影响 Responses/WS 上下文池，不是 Images 支持的准入条件 |
+| Codex 官方客户端限制 | 只给 Codex CLI 专用账号开启 | 开启后非 Codex 风格客户端可能被限制；面向普通 Images API 用户的图片分组建议关闭或单独建账号 |
+| 并发 / 负载因子 / 优先级 | 按容量设置；新增 OpenAI OAuth 默认并发 `3`、负载因子 `3` | 只影响调度容量和排序，不决定是否支持 `gpt-image-2` |
+| 代理 | 选择能稳定访问 ChatGPT/OpenAI OAuth 上游的代理 | 代理被风控、挑战或连接失败时，OAuth bridge 可能 failover 或返回上游错误 |
+
+如果必须使用白名单模式，至少要保证白名单里有：
+
+```text
+gpt-image-2
+gpt-5.4-mini
+```
+
+其中 `gpt-image-2` 是图片工具模型，`gpt-5.4-mini` 是 OAuth bridge 当前使用的 Responses 主模型。若只允许 `gpt-image-2` 而漏掉 Responses 主模型，直接走 `/v1/responses` + `image_generation` 的客户端可能被模型白名单挡住；若只允许文本模型而漏掉 `gpt-image-2`，`/v1/images/generations` 会找不到图片模型能力。
+
+### 推荐配置模板
+
+只想保证 `/v1/images/generations` 支持 `gpt-image-2` 时，按下面模板配置：
+
+```text
+平台：OpenAI
+账号类型：OAuth / Auth
+分组：openai-images
+模型限制：继承默认模型
+OpenAI 自动透传：开启
+OpenAI WS Mode：ctx_pool
+Codex 官方客户端限制：关闭
+```
+
+如果这组账号只服务 Codex CLI，可把 `Codex 官方客户端限制` 打开；如果它同时服务普通 OpenAI Images API 客户端，应保持关闭。
+
 ### 分组与模型映射检查
 
 调用前建议确认三件事：
